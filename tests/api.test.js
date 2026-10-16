@@ -21,7 +21,7 @@ test('each GET adds auto=true and sends the cookies', async () => {
 test('the API finds the array in all the response shapes', async () => {
   const api = MAK.createApi({ fetch: fakeFetch(F.routes()) });
   assert.equal((await api.notifications()).length, F.NOTIFICATIONS.length); // plain array
-  assert.equal((await api.pages(F.CS)).length, 6); // plain array
+  assert.equal((await api.pages(F.CS)).length, 7); // plain array
   assert.equal((await api.forums(F.CS)).length, 1); // forums_collection
   assert.equal((await api.sites()).length, F.SITES.length);
   const detail = await api.forum(F.CS, 7);
@@ -51,4 +51,15 @@ test('markViewed sends a POST without auto=true', async () => {
   assert.equal(log[0].method, 'POST');
   assert.doesNotMatch(log[0].url, /auto=true/);
   assert.match(log[0].url, /siteId=2026_0_100002_1_G&toolId=sakai\.announcements$/);
+});
+
+test('gradebook: the HTML of the Gradebook page, with auto=true; other content types fail', async () => {
+  const log = [];
+  const html = F.gradebookHtml(F.MATH);
+  const api = MAK.createApi({
+    fetch: fakeFetch({ [`/portal/tool/${F.MATH}-tool-6`]: fakeFetch.raw(response(html, { type: 'text/html;charset=UTF-8' })), '/portal/tool/x': { a: 1 } }, log)
+  });
+  assert.equal(await api.gradebook(`${F.MATH}-tool-6`), html);
+  assert.match(log[0].url, /\/portal\/tool\/.+-tool-6\?auto=true$/);
+  await assert.rejects(api.gradebook('x'), (e) => e.kind === 'not-html');
 });

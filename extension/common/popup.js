@@ -14,7 +14,9 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null };
+const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
+// The popup reads only the Gradebook page (for the calculator). All other data comes from the storage.
+const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
 const settings = () => MAK.withDefaults(S.settings);
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
@@ -381,11 +383,145 @@ function gradeRow(g) {
 }
 
 function gradesCard(siteId, list) {
+  const open = ui.calc && ui.calc.siteId === siteId;
   return h(
     'div',
     { class: 'card', data: { site: siteId } },
-    h('div', { class: 'head' }, h('a', { href: MAK.siteUrl(siteId), text: siteTitle(siteId) })),
-    list.map(gradeRow)
+    h(
+      'div',
+      { class: 'head' },
+      h('a', { href: MAK.siteUrl(siteId), text: siteTitle(siteId) }),
+      gradebookPlacement(siteId) ? h('button', { class: 'link-btn', attrs: { 'aria-expanded': String(!!open) }, text: t(open ? 'calc.close' : 'calc.open'), on: { click: () => toggleCalc(siteId) } }) : null
+    ),
+    list.map(gradeRow),
+    open ? calcPanel(siteId) : null
+  );
+}
+
+// ---- Grade calculator ----------------------------------------------------------
+// ui.calc = { siteId, status: 'loading' | 'error' | 'ready', book, values, simOpen }. Nothing is stored.
+
+const GRADEBOOK_TOOL = 'sakai.gradebookng';
+const num = (n) => n.toLocaleString(MAK.locale(), { maximumFractionDigits: 2 });
+const targetOf = (siteId) => (typeof settings().targets[siteId] === 'number' ? settings().targets[siteId] : MAK.DEFAULT_TARGET);
+
+function gradebookPlacement(siteId) {
+  const tool = S.pages && S.pages[siteId] && S.pages[siteId].tools[GRADEBOOK_TOOL];
+  return tool ? tool.placement : null;
+}
+
+async function toggleCalc(siteId) {
+  if (ui.calc && ui.calc.siteId === siteId) {
+    ui.calc = null;
+    return renderCurrent();
+  }
+  const calc = (ui.calc = { siteId, status: 'loading', book: null, values: {}, simOpen: false });
+  renderCurrent();
+  try {
+    const html = await courseApi.gradebook(gradebookPlacement(siteId));
+    const data = MAK.extractGradebookRows(new DOMParser().parseFromString(html, 'text/html'));
+    if (!data.found) throw new Error('no gradebook');
+    calc.book = MAK.buildGradebook(data);
+    calc.status = 'ready';
+  } catch {
+    calc.status = 'error';
+  }
+  if (ui.calc === calc) renderCurrent();
+}
+
+function setTarget(siteId, text) {
+  const v = MAK.parseNumber(text);
+  const value = v === null ? null : Math.min(10, Math.max(0, v));
+  send({ type: 'setSettings', patch: { targets: { [siteId]: value === MAK.DEFAULT_TARGET ? null : value } } }).then(() => {
+    if (!userIsInPanel()) renderCurrent();
+  });
+}
+
+function calcResult(book, values, target) {
+  const simulated = Object.values(values).some((v) => MAK.parseNumber(v) !== null);
+  const model = MAK.gradeModel(MAK.applyWhatIf(book, values));
+  const need = MAK.neededAverage(model, target);
+  const text = {
+    needed: () => t('calc.needed', { value: num(need.value), left: num(model.b * 100), target: num(target) }),
+    reached: () => t('calc.reached', { target: num(target) }),
+    impossible: () => t('calc.impossible', { target: num(target), max: num(need.max) }),
+    nothingLeft: () => t('calc.nothingLeft', { final: num(need.min) })
+  }[need.state]();
+  return [
+    h('div', { class: 'calc-now' }, h('span', { text: t(simulated ? 'calc.simulated' : 'calc.current') }), h('strong', { text: model.current === null ? '–' : num(model.current * 10) })),
+    h('div', { class: `calc-need ${need.state}`, text }),
+    need.state === 'nothingLeft' ? null : h('div', { class: 'meta', text: t('calc.range', { min: num(need.min), max: num(need.max) }) })
+  ];
+}
+
+function simulator(book, values, update) {
+  const open = book.categories.filter((c) => c.items.some((i) => i.score === null));
+  if (!open.length) return null;
+  const clear = () => {
+    for (const k of Object.keys(values)) delete values[k];
+    renderCurrent();
+  };
+  return h(
+    'details',
+    { class: 'calc-sim', attrs: { open: ui.calc.simOpen }, on: { toggle: (e) => { ui.calc.simOpen = e.target.open; } } },
+    h('summary', { text: t('calc.simulator') }),
+    h('div', { class: 'meta', text: t('calc.simHelp') }),
+    open.map((c) => [
+      c.name ? h('div', { class: 'calc-cat', text: c.weight > 0 ? `${c.name} · ${num(c.weight)} %` : c.name }) : null,
+      c.items
+        .filter((i) => i.score === null)
+        .map((i) =>
+          h(
+            'label',
+            { class: 'calc-item' },
+            h('span', { class: 'name', text: i.name }),
+            h('input', { attrs: { type: 'text', inputmode: 'decimal', value: values[i.key] || '', placeholder: '–', 'aria-label': i.name }, on: { input: (e) => { values[i.key] = e.target.value; update(); } } }),
+            h('span', { class: 'meta', text: `/ ${num(i.max)}` })
+          )
+        )
+    ]),
+    Object.keys(values).length ? h('button', { class: 'link-btn', text: t('calc.clear'), on: { click: clear } }) : null
+  );
+}
+
+function unusedList(book) {
+  if (!book.unused.length) return null;
+  return h(
+    'details',
+    { class: 'calc-unused' },
+    h('summary', { text: t('calc.unused', { n: book.unused.length }) }),
+    h('ul', null, book.unused.map((i) => h('li', null, `${i.name} `, h('span', { class: 'meta', text: t(`calc.reason.${i.reason}`) }))))
+  );
+}
+
+function calcPanel(siteId) {
+  const c = ui.calc;
+  if (c.status === 'loading') return h('div', { class: 'calc meta', text: t('calc.loading') });
+  if (c.status === 'error') return h('div', { class: 'calc' }, h('div', { class: 'notice', text: t('calc.error') }));
+  const book = c.book;
+  const official = /\d/.test(book.courseGradeText) ? h('div', { class: 'meta', text: t('calc.official', { grade: book.courseGradeText }) }) : null;
+  if (!book.categories.length) return h('div', { class: 'calc' }, h('div', { class: 'meta', text: t('calc.noItems') }), official, unusedList(book));
+  const target = targetOf(siteId);
+  const result = h('div', { class: 'calc-result' });
+  const update = () => fill(result, calcResult(book, c.values, target));
+  update();
+  return h(
+    'div',
+    { class: 'calc' },
+    MAK.gradebookMismatch(book, MAK.gradeModel(book)) ? h('div', { class: 'notice', text: t('calc.mismatch') }) : null,
+    h(
+      'label',
+      { class: 'calc-row' },
+      h('span', { text: t('calc.target') }),
+      h('input', { attrs: { type: 'text', inputmode: 'decimal', value: num(target) }, on: { change: (e) => setTarget(siteId, e.target.value) } }),
+      h('span', { class: 'meta', text: t('calc.of10') }),
+      h('span', { class: 'meta mode', text: t(book.weighted ? 'calc.weighted' : 'calc.points') })
+    ),
+    result,
+    official,
+    simulator(book, c.values, update),
+    unusedList(book),
+    h('div', { class: 'meta', text: t('calc.estimate') })
   );
 }
 

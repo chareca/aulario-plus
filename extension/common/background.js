@@ -363,13 +363,14 @@ const handlers = {
     }
   },
   // Change some settings. MAK.withDefaults checks the result (unknown keys go away).
+  // "badge" and "targets" merge with the current values. A target of null removes it.
   setSettings: {
     run: async (msg) => {
       const patch = msg && msg.patch && typeof msg.patch === 'object' ? msg.patch : {};
       const next = await store.update('settings', (cur) => {
         const base = MAK.withDefaults(cur);
-        const badge = Object.assign({}, base.badge, patch.badge && typeof patch.badge === 'object' ? patch.badge : {});
-        return MAK.withDefaults(Object.assign({}, base, patch, { badge }));
+        const part = (key) => Object.assign({}, base[key], patch[key] && typeof patch[key] === 'object' ? patch[key] : {});
+        return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets') }));
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});
       return next;

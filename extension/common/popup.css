@@ -143,6 +143,25 @@ body.tools { width: auto; height: auto; min-height: 100vh; max-width: 640px; mar
 .grade-row .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .grade-row .score.none { color: var(--muted); font-weight: 400; }
 
+/* Grade calculator */
+.card .head .link-btn { flex: none; }
+.calc { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 6px; }
+.calc .notice { margin: 0; }
+.calc-row, .calc-item { display: flex; gap: 6px; align-items: center; }
+.calc-row .mode { margin-left: auto; }
+.calc input[type="text"] { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; width: 4.5em; text-align: right; }
+.calc-now { display: flex; justify-content: space-between; align-items: baseline; }
+.calc-now strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.calc-need { font-weight: 600; }
+.calc-need.reached { color: var(--green); }
+.calc-need.impossible { color: var(--red); }
+.calc-sim summary, .calc-unused summary { cursor: pointer; font-weight: 600; }
+.calc-sim { display: flex; flex-direction: column; gap: 4px; }
+.calc-cat { font-weight: 600; margin-top: 6px; }
+.calc-item { padding: 2px 0; }
+.calc-item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.calc-unused ul { margin: 4px 0 0; padding-left: 18px; }
+
 /* Privacy note */
 footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-align: center; }
 footer.privacy button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 10.5px; cursor: pointer; }

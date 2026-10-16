@@ -25,6 +25,9 @@ for (const site of data.SITES) {
   }
 }
 
+// The Gradebook pages for the grade calculator.
+for (const site of data.SITES) routes[`/portal/tool/${site.id}-tool-6`] = { __file: data.gradebookHtml(site.id), type: 'text/html; charset=UTF-8' };
+
 const background = fs.readFileSync(path.join(COMMON, 'background.js'), 'utf8');
 const libs = [.../importScripts\(([^)]*)\)/.exec(background)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
 

@@ -30,8 +30,41 @@ function make(NOW) {
       tool('sakai.resources', 2),
       tool('sakai.assignment.grades', 3),
       tool('sakai.forums', 4),
-      tool('sakai.messages', 5)
+      tool('sakai.messages', 5),
+      tool('sakai.gradebookng', 6)
     ];
+  }
+
+  // The Gradebook page of a student (Sakai GradebookNG), with the same classes as the real page.
+  // Mathematics: two weighted categories. Computer Science: no categories. Other sites: no table.
+  function gradebookHtml(siteId) {
+    const item = (title, raw, outOf, extra = '', flags = '') =>
+      `<tr class="gb-summary-grade-row${extra}"><td class="gb-summary-grade-title">${title}${flags}</td>` +
+      `<td class="gb-summary-grade-score"><span class="gb-summary-grade-score-raw">${raw}</span><span class="gb-summary-grade-score-outof">${outOf}</span></td>` +
+      '<td class="gb-summary-grade-duedate">-</td></tr>';
+    const category = (name, weight, grade) =>
+      `<tbody class="gb-summary-category-tbody"><tr class="gb-summary-category-row"><td class="gb-summary-category-name">${name}</td>` +
+      `<td class="gb-summary-category-weight">${weight}</td><td class="gb-summary-category-grade">${grade}</td></tr></tbody>`;
+    const page = (body, course) =>
+      `<!DOCTYPE html><html><body><div class="gb-summary"><table class="table gb-summary-table">${body}</table>` +
+      `<p>Calificación del curso: <span class="gb-summary-course-grade-value">${course}</span></p></div></body></html>`;
+    if (siteId === MATH) {
+      return page(
+        category('Teoría', '60%', '75%') +
+          '<tbody class="gb-summary-assignments-tbody">' + item('Parcial 1', '7,5', '/10') + item('Examen final', '-', '/10') + '</tbody>' +
+          category('Prácticas', '40%', '-') +
+          '<tbody class="gb-summary-assignments-tbody">' + item('Práctica 1', '-', '/10') + item('Práctica 2', '-', '/10') +
+          item('Práctica opcional', '-', '/10', '', '<span class="gb-flag-not-counted" title="No cuenta"></span>') + '</tbody>',
+        '7,5'
+      );
+    }
+    if (siteId === CS) {
+      return page(
+        '<tbody class="gb-summary-assignments-tbody">' + item('Lab report 1', '-', '/20', ' gb-no-categories') + item('Quiz', '4', '/5', ' gb-no-categories') + item('Project', '-', '/25', ' gb-no-categories') + '</tbody>',
+        '-'
+      );
+    }
+    return '<!DOCTYPE html><html><body><form id="login">Inicia sesión</form></body></html>';
   }
 
   function submission(o) {
@@ -204,7 +237,7 @@ function make(NOW) {
     return r;
   }
 
-  return { NOW, H, D, SITES, MATH, CS, PHYS, COORD, ASSIGNMENTS, ANNOUNCEMENTS, NOTIFICATIONS, GRADES, SYNOPTIC, FORUMS, FORUM_DETAIL, CALENDAR, pages, resources, routes, epoch, sakaiDate };
+  return { NOW, H, D, SITES, MATH, CS, PHYS, COORD, ASSIGNMENTS, ANNOUNCEMENTS, NOTIFICATIONS, GRADES, SYNOPTIC, FORUMS, FORUM_DETAIL, CALENDAR, pages, gradebookHtml, resources, routes, epoch, sakaiDate };
 }
 
 module.exports = Object.assign(make(Date.UTC(2026, 9, 16, 10, 0, 0)), { make }); // 2026-10-16 10:00 UTC

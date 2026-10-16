@@ -60,6 +60,14 @@
       return arr;
     }
 
+    async function getHtml(path) {
+      const sep = path.includes('?') ? '&' : '?';
+      const res = await request(path + sep + 'auto=true');
+      const type = (res.headers && res.headers.get && res.headers.get('content-type')) || '';
+      if (!/html/i.test(type)) throw new ApiError('not-html', path, res.status);
+      return res.text();
+    }
+
     return {
       session: () => getJson('/direct/session/current.json'),
       sites: () => getJson('/direct/site.json?_limit=200', 'site_collection'),
@@ -73,6 +81,8 @@
       resources: (siteId) => getJson(`/direct/content/site/${enc(siteId)}.json`, 'content_collection'),
       calendar: (fromYmd, toYmd) => getJson(`/direct/calendar/my.json?firstDate=${fromYmd}&lastDate=${toYmd}`, 'calendar_collection'),
       grades: () => getJson('/api/users/me/grades', 'grades'),
+      // The Gradebook page of a site (HTML). The popup reads it for the grade calculator.
+      gradebook: (placement) => getHtml(`/portal/tool/${enc(placement)}`),
       // Mark the notifications of one tool in one site as viewed (the bell in MiAulario).
       markViewed: async (siteId, toolId) => {
         await request(`/api/users/me/notifications/markViewed?siteId=${enc(siteId)}&toolId=${enc(toolId)}`, { method: 'POST' });

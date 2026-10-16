@@ -11,9 +11,21 @@
       badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false, grades: true },
       hiddenSites: [],
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
-      lang: 'es' // 'es' (default) or 'en'
+      lang: 'es', // 'es' (default) or 'en'
+      targets: {} // the target grade (0..10) of the calculator for each site
     };
   };
+
+  const MAX_TARGETS = 200;
+  function cleanTargets(t) {
+    const out = {};
+    if (!t || typeof t !== 'object' || Array.isArray(t)) return out;
+    for (const [k, v] of Object.entries(t)) {
+      if (Object.keys(out).length >= MAX_TARGETS) break;
+      if (k.length < 300 && typeof v === 'number' && v >= 0 && v <= 10) out[k] = v;
+    }
+    return out;
+  }
 
   // The only check of the settings: known keys only, correct types, and the default value
   // for a value that is missing or not correct.
@@ -29,7 +41,8 @@
       badge,
       hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
-      lang: s.lang === 'en' ? 'en' : 'es'
+      lang: s.lang === 'en' ? 'en' : 'es',
+      targets: cleanTargets(s.targets)
     };
   };
 
