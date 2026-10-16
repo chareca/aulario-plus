@@ -2,6 +2,13 @@
 
 MiAulario Keep-Alive is a browser extension for Chromium browsers and Firefox. It keeps your MiAulario (UPNA) session active while the browser is open. When the session ends, the extension opens the login page.
 
+## Privacy
+
+- The extension sends requests only to MiAulario (`miaulario.unavarra.es`). It does not connect to other servers. It has no analytics and no servers of its own.
+- The extension also makes the cookie of the UPNA login page (`sso.unavarra.es`) last longer. It does not send requests to that page. Your browser opens it when you log in.
+- The extension keeps the data that it needs only in your browser: the settings, a copy of your course data (deliveries, announcements and new items) and what you read. Nobody else receives this data. The extension removes the course data when you log out.
+- The developers do not receive or keep any data.
+
 > **Important**
 > - The UPNA did not make this extension and does not support it.
 > - Read the IT rules of the UPNA before you use this extension.
