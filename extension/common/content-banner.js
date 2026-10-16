@@ -43,6 +43,16 @@
     return !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: dark)').matches);
   }
 
+  // Put a host element at the top of the main content, below the breadcrumb.
+  function insertAtTop(host) {
+    const main = document.querySelector('main#content') || document.querySelector('main');
+    if (!main) return false;
+    const crumb = main.querySelector(':scope > .portal-header-breadcrumb');
+    if (crumb) crumb.after(host);
+    else main.prepend(host);
+    return true;
+  }
+
   function group(titleKey, items, render) {
     if (!items.length) return null;
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));
@@ -51,8 +61,6 @@
   // A small button above the Resources tool: "Download all (ZIP)".
   MAK.showZipButton = function (onClick) {
     if (document.getElementById('mak-zip-host')) return;
-    const main = document.querySelector('main#content') || document.querySelector('main');
-    if (!main) return;
     const host = document.createElement('div');
     host.id = 'mak-zip-host';
     const shadow = host.attachShadow({ mode: 'closed' });
@@ -63,9 +71,7 @@
       button.dark { border-color: #4fd1a5; background: #4fd1a5; color: #0b1a17; }`;
     const btn = MAK.h('button', { class: isDark() ? 'dark' : '', attrs: { type: 'button' }, text: `📦 ${MAK.t('zip.button')}`, on: { click: onClick } });
     shadow.append(style, btn);
-    const crumb = main.querySelector(':scope > .portal-header-breadcrumb');
-    if (crumb) crumb.after(host);
-    else main.prepend(host);
+    insertAtTop(host);
   };
 
   function removeNewsBanner() {
@@ -82,8 +88,6 @@
     try {
       if (sessionStorage.getItem(key)) return false;
     } catch {}
-    const main = document.querySelector('main#content') || document.querySelector('main');
-    if (!main) return false;
 
     const h = MAK.h;
     const host = document.createElement('div');
@@ -141,9 +145,6 @@
       list
     );
     shadow.append(style, box);
-    const crumb = main.querySelector(':scope > .portal-header-breadcrumb');
-    if (crumb) crumb.after(host);
-    else main.prepend(host);
-    return true;
+    return insertAtTop(host);
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

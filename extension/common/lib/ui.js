@@ -67,5 +67,16 @@
     return format('short').format(ms);
   };
 
+  // "3 archivos · 1 anuncio · 2 mensajes de foro · 1 entrega"
+  MAK.newsSummary = function (news) {
+    const parts = [];
+    if (news.files.length) parts.push(MAK.t('news.files', { n: news.files.length }));
+    if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
+    if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
+    const posts = news.forums.reduce((n, f) => n + f.delta, 0);
+    if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));
+    return parts.join(' · ');
+  };
+
   if (typeof module === 'object' && module.exports) module.exports = MAK;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

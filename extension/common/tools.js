@@ -21,8 +21,9 @@ function saveFile(parts, type, name) {
   }, 60000);
 }
 
-function today() {
-  const d = new Date();
+// "2026-10-16" in the local time.
+function ymd(ms) {
+  const d = new Date(ms);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -78,7 +79,7 @@ async function runZip(siteId, site) {
     warning.hidden = false;
   }
 
-  const name = MAK.safeFileName(t('zip.fileName', { site: site.title, date: today() }));
+  const name = MAK.safeFileName(t('zip.fileName', { site: site.title, date: ymd(Date.now()) }));
   start.textContent = t('zip.start');
   cancel.textContent = t('zip.cancel');
   start.hidden = false;
@@ -122,11 +123,6 @@ async function runZip(siteId, site) {
 }
 
 // ---- Export to a calendar (.ics) -----------------------------------------------
-
-function ymd(ms) {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 async function runIcs(store) {
   const { h, fill } = MAK;
@@ -181,7 +177,7 @@ async function runIcs(store) {
       create.disabled = false;
       return;
     }
-    const name = t('ics.fileName', { date: today() });
+    const name = t('ics.fileName', { date: ymd(Date.now()) });
     saveFile([text], 'text/calendar;charset=utf-8', name);
     status.textContent = t('ics.done', { n: count, name });
     help.textContent = `${t('ics.help')} ${t('ics.snapshot')}`;

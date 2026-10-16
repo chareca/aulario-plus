@@ -425,17 +425,6 @@
     return s;
   };
 
-  // "3 archivos · 1 anuncio · 2 mensajes de foro · 1 entrega"
-  MAK.newsSummary = function (news) {
-    const parts = [];
-    if (news.files.length) parts.push(MAK.t('news.files', { n: news.files.length }));
-    if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
-    if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
-    const posts = news.forums.reduce((n, f) => n + f.delta, 0);
-    if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));
-    return parts.join(' · ');
-  };
-
   // Put the texts in the elements that have data-i18n (text) or data-i18n-title (title and aria-label).
   MAK.applyI18n = function (rootEl) {
     for (const el of rootEl.querySelectorAll('[data-i18n]')) el.textContent = MAK.t(el.dataset.i18n);
