@@ -74,7 +74,13 @@
       'skip.logged-out': 'Primero inicia sesión en MiAulario',
       'skip.backoff': 'El servidor está ocupado. Inténtalo más tarde',
       'skip.locked': 'Ya hay una actualización en curso',
-      'skip.someFailed': 'Algunos datos no se actualizaron'
+      'skip.someFailed': 'Algunos datos no se actualizaron',
+
+      'privacy.short': '🔒 Solo se conecta con MiAulario. Tus datos no salen de tu navegador.',
+      'privacy.title': 'Privacidad',
+      'privacy.text1': 'La extensión solo hace peticiones a MiAulario (miaulario.unavarra.es). No se conecta con ningún otro servidor: no tiene analíticas ni servidores propios.',
+      'privacy.text2': 'También alarga la cookie del inicio de sesión de la UPNA (sso.unavarra.es), pero no le hace peticiones. Tu navegador abre esa página cuando inicias sesión.',
+      'privacy.text3': 'Los datos que necesita (tus ajustes, una copia de tus entregas, anuncios y novedades, y lo que has leído) se guardan solo en tu navegador. Nadie más los recibe. Los datos de las asignaturas se borran al cerrar sesión.'
     },
     en: {
       'app.title': 'MiAulario Keep-Alive',
@@ -145,7 +151,13 @@
       'skip.logged-out': 'Log in to MiAulario first',
       'skip.backoff': 'The server is busy. Do it again later',
       'skip.locked': 'An update is in progress',
-      'skip.someFailed': 'Some data did not update'
+      'skip.someFailed': 'Some data did not update',
+
+      'privacy.short': '🔒 Connects only to MiAulario. Your data stays in your browser.',
+      'privacy.title': 'Privacy',
+      'privacy.text1': 'The extension sends requests only to MiAulario (miaulario.unavarra.es). It does not connect to other servers. It has no analytics and no servers of its own.',
+      'privacy.text2': 'It also makes the cookie of the UPNA login page (sso.unavarra.es) last longer, but it does not send requests to that page. Your browser opens it when you log in.',
+      'privacy.text3': 'The extension keeps the data that it needs (your settings, a copy of your deliveries, announcements and new items, and what you read) only in your browser. Nobody else receives this data. The extension removes the course data when you log out.'
     }
   };
 

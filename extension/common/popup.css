@@ -91,3 +91,9 @@ label.check { display: flex; align-items: flex-start; gap: 7px; padding: 4px 0; 
 label.check input { margin-top: 2px; }
 label.check small { display: block; color: var(--muted); font-size: 12px; }
 .indent { margin-left: 22px; }
+
+/* Privacy note */
+footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-align: center; }
+footer.privacy button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 10.5px; cursor: pointer; }
+footer.privacy button:hover { text-decoration: underline; }
+.section p.small { margin: 0 0 6px; color: var(--muted); font-size: 12px; }

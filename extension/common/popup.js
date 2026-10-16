@@ -211,6 +211,12 @@ function renderSettings(el) {
         { attrs: { 'aria-label': t('set.language') }, on: { change: (e) => send({ type: 'setSettings', patch: { lang: e.target.value } }) } },
         Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
       )
+    ),
+    h(
+      'div',
+      { class: 'section', attrs: { id: 'privacy' } },
+      h('h2', { text: t('privacy.title') }),
+      ['privacy.text1', 'privacy.text2', 'privacy.text3'].map((k) => h('p', { class: 'small', text: t(k) }))
     )
   );
   updateKeepAlive(Date.now());
@@ -317,6 +323,11 @@ async function init() {
   });
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) btn.addEventListener('click', () => selectTab(btn.dataset.tab));
   $('refresh').addEventListener('click', refresh);
+  $('privacyLink').addEventListener('click', () => {
+    selectTab('settings');
+    const el = $('privacy');
+    if (el) el.scrollIntoView({ block: 'start' });
+  });
   $('openTab').addEventListener('click', () => {
     ext.tabs.create({ url: ext.runtime.getURL('popup.html?view=tab') });
     window.close();
