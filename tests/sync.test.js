@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib, memoryArea, fakeFetch, response, loadBackground } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'api', 'sync');
+const MAK = loadLib('core', 'store', 'api', 'grades', 'sync');
 
 function setup({ routes = F.routes(), local = {}, now = F.NOW } = {}) {
   const area = memoryArea(local);

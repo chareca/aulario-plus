@@ -129,6 +129,14 @@ function make(NOW) {
     }
   ];
 
+  const GRADES = [
+    { id: 501, name: 'Problem set 1', score: '7,5', notGradedYet: false, ungraded: 0, siteId: MATH, siteTitle: 'Mathematics I', url: `/portal/directtool/${MATH}-tool-6`, canGrade: false },
+    { id: 502, name: 'Problem set 2', score: '', notGradedYet: true, ungraded: 0, siteId: MATH, siteTitle: 'Mathematics I', url: `/portal/directtool/${MATH}-tool-6`, canGrade: false },
+    { id: 503, name: 'Lab report 1', score: '', notGradedYet: true, ungraded: 0, siteId: CS, siteTitle: 'Computer Science', url: `/portal/directtool/${CS}-tool-6`, canGrade: false },
+    { id: 504, name: 'Theory exam', score: '', notGradedYet: true, ungraded: 0, siteId: PHYS, siteTitle: 'Physics', url: `/portal/directtool/${PHYS}-tool-6`, canGrade: false },
+    { id: 505, name: 'Group work (as a tutor)', score: '6.2', notGradedYet: false, ungraded: 3, siteId: COORD, siteTitle: 'Degree Coordination', url: `/portal/directtool/${COORD}-tool-6`, canGrade: true }
+  ];
+
   const SYNOPTIC = [
     { siteId: MATH, siteTitle: 'Mathematics I', newMessagesCount: 0, newForumCount: 0 },
     { siteId: CS, siteTitle: 'Computer Science', newMessagesCount: 2, newForumCount: 5 },
@@ -181,7 +189,8 @@ function make(NOW) {
       '/direct/announcement/user.json': { entityPrefix: 'announcement', announcement_collection: ANNOUNCEMENTS },
       '/api/users/me/notifications': NOTIFICATIONS,
       '/direct/synopticmsgcntritem.json': { entityPrefix: 'synopticmsgcntritem', synopticmsgcntritem_collection: SYNOPTIC },
-      '/direct/calendar/my.json': { entityPrefix: 'calendar', calendar_collection: CALENDAR }
+      '/direct/calendar/my.json': { entityPrefix: 'calendar', calendar_collection: CALENDAR },
+    '/api/users/me/grades': { grades: GRADES, sites: SITES.map((s) => ({ siteId: s.id, title: s.title })) }
     };
     for (const s of SITES) {
       r[`/direct/site/${s.id}/pages.json`] = pages(s.id);
@@ -195,7 +204,7 @@ function make(NOW) {
     return r;
   }
 
-  return { NOW, H, D, SITES, MATH, CS, PHYS, COORD, ASSIGNMENTS, ANNOUNCEMENTS, NOTIFICATIONS, SYNOPTIC, FORUMS, FORUM_DETAIL, CALENDAR, pages, resources, routes, epoch, sakaiDate };
+  return { NOW, H, D, SITES, MATH, CS, PHYS, COORD, ASSIGNMENTS, ANNOUNCEMENTS, NOTIFICATIONS, GRADES, SYNOPTIC, FORUMS, FORUM_DETAIL, CALENDAR, pages, resources, routes, epoch, sakaiDate };
 }
 
 module.exports = Object.assign(make(Date.UTC(2026, 9, 16, 10, 0, 0)), { make }); // 2026-10-16 10:00 UTC

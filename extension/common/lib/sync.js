@@ -183,6 +183,20 @@
           await store.set({ synoptic });
         });
 
+        // 4b. Grades of all sites. The new grades go to opts.onNewGrades (not on the first fetch).
+        await step('grades', async () => {
+          const fetched = (await api.grades()).map(MAK.trimGrade).filter(Boolean);
+          let changed = [];
+          await store.update('grades', (prev) => {
+            // The time is taken here, inside the write, so that "seen" and "new" stay in order.
+            const r = MAK.mergeGrades(prev, fetched, now(), !meta.baselined.grades);
+            changed = r.changed;
+            return r.list;
+          });
+          meta.baselined.grades = true;
+          if (changed.length && opts.onNewGrades) await opts.onNewGrades(changed);
+        });
+
         // 5. Notifications of the bell (read state of announcements).
         await step('notifications', async () => {
           const list = (await api.notifications()).map(MAK.trimNotification);

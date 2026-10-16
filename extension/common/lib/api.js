@@ -72,6 +72,7 @@
       forum: (siteId, forumId) => getJson(`/direct/forums/site/${enc(siteId)}/forum/${enc(forumId)}.json`),
       resources: (siteId) => getJson(`/direct/content/site/${enc(siteId)}.json`, 'content_collection'),
       calendar: (fromYmd, toYmd) => getJson(`/direct/calendar/my.json?firstDate=${fromYmd}&lastDate=${toYmd}`, 'calendar_collection'),
+      grades: () => getJson('/api/users/me/grades', 'grades'),
       // Mark the notifications of one tool in one site as viewed (the bell in MiAulario).
       markViewed: async (siteId, toolId) => {
         await request(`/api/users/me/notifications/markViewed?siteId=${enc(siteId)}&toolId=${enc(toolId)}`, { method: 'POST' });
@@ -197,6 +198,22 @@
       read: Number(tp.readMessages) || 0,
       total: Number(tp.totalMessages) || 0,
       modified: MAK.toMs(tp.modifiedDate)
+    };
+  };
+
+  // A grade item of the user. An item where the user can grade (a teacher role) is not a grade
+  // of the user: return null.
+  MAK.trimGrade = function (g) {
+    if (!g || g.canGrade) return null;
+    const score = String(g.score === null || g.score === undefined ? '' : g.score).trim();
+    return {
+      id: String(g.id),
+      siteId: String(g.siteId || ''),
+      siteTitle: String(g.siteTitle || ''),
+      name: String(g.name || ''),
+      score,
+      graded: !g.notGradedYet && score !== '',
+      url: MAK.safeSiteUrl(g.url)
     };
   };
 

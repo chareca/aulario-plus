@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;

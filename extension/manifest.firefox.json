@@ -18,6 +18,7 @@
       "lib/core.js",
       "lib/store.js",
       "lib/api.js",
+      "lib/grades.js",
       "lib/sync.js",
       "lib/i18n.js",
       "lib/due.js",
