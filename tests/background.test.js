@@ -55,12 +55,16 @@ test('the ping alarm sets the next random alarm and records the ping', async () 
   assert.ok(delay >= 180 && delay <= 601, `delay ${delay}`);
   assert.equal(pings, 1);
   assert.equal(bg.ext.storage.local.data.last.loggedIn, true);
-  assert.equal(bg.ext.storage.local.data.log.length, 1);
+  assert.equal(bg.ext.storage.local.data.last.status, 200);
 });
 
-test('the log keeps the last 50 entries when pings occur at the same time', async () => {
-  const fetch = fakeFetch(F.routes());
-  const bg = loadBackground({ fetch });
-  await Promise.all(Array.from({ length: 60 }, () => bg.send({ type: 'pingNow' })));
-  assert.equal(bg.ext.storage.local.data.log.length, 50);
+test('a paused extension resumes when the user logs in again, and only then pings', async () => {
+  const log = [];
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: true } });
+  assert.ok(await bg.send({ type: 'pingNow' }));
+  assert.equal(bg.ext.storage.local.data.paused, false);
+  assert.ok(log[0].url.includes('auto=true'), 'first a read without activity');
+  assert.ok(!log[1].url.includes('auto=true'), 'then the keep-alive ping');
+  const status = await bg.send({ type: 'getStatus' });
+  assert.deepEqual(Object.keys(status).sort(), ['autoLogin', 'nextPing', 'paused']);
 });

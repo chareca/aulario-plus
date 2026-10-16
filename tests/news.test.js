@@ -88,10 +88,9 @@ test('forums: new posts since the snapshot; no snapshot means no forum news', ()
   assert.equal(n.total, 4);
   assert.equal(MAK.newSince({ siteId: F.CS, since: F.NOW, forums, forumBase: null, pages, now: F.NOW }).total, 0);
   // Snapshot shift: a new visit moves "last" to "previous".
-  let snap = MAK.shiftForumSnap({}, F.CS, { 71: 7 }, false);
-  snap = MAK.shiftForumSnap(snap, F.CS, { 71: 9 }, false);
+  let snap = MAK.shiftForumSnap({}, F.CS, { 71: 7 });
+  snap = MAK.shiftForumSnap(snap, F.CS, { 71: 9 });
   assert.deepEqual(snap[F.CS], { previous: { 71: 7 }, last: { 71: 9 } });
-  assert.deepEqual(MAK.shiftForumSnap(snap, F.CS, { 71: 10 }, true)[F.CS], { previous: { 71: 10 }, last: { 71: 10 } });
 });
 
 test('mark as seen: nothing is new, also in the banner of the current visit', () => {

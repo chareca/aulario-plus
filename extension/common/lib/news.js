@@ -51,11 +51,10 @@
     return out;
   };
 
-  // Shift the forum snapshot at the start of a new visit, or set it when the user marks the site as seen.
-  MAK.shiftForumSnap = function (snap, siteId, totals, both) {
+  // Shift the forum snapshot at the start of a new visit.
+  MAK.shiftForumSnap = function (snap, siteId, totals) {
     const cur = (snap && snap[siteId]) || {};
-    const next = both ? { previous: totals, last: totals } : { previous: cur.last || totals, last: totals };
-    return Object.assign({}, snap, { [siteId]: next });
+    return Object.assign({}, snap, { [siteId]: { previous: cur.last || totals, last: totals } });
   };
 
   const newer = (serverTime, seen) => Math.max(serverTime || 0, seen || 0);

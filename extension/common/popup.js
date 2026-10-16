@@ -86,7 +86,7 @@ document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() =
 function renderHeader() {
   const now = Date.now();
   const meta = S.meta || {};
-  const last = S.last && !S.last.relogin ? S.last : null;
+  const last = S.last || null;
   const dot = $('dot');
   dot.className = 'dot';
   let headline;
@@ -366,7 +366,7 @@ function siteActions(site) {
   return h('button', {
     class: 'link-btn',
     text: t('zip.button'),
-    on: { click: () => ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(site.id)}`) }) }
+    on: { click: () => send({ type: 'openZip', siteId: site.id }) }
   });
 }
 
@@ -491,7 +491,7 @@ function renderSettings(el) {
 function updateKeepAlive(now) {
   if (!$('ka-session')) return;
   const paused = !!S.paused;
-  const last = S.last && !S.last.relogin ? S.last : (S.log || []).filter((e) => !e.relogin).pop();
+  const last = S.last || null;
   $('ka-session').textContent = paused ? t('status.paused') : !last ? '–' : t(last.loggedIn ? 'ka.active' : last.error ? 'status.networkError' : 'ka.loggedOut');
   $('ka-last').textContent = last ? `${MAK.ago(last.time, now)} (${last.status || '–'})` : '–';
   $('ka-left').textContent = last && last.loggedIn ? `~${Math.max(0, MAX_INACTIVE_MIN - Math.round((now - last.time) / 60000))} min` : '–';
@@ -515,8 +515,7 @@ async function pingNow() {
 }
 
 async function togglePause() {
-  const st = await send({ type: 'getStatus' });
-  await send({ type: st && st.paused ? 'resume' : 'pause' });
+  await send({ type: S.paused ? 'resume' : 'pause' });
   refreshStatus();
 }
 

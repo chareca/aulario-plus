@@ -28,7 +28,6 @@ const PING_ALARM = 'miaulario-ping';
 const PING_MIN_SECONDS = 3 * 60;
 const PING_MAX_SECONDS = 10 * 60;
 const PERSIST_DAYS = 30;
-const LOG_MAX = 50;
 
 // The cookies of the session, with the same flags that the server sets.
 const COOKIE_SPECS = {
@@ -48,51 +47,30 @@ const COOKIE_SPECS = {
 };
 
 async function getState() {
-  const d = await ext.storage.local.get(['paused', 'autoLogin', 'last', 'log']);
-  return {
-    paused: !!d.paused,
-    autoLogin: d.autoLogin !== false,
-    last: d.last || null,
-    log: d.log || []
-  };
+  const d = await ext.storage.local.get(['paused', 'autoLogin']);
+  return { paused: !!d.paused, autoLogin: d.autoLogin !== false };
 }
 
-async function record(entry) {
-  await store.update('log', (log) => (log || []).concat(entry).slice(-LOG_MAX));
-  await store.set({ last: entry });
-}
-
-async function readSession(keepAlive) {
-  const url = keepAlive ? SESSION_URL : SESSION_URL + '?auto=true';
-  const r = await fetch(url, { cache: 'no-store', credentials: 'include' });
-  let s = null;
-  try { s = await r.json(); } catch {}
-  return { status: r.status, ok: r.ok, loggedIn: !!(s && s.userId), maxInactive: s && s.maxInactiveInterval };
-}
-
+// The keep-alive request: without "auto=true", so Sakai records it as activity.
 async function ping() {
-  const state = await getState();
-
-  if (state.paused) {
-    // The extension is paused after a manual logout. Only read the session
-    // ("auto=true" does not set the timer to zero). If the user logged in again, continue.
-    try {
-      const peek = await readSession(false);
-      if (!peek.loggedIn) return null;
-      await store.set({ paused: false });
-    } catch {
-      return null;
-    }
+  const { paused } = await getState();
+  if (paused) {
+    // The extension is paused after a manual logout. Only read the session (with "auto=true",
+    // it does not reset the timer). If the user logged in again, continue.
+    const session = await courseApi.session().catch(() => null);
+    if (!session || !session.userId) return null;
+    await store.set({ paused: false });
   }
-
-  const entry = { time: Date.now(), ok: false, status: 0, loggedIn: null };
+  const last = { time: Date.now(), ok: false, status: 0, loggedIn: null };
   try {
-    Object.assign(entry, await readSession(true));
+    const r = await fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' });
+    const s = await r.json().catch(() => null);
+    Object.assign(last, { status: r.status, ok: r.ok, loggedIn: !!(s && s.userId) });
   } catch (e) {
-    entry.error = String(e);
+    last.error = String(e);
   }
-  await record(entry);
-  return entry;
+  await store.set({ last });
+  return last;
 }
 
 // ---- Persistent cookies ------------------------------------------------------
@@ -155,16 +133,26 @@ async function persistExisting() {
 const MAX_IDS = 500;
 const validIds = (ids) => (Array.isArray(ids) ? ids.filter((x) => typeof x === 'string' && x.length < 300).slice(0, MAX_IDS) : []);
 
-// Mark announcements as read in the extension. Then tell MiAulario (the bell) for the sites
-// where no unread announcement is left.
-async function markAnnouncementsRead(ids) {
-  if (!ids.length) return { ok: true, marked: 0 };
+async function knownSite(siteId) {
+  const { sites } = await store.get('sites');
+  return typeof siteId === 'string' && !MAK.isSpecialSite(siteId) && (sites || []).some((s) => s.id === siteId);
+}
+
+// Record the announcements as read in the extension only.
+async function setAnnRead(ids) {
   const now = Date.now();
   await store.update('readAnn', (r) => {
     const out = Object.assign({}, r);
     for (const id of ids) out[id] = now;
     return out;
   });
+}
+
+// Mark announcements as read in the extension. Then tell MiAulario (the bell) for the sites
+// where no unread announcement is left.
+async function markAnnouncementsRead(ids) {
+  if (!ids.length) return { ok: true, marked: 0 };
+  await setAnnRead(ids);
   const { announcements } = await store.get('announcements');
   const siteIds = [...new Set((announcements || []).filter((a) => ids.includes(a.id)).map((a) => a.siteId))];
   await pushReadToServer(siteIds);
@@ -183,18 +171,16 @@ async function pushReadToServer(siteIds) {
       ok = false;
     }
     if (ok) await markNotificationsViewed(siteId, MAK.ANN_TOOL);
-    else await store.update('pendingMarkViewed', (list) => uniquePending((list || []).concat({ siteId, toolId: MAK.ANN_TOOL })));
+    else await queuePending(siteId, MAK.ANN_TOOL);
   }
 }
 
-function uniquePending(list) {
-  const seen = new Set();
-  return list.filter((x) => {
-    const k = `${x.siteId}|${x.toolId}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).slice(-50);
+// Keep a "mark as viewed" request for later (one for each site and tool, 50 at most).
+async function queuePending(siteId, toolId) {
+  await store.update('pendingMarkViewed', (list) => {
+    const rest = (list || []).filter((x) => x.siteId !== siteId || x.toolId !== toolId);
+    return rest.concat({ siteId, toolId }).slice(-50);
+  });
 }
 
 async function markNotificationsViewed(siteId, toolId) {
@@ -270,7 +256,7 @@ const handlers = {
     run: async () => {
       const s = await getState();
       const alarm = await ext.alarms.get(PING_ALARM);
-      return { paused: s.paused, autoLogin: s.autoLogin, last: s.last, log: s.log.slice(-10), nextPing: alarm ? alarm.scheduledTime : null };
+      return { paused: s.paused, autoLogin: s.autoLogin, nextPing: alarm ? alarm.scheduledTime : null };
     }
   },
   pingNow: { run: () => ping() },
@@ -339,13 +325,6 @@ const handlers = {
       return next;
     }
   },
-  relogin: {
-    content: true,
-    run: async () => {
-      await record({ time: Date.now(), relogin: true });
-      return { ok: true };
-    }
-  },
   markAnnRead: { run: (msg) => markAnnouncementsRead(validIds(msg.ids)) },
   // Mark all the announcements as read, or all the announcements of one site.
   markAllAnnRead: {
@@ -362,17 +341,10 @@ const handlers = {
   toolVisit: {
     content: true,
     run: async (msg) => {
-      const { sites } = await store.get('sites');
-      if (typeof msg.siteId !== 'string' || !(sites || []).some((s) => s.id === msg.siteId)) return { ok: false };
+      if (!(await knownSite(msg.siteId))) return { ok: false };
       if (msg.toolId !== MAK.ANN_TOOL) return { ok: true };
       const { announcements } = await store.get('announcements');
-      const ids = (announcements || []).filter((a) => a.siteId === msg.siteId).map((a) => a.id);
-      const now = Date.now();
-      await store.update('readAnn', (r) => {
-        const out = Object.assign({}, r);
-        for (const id of ids) out[id] = now;
-        return out;
-      });
+      await setAnnRead((announcements || []).filter((a) => a.siteId === msg.siteId).map((a) => a.id));
       await markNotificationsViewed(msg.siteId, MAK.ANN_TOOL);
       return { ok: true };
     }
@@ -384,9 +356,8 @@ const handlers = {
     content: true,
     run: async (msg) => {
       const siteId = msg.siteId;
-      const st = await store.get(['sites', 'meta', 'settings', 'paused']);
-      const site = typeof siteId === 'string' && !MAK.isSpecialSite(siteId) ? (st.sites || []).find((s) => s.id === siteId) : null;
-      if (!site) return null;
+      if (!(await knownSite(siteId))) return null;
+      const st = await store.get(['meta', 'settings', 'paused']);
       const settings = MAK.withDefaults(st.settings);
       const now = Date.now();
       const baseline = (st.meta && st.meta.installedAt) || now;
@@ -413,7 +384,7 @@ const handlers = {
         pages: d.pages,
         now
       });
-      if (info.isNew && forumsOfSite) await store.update('forumSnap', (s) => MAK.shiftForumSnap(s, siteId, MAK.forumTotals(forumsOfSite), false));
+      if (info.isNew && forumsOfSite) await store.update('forumSnap', (s) => MAK.shiftForumSnap(s, siteId, MAK.forumTotals(forumsOfSite)));
       return { isNew: info.isNew, since: info.since, firstVisit: info.since === baseline, news, lang: settings.lang };
     }
   },
@@ -421,8 +392,7 @@ const handlers = {
   openZip: {
     content: true,
     run: async (msg) => {
-      const { sites } = await store.get('sites');
-      if (typeof msg.siteId !== 'string' || !(sites || []).some((s) => s.id === msg.siteId)) return { ok: false };
+      if (!(await knownSite(msg.siteId))) return { ok: false };
       await ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(msg.siteId)}`) });
       return { ok: true };
     }
@@ -434,7 +404,14 @@ const handlers = {
       const ids = (sites || []).map((s) => s.id).filter((id) => !msg.siteId || id === msg.siteId);
       const now = Date.now();
       await store.update('visits', (vs) => ids.reduce((acc, id) => MAK.markSeen(acc, id, now), vs || {}));
-      await store.update('forumSnap', (snap) => ids.reduce((acc, id) => MAK.shiftForumSnap(acc, id, MAK.forumTotals((forums || {})[id]), true), snap || {}));
+      await store.update('forumSnap', (snap) => {
+        const out = Object.assign({}, snap);
+        for (const id of ids) {
+          const totals = MAK.forumTotals((forums || {})[id]);
+          out[id] = { previous: totals, last: totals };
+        }
+        return out;
+      });
       return { ok: true, sites: ids.length };
     }
   },
@@ -455,7 +432,7 @@ const handlers = {
     run: async (msg) => {
       if (typeof msg.siteId !== 'string' || typeof msg.toolId !== 'string') return { ok: false };
       if (msg.ok) await markNotificationsViewed(msg.siteId, msg.toolId);
-      else await store.update('pendingMarkViewed', (list) => uniquePending((list || []).concat({ siteId: msg.siteId, toolId: msg.toolId })));
+      else await queuePending(msg.siteId, msg.toolId);
       return { ok: true };
     }
   }

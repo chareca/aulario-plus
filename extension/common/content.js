@@ -49,7 +49,6 @@
     try { last = Number(sessionStorage.getItem(THROTTLE_KEY) || 0); } catch {}
     if (Date.now() - last < THROTTLE_MS) return false;
     try { sessionStorage.setItem(THROTTLE_KEY, String(Date.now())); } catch {}
-    await send({ type: 'relogin' });
     location.assign(SAML_LOGIN);
     return true;
   }
