@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: content script for miaulario.unavarra.es (top frame only).
+// Aulario Plus: content script for miaulario.unavarra.es (top frame only).
 //
 // - If you open MiAulario and the Sakai session is not active, the script sends you to
 //   the SAML login. If the SSO session is active, you come back logged in. If not, the
@@ -18,7 +18,7 @@
   const SAML_LOGIN = '/sakai-login-tool/container/saml/login';
   const LOGOUT_RE = /\/portal\/logout|\/sakai-login-tool\/container\/saml\/logout/i;
   const THROTTLE_MS = 2 * 60 * 1000;
-  const THROTTLE_KEY = 'miaulario-keepalive-last-relogin';
+  const THROTTLE_KEY = 'aulario-plus-last-relogin';
 
   const send = (msg) => Promise.resolve(ext.runtime.sendMessage(msg)).catch(() => null);
 

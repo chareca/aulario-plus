@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: "new since your last visit", for each site separately.
+// Aulario Plus: "new since your last visit", for each site separately.
 //
 // visits[siteId] = { last, previous }
 //   last:     the time of the last page of the site that the user opened

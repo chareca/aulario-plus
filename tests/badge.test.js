@@ -36,7 +36,7 @@ test('the settings change the badge at once', async () => {
   await bg.send({ type: 'setSettings', patch: { badge: { enabled: false } } });
   await wait(450);
   assert.equal(bg.ext._badge.text, '');
-  assert.equal(bg.ext._badge.title, 'MiAulario Keep-Alive');
+  assert.equal(bg.ext._badge.title, 'Aulario Plus');
 });
 
 test('reading an announcement lowers the number', async () => {

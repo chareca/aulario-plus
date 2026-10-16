@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: background script (service worker in Chromium, event page in Firefox).
+// Aulario Plus: background script (service worker in Chromium, event page in Firefox).
 //
 // 1. At a random interval of 3 to 10 minutes (in steps of 1 second), the script sends
 //    GET /direct/session/current.json without "?auto=true". Sakai records this request

@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: a small ZIP writer (STORE method: no compression) and the ZIP of the
+// Aulario Plus: a small ZIP writer (STORE method: no compression) and the ZIP of the
 // files of one site. Most course files (PDF, ZIP, images) are compressed already.
 // Limits (no ZIP64): 65535 entries and 4 GB. The tools page stops at 2 GB (memory).
 (function (root) {

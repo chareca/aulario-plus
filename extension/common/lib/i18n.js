@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: texts of the interface. Spanish is the default language.
+// Aulario Plus: texts of the interface. Spanish is the default language.
 // The user can select English in the settings. Each key must exist in both languages.
 (function (root) {
   'use strict';
@@ -6,7 +6,7 @@
 
   const STRINGS = {
     es: {
-      'app.title': 'MiAulario Keep-Alive',
+      'app.title': 'Aulario Plus',
       'header.refresh': 'Actualizar los datos de las asignaturas',
       'header.openTab': 'Abrir en una pestaña',
       'tab.due': 'Entregas',
@@ -244,7 +244,7 @@
       'privacy.text3': 'Los datos que necesita (tus ajustes, una copia de tus entregas, anuncios, novedades y notas, y lo que has leído) se guardan solo en tu navegador. Nadie más los recibe. Los datos de las asignaturas se borran al cerrar sesión.'
     },
     en: {
-      'app.title': 'MiAulario Keep-Alive',
+      'app.title': 'Aulario Plus',
       'header.refresh': 'Refresh the course data',
       'header.openTab': 'Open in a tab',
       'tab.due': 'Due',

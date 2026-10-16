@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: the deliveries model (state, urgency, links, badge counts).
+// Aulario Plus: the deliveries model (state, urgency, links, badge counts).
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});

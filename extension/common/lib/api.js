@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: one function for each MiAulario endpoint, and the functions that trim
+// Aulario Plus: one function for each MiAulario endpoint, and the functions that trim
 // the data of these endpoints.
 // Each GET adds "auto=true". Sakai then does not record the request as user activity.
 // Only the keep-alive ping records activity. One exception: the portal ignores "auto=true" for the

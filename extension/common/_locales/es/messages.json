@@ -1,11 +1,11 @@
 {
   "extName": {
-    "message": "MiAulario Keep-Alive"
+    "message": "Aulario Plus"
   },
   "extDescription": {
-    "message": "Mantiene activa tu sesión de MiAulario (UPNA) mientras el navegador está abierto y te muestra tus entregas, anuncios y novedades."
+    "message": "Mantiene activa tu sesión de MiAulario (UPNA) y reúne tus entregas, anuncios, novedades y notas en un solo lugar."
   },
   "actionTitle": {
-    "message": "MiAulario Keep-Alive"
+    "message": "Aulario Plus"
   }
 }

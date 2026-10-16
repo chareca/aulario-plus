@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: shared helpers without browser dependencies.
+// Aulario Plus: shared helpers without browser dependencies.
 // All shared files attach to globalThis.MAK. Node tests load them with require().
 (function (root) {
   'use strict';

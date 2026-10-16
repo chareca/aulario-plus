@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: storage keys, default values and one write queue.
+// Aulario Plus: storage keys, default values and one write queue.
 // Only the background script writes. Other parts read and send messages.
 (function (root) {
   'use strict';

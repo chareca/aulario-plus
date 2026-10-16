@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: content script at document_start. Hide the sites that the user selected,
+// Aulario Plus: content script at document_start. Hide the sites that the user selected,
 // before the page shows them (no flash). The style changes at once when the settings change.
 (function () {
   'use strict';

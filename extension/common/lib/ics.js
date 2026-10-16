@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: export deliveries and calendar events as an iCalendar file (RFC 5545).
+// Aulario Plus: export deliveries and calendar events as an iCalendar file (RFC 5545).
 // All times are UTC. Each event has a fixed UID, so most calendar apps update an event when
 // the user imports the file again. There are no alarms (VALARM).
 (function (root) {
@@ -49,7 +49,7 @@
     const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//MiAulario Keep-Alive//Calendar export//ES',
+      'PRODID:-//Aulario Plus//Calendar export//ES',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:MiAulario'
@@ -70,7 +70,7 @@
       exported.add(d.id);
       const url = MAK.safeHttpUrl(d.url);
       event([
-        ['UID', `asg-${uidPart(d.id)}@miaulario-keepalive`],
+        ['UID', `asg-${uidPart(d.id)}@aulario-plus`],
         ['DTSTAMP', stamp],
         ['DTSTART', MAK.icsDate(d.due)],
         ['SUMMARY', MAK.icsEscape(t('ics.deliverySummary', { title: d.title, site: d.siteTitle }))],
@@ -84,7 +84,7 @@
       if (!e.start) continue;
       if (e.assignmentId && exported.has(e.assignmentId)) continue; // the same as a delivery
       event([
-        ['UID', `cal-${uidPart(e.id)}@miaulario-keepalive`],
+        ['UID', `cal-${uidPart(e.id)}@aulario-plus`],
         ['DTSTAMP', stamp],
         ['DTSTART', MAK.icsDate(e.start)],
         ['DTEND', e.duration > 0 ? MAK.icsDate(e.start + e.duration) : null],

@@ -21,11 +21,11 @@ for target in chromium firefox; do
   mkdir -p "dist/$target"
   cp -R extension/common/. "dist/$target/"
   cp "extension/manifest.$target.json" "dist/$target/manifest.json"
-  (cd "dist/$target" && zip -qr "../miaulario-keepalive-$target-v$VERSION.zip" .)
+  (cd "dist/$target" && zip -qr "../aulario-plus-$target-v$VERSION.zip" .)
 done
 
 echo "Version $VERSION is ready:"
 echo "  dist/chromium/  (Chrome, Edge, Brave, Opera, Vivaldi, Arc, Helium)"
 echo "  dist/firefox/"
-echo "  dist/miaulario-keepalive-chromium-v$VERSION.zip"
-echo "  dist/miaulario-keepalive-firefox-v$VERSION.zip"
+echo "  dist/aulario-plus-chromium-v$VERSION.zip"
+echo "  dist/aulario-plus-firefox-v$VERSION.zip"

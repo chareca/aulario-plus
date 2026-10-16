@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: grades. New grades (from /api/users/me/grades) and the grade calculator
+// Aulario Plus: grades. New grades (from /api/users/me/grades) and the grade calculator
 // (from the Gradebook page of a site).
 (function (root) {
   'use strict';

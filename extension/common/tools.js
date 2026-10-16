@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: the tools page (a tab of the extension).
+// Aulario Plus: the tools page (a tab of the extension).
 //   tools.html?zip=<siteId>   download all the files of a site as one ZIP
 //   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
 // A tab is used (not the popup) because the popup closes when it loses the focus.

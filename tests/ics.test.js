@@ -38,12 +38,12 @@ test('the calendar file: header, deliveries, events, no duplicates and no alarms
   assert.ok(text.endsWith('\r\n'));
   assert.ok(!/[^\r]\n/.test(text), 'all line breaks are CRLF');
   const flat = unfold(text);
-  assert.match(flat, /^BEGIN:VCALENDAR\r\nVERSION:2\.0\r\nPRODID:-\/\/MiAulario Keep-Alive\/\/Calendar export\/\/ES\r\n/);
+  assert.match(flat, /^BEGIN:VCALENDAR\r\nVERSION:2\.0\r\nPRODID:-\/\/Aulario Plus\/\/Calendar export\/\/ES\r\n/);
   assert.match(flat, /END:VCALENDAR\r\n$/);
   assert.doesNotMatch(flat, /VALARM/);
   // ev-2 is the calendar copy of the delivery asg-red: only the delivery is in the file.
   assert.doesNotMatch(flat, /UID:cal-ev-2@/);
-  assert.match(flat, /UID:asg-asg-red@miaulario-keepalive/);
+  assert.match(flat, /UID:asg-asg-red@aulario-plus/);
   assert.equal(count, deliveries.length + 2);
   assert.equal((flat.match(/BEGIN:VEVENT/g) || []).length, count);
   assert.match(flat, /SUMMARY:Entrega: Lab report 3 \[Computer Science\]/);
@@ -51,7 +51,7 @@ test('the calendar file: header, deliveries, events, no duplicates and no alarms
   assert.match(flat, /DESCRIPTION:Meeting\\nLínea 1\\nLínea 2/);
   assert.match(flat, /DESCRIPTION:Exam\\nRoom A1/, 'the HTML of the description is plain text');
   // The exam has a duration (DTEND); the delivery is a point in time (DTSTART only).
-  assert.match(flat, new RegExp(`UID:cal-ev-1@miaulario-keepalive\\r\\nDTSTAMP:\\d{8}T\\d{6}Z\\r\\nDTSTART:${MAK.icsDate(F.NOW + 7 * F.D)}\\r\\nDTEND:${MAK.icsDate(F.NOW + 7 * F.D + 2 * F.H)}`));
+  assert.match(flat, new RegExp(`UID:cal-ev-1@aulario-plus\\r\\nDTSTAMP:\\d{8}T\\d{6}Z\\r\\nDTSTART:${MAK.icsDate(F.NOW + 7 * F.D)}\\r\\nDTEND:${MAK.icsDate(F.NOW + 7 * F.D + 2 * F.H)}`));
   assert.match(flat, /URL:https:\/\/miaulario\.unavarra\.es\/portal\/directtool\//);
 });
 

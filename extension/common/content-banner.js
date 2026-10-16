@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: the banner "new since your last visit" inside a MiAulario site.
+// Aulario Plus: the banner "new since your last visit" inside a MiAulario site.
 // The banner is in a closed shadow root: the styles of the page do not change it, and it does
 // not change the page. All the texts go in with textContent (MAK.h). Links are http(s) only.
 (function (root) {

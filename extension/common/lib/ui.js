@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: small DOM helpers for the popup, the tools page and the banner.
+// Aulario Plus: small DOM helpers for the popup, the tools page and the banner.
 // The helpers put text with textContent only. They never use innerHTML.
 (function (root) {
   'use strict';

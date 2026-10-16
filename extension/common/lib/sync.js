@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: background sync of course data.
+// Aulario Plus: background sync of course data.
 // Only the background script runs the sync. The sync sends one request at a time, with a
 // pause between requests, and keeps the old data if a request fails.
 //

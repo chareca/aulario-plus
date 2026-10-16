@@ -1,6 +1,6 @@
-# MiAulario Keep-Alive
+# Aulario Plus
 
-MiAulario Keep-Alive is a browser extension for Chromium browsers and Firefox. It keeps your MiAulario (UPNA) session active while the browser is open. It also shows your deliveries, announcements, messages, new items and grades of all your courses in one place.
+Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items and grades of all your courses in one place.
 
 The interface is in Spanish. You can change it to English in the settings.
 
@@ -84,13 +84,13 @@ The extension reads your course data from MiAulario with these requests:
 
 ## Install
 
-Download the ZIP file for your browser from the [latest release](https://github.com/chareca/miaulario-keepalive/releases/latest).
+Download the ZIP file for your browser from the [latest release](https://github.com/chareca/aulario-plus/releases/latest).
 
 The extension asks for these permissions: `alarms` (the ping), `cookies` (the persistent session cookies), `storage` (the settings and the course data), `notifications` (the grade notifications), and access to `miaulario.unavarra.es` and `sso.unavarra.es`.
 
 ### Chromium browsers (Chrome, Edge, Brave, Opera, Vivaldi, Arc, Helium)
 
-1. Extract the file `miaulario-keepalive-chromium-vX.Y.Z.zip`.
+1. Extract the file `aulario-plus-chromium-vX.Y.Z.zip`.
 2. Open `chrome://extensions`. In Edge, open `edge://extensions`.
 3. Set **Developer mode** to on.
 4. Click **Load unpacked**.
@@ -98,7 +98,7 @@ The extension asks for these permissions: `alarms` (the ping), `cookies` (the pe
 
 ### Firefox
 
-1. Extract the file `miaulario-keepalive-firefox-vX.Y.Z.zip`.
+1. Extract the file `aulario-plus-firefox-vX.Y.Z.zip`.
 2. Open `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on**.
 4. Select the file `manifest.json` in the folder that you extracted.

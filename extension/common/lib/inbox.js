@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: the unified inbox model.
+// Aulario Plus: the unified inbox model.
 // Announcements: the read state comes from the bell notifications of MiAulario ("viewed")
 // and from the local read list of the extension. An announcement without a notification
 // is unread until the user reads it.

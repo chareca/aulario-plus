@@ -1,4 +1,4 @@
-// MiAulario Keep-Alive: the popup. The same page opens in a tab with "?view=tab".
+// Aulario Plus: the popup. The same page opens in a tab with "?view=tab".
 // The popup reads the storage and sends messages. Only the background script writes.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { h, fill, t } = MAK;
