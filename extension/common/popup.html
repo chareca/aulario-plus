@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>MiAulario Keep-Alive</title>
+  <style>
+    :root { --bg: #fff; --fg: #1d2327; --muted: #5f6b73; --ok: #127a5c; --warn: #a15c00; --bad: #b3261e; --line: #e3e7ea; --btn: #f1f4f6; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1b1f22; --fg: #e8ecee; --muted: #9aa6ad; --ok: #4fd1a5; --warn: #f0b45a; --bad: #ff8a80; --line: #2e353a; --btn: #262c30; }
+    }
+    body { margin: 0; width: 300px; background: var(--bg); color: var(--fg); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+    .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+    h1 { font-size: 14px; margin: 0; font-weight: 600; }
+    main { padding: 10px 14px; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0 0 10px; }
+    dt { color: var(--muted); } dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+    .row { display: flex; gap: 6px; margin-bottom: 8px; }
+    button { flex: 1; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--btn); color: var(--fg); font: inherit; cursor: pointer; }
+    button:hover { border-color: var(--muted); }
+    label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+    .notice { display: none; margin-bottom: 10px; padding: 8px; border-radius: 6px; border: 1px solid var(--warn); color: var(--warn); }
+    .notice.show { display: block; }
+    .notice button { margin-top: 6px; width: 100%; }
+  </style>
+</head>
+<body>
+  <header>
+    <span id="dot" class="dot"></span>
+    <h1 id="headline">MiAulario Keep-Alive</h1>
+  </header>
+  <main>
+    <div id="perm" class="notice">
+      The extension does not have permission for miaulario.unavarra.es and sso.unavarra.es.
+      <button id="grant">Give permission</button>
+    </div>
+    <dl>
+      <dt>Session</dt><dd id="session">–</dd>
+      <dt>Last ping</dt><dd id="lastPing">–</dd>
+      <dt>Time left</dt><dd id="remaining">–</dd>
+      <dt>Next ping</dt><dd id="nextPing">–</dd>
+    </dl>
+    <div class="row">
+      <button id="pingNow">Ping now</button>
+      <button id="toggle">Pause</button>
+    </div>
+    <label><input type="checkbox" id="autoLogin"> Open the login page when the session ends</label>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
