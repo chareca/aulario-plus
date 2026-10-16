@@ -234,6 +234,7 @@ const handlers = {
         }
         if (Array.isArray(patch.hiddenSites)) s.hiddenSites = [...new Set(patch.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500);
         if (patch.hiddenMode === 'sidebar' || patch.hiddenMode === 'everywhere') s.hiddenMode = patch.hiddenMode;
+        if (patch.lang === 'es' || patch.lang === 'en') s.lang = patch.lang;
         return s;
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});

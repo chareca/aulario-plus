@@ -71,11 +71,11 @@
     return { groups, soon, urgent };
   };
 
-  // Text for the time that remains, for example "in 2d 04h 12m" or "late by 3h 05m".
+  // Text for the time that remains, for example "quedan 2d 04h 12m" or "vencida hace 3h 05m".
   MAK.countdownText = function (due, now) {
-    if (!due) return 'No due date';
+    if (!due) return MAK.t('due.noDate');
     const left = due - now;
-    return left >= 0 ? `in ${MAK.formatDuration(left)}` : `late by ${MAK.formatDuration(left)}`;
+    return MAK.t(left >= 0 ? 'due.in' : 'due.lateBy', { d: MAK.formatDuration(left) });
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

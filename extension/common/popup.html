@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,23 +13,24 @@
       <h1 id="headline">MiAulario</h1>
       <div id="subline" class="subline"></div>
     </div>
-    <button id="refresh" class="icon-btn" title="Refresh the course data" aria-label="Refresh the course data">↻</button>
-    <button id="openTab" class="icon-btn" title="Open in a tab" aria-label="Open in a tab">⤢</button>
+    <button id="refresh" class="icon-btn" data-i18n-title="header.refresh" title="Actualizar los datos de las asignaturas" aria-label="Actualizar los datos de las asignaturas">↻</button>
+    <button id="openTab" class="icon-btn" data-i18n-title="header.openTab" title="Abrir en una pestaña" aria-label="Abrir en una pestaña">⤢</button>
   </header>
   <nav class="tabs" role="tablist">
-    <button role="tab" id="tabbtn-due" data-tab="due" aria-controls="tab-due">Due</button>
-    <button role="tab" id="tabbtn-settings" data-tab="settings" aria-controls="tab-settings">Settings</button>
+    <button role="tab" id="tabbtn-due" data-tab="due" aria-controls="tab-due"><span data-i18n="tab.due">Entregas</span></button>
+    <button role="tab" id="tabbtn-settings" data-tab="settings" aria-controls="tab-settings"><span data-i18n="tab.settings">Ajustes</span></button>
   </nav>
   <main>
     <div id="perm" class="notice" hidden>
-      The extension does not have permission for miaulario.unavarra.es and sso.unavarra.es.
-      <button id="grant" class="btn">Give permission</button>
+      <span data-i18n="perm.text">La extensión no tiene permiso para miaulario.unavarra.es y sso.unavarra.es.</span>
+      <button id="grant" class="btn" data-i18n="perm.grant">Dar permiso</button>
     </div>
     <section id="tab-due" role="tabpanel" aria-labelledby="tabbtn-due" hidden></section>
     <section id="tab-settings" role="tabpanel" aria-labelledby="tabbtn-settings" hidden></section>
   </main>
   <script src="lib/core.js"></script>
   <script src="lib/store.js"></script>
+  <script src="lib/i18n.js"></script>
   <script src="lib/ui.js"></script>
   <script src="lib/due.js"></script>
   <script src="popup.js"></script>

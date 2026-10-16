@@ -9,7 +9,8 @@
       syncEnabled: true,
       badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false },
       hiddenSites: [],
-      hiddenMode: 'everywhere' // 'everywhere' or 'sidebar'
+      hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
+      lang: 'es' // 'es' (default) or 'en'
     };
   };
 
@@ -21,7 +22,8 @@
       syncEnabled: s.syncEnabled !== false,
       badge: Object.assign(d.badge, s.badge || {}),
       hiddenSites: Array.isArray(s.hiddenSites) ? s.hiddenSites.filter((x) => typeof x === 'string') : [],
-      hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere'
+      hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
+      lang: s.lang === 'en' ? 'en' : 'es'
     };
   };
 

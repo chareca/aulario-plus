@@ -1,7 +1,7 @@
 // MiAulario Keep-Alive: the popup. The same page opens in a tab with "?view=tab".
 // The popup reads the storage and sends messages. Only the background script writes.
 const ext = globalThis.browser ?? globalThis.chrome;
-const { h, fill } = MAK;
+const { h, fill, t } = MAK;
 const ORIGINS = ['https://miaulario.unavarra.es/*', 'https://sso.unavarra.es/*'];
 const MAX_INACTIVE_MIN = 60;
 const $ = (id) => document.getElementById(id);
@@ -72,18 +72,18 @@ function renderHeader() {
   const dot = $('dot');
   dot.className = 'dot';
   let headline;
-  if (S.paused) { dot.classList.add('warn'); headline = 'Paused'; }
-  else if (last && last.loggedIn) { dot.classList.add('ok'); headline = 'Connected'; }
-  else if (last) { dot.classList.add('bad'); headline = last.error ? 'Network error' : 'Not logged in'; }
-  else headline = 'No ping yet';
+  if (S.paused) { dot.classList.add('warn'); headline = t('status.paused'); }
+  else if (last && last.loggedIn) { dot.classList.add('ok'); headline = t('status.connected'); }
+  else if (last) { dot.classList.add('bad'); headline = t(last.error ? 'status.networkError' : 'status.notLoggedIn'); }
+  else headline = t('status.noPing');
   $('headline').textContent = headline;
 
   let sub;
   if (flash && flash.until > now) sub = flash.text;
-  else if (!settings().syncEnabled) sub = 'Course data sync is off';
-  else if (syncing) sub = 'Update in progress…';
-  else if (meta.lastSync) sub = `Course data: ${MAK.ago(meta.lastSync, now)}${meta.stale && Object.keys(meta.stale).length ? ' (some data is old)' : ''}`;
-  else sub = 'No course data yet';
+  else if (!settings().syncEnabled) sub = t('sub.syncOff');
+  else if (syncing) sub = t('sub.updating');
+  else if (meta.lastSync) sub = t('sub.lastSync', { ago: MAK.ago(meta.lastSync, now) }) + (meta.stale && Object.keys(meta.stale).length ? t('sub.stale') : '');
+  else sub = t('sub.noData');
   $('subline').textContent = sub;
 }
 
@@ -94,13 +94,14 @@ function emptyBox(text) {
 }
 
 // A message when there is no course data to show, or null.
-function noDataMessage(what) {
+function noDataMessage(whatKey) {
   const meta = S.meta || {};
-  if (!settings().syncEnabled) return emptyBox(`Course data sync is off. Turn it on in Settings to see your ${what}.`);
+  const what = t(whatKey);
+  if (!settings().syncEnabled) return emptyBox(t('empty.syncOff', { what }));
   if (!meta.lastSync) {
-    if (S.paused) return emptyBox('The extension is paused. Resume it in Settings.');
-    if (meta.loggedIn === false) return emptyBox(`Log in to MiAulario. Then your ${what} show here.`);
-    return emptyBox('No course data yet. Click ↻ to update it.');
+    if (S.paused) return emptyBox(t('empty.paused'));
+    if (meta.loggedIn === false) return emptyBox(t('empty.login', { what }));
+    return emptyBox(t('empty.noData'));
   }
   return null;
 }
@@ -108,8 +109,8 @@ function noDataMessage(what) {
 function siteSelect(siteIds, value, onChange) {
   return h(
     'select',
-    { attrs: { 'aria-label': 'Site' }, on: { change: (e) => onChange(e.target.value) } },
-    h('option', { attrs: { value: '' }, text: 'All sites' }),
+    { attrs: { 'aria-label': t('site.label') }, on: { change: (e) => onChange(e.target.value) } },
+    h('option', { attrs: { value: '' }, text: t('site.all') }),
     siteIds.map((id) => h('option', { attrs: { value: id, selected: id === value }, text: siteTitle(id) }))
   );
 }
@@ -120,9 +121,9 @@ function deliveryRow(x, now) {
   const cls = ['item', `s-${x.state}`];
   if (x.urgency) cls.push(`u-${x.urgency}`);
   let side;
-  if (x.state === 'submitted') side = h('span', { class: 'tag ok', text: 'Submitted' });
-  else if (x.state === 'closed') side = h('span', { class: 'tag', text: 'Closed' });
-  else if (x.offline) side = h('span', { class: 'tag', text: 'No online submission' });
+  if (x.state === 'submitted') side = h('span', { class: 'tag ok', text: t('due.tagSubmitted') });
+  else if (x.state === 'closed') side = h('span', { class: 'tag', text: t('due.tagClosed') });
+  else if (x.offline) side = h('span', { class: 'tag', text: t('due.tagOffline') });
   else side = h('span', { class: 'countdown', data: { due: x.due || '' }, text: MAK.countdownText(x.due, now) });
   return h(
     'div',
@@ -132,7 +133,7 @@ function deliveryRow(x, now) {
       'div',
       { class: 'body' },
       h('a', { class: 'title', href: x.url, text: x.title }),
-      h('div', { class: 'meta', text: `${x.siteTitle} · ${x.due ? MAK.formatDate(x.due) : 'No due date'}` })
+      h('div', { class: 'meta', text: `${x.siteTitle} · ${x.due ? MAK.formatDate(x.due) : t('due.noDate')}` })
     ),
     h('div', { class: 'side' }, side)
   );
@@ -140,12 +141,12 @@ function deliveryRow(x, now) {
 
 function renderDue(el) {
   const now = Date.now();
-  const none = noDataMessage('deliveries');
+  const none = noDataMessage('what.deliveries');
   if (none) return fill(el, none);
   const model = MAK.buildDue({ assignments: S.assignments, sites: S.sites, pages: S.pages, hidden: hiddenSet(), now });
   const g = model.groups;
   const all = [...g.late, ...g.pending, ...g.action, ...g.submitted, ...g.closed];
-  if (!all.length) return fill(el, emptyBox('No deliveries.'));
+  if (!all.length) return fill(el, emptyBox(t('due.none')));
   const siteIds = [...new Set(all.map((x) => x.siteId))];
   if (ui.dueSite && !siteIds.includes(ui.dueSite)) ui.dueSite = '';
   const keep = (list) => list.filter((x) => !ui.dueSite || x.siteId === ui.dueSite);
@@ -155,12 +156,12 @@ function renderDue(el) {
   fill(
     el,
     h('div', { class: 'toolbar' }, siteSelect(siteIds, ui.dueSite, (v) => { ui.dueSite = v; renderCurrent(); })),
-    open.length ? null : emptyBox('Nothing to submit.'),
-    group('Late: you can still submit', keep(g.late)),
-    group('To do', keep(g.pending)),
-    group('Returned: you can submit again', keep(g.action)),
-    folded('Submitted', keep(g.submitted)),
-    folded('Closed', keep(g.closed).slice(0, 30))
+    open.length ? null : emptyBox(t('due.nothing')),
+    group(t('due.late'), keep(g.late)),
+    group(t('due.todo'), keep(g.pending)),
+    group(t('due.returned'), keep(g.action)),
+    folded(t('due.submitted'), keep(g.submitted)),
+    folded(t('due.closed'), keep(g.closed).slice(0, 30))
   );
 }
 
@@ -178,32 +179,37 @@ function renderSettings(el) {
     h(
       'div',
       { class: 'section' },
-      h('h2', { text: 'Keep-alive' }),
+      h('h2', { text: t('set.keepAlive') }),
       h(
         'dl',
         { class: 'kv' },
-        h('dt', { text: 'Session' }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
-        h('dt', { text: 'Last ping' }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
-        h('dt', { text: 'Time left' }), h('dd', { attrs: { id: 'ka-left' }, text: '–' }),
-        h('dt', { text: 'Next ping' }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
+        h('dt', { text: t('set.session') }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
+        h('dt', { text: t('set.lastPing') }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
+        h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' }),
+        h('dt', { text: t('set.nextPing') }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
       ),
       h(
         'div',
         { class: 'row' },
-        h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: 'Ping now', on: { click: pingNow } }),
-        h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: S.paused ? 'Resume' : 'Pause', on: { click: togglePause } })
+        h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: t('set.pingNow'), on: { click: pingNow } }),
+        h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } })
       ),
-      checkbox('Open the login page when the session ends', null, S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
+      checkbox(t('set.autoLogin'), null, S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
     ),
     h(
       'div',
       { class: 'section' },
-      h('h2', { text: 'Course data' }),
-      checkbox(
-        'Sync course data',
-        'The extension reads your deliveries, announcements, messages, forums and files from MiAulario. It sends a few requests every 15 minutes. Turn this off to stop these requests.',
-        s.syncEnabled,
-        (v) => send({ type: 'setSettings', patch: { syncEnabled: v } })
+      h('h2', { text: t('set.courseData') }),
+      checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } }))
+    ),
+    h(
+      'div',
+      { class: 'section' },
+      h('h2', { text: t('set.language') }),
+      h(
+        'select',
+        { attrs: { 'aria-label': t('set.language') }, on: { change: (e) => send({ type: 'setSettings', patch: { lang: e.target.value } }) } },
+        Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
       )
     )
   );
@@ -215,14 +221,14 @@ function updateKeepAlive(now) {
   if (!$('ka-session')) return;
   const paused = !!S.paused;
   const last = S.last && !S.last.relogin ? S.last : (S.log || []).filter((e) => !e.relogin).pop();
-  $('ka-session').textContent = paused ? 'Paused' : !last ? '–' : last.loggedIn ? 'Active' : last.error ? 'Network error' : 'Logged out';
+  $('ka-session').textContent = paused ? t('status.paused') : !last ? '–' : t(last.loggedIn ? 'ka.active' : last.error ? 'status.networkError' : 'ka.loggedOut');
   $('ka-last').textContent = last ? `${MAK.ago(last.time, now)} (${last.status || '–'})` : '–';
   $('ka-left').textContent = last && last.loggedIn ? `~${Math.max(0, MAX_INACTIVE_MIN - Math.round((now - last.time) / 60000))} min` : '–';
   if (status && status.nextPing && !paused) {
     const s = Math.max(0, Math.round((status.nextPing - now) / 1000));
-    $('ka-next').textContent = `in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    $('ka-next').textContent = t('ka.in', { t: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` });
   } else $('ka-next').textContent = '–';
-  $('ka-toggle').textContent = paused ? 'Resume' : 'Pause';
+  $('ka-toggle').textContent = t(paused ? 'set.resume' : 'set.pause');
 }
 
 async function refreshStatus() {
@@ -257,13 +263,6 @@ function tick() {
   if (now - lastRender > 60000 && !userIsInPanel()) renderCurrent();
 }
 
-const SKIP_TEXT = {
-  paused: 'The extension is paused',
-  disabled: 'Course data sync is off',
-  'logged-out': 'Log in to MiAulario first',
-  backoff: 'The server is busy. Do it again later',
-  locked: 'An update is in progress'
-};
 
 async function refresh() {
   if (syncing) return;
@@ -273,8 +272,8 @@ async function refresh() {
   const r = await send({ type: 'syncNow' });
   syncing = false;
   $('refresh').classList.remove('spin');
-  if (r && r.skipped && SKIP_TEXT[r.skipped]) flash = { text: SKIP_TEXT[r.skipped], until: Date.now() + 6000 };
-  else if (r && r.errors && r.errors.length) flash = { text: 'Some data did not update', until: Date.now() + 6000 };
+  if (r && r.skipped && r.skipped !== 'not-due') flash = { text: t(`skip.${r.skipped}`), until: Date.now() + 6000 };
+  else if (r && r.errors && r.errors.length) flash = { text: t('skip.someFailed'), until: Date.now() + 6000 };
   renderHeader();
 }
 
@@ -286,12 +285,19 @@ async function checkPermissions() {
   }
 }
 
+// Select the language of the settings (Spanish by default) and translate the fixed texts.
+function applyLanguage() {
+  MAK.setLang(settings().lang);
+  MAK.applyI18n(document);
+}
+
 async function init() {
   if (WIDE) {
     document.body.classList.add('wide');
     $('openTab').hidden = true;
   }
   S = await ext.storage.local.get(null);
+  applyLanguage();
   ext.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     for (const [k, c] of Object.entries(changes)) {
@@ -300,6 +306,13 @@ async function init() {
     }
     // A new ping or a pause changes the time of the next alarm.
     if ('last' in changes || 'paused' in changes) refreshStatus();
+    if ('settings' in changes && settings().lang !== MAK.getLang()) {
+      // A new language: draw everything again now, also if a field has the focus.
+      applyLanguage();
+      renderHeader();
+      renderCurrent();
+      return;
+    }
     scheduleRender();
   });
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) btn.addEventListener('click', () => selectTab(btn.dataset.tab));

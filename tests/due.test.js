@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib, loadBackground } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'sync', 'due');
+const MAK = loadLib('core', 'store', 'sync', 'i18n', 'due');
 
 const trimmed = F.ASSIGNMENTS.map(MAK.trimAssignment);
 const pages = Object.fromEntries(F.SITES.map((s) => [s.id, MAK.trimPages(F.pages(s.id), F.NOW)]));
@@ -61,10 +61,16 @@ test('links go to the delivery in MiAulario', () => {
   assert.equal(MAK.deliveryUrl({ id: 'z', siteId: 'no-pages' }, pages), 'https://miaulario.unavarra.es/portal/site/no-pages');
 });
 
-test('countdown text', () => {
+test('countdown text in Spanish (default) and in English', () => {
+  MAK.setLang('es');
+  assert.equal(MAK.countdownText(F.NOW + 2 * F.D + 3 * F.H, F.NOW), 'quedan 2d 03h 00m');
+  assert.equal(MAK.countdownText(F.NOW - 90 * 60000, F.NOW), 'vencida hace 1h 30m');
+  assert.equal(MAK.countdownText(null, F.NOW), 'Sin fecha límite');
+  MAK.setLang('en');
   assert.equal(MAK.countdownText(F.NOW + 2 * F.D + 3 * F.H, F.NOW), 'in 2d 03h 00m');
   assert.equal(MAK.countdownText(F.NOW - 90 * 60000, F.NOW), 'late by 1h 30m');
   assert.equal(MAK.countdownText(null, F.NOW), 'No due date');
+  MAK.setLang('es');
 });
 
 test('setSettings accepts only known keys and correct values', async () => {
@@ -76,5 +82,8 @@ test('setSettings accepts only known keys and correct values', async () => {
   assert.deepEqual(s.hiddenSites, ['a', 'b']);
   assert.equal(s.hiddenMode, 'everywhere');
   assert.equal(s.other, undefined);
+  assert.equal(s.lang, 'es');
+  assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'en' } })).lang, 'en');
+  assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'de' } })).lang, 'en', 'unknown language: no change');
   assert.equal(await bg.send({ type: 'setSettings', patch: { syncEnabled: true } }, { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/' }), null, 'a content script cannot change the settings');
 });

@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "MiAulario Keep-Alive"
+  },
+  "extDescription": {
+    "message": "Mantiene activa tu sesión de MiAulario (UPNA) mientras el navegador está abierto y te muestra tus entregas, anuncios y novedades."
+  },
+  "actionTitle": {
+    "message": "MiAulario Keep-Alive"
+  }
+}

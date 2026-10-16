@@ -38,22 +38,33 @@
     return el;
   };
 
-  const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const shortDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
+  // Date formats for the selected language (es-ES or en-GB).
+  const formats = {};
+  function format(kind) {
+    const locale = MAK.locale ? MAK.locale() : 'es-ES';
+    const key = `${locale}|${kind}`;
+    if (!formats[key]) {
+      const opts = kind === 'long'
+        ? { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }
+        : { day: 'numeric', month: 'short' };
+      formats[key] = new Intl.DateTimeFormat(locale, opts);
+    }
+    return formats[key];
+  }
 
-  // "Fri 16 Oct, 23:55"
+  // "vie, 16 oct, 23:55" or "Fri 16 Oct, 23:55"
   MAK.formatDate = function (ms) {
-    return ms ? dateFormat.format(ms) : '';
+    return ms ? format('long').format(ms) : '';
   };
 
-  // "3 min ago", "2 h ago", "16 Oct"
+  // "hace 3 min" or "3 min ago"; older than one day: "16 oct"
   MAK.ago = function (ms, now) {
     if (!ms) return '';
     const s = Math.max(0, Math.round((now - ms) / 1000));
-    if (s < 60) return `${s} s ago`;
-    if (s < 3600) return `${Math.round(s / 60)} min ago`;
-    if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-    return shortDate.format(ms);
+    if (s < 60) return MAK.t('ago.s', { n: s });
+    if (s < 3600) return MAK.t('ago.min', { n: Math.round(s / 60) });
+    if (s < 86400) return MAK.t('ago.h', { n: Math.round(s / 3600) });
+    return format('short').format(ms);
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;
