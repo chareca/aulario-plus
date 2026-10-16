@@ -75,7 +75,7 @@ The test reads `currentTime - lastAccessedTime` with `?auto=true`. This read doe
 | The session stays active while the computer is off or in sleep mode. | **No**, because no code operates | Sakai ends the session on the server after 60 minutes. |
 | You start the computer and open MiAulario. You are logged in. | **Partially** | The extension opens the SAML login. If `idpsession` is active, a password is not necessary. If not, the password manager of the browser can fill the form. |
 
-## APIs for the course data (version 1.2.0)
+## APIs for the course data (versions 1.2.0 and 1.3.0)
 
 All these endpoints answer with JSON for the session cookie. The parameter `auto=true` works on all of them: Sakai does not record the request as activity (test: 9 requests, and the inactivity timer did not go back to zero).
 
@@ -91,6 +91,8 @@ All these endpoints answer with JSON for the session cookie. The parameter `auto
 | Forum topics | `/direct/forums/site/{id}.json`, `/direct/forums/site/{id}/forum/{forumId}.json` | `topics[]`: `readMessages`, `totalMessages`, `modifiedDate` |
 | Files | `/direct/content/site/{id}.json` | A flat list of all the folders and files: `type`, `url`, `size`, `modifiedDate` (`yyyyMMddHHmmssSSS`, UTC), `webLinkUrl`, `copyrightAlert` |
 | Calendar | `/direct/calendar/my.json?firstDate=&lastDate=` | `firstTime.time`, `duration`, `type`, `siteName`, `assignmentId` |
+| Grades of all sites | `GET /api/users/me/grades` | `grades[]`: `id`, `name`, `score` (text, empty if no grade), `notGradedYet`, `siteId`, `siteTitle`, `url`, `canGrade` (the extension ignores the items with `canGrade: true`) |
+| Gradebook of a site (HTML) | `/portal/tool/{placement of sakai.gradebookng}` | Categories: `tr.gb-summary-category-row` (`.gb-summary-category-name`, `.gb-summary-category-weight` "40%", `.gb-summary-category-grade`). Items: `tr.gb-summary-grade-row` (`.gb-summary-grade-title`, `.gb-summary-grade-score-raw` "-" if no grade, `.gb-summary-grade-score-outof` "/10"). `.gb-flag-not-counted` is only in the items that do not count. Course grade: `.gb-summary-course-grade-value`. Without categories, the item rows have the class `gb-no-categories`. |
 
 Live tests (2026-10-16, with the code of version 1.2.0):
 
@@ -99,10 +101,18 @@ Live tests (2026-10-16, with the code of version 1.2.0):
 - To open the Announcements tool does **not** mark the bell notifications of that site as viewed. `POST markViewed` does it (HTTP 200).
 - A ZIP of a site with 6 folders: 19 files and 7 folders, all CRCs correct.
 
+Live tests (2026-10-16, with the code of version 1.3.0):
+
+- `/api/users/me/grades`: 7 items in 3 sites. With `auto=true`, the inactivity timer did not go back to zero.
+- **The portal ignores `auto=true` for the Gradebook page.** After `GET /portal/tool/{placement}?auto=true`, the inactivity timer went back to zero. The popup reads this page only when the user clicks "Calculate".
+- `/direct/gradebook/...` returns HTTP 501. The Gradebook page is the only source of the weights and the maximum points.
+- The calculator read the 3 real Gradebooks: one with 2 weighted categories, two without categories. Each Gradebook has one item with the flag "not counted" (a visible icon with a title).
+
 Limits:
 
 - Private messages and forum posts: MiAulario gives only the numbers of unread items. The Messages tool is a JSF page, and the endpoint for one forum message returns HTTP 500.
 - The mail archive endpoint returns HTTP 404.
+- `/api/users/me/grades` does not give the maximum points or the categories. The calculator must read the Gradebook page.
 - Deep links: `/portal/directtool/{placement}?itemReference=/announcement/msg/{site}/main/{uuid}&sakai_action=doShowmetadata` opens one announcement. `/portal/directtool/{placement}?assignmentId={id}&panel=Main&sakai_action=doView_submission` opens one delivery.
 
 ## Not in the design
@@ -110,7 +120,7 @@ Limits:
 - **A remote server that sends pings with your session cookie.** This method keeps the session active when your computer is off. But your session is then on a different computer, and a person with that cookie has access to your account. Also, this method does not agree with the purpose of the UPNA rules.
 - **The password in the extension.** The storage of an extension is not encrypted. The password manager of the browser is safer.
 
-## Design of the extension (version 1.2.0)
+## Design of the extension (version 1.3.0)
 
 The extension has one source code for Chromium browsers and Firefox (128 or later). It uses Manifest V3 and no build tools. The shared files are classic scripts that attach to `globalThis.MAK`. Node can also load them for the tests.
 
@@ -125,7 +135,7 @@ extension/
     content-early.js       at document_start: hides the selected sites
     content.js             login page, logout, visits, Announcements tool, ZIP button
     content-banner.js      the banner of new items and the ZIP button (closed shadow root)
-    popup.html, popup.js   tabs: deliveries, inbox, new items, sites, settings
+    popup.html, popup.js   tabs: deliveries, inbox, new items, grades, sites, settings
     tools.html, tools.js   ZIP download and calendar export (in a tab)
     _locales/              name and description of the extension (Spanish, English)
     lib/core.js            dates, text, safe URLs, portal paths
@@ -133,6 +143,7 @@ extension/
     lib/api.js             one function for each endpoint, and the trim functions
     lib/sync.js            the sync engine
     lib/due.js, inbox.js, news.js   the models of the popup tabs
+    lib/grades.js          new grades, and the grade calculator
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
 tests/                     Node tests, synthetic data and a test harness
@@ -144,7 +155,9 @@ tests/                     Node tests, synthetic data and a test harness
 - The background script accepts a message only from a page of the extension or from a content script in the top frame of MiAulario. A content script can send only some messages.
 - All the texts of the page go in with `textContent`. Links are http or https only. Links to MiAulario come from validated ids.
 - If a request fails, the extension keeps the old data. If a different user logs in, or the user logs out, the extension removes all the course data.
-- The extension has no new permissions in version 1.2.0. The badge uses the `action` API. The ZIP and the `.ics` file are saved from a page of the extension.
+- The badge uses the `action` API. The ZIP and the `.ics` file are saved from a page of the extension.
+- Version 1.3.0 adds the `notifications` permission for the grade notifications. A notification shows the site and the item, but not the grade.
+- The service worker of Chrome has no `DOMParser`. The popup reads the Gradebook page and calculates. It does not keep the page.
 
 ## Tests
 
@@ -157,6 +170,8 @@ tests/                     Node tests, synthetic data and a test harness
    - Open a site. The banner must show the new items of that site only.
    - Download the ZIP of a site. Export the `.ics` file and import it in a calendar.
    - Hide a site in the two modes.
+   - Open the Grades tab. Click **Calculate** in each site and compare the result with the Gradebook of MiAulario. Change the target and use the simulator.
+   - When a new grade comes: a system notification, the mark "New" in the Grades tab, the number on the icon and the banner of the site.
    - Click **Log out**. The extension must not open the login page.
 
 ## Open questions

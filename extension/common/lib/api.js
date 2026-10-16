@@ -1,7 +1,8 @@
 // MiAulario Keep-Alive: one function for each MiAulario endpoint, and the functions that trim
 // the data of these endpoints.
 // Each GET adds "auto=true". Sakai then does not record the request as user activity.
-// Only the keep-alive ping records activity.
+// Only the keep-alive ping records activity. One exception: the portal ignores "auto=true" for the
+// Gradebook page. The popup reads that page only when the user clicks "Calculate".
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
@@ -81,7 +82,7 @@
       resources: (siteId) => getJson(`/direct/content/site/${enc(siteId)}.json`, 'content_collection'),
       calendar: (fromYmd, toYmd) => getJson(`/direct/calendar/my.json?firstDate=${fromYmd}&lastDate=${toYmd}`, 'calendar_collection'),
       grades: () => getJson('/api/users/me/grades', 'grades'),
-      // The Gradebook page of a site (HTML). The popup reads it for the grade calculator.
+      // The Gradebook page of a site (HTML), for the grade calculator. This request is user activity.
       gradebook: (placement) => getHtml(`/portal/tool/${enc(placement)}`),
       // Mark the notifications of one tool in one site as viewed (the bell in MiAulario).
       markViewed: async (siteId, toolId) => {
