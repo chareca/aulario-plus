@@ -14,14 +14,18 @@
     };
   };
 
-  // Merge the saved settings with the default values.
+  // The only check of the settings: known keys only, correct types, and the default value
+  // for a value that is missing or not correct.
   MAK.withDefaults = function (saved) {
     const d = MAK.defaultSettings();
     const s = saved && typeof saved === 'object' ? saved : {};
+    const b = s.badge && typeof s.badge === 'object' ? s.badge : {};
+    const badge = {};
+    for (const k of Object.keys(d.badge)) badge[k] = k in b ? !!b[k] : d.badge[k];
     return {
-      syncEnabled: s.syncEnabled !== false,
-      badge: Object.assign(d.badge, s.badge || {}),
-      hiddenSites: Array.isArray(s.hiddenSites) ? s.hiddenSites.filter((x) => typeof x === 'string') : [],
+      syncEnabled: 'syncEnabled' in s ? !!s.syncEnabled : d.syncEnabled,
+      badge,
+      hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
       lang: s.lang === 'en' ? 'en' : 'es'
     };

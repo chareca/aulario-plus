@@ -84,6 +84,6 @@ test('setSettings accepts only known keys and correct values', async () => {
   assert.equal(s.other, undefined);
   assert.equal(s.lang, 'es');
   assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'en' } })).lang, 'en');
-  assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'de' } })).lang, 'en', 'unknown language: no change');
+  assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'de' } })).lang, 'es', 'unknown language: the default language');
   assert.equal(await bg.send({ type: 'setSettings', patch: { syncEnabled: true } }, { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/' }), null, 'a content script cannot change the settings');
 });

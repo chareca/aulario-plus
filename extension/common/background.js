@@ -306,20 +306,14 @@ const handlers = {
       return sync.run({ force: true, full: !!msg.full });
     }
   },
-  // Change some settings. Each key is checked; unknown keys are ignored.
+  // Change some settings. MAK.withDefaults checks the result (unknown keys go away).
   setSettings: {
     run: async (msg) => {
       const patch = msg && msg.patch && typeof msg.patch === 'object' ? msg.patch : {};
       const next = await store.update('settings', (cur) => {
-        const s = MAK.withDefaults(cur);
-        if ('syncEnabled' in patch) s.syncEnabled = !!patch.syncEnabled;
-        if (patch.badge && typeof patch.badge === 'object') {
-          for (const k of Object.keys(s.badge)) if (k in patch.badge) s.badge[k] = !!patch.badge[k];
-        }
-        if (Array.isArray(patch.hiddenSites)) s.hiddenSites = [...new Set(patch.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500);
-        if (patch.hiddenMode === 'sidebar' || patch.hiddenMode === 'everywhere') s.hiddenMode = patch.hiddenMode;
-        if (patch.lang === 'es' || patch.lang === 'en') s.lang = patch.lang;
-        return s;
+        const base = MAK.withDefaults(cur);
+        const badge = Object.assign({}, base.badge, patch.badge && typeof patch.badge === 'object' ? patch.badge : {});
+        return MAK.withDefaults(Object.assign({}, base, patch, { badge }));
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});
       return next;

@@ -12,6 +12,8 @@ test('withDefaults fills the missing settings and rejects bad values', () => {
   assert.equal(s.badge.deliveries, true);
   assert.deepEqual(s.hiddenSites, ['a']);
   assert.equal(s.hiddenMode, 'everywhere');
+  assert.deepEqual(Object.keys(MAK.withDefaults({ badge: { evil: 1, forums: 1 } }).badge), Object.keys(MAK.defaultSettings().badge), 'only the known badge keys');
+  assert.deepEqual(MAK.withDefaults({ hiddenSites: ['a', 'a', 'b'] }).hiddenSites, ['a', 'b']);
   assert.deepEqual([...MAK.hiddenEverywhere({ hiddenMode: 'sidebar', hiddenSites: ['a'] })], []);
   assert.deepEqual([...MAK.hiddenEverywhere({ hiddenMode: 'everywhere', hiddenSites: ['a'] })], ['a']);
 });
