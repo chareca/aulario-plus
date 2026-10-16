@@ -76,7 +76,7 @@
     if (here && here.toolIds.includes('sakai.announcements')) send({ type: 'toolVisit', siteId: here.siteId, toolId: 'sakai.announcements' });
     if (here && here.toolIds.includes('sakai.resources') && !MAK.isSpecialSite(here.siteId)) {
       const { settings } = await ext.storage.local.get('settings');
-      MAK.setLang(settings && settings.lang === 'en' ? 'en' : 'es');
+      MAK.setLang(settings && settings.lang);
       MAK.showZipButton(() => send({ type: 'openZip', siteId: here.siteId }));
     }
   }

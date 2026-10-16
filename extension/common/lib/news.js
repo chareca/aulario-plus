@@ -76,7 +76,7 @@
       if (a.siteId !== siteId) continue;
       const time = newer(a.created, a.seen);
       if (time <= ref) continue;
-      out.announcements.push({ id: a.id, title: a.title, url: MAK.announcementUrl ? MAK.announcementUrl(a, pages, null) : MAK.siteUrl(siteId), time });
+      out.announcements.push({ id: a.id, title: a.title, url: MAK.announcementUrl(a, pages, null), time });
     }
 
     for (const a of assignments || []) {
@@ -84,7 +84,7 @@
       if (a.open && a.open > now) continue; // not open yet
       const time = newer(Math.max(a.created || 0, a.open || 0), a.seen);
       if (time <= ref) continue;
-      out.deliveries.push({ id: a.id, title: a.title, url: MAK.deliveryUrl ? MAK.deliveryUrl(a, pages) : MAK.siteUrl(siteId), due: a.due, time });
+      out.deliveries.push({ id: a.id, title: a.title, url: MAK.deliveryUrl(a, pages), due: a.due, time });
     }
 
     if (forumBase) {

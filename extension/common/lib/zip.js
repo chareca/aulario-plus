@@ -199,7 +199,6 @@
     const rootName = MAK.safeFileName(siteTitle || siteId);
     const errors = [];
     let files = 0;
-    const tr = t || ((k) => k);
 
     const folders = items.filter((x) => x.folder).sort((a, b) => a.url.length - b.url.length);
     const downloads = items.filter((x) => !x.folder);
@@ -242,21 +241,21 @@
       try {
         const r = await fetchFile(item.url, signal);
         const finalPath = r.url ? new URL(r.url).pathname : '/access/content/';
-        if (!r.ok) reason = tr('zip.err.http', { status: r.status });
-        else if (!finalPath.startsWith('/access/content/')) reason = tr('zip.err.redirect');
-        else if (/text\/html/i.test(r.type || '') && !/html/i.test(item.type)) reason = tr(item.copyright ? 'zip.err.copyright' : 'zip.err.html');
+        if (!r.ok) reason = t('zip.err.http', { status: r.status });
+        else if (!finalPath.startsWith('/access/content/')) reason = t('zip.err.redirect');
+        else if (/text\/html/i.test(r.type || '') && !/html/i.test(item.type)) reason = t(item.copyright ? 'zip.err.copyright' : 'zip.err.html');
         else {
           zip.addFile(path, r.data, item.modified);
           files++;
         }
       } catch (e) {
         if (signal && signal.aborted) throw new Error('aborted');
-        reason = tr('zip.err.network');
+        reason = t('zip.err.network');
       }
       if (reason) errors.push(`${path.slice(rootName.length + 1)}: ${reason}`);
     }
 
-    if (errors.length) zip.addFile(`${rootName}/${tr('zip.errorsFile')}`, new TextEncoder().encode(`${errors.join('\r\n')}\r\n`), now);
+    if (errors.length) zip.addFile(`${rootName}/${t('zip.errorsFile')}`, new TextEncoder().encode(`${errors.join('\r\n')}\r\n`), now);
     return { parts: zip.finish(), files, errors };
   };
 

@@ -5,7 +5,6 @@
   const MAK = (root.MAK = root.MAK || {});
 
   MAK.BASE = 'https://miaulario.unavarra.es';
-  MAK.HOST = 'miaulario.unavarra.es';
   MAK.MINUTE = 60 * 1000;
   MAK.HOUR = 60 * MAK.MINUTE;
   MAK.DAY = 24 * MAK.HOUR;

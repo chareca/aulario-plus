@@ -22,14 +22,12 @@
     const out = [];
     let current = '';
     let size = 0;
-    let limit = 75;
     for (const ch of line) {
       const n = encoder.encode(ch).length;
-      if (size + n > limit) {
+      if (size + n > 75) {
         out.push(current);
         current = ` ${ch}`;
         size = 1 + n;
-        limit = 75;
       } else {
         current += ch;
         size += n;
@@ -47,15 +45,14 @@
   const uidPart = (s) => String(s).replace(/[^A-Za-z0-9._-]/g, '-');
 
   // deliveries: items of MAK.buildDue (with siteTitle and url). events: trimmed calendar events.
-  MAK.buildIcs = function ({ deliveries, events, now, t, calName }) {
-    const tr = t || ((k, p) => `${k} ${JSON.stringify(p || {})}`);
+  MAK.buildIcs = function ({ deliveries, events, now, t }) {
     const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//MiAulario Keep-Alive//Calendar export//ES',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      `X-WR-CALNAME:${MAK.icsEscape(calName || 'MiAulario')}`
+      'X-WR-CALNAME:MiAulario'
     ];
     const stamp = MAK.icsDate(now);
     let count = 0;
@@ -76,8 +73,8 @@
         ['UID', `asg-${uidPart(d.id)}@miaulario-keepalive`],
         ['DTSTAMP', stamp],
         ['DTSTART', MAK.icsDate(d.due)],
-        ['SUMMARY', MAK.icsEscape(tr('ics.deliverySummary', { title: d.title, site: d.siteTitle }))],
-        ['DESCRIPTION', MAK.icsEscape([tr('ics.descSite', { site: d.siteTitle }), url].filter(Boolean).join('\n'))],
+        ['SUMMARY', MAK.icsEscape(t('ics.deliverySummary', { title: d.title, site: d.siteTitle }))],
+        ['DESCRIPTION', MAK.icsEscape([t('ics.descSite', { site: d.siteTitle }), url].filter(Boolean).join('\n'))],
         ['URL', url],
         ['CATEGORIES', 'MiAulario']
       ]);

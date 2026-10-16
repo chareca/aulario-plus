@@ -68,14 +68,14 @@
     else main.prepend(host);
   };
 
-  MAK.removeNewsBanner = function () {
+  function removeNewsBanner() {
     const old = document.getElementById(HOST_ID);
     if (old) old.remove();
-  };
+  }
 
   // result: the answer of the "visit" message. compact: a short line (later pages of the same visit).
   MAK.showNewsBanner = function ({ siteId, result, compact }) {
-    MAK.removeNewsBanner();
+    removeNewsBanner();
     const news = result && result.news;
     if (!news || !news.total) return false;
     const key = `mak-news-dismissed:${siteId}:${result.since}`;

@@ -41,7 +41,7 @@
   // Date formats for the selected language (es-ES or en-GB).
   const formats = {};
   function format(kind) {
-    const locale = MAK.locale ? MAK.locale() : 'es-ES';
+    const locale = MAK.locale();
     const key = `${locale}|${kind}`;
     if (!formats[key]) {
       const opts = kind === 'long'

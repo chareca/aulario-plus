@@ -18,7 +18,6 @@
       return this.status === 429 || this.status >= 500;
     }
   }
-  MAK.ApiError = ApiError;
 
   // Find the array in a response. Sakai uses "<name>_collection" or a plain array.
   function pickArray(data, key) {
@@ -30,7 +29,6 @@
     }
     return null;
   }
-  MAK.pickArray = pickArray;
 
   const enc = encodeURIComponent;
 
