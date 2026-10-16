@@ -33,13 +33,8 @@
       const q = new URLSearchParams({ itemReference: `/announcement/msg/${a.siteId}/${a.channel || 'main'}/${a.uuid}`, sakai_action: 'doShowmetadata' });
       return MAK.safeSiteUrl(`/portal/directtool/${encodeURIComponent(tool.placement)}?${q}`);
     }
-    return (notif && MAK.safeSiteUrl(notif.url)) || (tool && MAK.safeSiteUrl(tool.page)) || MAK.siteUrl(a.siteId);
+    return (notif && MAK.safeSiteUrl(notif.url)) || MAK.toolUrl(pages, a.siteId, MAK.ANN_TOOL);
   };
-
-  function toolUrl(pages, siteId, toolId) {
-    const tool = pages && pages[siteId] && pages[siteId].tools[toolId];
-    return (tool && MAK.safeSiteUrl(tool.page)) || MAK.siteUrl(siteId);
-  }
 
   // All the inbox items, newest first. Counts are for the unread items.
   MAK.buildInbox = function ({ announcements, notifications, readAnn, synoptic, forums, sites, pages, hidden }) {
@@ -80,7 +75,7 @@
         count: x.messages,
         unread: true,
         date: null,
-        url: toolUrl(pages, x.siteId, 'sakai.messages')
+        url: MAK.toolUrl(pages, x.siteId, 'sakai.messages')
       });
     }
 
@@ -104,7 +99,7 @@
           count: n,
           unread: true,
           date: tp.modified,
-          url: toolUrl(pages, siteId, 'sakai.forums')
+          url: MAK.toolUrl(pages, siteId, 'sakai.forums')
         });
       }
     }
@@ -120,7 +115,7 @@
         count: x.forums,
         unread: true,
         date: null,
-        url: toolUrl(pages, x.siteId, 'sakai.forums')
+        url: MAK.toolUrl(pages, x.siteId, 'sakai.forums')
       });
     }
 

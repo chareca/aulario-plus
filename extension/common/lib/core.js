@@ -152,5 +152,11 @@
     return `${MAK.BASE}/portal/site/${encodeURIComponent(siteId)}`;
   };
 
+  // The page of a tool in a site (from the stored pages), or the site if the page is not known.
+  MAK.toolUrl = function (pages, siteId, toolId) {
+    const tool = pages && pages[siteId] && pages[siteId].tools[toolId];
+    return (tool && MAK.safeSiteUrl(tool.page)) || MAK.siteUrl(siteId);
+  };
+
   if (typeof module === 'object' && module.exports) module.exports = MAK;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

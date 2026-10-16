@@ -30,7 +30,7 @@
       const q = new URLSearchParams({ assignmentId: a.id, panel: 'Main', sakai_action: 'doView_submission' });
       return MAK.safeSiteUrl(`/portal/directtool/${encodeURIComponent(tool.placement)}?${q}`);
     }
-    return (tool && MAK.safeSiteUrl(tool.page)) || MAK.siteUrl(a.siteId);
+    return MAK.toolUrl(pages, a.siteId, 'sakai.assignment.grades');
   };
 
   MAK.buildDue = function ({ assignments, sites, pages, hidden, now }) {

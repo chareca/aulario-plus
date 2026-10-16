@@ -70,3 +70,11 @@ test('parsePortalPath finds the site, the page and the direct tool', () => {
   assert.ok(MAK.isSpecialSite('!gateway'));
   assert.ok(!MAK.isSpecialSite('2026_0_1_G'));
 });
+
+test('toolUrl: the page of the tool, or the site', () => {
+  const pages = { s1: { tools: { 'sakai.forums': { page: 'https://miaulario.unavarra.es/portal/site/s1/page/p4' }, 'sakai.bad': { page: 'https://evil.example/x' } } } };
+  assert.equal(MAK.toolUrl(pages, 's1', 'sakai.forums'), 'https://miaulario.unavarra.es/portal/site/s1/page/p4');
+  assert.equal(MAK.toolUrl(pages, 's1', 'sakai.bad'), 'https://miaulario.unavarra.es/portal/site/s1', 'a page outside MiAulario is not used');
+  assert.equal(MAK.toolUrl(pages, 's2', 'sakai.forums'), 'https://miaulario.unavarra.es/portal/site/s2');
+  assert.equal(MAK.toolUrl(null, 's 3', 'x'), 'https://miaulario.unavarra.es/portal/site/s%203');
+});

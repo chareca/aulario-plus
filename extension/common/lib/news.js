@@ -88,7 +88,7 @@
     }
 
     if (forumBase) {
-      const forumUrl = pages && pages[siteId] && pages[siteId].tools['sakai.forums'] ? MAK.safeSiteUrl(pages[siteId].tools['sakai.forums'].page) : MAK.siteUrl(siteId);
+      const forumUrl = MAK.toolUrl(pages, siteId, 'sakai.forums');
       for (const tp of (forums && forums.topics) || []) {
         const before = Object.prototype.hasOwnProperty.call(forumBase, tp.id) ? forumBase[tp.id] : 0;
         const delta = (tp.total || 0) - before;
