@@ -1,5 +1,6 @@
 // MiAulario Keep-Alive: the tools page (a tab of the extension).
 //   tools.html?zip=<siteId>   download all the files of a site as one ZIP
+//   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
 // A tab is used (not the popup) because the popup closes when it loses the focus.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { t } = MAK;
@@ -120,10 +121,80 @@ async function runZip(siteId, site) {
   };
 }
 
+// ---- Export to a calendar (.ics) -----------------------------------------------
+
+function ymd(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function runIcs(store) {
+  const { h, fill } = MAK;
+  const settings = MAK.withDefaults(store.settings);
+  const box = $('ics');
+  box.hidden = false;
+  $('title').textContent = t('ics.title');
+  document.title = t('ics.title');
+  const deliveries = h('input', { attrs: { type: 'checkbox', checked: true } });
+  const pending = h('input', { attrs: { type: 'radio', name: 'mode', value: 'pending', checked: true } });
+  const all = h('input', { attrs: { type: 'radio', name: 'mode', value: 'all' } });
+  const events = h('input', { attrs: { type: 'checkbox', checked: true } });
+  const status = h('p', { class: 'status', attrs: { role: 'status' } });
+  const help = h('p', { class: 'meta', hidden: true });
+  const create = h('button', { class: 'btn primary', text: t('ics.create') });
+  fill(
+    box,
+    h('label', { class: 'check' }, deliveries, h('span', { text: t('ics.deliveries') })),
+    h('div', { class: 'indent' }, h('label', { class: 'radio' }, pending, h('span', { text: t('ics.pendingOnly') })), h('label', { class: 'radio' }, all, h('span', { text: t('ics.allDeliveries') }))),
+    h('label', { class: 'check' }, events, h('span', { text: t('ics.events') })),
+    h('div', { class: 'row' }, create),
+    status,
+    help
+  );
+  deliveries.addEventListener('change', () => { pending.disabled = all.disabled = !deliveries.checked; });
+
+  create.addEventListener('click', async () => {
+    create.disabled = true;
+    help.hidden = true;
+    const now = Date.now();
+    const hidden = MAK.hiddenEverywhere(settings);
+    let list = [];
+    if (deliveries.checked) {
+      const g = MAK.buildDue({ assignments: store.assignments, sites: store.sites, pages: store.pages, hidden, now }).groups;
+      list = all.checked ? [...g.late, ...g.pending, ...g.action, ...g.submitted, ...g.closed] : [...g.late, ...g.pending, ...g.action];
+    }
+    let evs = [];
+    if (events.checked) {
+      status.textContent = t('ics.reading');
+      try {
+        const api = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
+        evs = (await api.calendar(ymd(now - 30 * MAK.DAY), ymd(now + 365 * MAK.DAY))).map(MAK.trimEvent).filter((e) => !hidden.has(e.siteId));
+      } catch {
+        status.textContent = t('ics.error');
+        create.disabled = false;
+        return;
+      }
+    }
+    const { text, count } = MAK.buildIcs({ deliveries: list, events: evs, now, t });
+    if (!count) {
+      status.textContent = t('ics.nothing');
+      create.disabled = false;
+      return;
+    }
+    const name = t('ics.fileName', { date: today() });
+    saveFile([text], 'text/calendar;charset=utf-8', name);
+    status.textContent = t('ics.done', { n: count, name });
+    help.textContent = `${t('ics.help')} ${t('ics.snapshot')}`;
+    help.hidden = false;
+    create.disabled = false;
+  });
+}
+
 // ---- Start ---------------------------------------------------------------------
 
 async function init() {
-  const { settings, sites } = await ext.storage.local.get(['settings', 'sites']);
+  const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
+  const { settings, sites } = store;
   MAK.setLang(MAK.withDefaults(settings).lang);
   MAK.applyI18n(document);
   const params = new URLSearchParams(location.search);
@@ -136,6 +207,8 @@ async function init() {
       return;
     }
     await runZip(siteId, site);
+  } else if (params.has('ics')) {
+    await runIcs(store);
   }
 }
 

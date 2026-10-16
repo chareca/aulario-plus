@@ -135,6 +135,10 @@ function siteSelect(siteIds, value, onChange) {
 
 // ---- Due ---------------------------------------------------------------------
 
+function openIcs() {
+  ext.tabs.create({ url: ext.runtime.getURL('tools.html?ics=1') });
+}
+
 function deliveryRow(x, now) {
   const cls = ['item', `s-${x.state}`];
   if (x.urgency) cls.push(`u-${x.urgency}`);
@@ -173,7 +177,7 @@ function renderDue(el) {
   const open = [...keep(g.late), ...keep(g.pending), ...keep(g.action)];
   fill(
     el,
-    h('div', { class: 'toolbar' }, siteSelect(siteIds, ui.dueSite, (v) => { ui.dueSite = v; renderCurrent(); })),
+    h('div', { class: 'toolbar' }, siteSelect(siteIds, ui.dueSite, (v) => { ui.dueSite = v; renderCurrent(); }), h('button', { class: 'link-btn', text: t('ics.button'), on: { click: openIcs } })),
     open.length ? null : emptyBox(t('due.nothing')),
     group(t('due.late'), keep(g.late)),
     group(t('due.todo'), keep(g.pending)),
@@ -436,6 +440,12 @@ function renderSettings(el) {
       { class: 'section' },
       h('h2', { text: t('set.courseData') }),
       checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } }))
+    ),
+    h(
+      'div',
+      { class: 'section' },
+      h('h2', { text: t('set.calendar') }),
+      h('button', { class: 'btn', text: t('ics.button'), on: { click: openIcs } })
     ),
     h(
       'div',
