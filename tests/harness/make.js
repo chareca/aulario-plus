@@ -61,6 +61,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
   window.__requests = [];
   window.__badge = { text: '', color: null };
   window.__tabs = [];
+  window.__notes = new Map();
   window.__mockFetch = async (url, init = {}) => {
     const u = new URL(String(url), 'https://miaulario.unavarra.es');
     u.searchParams.delete('auto');
@@ -100,6 +101,12 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
       setTitle: async ({ title }) => { window.__badge.title = title; }
     },
     tabs: { create: async (o) => { window.__tabs.push(o); return { id: window.__tabs.length }; } },
+    notifications: {
+      create: async (id, o) => { window.__notes.set(id, o); return id; },
+      clear: async (id) => window.__notes.delete(id),
+      getAll: async () => Object.fromEntries([...window.__notes.keys()].map((k) => [k, true])),
+      onClicked: on([])
+    },
     permissions: { contains: async () => true, request: async () => true }
   };
   window.chrome = ext;

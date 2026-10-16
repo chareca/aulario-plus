@@ -78,6 +78,10 @@
 
       'badge.title': 'MiAulario: {due} entregas pronto · {unread} sin leer · {grades} notas nuevas',
       'set.badgeGrades': 'Notas nuevas',
+      'set.notifyGrades': 'Avisarme con una notificación del sistema cuando sale una nota',
+      'set.notifyGradesHelp': 'Muestra la materia y el ítem, no la nota.',
+      'note.grade': 'Nota nueva · {site}',
+      'note.grades': '{n} notas nuevas',
       'tab.grades': 'Notas',
       'what.grades': 'notas',
       'grades.none': 'Aún no hay ítems calificables en tus sitios.',
@@ -281,6 +285,10 @@
 
       'badge.title': 'MiAulario: {due} deliveries soon · {unread} unread · {grades} new grades',
       'set.badgeGrades': 'New grades',
+      'set.notifyGrades': 'Show a system notification when a new grade comes',
+      'set.notifyGradesHelp': 'It shows the site and the item, not the grade.',
+      'note.grade': 'New grade · {site}',
+      'note.grades': '{n} new grades',
       'tab.grades': 'Grades',
       'what.grades': 'grades',
       'grades.none': 'Your sites have no grade items yet.',

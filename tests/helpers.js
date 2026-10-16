@@ -71,13 +71,14 @@ fakeFetch.raw = (resp) => ({ __response: resp });
 
 // A small copy of the extension API (chrome.*) for tests.
 function mockExtension({ id = 'ext-id', local = {} } = {}) {
-  const listeners = { message: [], alarm: [], installed: [], startup: [], cookies: [], storage: [] };
+  const listeners = { message: [], alarm: [], installed: [], startup: [], cookies: [], storage: [], noteClick: [] };
   const alarms = new Map();
   const on = (list) => ({ addListener: (f) => list.push(f), removeListener: (f) => list.splice(list.indexOf(f), 1) });
   const localArea = memoryArea(local);
   const sessionArea = memoryArea();
   const badge = { text: '', color: null };
   const tabsCreated = [];
+  const notes = new Map();
   // Send storage.onChanged events, the same as the browser does.
   for (const area of [localArea]) {
     const set = area.set.bind(area);
@@ -120,7 +121,14 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       setTitle: async ({ title }) => { badge.title = title; }
     },
     tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; } },
+    notifications: {
+      create: async (id, o) => { notes.set(id, o); return id; },
+      clear: async (id) => notes.delete(id),
+      getAll: async () => Object.fromEntries([...notes.keys()].map((k) => [k, true])),
+      onClicked: on(listeners.noteClick)
+    },
     _listeners: listeners,
+    _notes: notes,
     _alarms: alarms,
     _badge: badge,
     _tabs: tabsCreated

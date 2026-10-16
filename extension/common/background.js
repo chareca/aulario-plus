@@ -17,7 +17,7 @@ if (typeof importScripts === 'function') {
 const ext = globalThis.browser ?? globalThis.chrome;
 const store = MAK.createStore(ext.storage.local);
 const courseApi = MAK.createApi({ fetch: (url, init) => fetch(url, init) });
-const sync = MAK.createSync({ api: courseApi, store, lockArea: ext.storage.session || null });
+const sync = MAK.createSync({ api: courseApi, store, lockArea: ext.storage.session || null, onNewGrades: (list) => notifyNewGrades(list) });
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';
 // The popup asks for a sync when the data is older than this.
@@ -225,6 +225,60 @@ async function updateBadge() {
   } catch {}
 }
 
+// ---- System notifications for new grades --------------------------------------
+
+const GRADE_NOTE = 'grade:'; // one item: "grade:<id>"
+const GRADES_NOTE = 'grades'; // a summary of 4 or more items
+const GRADE_NOTE_MAX = 3;
+const isGradeNote = (id) => id === GRADES_NOTE || id.startsWith(GRADE_NOTE);
+
+// The notification shows the site and the item, but not the grade (other persons can see the screen).
+async function notifyNewGrades(changed) {
+  if (!ext.notifications) return;
+  const { settings } = await store.get('settings');
+  const s = MAK.withDefaults(settings);
+  if (!s.notifyGrades) return;
+  const hidden = MAK.hiddenEverywhere(s);
+  const list = changed.filter((g) => !hidden.has(g.siteId));
+  if (!list.length) return;
+  MAK.setLang(s.lang);
+  const notes =
+    list.length <= GRADE_NOTE_MAX
+      ? list.map((g) => [GRADE_NOTE + g.id, MAK.t('note.grade', { site: g.siteTitle }), g.name || MAK.t('tab.grades')])
+      : [[GRADES_NOTE, MAK.t('note.grades', { n: list.length }), [...new Set(list.map((g) => g.siteTitle))].join(' · ')]];
+  const iconUrl = ext.runtime.getURL('icons/icon128.png');
+  for (const [id, title, message] of notes) {
+    try {
+      await ext.notifications.create(id, { type: 'basic', iconUrl, title, message });
+    } catch {}
+  }
+}
+
+async function clearGradeNotes() {
+  if (!ext.notifications) return;
+  try {
+    const all = await ext.notifications.getAll();
+    for (const id of Object.keys(all || {})) if (isGradeNote(id)) await ext.notifications.clear(id);
+  } catch {}
+}
+
+// A click opens the item in MiAulario, or the Grades tab for a summary. The URL comes from the
+// storage, because the background script can start again between the notification and the click.
+async function openGradeNote(id) {
+  if (!isGradeNote(id)) return;
+  let url = null;
+  if (id === GRADES_NOTE) url = ext.runtime.getURL('popup.html?view=tab&tab=grades');
+  else {
+    const { grades } = await store.get('grades');
+    const g = (grades || []).find((x) => GRADE_NOTE + x.id === id);
+    url = g ? MAK.safeSiteUrl(g.url) || MAK.siteUrl(g.siteId) : ext.runtime.getURL('popup.html?view=tab&tab=grades');
+  }
+  try { await ext.notifications.clear(id); } catch {}
+  await ext.tabs.create({ url });
+}
+
+if (ext.notifications) ext.notifications.onClicked.addListener((id) => { openGradeNote(id).catch(() => {}); });
+
 // Draw the badge again when the data or the settings change (wait a moment to group the changes).
 let badgeTimer = null;
 ext.storage.onChanged.addListener((changes, area) => {
@@ -287,6 +341,7 @@ const handlers = {
       await clearPersisted();
       // The course data stays only while the user is logged in.
       await sync.clearData();
+      await clearGradeNotes();
       return { ok: true };
     }
   },

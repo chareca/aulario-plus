@@ -486,7 +486,8 @@ function renderSettings(el) {
       'div',
       { class: 'section' },
       h('h2', { text: t('set.courseData') }),
-      checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } }))
+      checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } })),
+      checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } }))
     ),
     h(
       'div',

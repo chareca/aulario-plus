@@ -7,6 +7,7 @@
   MAK.defaultSettings = function () {
     return {
       syncEnabled: true,
+      notifyGrades: true, // a system notification for a new grade
       badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false, grades: true },
       hiddenSites: [],
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
@@ -24,6 +25,7 @@
     for (const k of Object.keys(d.badge)) badge[k] = k in b ? !!b[k] : d.badge[k];
     return {
       syncEnabled: 'syncEnabled' in s ? !!s.syncEnabled : d.syncEnabled,
+      notifyGrades: 'notifyGrades' in s ? !!s.notifyGrades : d.notifyGrades,
       badge,
       hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
