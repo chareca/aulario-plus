@@ -31,7 +31,7 @@ The interface is in Spanish. You can change it to English in the settings.
 - **Inbox:** The unread announcements, private messages and forum posts of all your sites in one list. Filter by type, by site and by unread items. The search does not use the case or the accents of the letters.
   - An announcement is read if you read it in the extension, or if the bell of MiAulario shows it as viewed.
   - When no unread announcement is left in a site, the extension tells the bell of MiAulario that the announcements of that site are viewed.
-  - When you open the Announcements tool of a site in MiAulario, the extension marks the announcements of that site as read.
+  - When you open the Announcements tool of a site in MiAulario, the extension marks the announcements of that site as read, also in the bell of MiAulario. MiAulario itself does not do this.
   - For messages and forums, MiAulario gives only the numbers of unread items. The inbox shows these numbers and a link to the tool.
 - **New items:** For each site, the files, announcements, deliveries and forum posts that came after your last visit of that site. A visit of one site does not change the other sites. Use **Mark as seen** for one site or for all sites.
 - **Sites:** Hide the sites that you do not use. Select if a hidden site hides only in the sidebar of MiAulario, or also in the extension.

@@ -5,7 +5,7 @@
 //   login form of sso.unavarra.es opens. The password manager of the browser can fill it.
 // - If you click "Log out", the script tells the background script to pause.
 // - If you open the Announcements tool of a site, the script tells the background script.
-//   MiAulario marks these announcements as viewed, and the extension does the same.
+//   The extension marks these announcements as read, also in the bell of MiAulario.
 // - The script sends the "mark as viewed" requests that the background script could not send.
 // - In the Resources tool, the script adds the button "Download all (ZIP)".
 // - On each page of a site, the script records the visit. At the start of a new visit, it shows

@@ -330,8 +330,8 @@ const handlers = {
     }
   },
   // A content script tells that the user opened a tool of a site in MiAulario.
-  // The Announcements tool: MiAulario marks its notifications as viewed, so the extension
-  // marks the announcements of that site as read too.
+  // The Announcements tool: the user can read the announcements of that site there. Mark them
+  // as read in the extension, and tell the bell of MiAulario (MiAulario does not do this itself).
   toolVisit: {
     content: true,
     run: async (msg) => {
@@ -339,7 +339,7 @@ const handlers = {
       if (msg.toolId !== MAK.ANN_TOOL) return { ok: true };
       const { announcements } = await store.get('announcements');
       await setAnnRead((announcements || []).filter((a) => a.siteId === msg.siteId).map((a) => a.id));
-      await markNotificationsViewed(msg.siteId, MAK.ANN_TOOL);
+      await pushReadToServer([msg.siteId]);
       return { ok: true };
     }
   },

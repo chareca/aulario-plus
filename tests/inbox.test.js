@@ -115,11 +115,16 @@ test('a failed POST is kept, and a MiAulario page sends it later', async () => {
   assert.equal(data.pendingMarkViewed.length, 1, 'a failure goes back to the list');
 });
 
-test('opening the Announcements tool in MiAulario marks the announcements of that site as read', async () => {
-  const { bg, data } = await syncedBackground();
+test('opening the Announcements tool in MiAulario marks the announcements of that site as read, also in the bell', async () => {
+  // MiAulario does not mark the bell when the tool opens (live test, 2026-10-16). The extension does it.
+  const { bg, log, data } = await syncedBackground({ '/api/users/me/notifications/markViewed': { ok: true } });
   await bg.send({ type: 'toolVisit', siteId: F.PHYS, toolId: 'sakai.announcements' }, CONTENT);
   assert.ok(data.readAnn[`${F.PHYS}:main:ann-3`]);
   assert.ok(!data.readAnn[`${F.CS}:main:ann-1`], 'other sites do not change');
+  assert.ok(!log.some((l) => l.method === 'POST'), 'PHYS has no bell notification: no POST');
+  await bg.send({ type: 'toolVisit', siteId: F.CS, toolId: 'sakai.announcements' }, CONTENT);
+  assert.ok(log.some((l) => l.method === 'POST' && l.url.includes(`siteId=${F.CS}`)), 'CS has a bell notification: POST');
+  assert.equal(data.notifications.find((n) => n.id === 101).viewed, true);
   assert.deepEqual(await bg.send({ type: 'toolVisit', siteId: 'unknown-site', toolId: 'sakai.announcements' }, CONTENT), { ok: false });
 });
 
