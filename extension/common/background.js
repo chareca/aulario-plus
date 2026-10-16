@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/inbox.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -148,6 +148,57 @@ async function persistExisting() {
   }
 }
 
+// ---- Read state of announcements ----------------------------------------------
+
+const MAX_IDS = 500;
+const validIds = (ids) => (Array.isArray(ids) ? ids.filter((x) => typeof x === 'string' && x.length < 300).slice(0, MAX_IDS) : []);
+
+// Mark announcements as read in the extension. Then tell MiAulario (the bell) for the sites
+// where no unread announcement is left.
+async function markAnnouncementsRead(ids) {
+  if (!ids.length) return { ok: true, marked: 0 };
+  const now = Date.now();
+  await store.update('readAnn', (r) => {
+    const out = Object.assign({}, r);
+    for (const id of ids) out[id] = now;
+    return out;
+  });
+  const { announcements } = await store.get('announcements');
+  const siteIds = [...new Set((announcements || []).filter((a) => ids.includes(a.id)).map((a) => a.siteId))];
+  await pushReadToServer(siteIds);
+  return { ok: true, marked: ids.length };
+}
+
+// MiAulario can mark announcements as viewed only for a whole site and tool.
+// If the request fails, keep it: a MiAulario page sends it later (same origin).
+async function pushReadToServer(siteIds) {
+  const d = await store.get(['announcements', 'notifications', 'readAnn']);
+  for (const siteId of MAK.sitesToMarkViewed(d, siteIds)) {
+    let ok = false;
+    try {
+      ok = await courseApi.markViewed(siteId, MAK.ANN_TOOL);
+    } catch {
+      ok = false;
+    }
+    if (ok) await markNotificationsViewed(siteId, MAK.ANN_TOOL);
+    else await store.update('pendingMarkViewed', (list) => uniquePending((list || []).concat({ siteId, toolId: MAK.ANN_TOOL })));
+  }
+}
+
+function uniquePending(list) {
+  const seen = new Set();
+  return list.filter((x) => {
+    const k = `${x.siteId}|${x.toolId}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(-50);
+}
+
+async function markNotificationsViewed(siteId, toolId) {
+  await store.update('notifications', (list) => (list || []).map((n) => (n.siteId === siteId && n.tool === toolId ? Object.assign({}, n, { viewed: true }) : n)));
+}
+
 // ---- Message router ----------------------------------------------------------
 
 // Who sent the message: 'page' (popup or a page of the extension), 'content'
@@ -245,6 +296,58 @@ const handlers = {
     content: true,
     run: async () => {
       await record({ time: Date.now(), relogin: true });
+      return { ok: true };
+    }
+  },
+  markAnnRead: { run: (msg) => markAnnouncementsRead(validIds(msg.ids)) },
+  // Mark all the announcements as read, or all the announcements of one site.
+  markAllAnnRead: {
+    run: async (msg) => {
+      const { announcements } = await store.get('announcements');
+      const siteId = typeof msg.siteId === 'string' ? msg.siteId : '';
+      const ids = (announcements || []).filter((a) => !siteId || a.siteId === siteId).map((a) => a.id);
+      return markAnnouncementsRead(ids.slice(0, MAX_IDS));
+    }
+  },
+  // A content script tells that the user opened a tool of a site in MiAulario.
+  // The Announcements tool: MiAulario marks its notifications as viewed, so the extension
+  // marks the announcements of that site as read too.
+  toolVisit: {
+    content: true,
+    run: async (msg) => {
+      const { sites } = await store.get('sites');
+      if (typeof msg.siteId !== 'string' || !(sites || []).some((s) => s.id === msg.siteId)) return { ok: false };
+      if (msg.toolId !== MAK.ANN_TOOL) return { ok: true };
+      const { announcements } = await store.get('announcements');
+      const ids = (announcements || []).filter((a) => a.siteId === msg.siteId).map((a) => a.id);
+      const now = Date.now();
+      await store.update('readAnn', (r) => {
+        const out = Object.assign({}, r);
+        for (const id of ids) out[id] = now;
+        return out;
+      });
+      await markNotificationsViewed(msg.siteId, MAK.ANN_TOOL);
+      return { ok: true };
+    }
+  },
+  // A content script takes the "mark viewed" requests that failed, and sends them from the page.
+  takePendingMarkViewed: {
+    content: true,
+    run: async () => {
+      let taken = [];
+      await store.update('pendingMarkViewed', (list) => {
+        taken = list || [];
+        return [];
+      });
+      return taken;
+    }
+  },
+  pendingMarkViewedDone: {
+    content: true,
+    run: async (msg) => {
+      if (typeof msg.siteId !== 'string' || typeof msg.toolId !== 'string') return { ok: false };
+      if (msg.ok) await markNotificationsViewed(msg.siteId, msg.toolId);
+      else await store.update('pendingMarkViewed', (list) => uniquePending((list || []).concat({ siteId: msg.siteId, toolId: msg.toolId })));
       return { ok: true };
     }
   }

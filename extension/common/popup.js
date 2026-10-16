@@ -14,7 +14,7 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { dueSite: '' };
+const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set() };
 
 const settings = () => MAK.withDefaults(S.settings);
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
@@ -24,6 +24,7 @@ const siteTitle = (id) => ((S.sites || []).find((s) => s.id === id) || {}).title
 
 const panels = {
   due: { render: renderDue },
+  inbox: { render: renderInbox },
   settings: { render: renderSettings }
 };
 let current = 'due';
@@ -43,7 +44,19 @@ function renderCurrent() {
   lastRender = Date.now();
   pendingRender = false;
   panels[current].render($(`tab-${current}`));
+  updateTabCounts();
   tick();
+}
+
+function setCount(id, n) {
+  const el = $(id);
+  if (!el) return;
+  el.hidden = !n;
+  el.textContent = n > 99 ? '99+' : String(n || '');
+}
+
+function updateTabCounts() {
+  setCount('count-inbox', S.meta && S.meta.lastSync && settings().syncEnabled ? inboxModel().counts.total : 0);
 }
 
 // Do not draw the panel again while the user types or selects in it.
@@ -163,6 +176,126 @@ function renderDue(el) {
     folded(t('due.submitted'), keep(g.submitted)),
     folded(t('due.closed'), keep(g.closed).slice(0, 30))
   );
+}
+
+// ---- Inbox -------------------------------------------------------------------
+
+function inboxModel() {
+  return MAK.buildInbox({
+    announcements: S.announcements,
+    notifications: S.notifications,
+    readAnn: S.readAnn,
+    synoptic: S.synoptic,
+    forums: S.forums,
+    sites: S.sites,
+    pages: S.pages,
+    hidden: hiddenSet()
+  });
+}
+
+function toggleAnnouncement(x) {
+  if (ui.openAnn.has(x.id)) ui.openAnn.delete(x.id);
+  else {
+    ui.openAnn.add(x.id);
+    if (x.unread) send({ type: 'markAnnRead', ids: [x.id] });
+  }
+  renderInboxList();
+}
+
+function inboxRow(x) {
+  if (x.type === 'announcement') {
+    const open = ui.openAnn.has(x.id);
+    return h(
+      'div',
+      { class: `item ${x.unread ? 'unread' : 'read'}` },
+      h('span', { class: 'bar' }),
+      h(
+        'div',
+        { class: 'body' },
+        h(
+          'button',
+          { class: 'title-btn', attrs: { 'aria-expanded': String(open) }, on: { click: () => toggleAnnouncement(x) } },
+          x.unread ? h('span', { class: 'unread-dot', title: t('inbox.unread'), attrs: { 'aria-label': t('inbox.unread') } }) : null,
+          x.title
+        ),
+        h('div', { class: 'meta', text: [x.siteTitle, MAK.formatDate(x.date), x.author].filter(Boolean).join(' · ') }),
+        open
+          ? h(
+              'div',
+              null,
+              x.text ? h('p', { class: 'ann-text', text: x.text }) : null,
+              x.attachments.length
+                ? h('div', { class: 'links' }, h('span', { class: 'meta', text: t('inbox.attachments') }), x.attachments.map((f) => h('a', { href: f.url, text: f.name })))
+                : null,
+              h('div', { class: 'links' }, h('a', { href: x.url, text: t('inbox.open') }))
+            )
+          : null
+      )
+    );
+  }
+  const title = x.type === 'messages' ? t('inbox.messages', { n: x.count }) : x.title || t('inbox.forumSite', { n: x.count });
+  const meta = x.type === 'forum' && x.title ? [x.forum, x.siteTitle].filter(Boolean).join(' · ') : x.siteTitle;
+  return h(
+    'div',
+    { class: 'item unread' },
+    h('span', { class: 'bar' }),
+    h('div', { class: 'body' }, h('a', { class: 'title', href: x.url, text: title }), h('div', { class: 'meta', text: meta })),
+    x.type === 'forum' && x.title ? h('div', { class: 'side' }, h('span', { class: 'tag info', text: t('inbox.unreadTag', { n: x.count }) })) : null
+  );
+}
+
+// Draw only the list, so that the search field keeps the focus.
+function renderInboxList() {
+  const list = $('inbox-list');
+  if (!list) return;
+  const model = inboxModel();
+  const items = MAK.filterInbox(model.items, ui.inbox);
+  fill(list, items.length ? items.slice(0, 200).map(inboxRow) : h('div', { class: 'empty', text: t(model.items.length ? 'inbox.noResults' : 'inbox.empty') }));
+  updateTabCounts();
+}
+
+function renderInbox(el) {
+  const none = noDataMessage('what.inbox');
+  if (none) return fill(el, none);
+  const model = inboxModel();
+  const c = model.counts;
+  const siteIds = [...new Set(model.items.map((x) => x.siteId))];
+  if (ui.inbox.siteId && !siteIds.includes(ui.inbox.siteId)) ui.inbox.siteId = '';
+  const chip = (type, key, n) =>
+    h(
+      'button',
+      { attrs: { type: 'button', 'aria-pressed': String(ui.inbox.type === type) }, on: { click: () => { ui.inbox.type = type; renderCurrent(); } } },
+      t(key),
+      n ? h('span', { class: 'n', text: String(n) }) : null
+    );
+  fill(
+    el,
+    h(
+      'div',
+      { class: 'toolbar chips' },
+      chip('', 'inbox.type.all', c.total),
+      chip('announcement', 'inbox.type.announcement', c.announcements),
+      chip('messages', 'inbox.type.messages', c.messages),
+      chip('forum', 'inbox.type.forum', c.forums)
+    ),
+    h(
+      'div',
+      { class: 'toolbar' },
+      h('input', {
+        attrs: { type: 'search', placeholder: t('inbox.search'), 'aria-label': t('inbox.search'), value: ui.inbox.query },
+        on: { input: (e) => { ui.inbox.query = e.target.value; renderInboxList(); } }
+      }),
+      siteSelect(siteIds, ui.inbox.siteId, (v) => { ui.inbox.siteId = v; renderInboxList(); })
+    ),
+    h(
+      'div',
+      { class: 'toolbar' },
+      h('label', { class: 'check' }, h('input', { attrs: { type: 'checkbox', checked: ui.inbox.unreadOnly }, on: { change: (e) => { ui.inbox.unreadOnly = e.target.checked; renderInboxList(); } } }), t('inbox.unreadOnly')),
+      c.announcements ? h('button', { class: 'link-btn', text: t('inbox.markAllRead'), on: { click: () => send({ type: 'markAllAnnRead', siteId: ui.inbox.siteId }) } }) : null
+    ),
+    h('div', { attrs: { id: 'inbox-list' } })
+  );
+  renderInboxList();
 }
 
 // ---- Settings ----------------------------------------------------------------
