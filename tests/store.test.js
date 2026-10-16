@@ -46,3 +46,21 @@ test('the queue continues after an error', async () => {
   await assert.rejects(store.update('v', () => { throw new Error('boom'); }));
   assert.equal(await store.update('v', (v) => v + 1), 2);
 });
+
+test('hideSitesCss hides the sidebar item, the "all sites" entry and the favorites entry', () => {
+  const css = MAK.hideSitesCss(['2026_0_1_G', 'open-site'], 'open-site');
+  assert.match(css, /li\.site-list-item\[data-site="2026_0_1_G"\]/);
+  assert.match(css, /li\.fav-sites-entry:has\(> \[data-site-id="2026_0_1_G"\]\)/);
+  assert.match(css, /li\.organize-favorite-item\[data-site-id="2026_0_1_G"\]/);
+  assert.doesNotMatch(css, /open-site/, 'the open site never hides');
+  assert.match(css, /\{ display: none !important; \}$/);
+  assert.equal(MAK.hideSitesCss([], null), '');
+  assert.equal(MAK.hideSitesCss(['x'], 'x'), '');
+});
+
+test('hideSitesCss escapes characters that could break the CSS', () => {
+  const css = MAK.hideSitesCss(['a"] , body{color:red}'], null);
+  assert.ok(css.includes('data-site="a\\22 \\5d \\20 \\2c \\20 body\\7b color\\3a red\\7d "'), css);
+  assert.equal(css.split('{').length - 1, 1, 'only the final rule has a brace');
+  assert.equal((css.match(/"/g) || []).length, 6, 'only the quotes of the 3 attribute selectors');
+});

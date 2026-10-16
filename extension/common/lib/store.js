@@ -32,6 +32,19 @@
     return new Set(settings.hiddenMode === 'everywhere' ? settings.hiddenSites : []);
   };
 
+  // CSS that hides sites in the sidebar, in the "all sites" view and in the favorites organizer.
+  // The site that is open never hides.
+  MAK.hideSitesCss = function (ids, currentSiteId) {
+    const esc = (s) => String(s).replace(/[^a-zA-Z0-9_~!.-]/g, (c) => `\\${c.codePointAt(0).toString(16)} `);
+    const selectors = [];
+    for (const id of ids || []) {
+      if (typeof id !== 'string' || !id || id === currentSiteId) continue;
+      const v = esc(id);
+      selectors.push(`li.site-list-item[data-site="${v}"]`, `li.fav-sites-entry:has(> [data-site-id="${v}"])`, `li.organize-favorite-item[data-site-id="${v}"]`);
+    }
+    return selectors.length ? `${selectors.join(',\n')} { display: none !important; }` : '';
+  };
+
   // Keys that contain course data or reading state. The extension removes them
   // when the user logs out or when a different user logs in.
   MAK.DATA_KEYS = [

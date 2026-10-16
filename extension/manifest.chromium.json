@@ -24,6 +24,17 @@
       ],
       "js": [
         "lib/core.js",
+        "lib/store.js",
+        "content-early.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://miaulario.unavarra.es/*"
+      ],
+      "js": [
+        "lib/core.js",
         "lib/i18n.js",
         "lib/ui.js",
         "content-banner.js",

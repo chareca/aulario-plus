@@ -26,6 +26,7 @@ const panels = {
   due: { render: renderDue },
   inbox: { render: renderInbox },
   new: { render: renderNew, open: openNew },
+  sites: { render: renderSites },
   settings: { render: renderSettings }
 };
 let current = 'due';
@@ -350,6 +351,47 @@ function renderNew(el) {
     el,
     h('div', { class: 'toolbar' }, h('button', { class: 'link-btn', text: t('news.markAllSeen'), on: { click: () => send({ type: 'markSiteSeen' }) } })),
     list.map(newsCard)
+  );
+}
+
+// ---- Sites -------------------------------------------------------------------
+
+function siteActions(site) {
+  // The ZIP download adds a button here.
+  return [];
+}
+
+function renderSites(el) {
+  const sites = S.sites;
+  if (!Array.isArray(sites) || !sites.length) return fill(el, noDataMessage('what.sites') || emptyBox(t('empty.noData')));
+  const s = settings();
+  const hidden = new Set(s.hiddenSites);
+  const setHidden = (id, on) => {
+    const next = new Set(hidden);
+    if (on) next.add(id);
+    else next.delete(id);
+    send({ type: 'setSettings', patch: { hiddenSites: [...next] } });
+  };
+  const radio = (value, label) =>
+    h('label', { class: 'radio' }, h('input', { attrs: { type: 'radio', name: 'hiddenMode', value, checked: s.hiddenMode === value }, on: { change: () => send({ type: 'setSettings', patch: { hiddenMode: value } }) } }), h('span', { text: t(label) }));
+  const typeKey = (type) => `sites.type.${type}`;
+  fill(
+    el,
+    h('div', { class: 'section' }, h('h2', { text: t('sites.mode') }), radio('sidebar', 'sites.modeSidebar'), radio('everywhere', 'sites.modeEverywhere'), h('p', { class: 'small meta', text: `${t('sites.help')} ${t('sites.native')}` })),
+    h(
+      'div',
+      { class: 'section' },
+      h('h2', { text: t('sites.list') }),
+      sites.map((site) =>
+        h(
+          'div',
+          { class: `site-row${hidden.has(site.id) ? ' hidden-site' : ''}` },
+          h('div', { class: 'name' }, h('div', { text: site.title }), h('div', { class: 'meta', text: MAK.STRINGS.es[typeKey(site.type)] ? t(typeKey(site.type)) : site.type })),
+          siteActions(site),
+          h('label', null, h('input', { attrs: { type: 'checkbox', checked: hidden.has(site.id) }, on: { change: (e) => setHidden(site.id, e.target.checked) } }), t('sites.hide'))
+        )
+      )
+    )
   );
 }
 

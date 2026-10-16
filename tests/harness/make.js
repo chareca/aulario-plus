@@ -127,7 +127,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><title>Harness: MiAulario site</title>
@@ -139,6 +139,11 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   .row { border: 1px dashed #aaa; padding: 24px; }
 </style></head>
 <body>
+<aside id="portal-nav-sidebar" style="font:13px sans-serif;border-bottom:1px solid #ccc;padding:6px 24px">
+  <ul style="display:flex;gap:16px;list-style:none;margin:0;padding:0">
+    ${data.SITES.map((s) => `<li class="site-list-item" data-site="${s.id}">${s.title}</li>`).join('')}
+  </ul>
+</aside>
 <main id="content" class="portal-main-content">
   <h1 id="tocontent" style="position:absolute;left:-9999px">Los contenidos empiezan aquí</h1>
   <div class="portal-header-breadcrumb">Computer Science › Inicio</div>
