@@ -83,7 +83,7 @@
       .replace(/<(script|style|head|title)\b[\s\S]*?<\/\1\s*>/gi, '')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<li\b[^>]*>/gi, '\n- ')
-      .replace(/<\/(p|div|li|ul|ol|h[1-6]|tr|table|blockquote|section|article)\s*>/gi, '\n')
+      .replace(/<\/(p|div|ul|ol|h[1-6]|tr|table|blockquote|section|article)\s*>/gi, '\n')
       .replace(/<(p|div|h[1-6]|tr|table|blockquote|section|article)\b[^>]*>/gi, '\n')
       .replace(/<\/t[dh]\s*>/gi, ' ')
       .replace(/<[^>]*>/g, '');
