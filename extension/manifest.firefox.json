@@ -17,6 +17,7 @@
       "lib/core.js",
       "lib/store.js",
       "lib/api.js",
+      "lib/sync.js",
       "background.js"
     ]
   },

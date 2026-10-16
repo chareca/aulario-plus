@@ -41,7 +41,11 @@ test('an extension page in a tab is a page, not a content script', async () => {
 test('the ping alarm sets the next random alarm and records the ping', async () => {
   let pings = 0;
   const fetch = fakeFetch({
-    '/direct/session/current.json': () => { pings++; return { userId: 'user-1', maxInactiveInterval: 3600 }; }
+    // Only a request without auto=true is a keep-alive ping. The sync reads the session with auto=true.
+    '/direct/session/current.json': (url) => {
+      if (!url.includes('auto=true')) pings++;
+      return { userId: 'user-1', maxInactiveInterval: 3600 };
+    }
   });
   const bg = loadBackground({ fetch });
   const before = Date.now();

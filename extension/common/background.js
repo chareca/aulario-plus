@@ -11,11 +11,13 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
 const store = MAK.createStore(ext.storage.local);
+const courseApi = MAK.createApi({ fetch: (url, init) => fetch(url, init) });
+const sync = MAK.createSync({ api: courseApi, store, lockArea: ext.storage.session || null });
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';
 const PING_ALARM = 'miaulario-ping';
@@ -198,7 +200,26 @@ const handlers = {
     run: async () => {
       await store.set({ paused: true });
       await clearPersisted();
+      // The course data stays only while the user is logged in.
+      await sync.clearData();
       return { ok: true };
+    }
+  },
+  // The popup opened: record the use, and sync if the data is older than 2 minutes.
+  touch: {
+    run: async () => {
+      await sync.touch();
+      const { meta } = await store.get('meta');
+      if (!meta || !meta.lastSync || Date.now() - meta.lastSync > MAK.SYNC_FRESH_MS) {
+        sync.run({ force: true }).catch(() => {});
+      }
+      return { ok: true };
+    }
+  },
+  syncNow: {
+    run: async (msg) => {
+      await sync.touch();
+      return sync.run({ force: true, full: !!msg.full });
     }
   },
   relogin: {
@@ -239,6 +260,8 @@ const alarmHandlers = {
     // First, set the next alarm. If the worker stops during the ping, the sequence continues.
     await scheduleNext();
     await ping();
+    // The sync runs only if it is due (every 15 minutes, or every hour after 12 hours without use).
+    await sync.run().catch(() => {});
   }
 };
 
@@ -253,6 +276,7 @@ async function boot() {
   if (!existing || existing.periodInMinutes) await scheduleNext();
   await persistExisting();
   await ping();
+  await sync.run().catch(() => {});
 }
 
 ext.runtime.onInstalled.addListener(boot);
