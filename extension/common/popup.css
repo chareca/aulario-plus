@@ -128,6 +128,14 @@ label.check small { display: block; color: var(--muted); font-size: 12px; }
 label.radio { display: flex; align-items: flex-start; gap: 7px; padding: 3px 0; cursor: pointer; }
 label.radio input { margin-top: 3px; }
 
+/* Tools page (a tab) */
+body.tools { width: auto; height: auto; min-height: 100vh; max-width: 640px; margin: 0 auto; }
+.tools-main { padding: 24px 16px; flex: 1; }
+.tools-main h1 { font-size: 18px; margin: 0 0 12px; }
+.tools-main .status { margin: 8px 0; overflow-wrap: anywhere; }
+.tools-main progress { width: 100%; margin: 6px 0 10px; }
+.tools-main .row { max-width: 360px; }
+
 /* Privacy note */
 footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-align: center; }
 footer.privacy button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 10.5px; cursor: pointer; }

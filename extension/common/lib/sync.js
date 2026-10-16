@@ -114,7 +114,8 @@
       size: Number(r.size) || 0,
       modified: MAK.toMs(r.modifiedDate),
       folder,
-      link: r.type === 'text/url' ? MAK.safeHttpUrl(r.webLinkUrl) : null
+      link: r.type === 'text/url' ? MAK.safeHttpUrl(r.webLinkUrl) : null,
+      copyright: !!r.copyrightAlert // MiAulario asks to accept a copyright notice before the download
     };
   };
 

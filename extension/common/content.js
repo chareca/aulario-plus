@@ -7,6 +7,7 @@
 // - If you open the Announcements tool of a site, the script tells the background script.
 //   MiAulario marks these announcements as viewed, and the extension does the same.
 // - The script sends the "mark as viewed" requests that the background script could not send.
+// - In the Resources tool, the script adds the button "Download all (ZIP)".
 // - On each page of a site, the script records the visit. At the start of a new visit, it shows
 //   the banner "new since your last visit". On the next pages of the same visit, a short line.
 
@@ -74,6 +75,11 @@
   async function reportToolVisit() {
     const here = await currentTool();
     if (here && here.toolIds.includes('sakai.announcements')) send({ type: 'toolVisit', siteId: here.siteId, toolId: 'sakai.announcements' });
+    if (here && here.toolIds.includes('sakai.resources') && !MAK.isSpecialSite(here.siteId)) {
+      const { settings } = await ext.storage.local.get('settings');
+      MAK.setLang(settings && settings.lang === 'en' ? 'en' : 'es');
+      MAK.showZipButton(() => send({ type: 'openZip', siteId: here.siteId }));
+    }
   }
 
   async function flushPendingMarkViewed() {

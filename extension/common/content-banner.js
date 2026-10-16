@@ -48,6 +48,26 @@
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));
   }
 
+  // A small button above the Resources tool: "Download all (ZIP)".
+  MAK.showZipButton = function (onClick) {
+    if (document.getElementById('mak-zip-host')) return;
+    const main = document.querySelector('main#content') || document.querySelector('main');
+    if (!main) return;
+    const host = document.createElement('div');
+    host.id = 'mak-zip-host';
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = `:host { all: initial; display: block; margin: 0 0 10px; }
+      button { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; border-radius: 6px; padding: 5px 12px;
+        border: 1px solid #10524e; background: #10524e; color: #fff; }
+      button.dark { border-color: #4fd1a5; background: #4fd1a5; color: #0b1a17; }`;
+    const btn = MAK.h('button', { class: isDark() ? 'dark' : '', attrs: { type: 'button' }, text: `📦 ${MAK.t('zip.button')}`, on: { click: onClick } });
+    shadow.append(style, btn);
+    const crumb = main.querySelector(':scope > .portal-header-breadcrumb');
+    if (crumb) crumb.after(host);
+    else main.prepend(host);
+  };
+
   MAK.removeNewsBanner = function () {
     const old = document.getElementById(HOST_ID);
     if (old) old.remove();

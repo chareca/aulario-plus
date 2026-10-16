@@ -415,6 +415,16 @@ const handlers = {
       return { isNew: info.isNew, since: info.since, firstVisit: info.since === baseline, news, lang: settings.lang };
     }
   },
+  // Open the tools page that makes the ZIP of the files of a site.
+  openZip: {
+    content: true,
+    run: async (msg) => {
+      const { sites } = await store.get('sites');
+      if (typeof msg.siteId !== 'string' || !(sites || []).some((s) => s.id === msg.siteId)) return { ok: false };
+      await ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(msg.siteId)}`) });
+      return { ok: true };
+    }
+  },
   // Nothing before now is new in this site (or in all sites).
   markSiteSeen: {
     run: async (msg) => {

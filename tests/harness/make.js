@@ -103,6 +103,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
     permissions: { contains: async () => true, request: async () => true }
   };
   window.chrome = ext;
+  window.fetch = window.__mockFetch;
   window.__mock = { ext, listeners, data, alarms, fireAlarm: (name) => Promise.all(listeners.alarm.map((f) => f({ name }))) };
 })();
 `;

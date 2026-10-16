@@ -357,8 +357,13 @@ function renderNew(el) {
 // ---- Sites -------------------------------------------------------------------
 
 function siteActions(site) {
-  // The ZIP download adds a button here.
-  return [];
+  const tools = S.pages && S.pages[site.id] && S.pages[site.id].tools;
+  if (!tools || !tools['sakai.resources']) return [];
+  return h('button', {
+    class: 'link-btn',
+    text: t('zip.button'),
+    on: { click: () => ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(site.id)}`) }) }
+  });
 }
 
 function renderSites(el) {
