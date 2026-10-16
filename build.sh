@@ -4,7 +4,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION=$(python3 -I -c "import json, sys; print(json.load(open(sys.argv[1]))['version'])" extension/manifest.chromium.json)
+version_of() {
+  python3 -I -c "import json, sys; print(json.load(open(sys.argv[1]))['version'])" "$1"
+}
+VERSION=$(version_of extension/manifest.chromium.json)
+FIREFOX_VERSION=$(version_of extension/manifest.firefox.json)
+if [ "$VERSION" != "$FIREFOX_VERSION" ]; then
+  echo "ERROR: The manifests have different versions: chromium $VERSION, firefox $FIREFOX_VERSION." >&2
+  exit 1
+fi
 
 python3 -I scripts/make_icons.py extension/common/icons
 
