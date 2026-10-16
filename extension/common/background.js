@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/inbox.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -199,6 +199,51 @@ async function markNotificationsViewed(siteId, toolId) {
   await store.update('notifications', (list) => (list || []).map((n) => (n.siteId === siteId && n.tool === toolId ? Object.assign({}, n, { viewed: true }) : n)));
 }
 
+// ---- Badge on the toolbar icon -------------------------------------------------
+
+const BADGE_KEYS = ['settings', 'meta', 'assignments', 'announcements', 'notifications', 'readAnn', 'synoptic', 'forums', 'sites', 'pages'];
+const BADGE_RED = '#c5221f';
+const BADGE_BLUE = '#1a5fb4';
+
+// The number: deliveries not submitted that are late or due in 72 hours or less, plus the
+// unread items of the selected kinds. Red if a delivery is late or due in less than 24 hours.
+MAK.computeBadge = function (d, now) {
+  const s = MAK.withDefaults(d.settings);
+  if (!s.badge.enabled || !s.syncEnabled || !(d.meta && d.meta.lastSync)) return { text: '', color: BADGE_BLUE, soon: 0, unread: 0 };
+  const hidden = MAK.hiddenEverywhere(s);
+  let soon = 0;
+  let urgent = false;
+  if (s.badge.deliveries) {
+    const due = MAK.buildDue({ assignments: d.assignments, sites: d.sites, pages: d.pages, hidden, now });
+    soon = due.soon;
+    urgent = due.urgent;
+  }
+  const c = MAK.buildInbox({ announcements: d.announcements, notifications: d.notifications, readAnn: d.readAnn, synoptic: d.synoptic, forums: d.forums, sites: d.sites, pages: d.pages, hidden }).counts;
+  const unread = (s.badge.announcements ? c.announcements : 0) + (s.badge.messages ? c.messages : 0) + (s.badge.forums ? c.forums : 0);
+  const n = soon + unread;
+  return { text: n ? (n > 99 ? '99+' : String(n)) : '', color: urgent ? BADGE_RED : BADGE_BLUE, soon, unread };
+};
+
+async function updateBadge() {
+  const d = await store.get(BADGE_KEYS);
+  const b = MAK.computeBadge(d, Date.now());
+  MAK.setLang(MAK.withDefaults(d.settings).lang);
+  try {
+    await ext.action.setBadgeText({ text: b.text });
+    await ext.action.setBadgeBackgroundColor({ color: b.color });
+    if (ext.action.setBadgeTextColor) await ext.action.setBadgeTextColor({ color: '#ffffff' });
+    await ext.action.setTitle({ title: b.text ? MAK.t('badge.title', { due: b.soon, unread: b.unread }) : MAK.t('app.title') });
+  } catch {}
+}
+
+// Draw the badge again when the data or the settings change (wait a moment to group the changes).
+let badgeTimer = null;
+ext.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !Object.keys(changes).some((k) => BADGE_KEYS.includes(k))) return;
+  clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(updateBadge, 300);
+});
+
 // ---- Message router ----------------------------------------------------------
 
 // Who sent the message: 'page' (popup or a page of the extension), 'content'
@@ -384,6 +429,8 @@ const alarmHandlers = {
     await ping();
     // The sync runs only if it is due (every 15 minutes, or every hour after 12 hours without use).
     await sync.run().catch(() => {});
+    // The time changes the deliveries that are due soon.
+    await updateBadge();
   }
 };
 
@@ -397,6 +444,7 @@ async function boot() {
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
   await persistExisting();
+  await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});
 }

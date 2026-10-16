@@ -338,6 +338,26 @@ function renderSettings(el) {
     h(
       'div',
       { class: 'section' },
+      h('h2', { text: t('set.badge') }),
+      checkbox(t('set.badgeShow'), t('set.badgeHelp'), s.badge.enabled, (v) => send({ type: 'setSettings', patch: { badge: { enabled: v } } })),
+      h(
+        'div',
+        { class: 'indent' },
+        [
+          ['deliveries', 'set.badgeDeliveries'],
+          ['announcements', 'set.badgeAnnouncements'],
+          ['messages', 'set.badgeMessages'],
+          ['forums', 'set.badgeForums']
+        ].map(([key, label]) => {
+          const box = checkbox(t(label), null, s.badge[key], (v) => send({ type: 'setSettings', patch: { badge: { [key]: v } } }));
+          if (!s.badge.enabled) box.querySelector('input').disabled = true;
+          return box;
+        })
+      )
+    ),
+    h(
+      'div',
+      { class: 'section' },
       h('h2', { text: t('set.language') }),
       h(
         'select',

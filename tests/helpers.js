@@ -115,7 +115,9 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
     cookies: { onChanged: on(listeners.cookies), get: async () => null, set: async () => {}, remove: async () => {} },
     action: {
       setBadgeText: async ({ text }) => { badge.text = text; },
-      setBadgeBackgroundColor: async ({ color }) => { badge.color = color; }
+      setBadgeBackgroundColor: async ({ color }) => { badge.color = color; },
+      setBadgeTextColor: async () => {},
+      setTitle: async ({ title }) => { badge.title = title; }
     },
     tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; } },
     _listeners: listeners,

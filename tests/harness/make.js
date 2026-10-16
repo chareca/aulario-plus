@@ -95,7 +95,9 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
     cookies: { onChanged: on([]), get: async () => null, set: async () => {}, remove: async () => {} },
     action: {
       setBadgeText: async ({ text }) => { window.__badge.text = text; },
-      setBadgeBackgroundColor: async ({ color }) => { window.__badge.color = color; }
+      setBadgeBackgroundColor: async ({ color }) => { window.__badge.color = color; },
+      setBadgeTextColor: async () => {},
+      setTitle: async ({ title }) => { window.__badge.title = title; }
     },
     tabs: { create: async (o) => { window.__tabs.push(o); return { id: window.__tabs.length }; } },
     permissions: { contains: async () => true, request: async () => true }
