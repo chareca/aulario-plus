@@ -18,7 +18,6 @@
   const LOCK_MS = 3 * MINUTE;
   const ANNOUNCEMENT_DAYS = 60;
   const MAX_FORUMS_PER_SITE = 10;
-  MAK.SYNC_FRESH_MS = 2 * MINUTE;
 
   // Keep "seen" from the previous data. New items get "now", or 0 for the first fetch.
   function withSeen(items, previous, keyOf, now, baseline) {
@@ -29,7 +28,18 @@
       return Object.assign(x, { seen });
     });
   }
-  MAK.withSeen = withSeen;
+
+  // Announcements: a full fetch replaces the list; a small fetch adds to it and changes the
+  // items that it contains. Keep the items of the last 60 days, newest first.
+  MAK.mergeAnnouncements = function (prev, fetched, full, minDate) {
+    let merged = fetched;
+    if (!full) {
+      const byId = new Map((prev || []).map((x) => [x.id, x]));
+      for (const a of fetched) byId.set(a.id, Object.assign({}, byId.get(a.id), a));
+      merged = [...byId.values()];
+    }
+    return merged.filter((a) => (a.created || 0) >= minDate).sort((a, b) => (b.created || 0) - (a.created || 0));
+  };
 
   // ---- The sync engine -------------------------------------------------------
 
@@ -44,7 +54,6 @@
 
     function isDue(meta) {
       const t = now();
-      if (meta.backoffUntil && t < meta.backoffUntil) return false;
       const idle = meta.lastUse ? t - meta.lastUse > IDLE_AFTER_MS : false;
       return t - (meta.lastSync || 0) >= (idle ? IDLE_ROUTINE_MS : ROUTINE_MS);
     }
@@ -90,8 +99,9 @@
       const settings = MAK.withDefaults(st.settings);
       if (!settings.syncEnabled) return { skipped: 'disabled' };
       let meta = Object.assign({}, st.meta);
+      // After a server error, wait. Also a manual refresh waits, so that it does not add load.
+      if (meta.backoffUntil && now() < meta.backoffUntil) return { skipped: 'backoff' };
       if (!o.force && !(o.siteIds && o.siteIds.length) && !isDue(meta)) return { skipped: 'not-due' };
-      if (meta.backoffUntil && now() < meta.backoffUntil && !o.force) return { skipped: 'backoff' };
       if (!(await takeLock())) return { skipped: 'locked' };
 
       const t = now();
@@ -132,7 +142,7 @@
         }
         if (meta.userId && meta.userId !== session.userId) {
           await clearData();
-          meta = Object.assign({ installedAt: meta.installedAt }, { stale: {}, baselined: {} });
+          meta = { installedAt: meta.installedAt, stale: {}, baselined: {} };
           full = true; // Get all the data of the new user.
         }
         meta.userId = session.userId;
@@ -182,19 +192,8 @@
         // 6. Announcements: a small fetch each time, a full fetch every 4 hours.
         await step('announcements', async () => {
           const fetched = (full ? await api.announcements(200, ANNOUNCEMENT_DAYS) : await api.announcements(30, 7)).map(MAK.trimAnnouncement);
-          const minDate = t - ANNOUNCEMENT_DAYS * DAY;
-          await store.update('announcements', (prev) => {
-            let merged;
-            if (full) merged = fetched;
-            else {
-              const byId = new Map((prev || []).map((x) => [x.id, x]));
-              for (const a of fetched) byId.set(a.id, Object.assign({}, byId.get(a.id), a));
-              merged = [...byId.values()];
-            }
-            merged = merged.filter((a) => (a.created || 0) >= minDate);
-            merged.sort((a, b) => (b.created || 0) - (a.created || 0));
-            return withSeen(merged, prev, (x) => x.id, t, !meta.baselined.ann);
-          });
+          const merge = (prev) => MAK.mergeAnnouncements(prev, fetched, full, t - ANNOUNCEMENT_DAYS * DAY);
+          await store.update('announcements', (prev) => withSeen(merge(prev), prev, (x) => x.id, t, !meta.baselined.ann));
           meta.baselined.ann = true;
           if (full) {
             // Remove the read state of announcements that are not in the list.
@@ -233,9 +232,8 @@
           await step(`resources:${siteId}`, async () => {
             const items = (await api.resources(siteId)).map((r) => MAK.trimResource(r, siteId)).filter(Boolean);
             const key = MAK.resourceKey(siteId);
-            const baseKey = `res:${siteId}`;
-            await store.update(key, (prev) => ({ at: t, items: withSeen(items, prev && prev.items, (x) => x.url, t, !meta.baselined[baseKey]) }));
-            meta.baselined[baseKey] = true;
+            await store.update(key, (prev) => ({ at: t, items: withSeen(items, prev && prev.items, (x) => x.url, t, !meta.baselined[key]) }));
+            meta.baselined[key] = true;
           });
         }
 
@@ -265,7 +263,7 @@
       await store.update('meta', (m) => Object.assign({}, m, { lastUse: now() }));
     }
 
-    return { run, touch, clearData, isDue };
+    return { run, touch, clearData };
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

@@ -20,6 +20,8 @@ const courseApi = MAK.createApi({ fetch: (url, init) => fetch(url, init) });
 const sync = MAK.createSync({ api: courseApi, store, lockArea: ext.storage.session || null });
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';
+// The popup asks for a sync when the data is older than this.
+const SYNC_FRESH_MS = 2 * MAK.MINUTE;
 const PING_ALARM = 'miaulario-ping';
 // Random interval between pings, in seconds. With the longest interval (10 minutes),
 // 6 pings occur in the 60 minutes of inactivity that Sakai accepts.
@@ -306,7 +308,7 @@ const handlers = {
     run: async () => {
       await sync.touch();
       const { meta } = await store.get('meta');
-      if (!meta || !meta.lastSync || Date.now() - meta.lastSync > MAK.SYNC_FRESH_MS) {
+      if (!meta || !meta.lastSync || Date.now() - meta.lastSync > SYNC_FRESH_MS) {
         sync.run({ force: true }).catch(() => {});
       }
       return { ok: true };

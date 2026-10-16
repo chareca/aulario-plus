@@ -110,7 +110,17 @@ test('a server error stops the sync and waits longer each time', async () => {
   await s.sync.run({ force: true });
   assert.equal(s.area.data.meta.backoffStep, 2);
   s.clock.t += MAK.MINUTE;
-  assert.deepEqual(await s.sync.run(), { skipped: 'not-due' });
+  assert.deepEqual(await s.sync.run(), { skipped: 'backoff' });
+  assert.deepEqual(await s.sync.run({ force: true }), { skipped: 'backoff' }, 'a manual refresh also waits');
+});
+
+test('mergeAnnouncements: a full fetch replaces; a small fetch adds and changes; old items go', () => {
+  const D = MAK.DAY;
+  const prev = [{ id: 'a', title: 'A', created: 10 * D }, { id: 'b', title: 'B', created: 2 * D }];
+  const small = [{ id: 'b', title: 'B2', created: 2 * D }, { id: 'c', title: 'C', created: 12 * D }];
+  assert.deepEqual(MAK.mergeAnnouncements(prev, small, false, 0).map((x) => `${x.id}:${x.title}`), ['c:C', 'a:A', 'b:B2']);
+  assert.deepEqual(MAK.mergeAnnouncements(prev, small, true, 0).map((x) => x.id), ['c', 'b']);
+  assert.deepEqual(MAK.mergeAnnouncements(prev, small, false, 5 * D).map((x) => x.id), ['c', 'a']);
 });
 
 test('a different user removes all the data of the previous user', async () => {
