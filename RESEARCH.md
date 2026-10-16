@@ -75,14 +75,37 @@ The test reads `currentTime - lastAccessedTime` with `?auto=true`. This read doe
 | The session stays active while the computer is off or in sleep mode. | **No**, because no code operates | Sakai ends the session on the server after 60 minutes. |
 | You start the computer and open MiAulario. You are logged in. | **Partially** | The extension opens the SAML login. If `idpsession` is active, a password is not necessary. If not, the password manager of the browser can fill the form. |
 
+## APIs for the course data (version 1.2.0)
+
+All these endpoints answer with JSON for the session cookie. The parameter `auto=true` works on all of them: Sakai does not record the request as activity (test: 9 requests, and the inactivity timer did not go back to zero).
+
+| Data | Endpoint | Fields that the extension uses |
+|---|---|---|
+| Sites | `/direct/site.json?_limit=200` | `id`, `title`, `type` |
+| Tools of a site | `/direct/site/{id}/pages.json` | page `id` and `url`, tool `id` (placement) and `toolId` |
+| Deliveries of all sites | `/direct/assignment/my.json` | `dueTime`, `closeTime`, `openTime`, `timeCreated` (`{epochSecond, nano}`), `submissionType`, `submissions[]` (`submitted`, `draft`, `returned`, `graded`, `canSubmit`) |
+| Announcements of all sites | `/direct/announcement/user.json?n=&d=` | `id` (`{site}:main:{uuid}`), `announcementId` (uuid), `createdOn` (ms), `body` (HTML), `attachments` |
+| Bell notifications | `GET /api/users/me/notifications` | `event` (`annc.new`, ...), `ref` (`/announcement/msg/{site}/main/{uuid}`), `viewed`, `url` |
+| Mark notifications as viewed | `POST /api/users/me/notifications/markViewed?siteId=&toolId=` | All the notifications of one tool in one site. There is no request for one notification. |
+| Unread counts | `/direct/synopticmsgcntritem.json` | `newMessagesCount`, `newForumCount` for each site |
+| Forum topics | `/direct/forums/site/{id}.json`, `/direct/forums/site/{id}/forum/{forumId}.json` | `topics[]`: `readMessages`, `totalMessages`, `modifiedDate` |
+| Files | `/direct/content/site/{id}.json` | A flat list of all the folders and files: `type`, `url`, `size`, `modifiedDate` (`yyyyMMddHHmmssSSS`, UTC), `webLinkUrl`, `copyrightAlert` |
+| Calendar | `/direct/calendar/my.json?firstDate=&lastDate=` | `firstTime.time`, `duration`, `type`, `siteName`, `assignmentId` |
+
+Limits:
+
+- Private messages and forum posts: MiAulario gives only the numbers of unread items. The Messages tool is a JSF page, and the endpoint for one forum message returns HTTP 500.
+- The mail archive endpoint returns HTTP 404.
+- Deep links: `/portal/directtool/{placement}?itemReference=/announcement/msg/{site}/main/{uuid}&sakai_action=doShowmetadata` opens one announcement. `/portal/directtool/{placement}?assignmentId={id}&panel=Main&sakai_action=doView_submission` opens one delivery.
+
 ## Not in the design
 
 - **A remote server that sends pings with your session cookie.** This method keeps the session active when your computer is off. But your session is then on a different computer, and a person with that cookie has access to your account. Also, this method does not agree with the purpose of the UPNA rules.
 - **The password in the extension.** The storage of an extension is not encrypted. The password manager of the browser is safer.
 
-## Design of the extension
+## Design of the extension (version 1.2.0)
 
-The extension has one source code for Chromium browsers (Chrome, Edge, Brave, Opera, Vivaldi, Arc, Helium) and Firefox (128 or later). It uses Manifest V3.
+The extension has one source code for Chromium browsers and Firefox (128 or later). It uses Manifest V3 and no build tools. The shared files are classic scripts that attach to `globalThis.MAK`. Node can also load them for the tests.
 
 ### Files
 
@@ -91,45 +114,46 @@ extension/
   manifest.chromium.json   Chromium manifest ("background.service_worker")
   manifest.firefox.json    Firefox manifest ("background.scripts")
   common/
-    background.js          alarms, ping, persistent cookies, status
-    content.js             on miaulario.unavarra.es: finds the logout and opens the login page
-    popup.html, popup.js   status, "Ping now", "Pause", login page option
-    icons/
-scripts/
-  make_icons.py            makes the PNG icons
-build.sh                   makes dist/chromium, dist/firefox and the ZIP files
+    background.js          ping, persistent cookies, message and alarm routers, badge
+    content-early.js       at document_start: hides the selected sites
+    content.js             login page, logout, visits, Announcements tool, ZIP button
+    content-banner.js      the banner of new items and the ZIP button (closed shadow root)
+    popup.html, popup.js   tabs: deliveries, inbox, new items, sites, settings
+    tools.html, tools.js   ZIP download and calendar export (in a tab)
+    _locales/              name and description of the extension (Spanish, English)
+    lib/core.js            dates, text, safe URLs, portal paths
+    lib/store.js           settings and the storage queue (only the background writes)
+    lib/api.js             one function for each endpoint, and the trim functions
+    lib/sync.js            the sync engine
+    lib/due.js, inbox.js, news.js   the models of the popup tabs
+    lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
+    lib/zip.js, ics.js     ZIP writer and iCalendar writer
+tests/                     Node tests, synthetic data and a test harness
 ```
 
-### Permissions
+### Rules
 
-- `alarms`, `cookies`, `storage`
-- `host_permissions`: `https://miaulario.unavarra.es/*`, `https://sso.unavarra.es/*`
-
-### Components
-
-1. **Keep-alive** (`background.js`): The script uses one alarm (`alarms.create('miaulario-ping', { when })`) with a random delay of 180 to 600 s. At each alarm, the script first sets the next alarm. Then it sends `fetch('https://miaulario.unavarra.es/direct/session/current.json', { credentials: 'include', cache: 'no-store' })`. The script records the time, the HTTP status and the login status in `storage`. With the longest delay (10 minutes), 6 pings occur in 60 minutes. This margin is sufficient if the browser stops the service worker for some time.
-2. **Persistent cookies** (`background.js`): The script monitors `cookies.onChanged`. The server sets `SAKAISESSIONID`, `SERVERID` and `idpsession` without `expirationDate`. The script then writes the same cookie again, with the same flags and with `expirationDate` set to 30 days from now. Then the cookies stay after you close the browser.
-3. **Login page** (`content.js`): When the portal opens, the script reads the session with `?auto=true`. If the session is not active, the script opens `/sakai-login-tool/container/saml/login`. To prevent a loop, this occurs a maximum of one time in 2 minutes.
-4. **Manual logout:** If you click **Log out** (`/portal/logout` or `/saml/logout`), the extension pauses and removes the persistent cookies. While the extension is paused, it only reads the session with `?auto=true`. When you log in again, the extension starts again.
-5. **Popup:** The popup shows the session status, the last ping, the time that remains and the next ping. It has the buttons **Ping now** and **Pause**.
-
-### Differences between Chromium and Firefox
-
-- `background`: Chromium uses `{"service_worker": "background.js"}`. Firefox uses `{"scripts": ["background.js"]}`. `build.sh` copies the applicable manifest.
-- The Firefox manifest has `browser_specific_settings.gecko.id`. Some Firefox versions do not give the host permissions at install. In this condition, the popup shows a message and a button to give the permissions.
-- The code uses `globalThis.browser ?? globalThis.chrome`. In Manifest V3, the two APIs return promises.
+- Only the background script writes to the storage, through one queue. The popup, the tools page and the content scripts read the storage and send messages.
+- The background script accepts a message only from a page of the extension or from a content script in the top frame of MiAulario. A content script can send only some messages.
+- All the texts of the page go in with `textContent`. Links are http or https only. Links to MiAulario come from validated ids.
+- If a request fails, the extension keeps the old data. If a different user logs in, or the user logs out, the extension removes all the course data.
+- The extension has no new permissions in version 1.2.0. The badge uses the `action` API. The ZIP and the `.ics` file are saved from a page of the extension.
 
 ## Tests
 
-1. Load the extension. In Chromium, open `chrome://extensions`, set **Developer mode** to on and click **Load unpacked**. In Firefox, open `about:debugging` and click **Load Temporary Add-on**.
-2. In the popup, make sure that the last ping changes every 3 to 10 minutes.
-3. Do not use the browser for 70 minutes. The session must stay active.
-4. Close the browser. Open it again after 15 minutes. The session must stay active.
-5. Set the computer to off for one night. Open MiAulario. The login page must open. Record if the SSO asks for a password. This result shows the duration of `idpsession`.
-6. Click **Log out**. The extension must not open the login page.
+1. Node tests: `node --test 'tests/*.test.js'`. They use synthetic data with the same shapes as the real responses.
+2. Test harness: `node tests/harness/make.js` makes a copy of the pages with a mock extension API, the real background script and synthetic data.
+3. Manual tests in Chrome and Firefox:
+   - The session must stay active after 70 minutes without use.
+   - Close the browser and open it again after 15 minutes. The session must stay active.
+   - Read an announcement in the extension, and look at the bell of MiAulario. Read one in MiAulario, and look at the extension.
+   - Open a site. The banner must show the new items of that site only.
+   - Download the ZIP of a site. Export the `.ics` file and import it in a calendar.
+   - Hide a site in the two modes.
+   - Click **Log out**. The extension must not open the login page.
 
 ## Open questions
 
-- **The duration of the SSO session (`idpsession`) on the server.** It is not possible to read this value. The extension records each time that it opens the login page. These records can show the duration.
-- **A maximum session duration in Sakai, in addition to the inactivity timeout.** By default, Sakai does not have this limit. If `userId` becomes empty while pings occur, the records will show it.
-- **The "10 minutes" that users see.** The server ends the session after 60 minutes without activity. After 50 minutes, the page shows the warning "10 minutes". If the session ends before 60 minutes, the ping records will show it.
+- **The duration of the SSO session (`idpsession`) on the server.** It is not possible to read this value. If the login page asks for the password after one night, the SSO session ended.
+- **A maximum session duration in Sakai, in addition to the inactivity timeout.** By default, Sakai does not have this limit.
+- **The "10 minutes" that users see.** The server ends the session after 60 minutes without activity. After 50 minutes, the page shows the warning "10 minutes".

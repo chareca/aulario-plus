@@ -1,6 +1,8 @@
 # MiAulario Keep-Alive
 
-MiAulario Keep-Alive is a browser extension for Chromium browsers and Firefox. It keeps your MiAulario (UPNA) session active while the browser is open. When the session ends, the extension opens the login page.
+MiAulario Keep-Alive is a browser extension for Chromium browsers and Firefox. It keeps your MiAulario (UPNA) session active while the browser is open. It also shows your deliveries, announcements, messages and new items of all your courses in one place.
+
+The interface is in Spanish. You can change it to English in the settings.
 
 ## Privacy
 
@@ -16,12 +18,55 @@ MiAulario Keep-Alive is a browser extension for Chromium browsers and Firefox. I
 
 ## Functions
 
+### Session
+
 - **Keep-alive ping:** At a random interval of 3 to 10 minutes, the extension sends a request to `/direct/session/current.json`. Sakai records this request as activity, and the 60-minute inactivity timer goes back to zero. The extension also operates when no MiAulario tab is open.
 - **Persistent cookies:** The extension changes the session cookies (`SAKAISESSIONID`, `SERVERID`, `idpsession`) into persistent cookies. Then the session stays after you close the browser and open it again.
 - **Login page:** If you open MiAulario and the session is not active, the extension opens the SSO login page. If the SSO session is active, you come back logged in. If not, enter your user name and password.
-- **Manual logout:** If you click **Log out**, the extension pauses and removes the persistent cookies. The extension starts again when you log in.
+- **Manual logout:** If you click **Log out**, the extension pauses. It removes the persistent cookies and the course data. The extension starts again when you log in.
 
-The extension does not keep your password.
+### Popup
+
+- **Deliveries:** The deliveries of all your courses, with a countdown and a color for the urgency: red (less than 24 hours or late), orange (less than 72 hours), yellow (less than 7 days) and green. Groups: late, to do, returned, submitted and closed. A filter shows one site. A delivery is submitted only if its submission is not a draft.
+- **Inbox:** The unread announcements, private messages and forum posts of all your sites in one list. Filter by type, by site and by unread items. The search does not use the case or the accents of the letters.
+  - An announcement is read if you read it in the extension, or if the bell of MiAulario shows it as viewed.
+  - When no unread announcement is left in a site, the extension tells the bell of MiAulario that the announcements of that site are viewed.
+  - When you open the Announcements tool of a site in MiAulario, the extension marks the announcements of that site as read.
+  - For messages and forums, MiAulario gives only the numbers of unread items. The inbox shows these numbers and a link to the tool.
+- **New items:** For each site, the files, announcements, deliveries and forum posts that came after your last visit of that site. A visit of one site does not change the other sites. Use **Mark as seen** for one site or for all sites.
+- **Sites:** Hide the sites that you do not use. Select if a hidden site hides only in the sidebar of MiAulario, or also in the extension.
+- **Settings:** The keep-alive controls, the course data sync, the number on the icon, the calendar export and the language.
+
+### In MiAulario
+
+- **Banner of new items:** When you open a site, a banner shows the items that came after your previous visit of that site. The next pages of the same visit show a short line. A new visit starts after 30 minutes without pages of the site. There are no system notifications.
+- **Download all (ZIP):** In the Resources tool, a button downloads all the files of the site as one ZIP file with the same folders. You can also start it from the Sites tab of the popup.
+- **Hidden sites:** The sidebar does not show the sites that you hid.
+
+### Number on the icon
+
+The number shows the deliveries that are late or due in 72 hours or less, the unread announcements and the unread messages. The unread forum posts are an option. The number is red if a delivery is late or due in less than 24 hours. You can turn off the number, or select what it counts.
+
+### Calendar export
+
+The extension makes an `.ics` file with your deliveries and the events of the MiAulario calendar (from 30 days ago to one year from now). Import the file in Google Calendar, Apple Calendar or Outlook. The file is a copy of one moment: export it again to get the changes. Each event has a fixed ID, so most calendar apps update the event and do not add it two times.
+
+## Requests to MiAulario
+
+The extension reads your course data from MiAulario with these requests:
+
+| When | Requests |
+|---|---|
+| Every 15 minutes (every hour after 12 hours without use) | Session, deliveries, unread counts, bell notifications, announcements of the last 7 days, and forum topics of the sites with unread posts |
+| Every 4 hours | All the announcements of the last 60 days, and the files and forum topics of all the sites |
+| When you open a site (a new visit) | The same as every 15 minutes, plus the files and the forum topics of that site |
+| When you open the popup | The same as every 15 minutes, if the data is older than 2 minutes |
+
+- The extension sends one request at a time, with a pause between the requests.
+- Each request of the sync has the parameter `auto=true`. Sakai then does not record the request as activity. Only the keep-alive ping records activity.
+- After a server error, the extension waits longer each time before it sends more requests.
+- The extension does not send requests for hidden sites if you hide them also in the extension.
+- To stop all these requests, turn off **Sync course data** in the settings.
 
 ## Install
 
@@ -58,22 +103,32 @@ The script makes these items in `dist/`:
 - `chromium/` and `firefox/`: the extension folders.
 - One ZIP file for each browser.
 
-## Popup
+## Tests
 
-The popup shows:
+Node.js 20 or later is necessary. The tests do not need other packages.
 
-- The session status.
-- The time since the last ping, with the HTTP status.
-- The approximate time that remains before the session ends.
-- The time until the next ping.
+```bash
+node --test 'tests/*.test.js'
+```
 
-Click **Ping now** to send a ping immediately. Click **Pause** to stop the pings. Clear the check box to stop the automatic login page.
+To see the popup and the pages with synthetic data in a normal browser tab:
 
-## Limits
+```bash
+node tests/harness/make.js
+```
 
-- If the computer is off or in sleep mode, the extension does not operate. Sakai ends the session after 60 minutes without activity.
-- The MiAulario server records each ping. The pings are not the same as the requests of a person.
+Then serve `tests/harness/out/` with a local web server, for example `python3 -m http.server 8766 --directory tests/harness/out`, and open `popup.html`, `site.html` or `tools.html?ics=1`.
+
+## Contribute
+
+- The commit messages follow Conventional Commits: `<type>(<optional scope>): <description>`.
+- The texts of the code and of the documents follow ASD-STE100 (Simplified Technical English).
+- The git hooks in `.githooks/` check the commit messages. To use them, run this command one time after you clone the repository:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ## Technical details
 
-Refer to [RESEARCH.md](RESEARCH.md). This file shows how the MiAulario session, the cookies and the timeout operate.
+Refer to [RESEARCH.md](RESEARCH.md). This file shows how the MiAulario session, the cookies, the APIs and the timeout operate.
