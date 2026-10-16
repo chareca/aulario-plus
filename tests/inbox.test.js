@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib, loadBackground, fakeFetch, response } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'sync', 'inbox');
+const MAK = loadLib('core', 'store', 'api', 'inbox');
 
 const announcements = F.ANNOUNCEMENTS.map(MAK.trimAnnouncement);
 const notifications = F.NOTIFICATIONS.map(MAK.trimNotification);

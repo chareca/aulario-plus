@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib, loadBackground, fakeFetch } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'sync', 'due', 'inbox', 'news');
+const MAK = loadLib('core', 'store', 'api', 'due', 'inbox', 'news');
 
 const { MINUTE, HOUR, DAY } = MAK;
 const pages = Object.fromEntries(F.SITES.map((s) => [s.id, MAK.trimPages(F.pages(s.id), F.NOW)]));

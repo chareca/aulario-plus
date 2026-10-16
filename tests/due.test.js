@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib, loadBackground } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'sync', 'i18n', 'due');
+const MAK = loadLib('core', 'store', 'api', 'i18n', 'due');
 
 const trimmed = F.ASSIGNMENTS.map(MAK.trimAssignment);
 const pages = Object.fromEntries(F.SITES.map((s) => [s.id, MAK.trimPages(F.pages(s.id), F.NOW)]));

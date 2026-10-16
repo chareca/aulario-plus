@@ -7,7 +7,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { loadLib } = require('./helpers');
 const F = require('./fixtures/miaulario');
-const MAK = loadLib('core', 'store', 'sync', 'i18n', 'zip');
+const MAK = loadLib('core', 'store', 'api', 'i18n', 'zip');
 
 const bytes = (s) => new TextEncoder().encode(s);
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mak-zip-'));
