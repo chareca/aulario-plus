@@ -61,8 +61,8 @@
 
   // The items of one site that are newer than "since".
   // forumBase: {topicId: total} at the reference time, or null (then no forum news).
-  MAK.newSince = function ({ siteId, since, resources, announcements, assignments, forums, forumBase, pages, now }) {
-    const out = { files: [], announcements: [], deliveries: [], forums: [], total: 0 };
+  MAK.newSince = function ({ siteId, since, resources, announcements, assignments, forums, forumBase, grades, pages, now }) {
+    const out = { files: [], announcements: [], deliveries: [], forums: [], grades: [], total: 0 };
     const ref = since || 0;
 
     for (const r of (resources && resources.items) || []) {
@@ -96,11 +96,18 @@
       }
     }
 
+    // Only the name of the item, not the grade (other persons can see the screen).
+    for (const g of grades || []) {
+      if (g.siteId !== siteId || !g.gradedAt || g.gradedAt <= ref) continue;
+      out.grades.push({ id: g.id, title: g.name, url: g.url || MAK.siteUrl(siteId), time: g.gradedAt });
+    }
+
     const byTime = (x, y) => y.time - x.time;
     out.files.sort(byTime);
     out.announcements.sort(byTime);
     out.deliveries.sort(byTime);
-    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.forums.reduce((n, f) => n + f.delta, 0);
+    out.grades.sort(byTime);
+    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.grades.length + out.forums.reduce((n, f) => n + f.delta, 0);
     return out;
   };
 

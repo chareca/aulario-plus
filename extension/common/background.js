@@ -420,7 +420,7 @@ const handlers = {
       if (MAK.hiddenEverywhere(settings).has(siteId) || !settings.syncEnabled) return { isNew: info.isNew, since: info.since, news: null, lang: settings.lang };
       if (info.isNew && !st.paused) await sync.run({ siteIds: [siteId] }).catch(() => {});
       const key = MAK.resourceKey(siteId);
-      const d = await store.get(['announcements', 'assignments', 'forums', 'pages', 'forumSnap', key]);
+      const d = await store.get(['announcements', 'assignments', 'forums', 'pages', 'forumSnap', 'grades', key]);
       const snap = (d.forumSnap || {})[siteId];
       const forumsOfSite = (d.forums || {})[siteId];
       const news = MAK.newSince({
@@ -431,6 +431,7 @@ const handlers = {
         assignments: d.assignments,
         forums: forumsOfSite,
         forumBase: snap ? (info.isNew ? snap.last : snap.previous) : null,
+        grades: d.grades, // only in the banner: the Grades tab of the popup shows them already
         pages: d.pages,
         now
       });

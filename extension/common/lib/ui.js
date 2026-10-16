@@ -73,6 +73,7 @@
     if (news.files.length) parts.push(MAK.t('news.files', { n: news.files.length }));
     if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
     if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
+    if (news.grades && news.grades.length) parts.push(MAK.t('news.grades', { n: news.grades.length }));
     const posts = news.forums.reduce((n, f) => n + f.delta, 0);
     if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));
     return parts.join(' · ');

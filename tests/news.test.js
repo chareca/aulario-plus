@@ -81,6 +81,22 @@ test('announcements and deliveries: own site only, late publication counts, not 
   assert.equal(n.total, 3);
 });
 
+test('grades: only the grades of the site that came after the visit; the baseline grades are not new', () => {
+  const since = F.NOW;
+  const grades = [
+    { id: '1', siteId: F.CS, name: 'Lab 1', score: '9', graded: true, gradedAt: since + HOUR, url: 'https://miaulario.unavarra.es/portal/directtool/x' },
+    { id: '2', siteId: F.CS, name: 'Lab 0', score: '7', graded: true, gradedAt: 0 },
+    { id: '3', siteId: F.CS, name: 'Before', score: '7', graded: true, gradedAt: since - HOUR },
+    { id: '4', siteId: F.MATH, name: 'Other site', score: '5', graded: true, gradedAt: since + HOUR },
+    { id: '5', siteId: F.CS, name: 'Not graded', score: '', graded: false, gradedAt: null }
+  ];
+  const n = MAK.newSince({ siteId: F.CS, since, grades, pages, now: since + 2 * HOUR });
+  assert.deepEqual(n.grades, [{ id: '1', title: 'Lab 1', url: grades[0].url, time: since + HOUR }]);
+  assert.ok(!JSON.stringify(n.grades).includes('"9"'), 'the grade is not in the banner items');
+  assert.equal(n.total, 1);
+  assert.deepEqual(MAK.newSince({ siteId: F.CS, since, pages, now: since }).grades, [], 'no grades: the popup list');
+});
+
 test('forums: new posts since the snapshot; no snapshot means no forum news', () => {
   const forums = { topics: [{ id: '71', title: 'Lab 3', total: 9 }, { id: '72', title: 'Exam', total: 8 }, { id: '73', title: 'New topic', total: 2 }] };
   const n = MAK.newSince({ siteId: F.CS, since: F.NOW, forums, forumBase: { 71: 7, 72: 8 }, pages, now: F.NOW });
@@ -127,6 +143,7 @@ test('background: the visit message records the visit, gets fresh data and answe
   const extra = { url: `https://miaulario.unavarra.es/access/content/group/${F.CS}/Apuntes/Tema%203.pdf`, title: 'Tema 3.pdf', type: 'application/pdf', size: 9, modifiedDate: F.sakaiDate(clock.t + HOUR) };
   routes[`/direct/content/site/${F.CS}.json`] = { content_collection: F.resources(F.CS).concat(extra) };
   routes[`/direct/forums/site/${F.CS}/forum/7.json`] = { id: 7, topics: [{ id: 71, title: 'Questions about lab 3', readMessages: 4, totalMessages: 9 }, { id: 72, title: 'Exam doubts', readMessages: 6, totalMessages: 8 }] };
+  routes['/api/users/me/grades'] = { grades: F.GRADES.map((g) => (g.id === 503 ? Object.assign({}, g, { score: '9', notGradedYet: false }) : g)) };
   clock.t += 2 * HOUR;
   log.length = 0;
   r = await bg.send({ type: 'visit', siteId: F.CS }, CONTENT);
@@ -135,6 +152,7 @@ test('background: the visit message records the visit, gets fresh data and answe
   assert.equal(r.firstVisit, false);
   assert.deepEqual(r.news.files.map((f) => [f.title, f.label]), [['Tema 3.pdf', 'new']]);
   assert.deepEqual(r.news.forums.map((f) => [f.title, f.delta]), [['Questions about lab 3', 2]]);
+  assert.deepEqual(r.news.grades.map((g) => g.title), ['Lab report 1'], 'a new grade of this site');
 
   // The next page of the same visit: no new requests, the same items (for the short line).
   clock.t += 5 * MINUTE;

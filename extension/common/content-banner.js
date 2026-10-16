@@ -102,7 +102,8 @@
       group('news.groupFiles', news.files, (f) => h('li', null, h('a', { href: f.url, text: f.title }), h('span', { class: `tag ${f.label}`, text: MAK.t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
       group('news.groupAnnouncements', news.announcements, (a) => h('li', null, h('a', { href: a.url, text: a.title }), h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
       group('news.groupDeliveries', news.deliveries, (d) => h('li', null, h('a', { href: d.url, text: d.title }), d.due ? h('span', { class: 'meta', text: MAK.t('news.due', { date: MAK.formatDate(d.due) }) }) : null)),
-      group('news.groupForums', news.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), h('span', { class: 'meta', text: MAK.t('news.forumDelta', { n: f.delta }) })))
+      group('news.groupForums', news.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), h('span', { class: 'meta', text: MAK.t('news.forumDelta', { n: f.delta }) }))),
+      group('news.groupGrades', news.grades || [], (g) => h('li', null, h('a', { href: g.url, text: g.title }), h('span', { class: 'meta', text: MAK.t('news.graded', { date: MAK.formatDate(g.time) }) })))
     );
     const toggle = h('button', {
       attrs: { type: 'button', 'aria-expanded': String(!list.hidden) },
