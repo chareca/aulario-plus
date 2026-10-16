@@ -8,6 +8,12 @@
 // 3. If you log out, the script pauses and removes these cookies. The script starts
 //    again when you log in manually.
 
+// Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
+// Keep this list the same as "background.scripts" in manifest.firefox.json.
+if (typeof importScripts === 'function') {
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js');
+}
+
 const api = globalThis.browser ?? globalThis.chrome;
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';

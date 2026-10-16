@@ -3,18 +3,31 @@
   "name": "MiAulario Keep-Alive",
   "version": "1.1.0",
   "description": "Keeps your MiAulario (UPNA) session active while the browser is open. Opens the login page when the session ends.",
-  "permissions": ["alarms", "cookies", "storage"],
+  "permissions": [
+    "alarms",
+    "cookies",
+    "storage"
+  ],
   "host_permissions": [
     "https://miaulario.unavarra.es/*",
     "https://sso.unavarra.es/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "lib/core.js",
+      "lib/store.js",
+      "lib/api.js",
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["https://miaulario.unavarra.es/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://miaulario.unavarra.es/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
