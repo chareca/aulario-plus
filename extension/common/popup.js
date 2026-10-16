@@ -25,6 +25,7 @@ const siteTitle = (id) => ((S.sites || []).find((s) => s.id === id) || {}).title
 const panels = {
   due: { render: renderDue },
   inbox: { render: renderInbox },
+  new: { render: renderNew, open: openNew },
   settings: { render: renderSettings }
 };
 let current = 'due';
@@ -37,6 +38,7 @@ function selectTab(name) {
   }
   for (const key of Object.keys(panels)) $(`tab-${key}`).hidden = key !== name;
   try { localStorage.setItem('mak.tab', name); } catch {}
+  if (panels[name].open) panels[name].open();
   renderCurrent();
 }
 
@@ -56,7 +58,9 @@ function setCount(id, n) {
 }
 
 function updateTabCounts() {
-  setCount('count-inbox', S.meta && S.meta.lastSync && settings().syncEnabled ? inboxModel().counts.total : 0);
+  const ok = S.meta && S.meta.lastSync && settings().syncEnabled;
+  setCount('count-inbox', ok ? inboxModel().counts.total : 0);
+  setCount('count-new', ok ? MAK.buildNews(S, Date.now()).reduce((n, x) => n + x.total, 0) : 0);
 }
 
 // Do not draw the panel again while the user types or selects in it.
@@ -296,6 +300,57 @@ function renderInbox(el) {
     h('div', { attrs: { id: 'inbox-list' } })
   );
   renderInboxList();
+}
+
+// ---- New since the last visit ------------------------------------------------
+
+// The files of all sites update every 4 hours. On this tab, update them if they are older than 1 hour.
+function openNew() {
+  const meta = S.meta || {};
+  if (settings().syncEnabled && meta.lastSync && Date.now() - (meta.lastFullSync || 0) > MAK.HOUR) {
+    syncing = true;
+    renderHeader();
+    send({ type: 'syncNow', full: true }).then(() => { syncing = false; renderHeader(); });
+  }
+}
+
+function newsGroup(titleKey, items, render) {
+  return items.length ? [h('h2', { class: 'group', text: t(titleKey) }), h('ul', null, items.map(render))] : null;
+}
+
+function newsCard(x) {
+  return h(
+    'div',
+    { class: 'card' },
+    h(
+      'div',
+      { class: 'head' },
+      h('a', { href: MAK.siteUrl(x.siteId), text: x.siteTitle }),
+      h('span', { class: 'meta', text: x.visited ? t('news.since', { date: MAK.formatDate(x.since) }) : t('news.neverVisited') })
+    ),
+    h(
+      'details',
+      null,
+      h('summary', { text: MAK.newsSummary(x) }),
+      newsGroup('news.groupFiles', x.files, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: `tag ${f.label === 'new' ? 'new' : 'info'}`, text: t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
+      newsGroup('news.groupAnnouncements', x.announcements, (a) => h('li', null, h('a', { href: a.url, text: a.title }), ' ', h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
+      newsGroup('news.groupDeliveries', x.deliveries, (d) => h('li', null, h('a', { href: d.url, text: d.title }), d.due ? [' ', h('span', { class: 'meta', text: t('news.due', { date: MAK.formatDate(d.due) }) })] : null)),
+      newsGroup('news.groupForums', x.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: 'meta', text: t('news.forumDelta', { n: f.delta }) })))
+    ),
+    h('div', { class: 'row' }, h('button', { class: 'link-btn', text: t('news.markSeen'), on: { click: () => send({ type: 'markSiteSeen', siteId: x.siteId }) } }))
+  );
+}
+
+function renderNew(el) {
+  const none = noDataMessage('what.news');
+  if (none) return fill(el, none);
+  const list = MAK.buildNews(S, Date.now());
+  if (!list.length) return fill(el, emptyBox(t('news.empty')));
+  fill(
+    el,
+    h('div', { class: 'toolbar' }, h('button', { class: 'link-btn', text: t('news.markAllSeen'), on: { click: () => send({ type: 'markSiteSeen' }) } })),
+    list.map(newsCard)
+  );
 }
 
 // ---- Settings ----------------------------------------------------------------

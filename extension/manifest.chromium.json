@@ -24,6 +24,9 @@
       ],
       "js": [
         "lib/core.js",
+        "lib/i18n.js",
+        "lib/ui.js",
+        "content-banner.js",
         "content.js"
       ],
       "run_at": "document_idle"

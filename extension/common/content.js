@@ -7,6 +7,8 @@
 // - If you open the Announcements tool of a site, the script tells the background script.
 //   MiAulario marks these announcements as viewed, and the extension does the same.
 // - The script sends the "mark as viewed" requests that the background script could not send.
+// - On each page of a site, the script records the visit. At the start of a new visit, it shows
+//   the banner "new since your last visit". On the next pages of the same visit, a short line.
 
 (async () => {
   const ext = globalThis.browser ?? globalThis.chrome;
@@ -56,7 +58,7 @@
     const where = MAK.parsePortalPath(location.pathname);
     if (!where) return null;
     const { pages } = await ext.storage.local.get('pages');
-    if (!pages) return null;
+    if (!pages) return where.siteId ? { siteId: where.siteId, toolIds: [] } : null;
     if (where.siteId) {
       const p = pages[where.siteId];
       if (!p || !where.pageOrTool) return { siteId: where.siteId, toolIds: [] };
@@ -87,7 +89,23 @@
     }
   }
 
+  // Record the visit of the site. mode 'load': show the banner (or the short line).
+  // mode 'return' (the tab is visible again, or the page comes from the back/forward cache):
+  // show the banner only if a new visit started.
+  async function reportVisit(mode) {
+    const here = await currentTool();
+    if (!here || MAK.isSpecialSite(here.siteId)) return;
+    const r = await send({ type: 'visit', siteId: here.siteId });
+    if (!r) return;
+    if (mode === 'return' && !r.isNew) return;
+    MAK.setLang(r.lang);
+    MAK.showNewsBanner({ siteId: here.siteId, result: r, compact: !r.isNew });
+  }
+
   if (await reloginIfNeeded()) return;
   reportToolVisit();
   flushPendingMarkViewed();
+  reportVisit('load');
+  window.addEventListener('pageshow', (e) => { if (e.persisted) reportVisit('return'); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reportVisit('return'); });
 })();

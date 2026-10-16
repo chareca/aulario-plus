@@ -84,6 +84,38 @@
       'set.badgeMessages': 'Mensajes sin leer',
       'set.badgeForums': 'Mensajes de foro sin leer',
       'set.badgeHelp': 'El número es rojo si una entrega está atrasada o vence en menos de 24 h.',
+      'tab.new': 'Novedades',
+      'what.news': 'novedades',
+      'news.title': 'Novedades desde tu última visita',
+      'news.titleFirst': 'Novedades desde que instalaste la extensión',
+      'news.since': 'desde {date}',
+      'news.neverVisited': 'aún no lo has visitado',
+      'news.files': '{n} archivos',
+      'news.files_one': '1 archivo',
+      'news.announcements': '{n} anuncios',
+      'news.announcements_one': '1 anuncio',
+      'news.deliveries': '{n} entregas',
+      'news.deliveries_one': '1 entrega',
+      'news.forumPosts': '{n} mensajes de foro',
+      'news.forumPosts_one': '1 mensaje de foro',
+      'news.groupFiles': 'Archivos',
+      'news.groupAnnouncements': 'Anuncios',
+      'news.groupDeliveries': 'Entregas',
+      'news.groupForums': 'Foros',
+      'news.tagNew': 'Nuevo',
+      'news.tagUpdated': 'Actualizado',
+      'news.forumDelta': '+{n} mensajes',
+      'news.forumDelta_one': '+1 mensaje',
+      'news.due': 'vence {date}',
+      'news.show': 'Ver',
+      'news.hide': 'Ocultar',
+      'news.close': 'Cerrar',
+      'news.chip': '{n} novedades desde tu última visita',
+      'news.chip_one': '1 novedad desde tu última visita',
+      'news.empty': 'No hay novedades desde tus últimas visitas.',
+      'news.markSeen': 'Marcar como visto',
+      'news.markAllSeen': 'Marcar todo como visto',
+      'news.openSite': 'Abrir el sitio',
       'tab.inbox': 'Bandeja',
       'what.inbox': 'anuncios y mensajes',
       'inbox.type.all': 'Todo',
@@ -189,6 +221,38 @@
       'set.badgeMessages': 'Unread messages',
       'set.badgeForums': 'Unread forum posts',
       'set.badgeHelp': 'The number is red if a delivery is late or due in less than 24 hours.',
+      'tab.new': 'New',
+      'what.news': 'new items',
+      'news.title': 'New since your last visit',
+      'news.titleFirst': 'New since you installed the extension',
+      'news.since': 'since {date}',
+      'news.neverVisited': 'not visited yet',
+      'news.files': '{n} files',
+      'news.files_one': '1 file',
+      'news.announcements': '{n} announcements',
+      'news.announcements_one': '1 announcement',
+      'news.deliveries': '{n} deliveries',
+      'news.deliveries_one': '1 delivery',
+      'news.forumPosts': '{n} forum posts',
+      'news.forumPosts_one': '1 forum post',
+      'news.groupFiles': 'Files',
+      'news.groupAnnouncements': 'Announcements',
+      'news.groupDeliveries': 'Deliveries',
+      'news.groupForums': 'Forums',
+      'news.tagNew': 'New',
+      'news.tagUpdated': 'Updated',
+      'news.forumDelta': '+{n} posts',
+      'news.forumDelta_one': '+1 post',
+      'news.due': 'due {date}',
+      'news.show': 'Show',
+      'news.hide': 'Hide',
+      'news.close': 'Close',
+      'news.chip': '{n} new items since your last visit',
+      'news.chip_one': '1 new item since your last visit',
+      'news.empty': 'There are no new items since your last visits.',
+      'news.markSeen': 'Mark as seen',
+      'news.markAllSeen': 'Mark all as seen',
+      'news.openSite': 'Open the site',
       'tab.inbox': 'Inbox',
       'what.inbox': 'announcements and messages',
       'inbox.type.all': 'All',
@@ -239,6 +303,17 @@
     let s = table[k] !== undefined ? table[k] : STRINGS.es[k] !== undefined ? STRINGS.es[k] : key;
     if (params) s = s.replace(/\{(\w+)\}/g, (m, name) => (params[name] !== undefined ? String(params[name]) : m));
     return s;
+  };
+
+  // "3 archivos · 1 anuncio · 2 mensajes de foro · 1 entrega"
+  MAK.newsSummary = function (news) {
+    const parts = [];
+    if (news.files.length) parts.push(MAK.t('news.files', { n: news.files.length }));
+    if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
+    if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
+    const posts = news.forums.reduce((n, f) => n + f.delta, 0);
+    if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));
+    return parts.join(' · ');
   };
 
   // Put the texts in the elements that have data-i18n (text) or data-i18n-title (title and aria-label).

@@ -22,6 +22,7 @@
       "lib/i18n.js",
       "lib/due.js",
       "lib/inbox.js",
+      "lib/news.js",
       "background.js"
     ]
   },
@@ -32,6 +33,9 @@
       ],
       "js": [
         "lib/core.js",
+        "lib/i18n.js",
+        "lib/ui.js",
+        "content-banner.js",
         "content.js"
       ],
       "run_at": "document_idle"

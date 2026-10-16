@@ -125,4 +125,37 @@ for (const page of ['popup.html', 'tools.html']) {
   const html = fs.readFileSync(file, 'utf8').replace(/<script src="/, `${tags}\n  <script src="`);
   fs.writeFileSync(file, html);
 }
-console.log(`Harness ready: ${path.join(OUT, 'popup.html')}`);
+// A page with the same structure as a MiAulario site, to see the banner of new items.
+// Open site.html?theme=dark for the dark theme of Sakai.
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
+<html lang="es" class="Mrphs-html">
+<head><meta charset="utf-8"><title>Harness: MiAulario site</title>
+<style>
+  body { margin: 0; font: 15px/1.5 Georgia, serif; background: #fff; color: #222; }
+  html.sakaiUserTheme-dark body { background: #121212; color: #ddd; }
+  main { padding: 16px 24px; }
+  .portal-header-breadcrumb { padding: 6px 0 12px; font: 13px sans-serif; color: #666; }
+  .row { border: 1px dashed #aaa; padding: 24px; }
+</style></head>
+<body>
+<main id="content" class="portal-main-content">
+  <h1 id="tocontent" style="position:absolute;left:-9999px">Los contenidos empiezan aquí</h1>
+  <div class="portal-header-breadcrumb">Computer Science › Inicio</div>
+  <div class="row"><p>Contenido del sitio (simulado).</p></div>
+</main>
+<script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
+${siteTags}
+<script>
+  // Show the banner: install time 10 days ago, then a visit of Computer Science.
+  window.showBanner = async function (siteId, compact) {
+    const { meta } = await chrome.storage.local.get('meta');
+    await chrome.storage.local.set({ meta: Object.assign({}, meta, { installedAt: Date.now() - 10 * 86400000 }) });
+    const r = await chrome.runtime.sendMessage({ type: 'visit', siteId });
+    MAK.setLang(r.lang);
+    return { shown: MAK.showNewsBanner({ siteId, result: r, compact: !!compact }), total: r.news && r.news.total };
+  };
+</script>
+</body></html>
+`);
+console.log(`Harness ready: ${path.join(OUT, 'popup.html')} and site.html`);

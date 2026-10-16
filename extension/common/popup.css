@@ -108,6 +108,18 @@ label.check small { display: block; color: var(--muted); font-size: 12px; }
 .links a { color: var(--blue); }
 .link-btn { background: none; border: 0; padding: 0; color: var(--blue); cursor: pointer; font-size: 12px; text-decoration: underline; }
 
+/* New items */
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.card .head { display: flex; gap: 8px; align-items: baseline; }
+.card .head a { font-weight: 700; text-decoration: none; flex: 1; overflow-wrap: anywhere; }
+.card .head a:hover { text-decoration: underline; }
+.card details > summary { margin: 4px 0 0; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; }
+.card ul { margin: 4px 0 0; padding-left: 18px; }
+.card li { margin: 2px 0; overflow-wrap: anywhere; }
+.card li a { color: var(--blue); }
+.card .row { margin: 6px 0 0; }
+.tag.new { background: var(--green-bg); color: var(--green); }
+
 /* Privacy note */
 footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-align: center; }
 footer.privacy button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 10.5px; cursor: pointer; }

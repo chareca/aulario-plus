@@ -19,6 +19,7 @@
   <nav class="tabs" role="tablist">
     <button role="tab" id="tabbtn-due" data-tab="due" aria-controls="tab-due"><span data-i18n="tab.due">Entregas</span></button>
     <button role="tab" id="tabbtn-inbox" data-tab="inbox" aria-controls="tab-inbox"><span data-i18n="tab.inbox">Bandeja</span><span class="count" id="count-inbox" hidden></span></button>
+    <button role="tab" id="tabbtn-new" data-tab="new" aria-controls="tab-new"><span data-i18n="tab.new">Novedades</span><span class="count" id="count-new" hidden></span></button>
     <button role="tab" id="tabbtn-settings" data-tab="settings" aria-controls="tab-settings"><span data-i18n="tab.settings">Ajustes</span></button>
   </nav>
   <main>
@@ -28,6 +29,7 @@
     </div>
     <section id="tab-due" role="tabpanel" aria-labelledby="tabbtn-due" hidden></section>
     <section id="tab-inbox" role="tabpanel" aria-labelledby="tabbtn-inbox" hidden></section>
+    <section id="tab-new" role="tabpanel" aria-labelledby="tabbtn-new" hidden></section>
     <section id="tab-settings" role="tabpanel" aria-labelledby="tabbtn-settings" hidden></section>
   </main>
   <footer class="privacy"><button id="privacyLink" type="button" data-i18n="privacy.short">🔒 Solo se conecta con MiAulario. Tus datos no salen de tu navegador.</button></footer>
@@ -37,6 +39,7 @@
   <script src="lib/ui.js"></script>
   <script src="lib/due.js"></script>
   <script src="lib/inbox.js"></script>
+  <script src="lib/news.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

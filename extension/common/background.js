@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -373,6 +373,57 @@ const handlers = {
       });
       await markNotificationsViewed(msg.siteId, MAK.ANN_TOOL);
       return { ok: true };
+    }
+  },
+  // A content script tells that the user opened a page of a site. Record the visit. At the start
+  // of a new visit, get fresh data for the site. Answer with the items for the banner: the items
+  // that came after the previous visit.
+  visit: {
+    content: true,
+    run: async (msg) => {
+      const siteId = msg.siteId;
+      const st = await store.get(['sites', 'meta', 'settings', 'paused']);
+      const site = typeof siteId === 'string' && !MAK.isSpecialSite(siteId) ? (st.sites || []).find((s) => s.id === siteId) : null;
+      if (!site) return null;
+      const settings = MAK.withDefaults(st.settings);
+      const now = Date.now();
+      const baseline = (st.meta && st.meta.installedAt) || now;
+      let info;
+      await store.update('visits', (vs) => {
+        info = MAK.recordVisit(vs || {}, siteId, now, baseline);
+        return info.visits;
+      });
+      await sync.touch();
+      if (MAK.hiddenEverywhere(settings).has(siteId) || !settings.syncEnabled) return { isNew: info.isNew, since: info.since, news: null, lang: settings.lang };
+      if (info.isNew && !st.paused) await sync.run({ siteIds: [siteId] }).catch(() => {});
+      const key = MAK.resourceKey(siteId);
+      const d = await store.get(['announcements', 'assignments', 'forums', 'pages', 'forumSnap', key]);
+      const snap = (d.forumSnap || {})[siteId];
+      const forumsOfSite = (d.forums || {})[siteId];
+      const news = MAK.newSince({
+        siteId,
+        since: info.since,
+        resources: d[key],
+        announcements: d.announcements,
+        assignments: d.assignments,
+        forums: forumsOfSite,
+        forumBase: snap ? (info.isNew ? snap.last : snap.previous) : null,
+        pages: d.pages,
+        now
+      });
+      if (info.isNew && forumsOfSite) await store.update('forumSnap', (s) => MAK.shiftForumSnap(s, siteId, MAK.forumTotals(forumsOfSite), false));
+      return { isNew: info.isNew, since: info.since, firstVisit: info.since === baseline, news, lang: settings.lang };
+    }
+  },
+  // Nothing before now is new in this site (or in all sites).
+  markSiteSeen: {
+    run: async (msg) => {
+      const { sites, forums } = await store.get(['sites', 'forums']);
+      const ids = (sites || []).map((s) => s.id).filter((id) => !msg.siteId || id === msg.siteId);
+      const now = Date.now();
+      await store.update('visits', (vs) => ids.reduce((acc, id) => MAK.markSeen(acc, id, now), vs || {}));
+      await store.update('forumSnap', (snap) => ids.reduce((acc, id) => MAK.shiftForumSnap(acc, id, MAK.forumTotals((forums || {})[id]), true), snap || {}));
+      return { ok: true, sites: ids.length };
     }
   },
   // A content script takes the "mark viewed" requests that failed, and sends them from the page.
