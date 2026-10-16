@@ -14,7 +14,8 @@ if (typeof importScripts === 'function') {
   importScripts('lib/core.js', 'lib/store.js', 'lib/api.js');
 }
 
-const api = globalThis.browser ?? globalThis.chrome;
+const ext = globalThis.browser ?? globalThis.chrome;
+const store = MAK.createStore(ext.storage.local);
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';
 const PING_ALARM = 'miaulario-ping';
@@ -43,7 +44,7 @@ const COOKIE_SPECS = {
 };
 
 async function getState() {
-  const d = await api.storage.local.get(['paused', 'autoLogin', 'last', 'log']);
+  const d = await ext.storage.local.get(['paused', 'autoLogin', 'last', 'log']);
   return {
     paused: !!d.paused,
     autoLogin: d.autoLogin !== false,
@@ -53,9 +54,8 @@ async function getState() {
 }
 
 async function record(entry) {
-  const { log } = await getState();
-  log.push(entry);
-  await api.storage.local.set({ last: entry, log: log.slice(-LOG_MAX) });
+  await store.update('log', (log) => (log || []).concat(entry).slice(-LOG_MAX));
+  await store.set({ last: entry });
 }
 
 async function readSession(keepAlive) {
@@ -75,7 +75,7 @@ async function ping() {
     try {
       const peek = await readSession(false);
       if (!peek.loggedIn) return null;
-      await api.storage.local.set({ paused: false });
+      await store.set({ paused: false });
     } catch {
       return null;
     }
@@ -90,6 +90,8 @@ async function ping() {
   await record(entry);
   return entry;
 }
+
+// ---- Persistent cookies ------------------------------------------------------
 
 function specFor(cookie) {
   const spec = COOKIE_SPECS[cookie.domain.replace(/^\./, '')];
@@ -113,18 +115,18 @@ async function persist(cookie) {
   };
   if (conf.domain) details.domain = conf.domain;
   if (cookie.storeId) details.storeId = cookie.storeId;
-  try { await api.cookies.set(details); } catch {}
+  try { await ext.cookies.set(details); } catch {}
 }
 
 async function clearPersisted() {
   for (const spec of Object.values(COOKIE_SPECS)) {
     for (const name of Object.keys(spec.names)) {
-      try { await api.cookies.remove({ url: spec.url, name }); } catch {}
+      try { await ext.cookies.remove({ url: spec.url, name }); } catch {}
     }
   }
 }
 
-api.cookies.onChanged.addListener(async ({ cookie, removed }) => {
+ext.cookies.onChanged.addListener(async ({ cookie, removed }) => {
   if (removed || !specFor(cookie)) return;
   const { paused } = await getState();
   if (!paused) persist(cookie);
@@ -137,76 +139,121 @@ async function persistExisting() {
   for (const spec of Object.values(COOKIE_SPECS)) {
     for (const name of Object.keys(spec.names)) {
       try {
-        const c = await api.cookies.get({ url: spec.url, name });
+        const c = await ext.cookies.get({ url: spec.url, name });
         if (c) await persist(c);
       } catch {}
     }
   }
 }
 
-api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  (async () => {
-    switch (msg && msg.type) {
-      case 'getStatus': {
-        const s = await getState();
-        const alarm = await api.alarms.get(PING_ALARM);
-        sendResponse({ paused: s.paused, autoLogin: s.autoLogin, last: s.last, log: s.log.slice(-10), nextPing: alarm ? alarm.scheduledTime : null });
-        break;
-      }
-      case 'pingNow':
-        sendResponse(await ping());
-        break;
-      case 'pause':
-        await api.storage.local.set({ paused: true });
-        sendResponse({ ok: true });
-        break;
-      case 'resume':
-        await api.storage.local.set({ paused: false });
-        await persistExisting();
-        sendResponse(await ping());
-        break;
-      case 'setAutoLogin':
-        await api.storage.local.set({ autoLogin: !!msg.value });
-        sendResponse({ ok: true });
-        break;
-      case 'logout':
-        await api.storage.local.set({ paused: true });
-        await clearPersisted();
-        sendResponse({ ok: true });
-        break;
-      case 'relogin':
-        await record({ time: Date.now(), relogin: true });
-        sendResponse({ ok: true });
-        break;
-      default:
-        sendResponse(null);
+// ---- Message router ----------------------------------------------------------
+
+// Who sent the message: 'page' (popup or a page of the extension), 'content'
+// (content script in the top frame of MiAulario) or null (rejected).
+function senderKind(sender) {
+  if (!sender || sender.id !== ext.runtime.id) return null;
+  const extensionOrigin = ext.runtime.getURL('');
+  if (sender.url && sender.url.startsWith(extensionOrigin)) return 'page';
+  if (!sender.tab) return 'page';
+  if (sender.frameId !== 0) return null;
+  try {
+    return new URL(sender.url).origin === MAK.BASE ? 'content' : null;
+  } catch {
+    return null;
+  }
+}
+
+// Handlers. "content: true" lets content scripts send the message.
+const handlers = {
+  getStatus: {
+    content: true,
+    run: async () => {
+      const s = await getState();
+      const alarm = await ext.alarms.get(PING_ALARM);
+      return { paused: s.paused, autoLogin: s.autoLogin, last: s.last, log: s.log.slice(-10), nextPing: alarm ? alarm.scheduledTime : null };
     }
-  })();
+  },
+  pingNow: { run: () => ping() },
+  pause: {
+    run: async () => {
+      await store.set({ paused: true });
+      return { ok: true };
+    }
+  },
+  resume: {
+    run: async () => {
+      await store.set({ paused: false });
+      await persistExisting();
+      return ping();
+    }
+  },
+  setAutoLogin: {
+    run: async (msg) => {
+      await store.set({ autoLogin: !!msg.value });
+      return { ok: true };
+    }
+  },
+  logout: {
+    content: true,
+    run: async () => {
+      await store.set({ paused: true });
+      await clearPersisted();
+      return { ok: true };
+    }
+  },
+  relogin: {
+    content: true,
+    run: async () => {
+      await record({ time: Date.now(), relogin: true });
+      return { ok: true };
+    }
+  }
+};
+
+ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  const kind = senderKind(sender);
+  const handler = msg && typeof msg.type === 'string' && Object.prototype.hasOwnProperty.call(handlers, msg.type) ? handlers[msg.type] : null;
+  if (!kind || !handler || (kind === 'content' && !handler.content)) {
+    sendResponse(null);
+    return false;
+  }
+  Promise.resolve()
+    .then(() => handler.run(msg, sender))
+    .then((result) => sendResponse(result === undefined ? null : result))
+    .catch((e) => sendResponse({ error: String(e && e.message ? e.message : e) }));
   return true; // The response is asynchronous.
 });
+
+// ---- Alarm router ------------------------------------------------------------
 
 function randomDelaySeconds() {
   return PING_MIN_SECONDS + Math.floor(Math.random() * (PING_MAX_SECONDS - PING_MIN_SECONDS + 1));
 }
 
 async function scheduleNext() {
-  await api.alarms.create(PING_ALARM, { when: Date.now() + randomDelaySeconds() * 1000 });
+  await ext.alarms.create(PING_ALARM, { when: Date.now() + randomDelaySeconds() * 1000 });
 }
 
-api.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== PING_ALARM) return;
-  // First, set the next alarm. If the worker stops during the ping, the sequence continues.
-  await scheduleNext();
-  await ping();
+const alarmHandlers = {
+  [PING_ALARM]: async () => {
+    // First, set the next alarm. If the worker stops during the ping, the sequence continues.
+    await scheduleNext();
+    await ping();
+  }
+};
+
+ext.alarms.onAlarm.addListener((alarm) => {
+  const run = alarmHandlers[alarm.name];
+  if (run) return run(alarm);
 });
 
 async function boot() {
-  const existing = await api.alarms.get(PING_ALARM);
+  const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
   await persistExisting();
   await ping();
 }
 
-api.runtime.onInstalled.addListener(boot);
-api.runtime.onStartup.addListener(boot);
+ext.runtime.onInstalled.addListener(boot);
+ext.runtime.onStartup.addListener(boot);

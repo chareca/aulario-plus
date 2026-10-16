@@ -69,4 +69,111 @@ function fakeFetch(routes, log = []) {
 }
 fakeFetch.raw = (resp) => ({ __response: resp });
 
-module.exports = { ROOT, COMMON, loadLib, memoryArea, response, fakeFetch, clone };
+// A small copy of the extension API (chrome.*) for tests.
+function mockExtension({ id = 'ext-id', local = {} } = {}) {
+  const listeners = { message: [], alarm: [], installed: [], startup: [], cookies: [], storage: [] };
+  const alarms = new Map();
+  const on = (list) => ({ addListener: (f) => list.push(f), removeListener: (f) => list.splice(list.indexOf(f), 1) });
+  const localArea = memoryArea(local);
+  const sessionArea = memoryArea();
+  const badge = { text: '', color: null };
+  const tabsCreated = [];
+  // Send storage.onChanged events, the same as the browser does.
+  for (const area of [localArea]) {
+    const set = area.set.bind(area);
+    const remove = area.remove.bind(area);
+    area.set = async (obj) => {
+      const changes = {};
+      for (const [k, v] of Object.entries(obj)) changes[k] = { oldValue: clone(area.data[k]), newValue: clone(v) };
+      await set(obj);
+      for (const f of listeners.storage) f(changes, 'local');
+    };
+    area.remove = async (keys) => {
+      const changes = {};
+      for (const k of [].concat(keys)) if (k in area.data) changes[k] = { oldValue: clone(area.data[k]) };
+      await remove(keys);
+      for (const f of listeners.storage) f(changes, 'local');
+    };
+  }
+  return {
+    runtime: {
+      id,
+      getURL: (p = '') => `chrome-extension://${id}/${p}`,
+      onMessage: on(listeners.message),
+      onInstalled: on(listeners.installed),
+      onStartup: on(listeners.startup)
+    },
+    storage: { local: localArea, session: sessionArea, onChanged: on(listeners.storage) },
+    alarms: {
+      create: async (name, info) => {
+        alarms.set(name, { name, scheduledTime: info.when || Date.now() + (info.delayInMinutes || 0) * 60000, periodInMinutes: info.periodInMinutes });
+      },
+      get: async (name) => alarms.get(name),
+      clear: async (name) => alarms.delete(name),
+      onAlarm: on(listeners.alarm)
+    },
+    cookies: { onChanged: on(listeners.cookies), get: async () => null, set: async () => {}, remove: async () => {} },
+    action: {
+      setBadgeText: async ({ text }) => { badge.text = text; },
+      setBadgeBackgroundColor: async ({ color }) => { badge.color = color; }
+    },
+    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; } },
+    _listeners: listeners,
+    _alarms: alarms,
+    _badge: badge,
+    _tabs: tabsCreated
+  };
+}
+
+// Load background.js and the shared scripts in an isolated context with a mock extension API.
+function loadBackground({ fetch, local, now } = {}) {
+  const vm = require('node:vm');
+  const fs = require('node:fs');
+  const ext = mockExtension({ local });
+  const sandbox = {
+    chrome: ext,
+    fetch: fetch || (async () => response({}, { status: 404 })),
+    console,
+    URL,
+    URLSearchParams,
+    TextEncoder,
+    setTimeout,
+    clearTimeout,
+    Date: now ? fixedDate(now) : Date
+  };
+  sandbox.globalThis = sandbox;
+  vm.createContext(sandbox);
+  const src = fs.readFileSync(path.join(COMMON, 'background.js'), 'utf8');
+  const libs = [...(/importScripts\(([^)]*)\)/.exec(src) || ['', ''])[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  for (const lib of libs) vm.runInContext(fs.readFileSync(path.join(COMMON, lib), 'utf8'), sandbox, { filename: lib });
+  vm.runInContext(src, sandbox, { filename: 'background.js' });
+  const send = (msg, sender = { id: ext.runtime.id, url: ext.runtime.getURL('popup.html') }) =>
+    new Promise((resolve) => {
+      // Copy the answer: objects from the other context have a different prototype.
+      const done = (v) => resolve(clone(v));
+      const keep = ext._listeners.message.some((f) => f(msg, sender, done) === true);
+      if (!keep) setTimeout(() => resolve(undefined), 0);
+    });
+  const fireAlarm = async (name) => {
+    for (const f of ext._listeners.alarm) await f({ name });
+  };
+  return { ext, sandbox, send, fireAlarm, MAK: sandbox.MAK };
+}
+
+// A Date class with a fixed "now", for tests that depend on the time.
+function fixedDate(nowRef) {
+  const Real = Date;
+  const current = typeof nowRef === 'function' ? nowRef : () => nowRef;
+  class FixedDate extends Real {
+    constructor(...args) {
+      if (args.length) super(...args);
+      else super(current());
+    }
+    static now() {
+      return current();
+    }
+  }
+  return FixedDate;
+}
+
+module.exports = { ROOT, COMMON, loadLib, memoryArea, response, fakeFetch, clone, mockExtension, loadBackground, fixedDate };
