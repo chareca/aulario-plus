@@ -88,7 +88,7 @@
       .replace(/<[^>]*>/g, '');
     s = decodeEntities(s)
       .replace(/\r\n?/g, '\n')
-      .replace(/[ \t\f\v ]+/g, ' ')
+      .replace(/[ \t\f\v\u00a0]+/g, ' ')
       .replace(/ *\n */g, '\n')
       .replace(/\n{3,}/g, '\n\n');
     return s.trim();
@@ -96,7 +96,7 @@
 
   // Text for search: no case, no accents.
   MAK.normalizeText = function (s) {
-    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   };
 
   // True if all the words of the query are in the text. Case and accents are not important.
