@@ -92,6 +92,13 @@ All these endpoints answer with JSON for the session cookie. The parameter `auto
 | Files | `/direct/content/site/{id}.json` | A flat list of all the folders and files: `type`, `url`, `size`, `modifiedDate` (`yyyyMMddHHmmssSSS`, UTC), `webLinkUrl`, `copyrightAlert` |
 | Calendar | `/direct/calendar/my.json?firstDate=&lastDate=` | `firstTime.time`, `duration`, `type`, `siteName`, `assignmentId` |
 
+Live tests (2026-10-16, with the code of version 1.2.0):
+
+- A full sync: 27 steps, no errors, 10 seconds. The inactivity timer did not go back to zero.
+- `modifiedDate` is UTC: for 6 files, the date is the same as the `Last-Modified` header (0 minutes of difference).
+- To open the Announcements tool does **not** mark the bell notifications of that site as viewed. `POST markViewed` does it (HTTP 200).
+- A ZIP of a site with 6 folders: 19 files and 7 folders, all CRCs correct.
+
 Limits:
 
 - Private messages and forum posts: MiAulario gives only the numbers of unread items. The Messages tool is a JSF page, and the endpoint for one forum message returns HTTP 500.
