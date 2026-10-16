@@ -7,7 +7,7 @@
   MAK.defaultSettings = function () {
     return {
       syncEnabled: true,
-      badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false },
+      badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false, grades: true },
       hiddenSites: [],
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
       lang: 'es' // 'es' (default) or 'en'

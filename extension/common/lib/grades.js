@@ -38,5 +38,11 @@
     return { list: out, changed };
   };
 
+  // The grades that the user did not see: a grade that came after the last visit of the Grades tab.
+  MAK.unseenGrades = function (grades, seenAt, hidden) {
+    const hide = hidden || new Set();
+    return (grades || []).filter((g) => g.gradedAt && g.gradedAt > (seenAt || 0) && !hide.has(g.siteId));
+  };
+
   if (typeof module === 'object' && module.exports) module.exports = MAK;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

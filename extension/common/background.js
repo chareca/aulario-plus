@@ -189,7 +189,7 @@ async function markNotificationsViewed(siteId, toolId) {
 
 // ---- Badge on the toolbar icon -------------------------------------------------
 
-const BADGE_KEYS = ['settings', 'meta', 'assignments', 'announcements', 'notifications', 'readAnn', 'synoptic', 'forums', 'sites', 'pages'];
+const BADGE_KEYS = ['settings', 'meta', 'assignments', 'announcements', 'notifications', 'readAnn', 'synoptic', 'forums', 'sites', 'pages', 'grades', 'gradesSeenAt'];
 const BADGE_RED = '#c5221f';
 const BADGE_BLUE = '#1a5fb4';
 
@@ -197,7 +197,7 @@ const BADGE_BLUE = '#1a5fb4';
 // unread items of the selected kinds. Red if a delivery is late or due in less than 24 hours.
 MAK.computeBadge = function (d, now) {
   const s = MAK.withDefaults(d.settings);
-  if (!s.badge.enabled || !s.syncEnabled || !(d.meta && d.meta.lastSync)) return { text: '', color: BADGE_BLUE, soon: 0, unread: 0 };
+  if (!s.badge.enabled || !s.syncEnabled || !(d.meta && d.meta.lastSync)) return { text: '', color: BADGE_BLUE, soon: 0, unread: 0, grades: 0 };
   const hidden = MAK.hiddenEverywhere(s);
   let soon = 0;
   let urgent = false;
@@ -208,8 +208,9 @@ MAK.computeBadge = function (d, now) {
   }
   const c = MAK.buildInbox({ announcements: d.announcements, notifications: d.notifications, readAnn: d.readAnn, synoptic: d.synoptic, forums: d.forums, sites: d.sites, pages: d.pages, hidden }).counts;
   const unread = (s.badge.announcements ? c.announcements : 0) + (s.badge.messages ? c.messages : 0) + (s.badge.forums ? c.forums : 0);
-  const n = soon + unread;
-  return { text: n ? (n > 99 ? '99+' : String(n)) : '', color: urgent ? BADGE_RED : BADGE_BLUE, soon, unread };
+  const grades = s.badge.grades ? MAK.unseenGrades(d.grades, d.gradesSeenAt, hidden).length : 0;
+  const n = soon + unread + grades;
+  return { text: n ? (n > 99 ? '99+' : String(n)) : '', color: urgent ? BADGE_RED : BADGE_BLUE, soon, unread, grades };
 };
 
 async function updateBadge() {
@@ -220,7 +221,7 @@ async function updateBadge() {
     await ext.action.setBadgeText({ text: b.text });
     await ext.action.setBadgeBackgroundColor({ color: b.color });
     if (ext.action.setBadgeTextColor) await ext.action.setBadgeTextColor({ color: '#ffffff' });
-    await ext.action.setTitle({ title: b.text ? MAK.t('badge.title', { due: b.soon, unread: b.unread }) : MAK.t('app.title') });
+    await ext.action.setTitle({ title: b.text ? MAK.t('badge.title', { due: b.soon, unread: b.unread, grades: b.grades }) : MAK.t('app.title') });
   } catch {}
 }
 
@@ -388,6 +389,13 @@ const handlers = {
     run: async (msg) => {
       if (!(await knownSite(msg.siteId))) return { ok: false };
       await ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(msg.siteId)}`) });
+      return { ok: true };
+    }
+  },
+  // The user opened the Grades tab: the grades until now are seen.
+  markGradesSeen: {
+    run: async () => {
+      await store.set({ gradesSeenAt: Date.now() });
       return { ok: true };
     }
   },

@@ -14,7 +14,7 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set() };
+const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null };
 
 const settings = () => MAK.withDefaults(S.settings);
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
@@ -26,6 +26,7 @@ const panels = {
   due: { render: renderDue },
   inbox: { render: renderInbox },
   new: { render: renderNew, open: openNew },
+  grades: { render: renderGrades, open: openGrades },
   sites: { render: renderSites },
   settings: { render: renderSettings }
 };
@@ -62,6 +63,8 @@ function updateTabCounts() {
   const ok = S.meta && S.meta.lastSync && settings().syncEnabled;
   setCount('count-inbox', ok ? inboxModel().counts.total : 0);
   setCount('count-new', ok ? MAK.buildNews(S, Date.now()).reduce((n, x) => n + x.total, 0) : 0);
+  // While the Grades tab is open, its count stays at the value of the moment when it opened.
+  setCount('count-grades', ok && current !== 'grades' ? MAK.unseenGrades(S.grades, S.gradesSeenAt, hiddenSet()).length : 0);
 }
 
 // Do not draw the panel again while the user types or selects in it.
@@ -358,6 +361,50 @@ function renderNew(el) {
   );
 }
 
+// ---- Grades ------------------------------------------------------------------
+
+// Keep the "seen" time of the moment when the tab opened, so that the marks stay visible.
+function openGrades() {
+  ui.gradesSeenAt = S.gradesSeenAt || 0;
+  send({ type: 'markGradesSeen' });
+}
+
+function gradeRow(g) {
+  const isNew = g.gradedAt && g.gradedAt > ui.gradesSeenAt;
+  return h(
+    'div',
+    { class: 'grade-row' },
+    h('a', { class: 'name', href: g.url || MAK.siteUrl(g.siteId), text: g.name }),
+    isNew ? h('span', { class: 'tag ok', text: t('grades.new') }) : null,
+    h('span', { class: `score${g.graded ? '' : ' none'}`, text: g.graded ? g.score : t('grades.notGraded') })
+  );
+}
+
+function gradesCard(siteId, list) {
+  return h(
+    'div',
+    { class: 'card', data: { site: siteId } },
+    h('div', { class: 'head' }, h('a', { href: MAK.siteUrl(siteId), text: siteTitle(siteId) })),
+    list.map(gradeRow)
+  );
+}
+
+function renderGrades(el) {
+  const none = noDataMessage('what.grades');
+  if (none) return fill(el, none);
+  const hidden = hiddenSet();
+  const bySite = new Map();
+  for (const g of S.grades || []) {
+    if (hidden.has(g.siteId)) continue;
+    if (!bySite.has(g.siteId)) bySite.set(g.siteId, []);
+    bySite.get(g.siteId).push(g);
+  }
+  if (!bySite.size) return fill(el, emptyBox(t('grades.none')));
+  const order = (S.sites || []).map((s) => s.id).filter((id) => bySite.has(id));
+  for (const id of bySite.keys()) if (!order.includes(id)) order.push(id);
+  fill(el, order.map((id) => gradesCard(id, bySite.get(id))));
+}
+
 // ---- Sites -------------------------------------------------------------------
 
 function siteActions(site) {
@@ -459,7 +506,8 @@ function renderSettings(el) {
           ['deliveries', 'set.badgeDeliveries'],
           ['announcements', 'set.badgeAnnouncements'],
           ['messages', 'set.badgeMessages'],
-          ['forums', 'set.badgeForums']
+          ['forums', 'set.badgeForums'],
+          ['grades', 'set.badgeGrades']
         ].map(([key, label]) => {
           const box = checkbox(t(label), null, s.badge[key], (v) => send({ type: 'setSettings', patch: { badge: { [key]: v } } }));
           if (!s.badge.enabled) box.querySelector('input').disabled = true;
@@ -603,6 +651,8 @@ async function init() {
   });
   let tab = 'due';
   try { tab = localStorage.getItem('mak.tab') || 'due'; } catch {}
+  const asked = new URLSearchParams(location.search).get('tab');
+  if (asked && panels[asked]) tab = asked;
   renderHeader();
   selectTab(tab);
   checkPermissions();
