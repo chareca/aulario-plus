@@ -16,12 +16,13 @@
   const oneLine = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
   let mailTool = null; // { placement, page }
-  let siteName = siteId;
+  let siteName = siteId; // the name for the user (it can be a name from the user)
+  let publicName = siteId; // the name for the recipients (MAK.publicSiteName)
   let linkSettings = null; // settings.links
 
   // A download link without a login: the background gets the files, encrypts them and uploads them.
   async function makeLink(files) {
-    const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'makeLink', siteId, name: siteName, files: files.map((f) => ({ itemId: f.itemId })) }), null);
+    const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'makeLink', siteId, name: publicName, files: files.map((f) => ({ itemId: f.itemId })) }), null);
     if (r && r.link) return r;
     const code = (r && r.error) || 'send.network';
     throw Object.assign(new Error(r && r.detail ? `${code}: ${r.detail}` : code), { code });
@@ -93,7 +94,7 @@
     document.documentElement.append(host);
     open = host;
     view = MAK.mailWindow(into, {
-      site: { id: siteId, name: siteName },
+      site: { id: siteId, name: siteName, fullName: publicName },
       files,
       mode,
       placement: mailTool.placement,
@@ -190,6 +191,7 @@
     MAK.setLang(settings.lang);
     const site = (raw.sites || []).find((s) => s.id === siteId);
     siteName = site ? MAK.siteName(site, settings) : siteId;
+    publicName = site ? MAK.publicSiteName(site) : siteId;
     linkSettings = settings.links;
     mailTool = { placement: tool.placement, page: tool.page };
     addButtons();

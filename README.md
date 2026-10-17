@@ -60,7 +60,7 @@ The interface is in Spanish. You can change it to English in the settings.
 The "Correo interno" of MiAulario is the Messages tool of each site. It sends only to the persons of that site. A copy goes to the email address of each recipient in MiAulario (for students, `@e.unavarra.es`).
 
 - **Send files of the Resources tool:** In the Resources tool, each file has a button ✉. When you select files, a bar shows "Send as a message" and "Send them to me". The server of MiAulario attaches a copy of each file: nothing is downloaded to your computer.
-- **The send window:** select "To me" or "To other persons" (with a search in the list of the site). The extension writes a subject and a message; you can change them. The message is an internal message of MiAulario: it goes to the message inbox of each recipient. The option "Also send a copy to their email address" is on. Then:
+- **The send window:** select "To me" or "To other persons" (with a search in the list of the site). The extension writes a subject and a message; you can change them. They use the full name of the site, not the name that you gave to it: the recipients do not know your names. The message is an internal message of MiAulario: it goes to the message inbox of each recipient. The option "Also send a copy to their email address" is on. Then:
   - **Open in MiAulario:** the extension prepares the message with the files in the internal mail of the site and opens it in a new tab. You examine it and send it.
   - **Send now:** the extension sends it. A message to you needs one confirmation.
   - **Share:** the share menu of the system with the files (only if your browser has it). The files stay in memory.

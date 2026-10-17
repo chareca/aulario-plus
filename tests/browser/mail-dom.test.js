@@ -98,6 +98,19 @@
     w.into.remove();
   });
 
+  test('mail window: the subject and the text have the full name of the site, not the name from the user', async () => {
+    MAK.setLang('es');
+    const into = document.createElement('div');
+    document.body.append(into);
+    MAK.mailWindow(into, { site: { id: 'S', name: 'CyC', fullName: 'Complejidad y Computabilidad' }, files: FILES.concat([{ itemId: '/group/S/b.pdf', title: 'b.pdf' }]), mode: 'others', placement: 'P', pm: { open: async () => COMPOSE }, myEid: async () => 'me1', openTool: async () => {}, share: null, onClose: () => {} });
+    const subject = into.querySelector('input[type=text]').value;
+    const body = into.querySelector('textarea').value;
+    assert.ok(subject.includes('Complejidad y Computabilidad') && !subject.includes('CyC'), subject);
+    assert.ok(body.includes('Complejidad y Computabilidad') && !body.includes('CyC'), body);
+    assert.ok(into.querySelector('header').textContent.includes('CyC'), 'the user sees the name from the user in the header');
+    into.remove();
+  });
+
   test('mail window: one more try when MiAulario does not show the attachment page; never two sends', async () => {
     const w = openWindow({ links: null, fail: ['pm.noPicker'] });
     w.button(MAK.t('mail.sendNow')).click();

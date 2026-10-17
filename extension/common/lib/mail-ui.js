@@ -87,7 +87,8 @@
   `;
 
   // Draw the window in "into" (an element). opts:
-  //   site: { id, name }, files: [{ itemId, title, url }], placement: the id of the mail tool,
+  //   site: { id, name (the name for the user), fullName (the name for the recipients) },
+  //   files: [{ itemId, title, url }], placement: the id of the mail tool,
   //   pm: the engine (MAK.createPm), myEid: () => Promise<user id>, openTool: () => Promise,
   //   mode: 'me' | 'others', share: { files: Promise<File[]> } or null, onClose: () => void,
   //   links: { mode, downloads, seconds, make: () => Promise<link> } or null (download links of Send).
@@ -95,7 +96,8 @@
     const { h, t } = MAK;
     const files = opts.files || [];
     const st = { mode: opts.mode || (files.length ? 'me' : 'others'), chosen: new Set(), people: null, me: null, busy: false, confirm: false, edited: { subject: false, body: false } };
-    const defaults = () => MAK.mailDefaults({ files, site: opts.site.name, toMe: st.mode === 'me' });
+    // The subject and the text go to other persons: the full name of the site, not the name from the user.
+    const defaults = () => MAK.mailDefaults({ files, site: opts.site.fullName || opts.site.name, toMe: st.mode === 'me' });
 
     const status = h('div', { class: 'status', attrs: { role: 'status' } });
     const say = (text, kind) => {

@@ -75,3 +75,11 @@ test('background: renameSite from the popup or from MiAulario; the automatic nam
   assert.equal(await bg.send({ type: 'renameSite', siteId: '~user', name: 'X' }, CONTENT), null);
   assert.equal(await bg.send({ type: 'renameSite', siteId: F.CS, name: 'X' }, Object.assign({}, CONTENT, { frameId: 2 })), null, 'not from a frame');
 });
+
+test('publicSiteName: the name for other persons is never the name from the user', () => {
+  const site = { id: 'S', title: '26_0_240802_1_G COMPLEJIDAD Y COMPUTABILIDAD' };
+  const settings = MAK.withDefaults({ nicknames: { S: 'CyC' }, shortNames: false });
+  assert.equal(MAK.siteName(site, settings), 'CyC', 'the user sees the name from the user');
+  assert.equal(MAK.publicSiteName(site), 'Complejidad y Computabilidad', 'the recipients see the full name');
+  assert.equal(MAK.publicSiteName({ id: 'X', title: 'Coordinación' }), 'Coordinación');
+});

@@ -49,6 +49,13 @@
     return s.shortNames === false ? site.title : MAK.shortTitle(site.title) || site.title;
   };
 
+  // The name for other persons (the subject and the text of a message, the name of a shared file):
+  // never the name from the user, because the other person does not know it. The clean name of the
+  // site ("Complejidad y Computabilidad"), or the title of MiAulario.
+  MAK.publicSiteName = function (site) {
+    return MAK.shortTitle(site.title) || site.title;
+  };
+
   // A copy of the sites with the name to show in "title", and the original title in "fullTitle".
   MAK.namedSites = function (sites, settings) {
     return (sites || []).map((x) => Object.assign({}, x, { title: MAK.siteName(x, settings), fullTitle: x.title }));
