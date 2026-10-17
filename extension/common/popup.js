@@ -14,7 +14,7 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { editSite: null, dueWeek: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
+const ui = { query: '', searchSel: 0, searchList: [], editSite: null, dueWeek: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
 // The popup reads only the Gradebook page (for the calculator). All other data comes from the storage.
 const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
@@ -46,10 +46,11 @@ let current = 'due';
 function selectTab(name) {
   if (!panels[name]) name = 'due';
   current = name;
+  if (ui.query) setQuery('');
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) {
     btn.setAttribute('aria-selected', String(btn.dataset.tab === name));
   }
-  for (const key of Object.keys(panels)) $(`tab-${key}`).hidden = key !== name;
+  for (const key of Object.keys(panels)) $(`tab-${key}`).hidden = key !== name || !!ui.query;
   try { localStorage.setItem('mak.tab', name); } catch {}
   if (panels[name].open) panels[name].open();
   renderCurrent();
@@ -60,6 +61,7 @@ function renderCurrent() {
   pendingRender = false;
   panels[current].render($(`tab-${current}`));
   updateTabCounts();
+  if (ui.query) renderSearch();
   tick();
 }
 
@@ -94,6 +96,86 @@ function scheduleRender() {
   }, 120);
 }
 document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() => { if (!userIsInPanel()) renderCurrent(); }, 0); });
+
+// ---- Search --------------------------------------------------------------------
+// While the search box has text, the results replace the panel. The index is made again only
+// when the stored data changes.
+
+const SEARCH_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl+K';
+let searchIndex = null;
+
+function setQuery(value) {
+  ui.query = value;
+  ui.searchSel = 0;
+  if ($('search').value !== value) $('search').value = value;
+  $(`tab-${current}`).hidden = !!value.trim();
+  renderSearch();
+}
+
+function resultMeta(x) {
+  if (x.type === 'delivery' || x.type === 'event' || x.type === 'announcement') return x.time ? MAK.formatDate(x.time) : '';
+  if (x.type === 'file' || x.type === 'forum' || x.type === 'site') return x.meta;
+  return '';
+}
+
+function renderSearch() {
+  const el = $('search-results');
+  const q = ui.query.trim();
+  el.hidden = !q;
+  if (!q) return;
+  if (!searchIndex) searchIndex = MAK.buildSearchIndex(S, settings());
+  const list = MAK.searchIndex(searchIndex, q, 30);
+  // The groups in the order of their best result.
+  const groups = [...new Set(list.map((x) => x.type))].map((type) => [type, list.filter((x) => x.type === type)]);
+  ui.searchList = groups.flatMap(([, l]) => l);
+  ui.searchSel = Math.max(0, Math.min(ui.searchSel, ui.searchList.length - 1));
+  if (!ui.searchList.length) return fill(el, emptyBox(t('search.none', { q })));
+  let i = 0;
+  fill(
+    el,
+    groups.map(([type, l]) => [
+      h('h2', { class: 'group', text: t(`search.type.${type}`) }),
+      l.map((x) => {
+        const n = i++;
+        return h(
+          'a',
+          { class: `result${n === ui.searchSel ? ' sel' : ''}`, href: x.url, data: { n } },
+          h('span', { class: 'title', text: x.title }),
+          h('span', { class: 'meta', text: [x.type === 'site' ? null : x.site, resultMeta(x)].filter(Boolean).join(' · ') })
+        );
+      })
+    ])
+  );
+  const sel = el.querySelector('.result.sel');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+
+function setupSearch() {
+  const box = $('search');
+  box.addEventListener('input', () => setQuery(box.value));
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      ui.searchSel += e.key === 'ArrowDown' ? 1 : -1;
+      renderSearch();
+    } else if (e.key === 'Enter') {
+      const x = ui.searchList[ui.searchSel];
+      if (x) ext.tabs.create({ url: x.url });
+    } else if (e.key === 'Escape' && ui.query) {
+      e.preventDefault();
+      setQuery('');
+    }
+  });
+  // "/" or Ctrl+K (⌘K) puts the focus in the search box.
+  document.addEventListener('keydown', (e) => {
+    const typing = /^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '');
+    if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+      e.preventDefault();
+      box.focus();
+      box.select();
+    }
+  });
+}
 
 // ---- Header ------------------------------------------------------------------
 
@@ -888,6 +970,8 @@ async function checkPermissions() {
 function applyLanguage() {
   MAK.setLang(settings().lang);
   MAK.applyI18n(document);
+  $('search').placeholder = t('search.placeholder', { key: SEARCH_KEY });
+  $('search').setAttribute('aria-label', t('search.placeholder', { key: SEARCH_KEY }));
 }
 
 async function init() {
@@ -903,6 +987,7 @@ async function init() {
       if ('newValue' in c) S[k] = c.newValue;
       else delete S[k];
     }
+    searchIndex = null;
     // A new ping or a pause changes the time of the next alarm.
     if ('last' in changes || 'paused' in changes) refreshStatus();
     if ('settings' in changes && settings().lang !== MAK.getLang()) {
@@ -916,6 +1001,7 @@ async function init() {
   });
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) btn.addEventListener('click', () => selectTab(btn.dataset.tab));
   $('refresh').addEventListener('click', refresh);
+  setupSearch();
   $('privacyLink').addEventListener('click', () => {
     selectTab('settings');
     const el = $('privacy');

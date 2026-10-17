@@ -16,6 +16,7 @@
     <button id="refresh" class="icon-btn" data-i18n-title="header.refresh" title="Actualizar los datos de las asignaturas" aria-label="Actualizar los datos de las asignaturas">↻</button>
     <button id="openTab" class="icon-btn" data-i18n-title="header.openTab" title="Abrir en una pestaña" aria-label="Abrir en una pestaña">⤢</button>
   </header>
+  <div class="searchbar"><input type="search" id="search" autocomplete="off" spellcheck="false" aria-controls="search-results"></div>
   <nav class="tabs" role="tablist">
     <button role="tab" id="tabbtn-due" data-tab="due" aria-controls="tab-due"><span data-i18n="tab.due">Entregas</span></button>
     <button role="tab" id="tabbtn-inbox" data-tab="inbox" aria-controls="tab-inbox"><span data-i18n="tab.inbox">Bandeja</span><span class="count" id="count-inbox" hidden></span></button>
@@ -29,6 +30,7 @@
       <span data-i18n="perm.text">La extensión no tiene permiso para miaulario.unavarra.es y sso.unavarra.es.</span>
       <button id="grant" class="btn" data-i18n="perm.grant">Dar permiso</button>
     </div>
+    <section id="search-results" aria-live="polite" hidden></section>
     <section id="tab-due" role="tabpanel" aria-labelledby="tabbtn-due" hidden></section>
     <section id="tab-inbox" role="tabpanel" aria-labelledby="tabbtn-inbox" hidden></section>
     <section id="tab-new" role="tabpanel" aria-labelledby="tabbtn-new" hidden></section>
@@ -47,6 +49,7 @@
   <script src="lib/inbox.js"></script>
   <script src="lib/news.js"></script>
   <script src="lib/grades.js"></script>
+  <script src="lib/search.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -18,9 +18,10 @@ function make(NOW) {
   const [MATH, CS, PHYS, COORD] = SITES.map((s) => s.id);
 
   function pages(siteId) {
+    const NAMES = { 'sakai.synoptic.announcement': 'Inicio', 'sakai.announcements': 'Anuncios', 'sakai.resources': 'Recursos', 'sakai.assignment.grades': 'Tareas', 'sakai.forums': 'Foros', 'sakai.messages': 'Mensajes', 'sakai.gradebookng': 'Calificaciones' };
     const tool = (toolId, n) => ({
       id: `${siteId}-page-${n}`,
-      title: toolId,
+      title: NAMES[toolId],
       url: `https://miaulario.unavarra.es/portal/site/${siteId}/page/${siteId}-page-${n}`,
       tools: [{ id: `${siteId}-tool-${n}`, toolId, title: toolId }]
     });

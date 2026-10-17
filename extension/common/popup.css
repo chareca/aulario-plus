@@ -37,6 +37,15 @@ h1 { font-size: 14px; margin: 0; font-weight: 600; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .icon-btn.spin { animation: none; opacity: 0.6; } }
 
+/* Search */
+.searchbar { display: flex; padding: 8px 12px 0; }
+.searchbar input { flex: 1; }
+.result { display: block; padding: 5px 8px; margin: 0 -4px; border-radius: 6px; text-decoration: none; color: var(--fg); }
+.result:hover, .result.sel { background: var(--bg2); }
+.result.sel { box-shadow: inset 2px 0 0 var(--accent); }
+.result .title { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.result .meta { display: block; }
+
 /* Tabs */
 nav.tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 6px; }
 nav.tabs button { flex: 1 1 auto; background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 1px; color: var(--muted); cursor: pointer; white-space: nowrap; }

@@ -156,9 +156,10 @@
   };
 
   MAK.trimPages = function (pages, at) {
-    const out = { at, tools: {}, pageTools: {}, placements: {} };
+    const out = { at, tools: {}, pageTools: {}, placements: {}, nav: [] };
     for (const p of Array.isArray(pages) ? pages : []) {
       const pageUrl = MAK.safeSiteUrl(p.url);
+      if (pageUrl && p.title) out.nav.push({ title: String(p.title), url: pageUrl }); // the menu of the site, for the search
       const ids = [];
       for (const t of Array.isArray(p.tools) ? p.tools : []) {
         if (!t || !t.toolId) continue;

@@ -26,6 +26,7 @@
       "lib/due.js",
       "lib/inbox.js",
       "lib/news.js",
+      "lib/search.js",
       "background.js"
     ]
   },
