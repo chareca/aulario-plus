@@ -81,10 +81,18 @@ function specFor(cookie) {
   return conf ? { url: spec.url, conf } : null;
 }
 
+// The cookie of an event can be old: at login, MiAulario changes the session cookie a few
+// milliseconds after the previous change. Write only the value that the browser has now, else an
+// old (logged-out) session can replace the new session.
 async function persist(cookie) {
   const match = specFor(cookie);
   if (!match || cookie.expirationDate) return; // The cookie is persistent already, or it is not a session cookie.
   const { url, conf } = match;
+  let now = null;
+  try {
+    now = await ext.cookies.get(cookie.storeId ? { url, name: cookie.name, storeId: cookie.storeId } : { url, name: cookie.name });
+  } catch {}
+  if (!now || now.value !== cookie.value || now.expirationDate) return;
   const details = {
     url,
     name: cookie.name,
@@ -108,10 +116,16 @@ async function clearPersisted() {
   }
 }
 
-ext.cookies.onChanged.addListener(async ({ cookie, removed }) => {
+// One change at a time, in the order of the events.
+let cookieQueue = Promise.resolve();
+ext.cookies.onChanged.addListener(({ cookie, removed }) => {
   if (removed || !specFor(cookie)) return;
-  const { paused } = await getState();
-  if (!paused) persist(cookie);
+  cookieQueue = cookieQueue
+    .then(async () => {
+      const { paused } = await getState();
+      if (!paused) await persist(cookie);
+    })
+    .catch(() => {});
 });
 
 // At install or at browser start, change the cookies that exist into persistent cookies.
