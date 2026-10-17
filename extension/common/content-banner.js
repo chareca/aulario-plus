@@ -36,13 +36,6 @@
     .compact .summary { display: none; }
   `;
 
-  function isDark() {
-    const c = document.documentElement.classList;
-    if (c.contains('sakaiUserTheme-dark')) return true;
-    if (c.contains('sakaiUserTheme-light')) return false;
-    return !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: dark)').matches);
-  }
-
   // Put a host element at the top of the main content, below the breadcrumb.
   function insertAtTop(host) {
     const main = document.querySelector('main#content') || document.querySelector('main');
@@ -69,7 +62,7 @@
       button { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; border-radius: 6px; padding: 5px 12px;
         border: 1px solid #10524e; background: #10524e; color: #fff; }
       button.dark { border-color: #4fd1a5; background: #4fd1a5; color: #0b1a17; }`;
-    const btn = MAK.h('button', { class: isDark() ? 'dark' : '', attrs: { type: 'button' }, text: `📦 ${MAK.t('zip.button')}`, on: { click: onClick } });
+    const btn = MAK.h('button', { class: MAK.isDarkPage() ? 'dark' : '', attrs: { type: 'button' }, text: `📦 ${MAK.t('zip.button')}`, on: { click: onClick } });
     shadow.append(style, btn);
     insertAtTop(host);
   };
@@ -132,7 +125,7 @@
       : MAK.t(result.firstVisit ? 'news.titleFirst' : 'news.title');
     const box = h(
       'div',
-      { class: `box${isDark() ? ' dark' : ''}${compact ? ' compact' : ''}`, attrs: { role: 'region', 'aria-label': title } },
+      { class: `box${MAK.isDarkPage() ? ' dark' : ''}${compact ? ' compact' : ''}`, attrs: { role: 'region', 'aria-label': title } },
       h(
         'div',
         { class: 'head' },

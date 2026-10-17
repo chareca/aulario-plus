@@ -19,11 +19,16 @@
     return low.replace(/\p{L}/u, (c) => c.toLocaleUpperCase('es'));
   }
 
-  // The title without the code at the start. A title in capital letters only gets the
-  // capitalization of a Spanish title. A title with small letters stays the same.
-  MAK.shortTitle = function (title) {
+  // The title without the code at the start ("26_0_240504_1 ").
+  MAK.withoutCode = function (title) {
     const full = String(title || '').replace(/\s+/g, ' ').trim();
-    const rest = full.replace(CODE, '') || full;
+    return full.replace(CODE, '') || full;
+  };
+
+  // The title without the code. A title in capital letters only gets the capitalization of a
+  // Spanish title. A title with small letters stays the same.
+  MAK.shortTitle = function (title) {
+    const rest = MAK.withoutCode(title);
     if (rest !== rest.toLocaleUpperCase('es')) return rest;
     let first = true;
     return rest

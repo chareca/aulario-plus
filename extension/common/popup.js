@@ -574,8 +574,7 @@ function autoName(siteId) {
 
 function saveName(siteId, value) {
   ui.editSite = null;
-  const name = MAK.cleanName(value);
-  send({ type: 'setSettings', patch: { nicknames: { [siteId]: name && name !== autoName(siteId) ? name : null } } }).then(() => renderCurrent());
+  send({ type: 'renameSite', siteId, name: value }).then(() => renderCurrent());
 }
 
 // The name of a site (a link or text) with a pencil. While the user edits it: a text field.
@@ -646,7 +645,7 @@ function renderSites(el) {
             { class: 'name' },
             h('div', null, siteNameEditor(site.id, false)),
             h('div', { class: 'meta', text: [site.fullTitle !== site.title ? site.fullTitle : null, MAK.STRINGS.es[typeKey(site.type)] ? t(typeKey(site.type)) : site.type].filter(Boolean).join(' · ') }),
-            settings().nicknames[site.id] ? h('button', { class: 'link-btn', text: t('names.auto'), attrs: { title: t('names.autoHelp') }, on: { click: () => send({ type: 'setSettings', patch: { nicknames: { [site.id]: null } } }) } }) : null
+            settings().nicknames[site.id] ? h('button', { class: 'link-btn', text: t('names.auto'), attrs: { title: t('names.autoHelp') }, on: { click: () => send({ type: 'renameSite', siteId: site.id, name: '' }) } }) : null
           ),
           siteActions(site),
           h('label', null, h('input', { attrs: { type: 'checkbox', checked: hidden.has(site.id) }, on: { change: (e) => setHidden(site.id, e.target.checked) } }), t('sites.hide'))

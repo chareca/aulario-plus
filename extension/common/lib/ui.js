@@ -31,6 +31,14 @@
     return el;
   };
 
+  // True if the MiAulario page uses the dark theme (the Sakai setting, or the system setting).
+  MAK.isDarkPage = function () {
+    const c = document.documentElement.classList;
+    if (c.contains('sakaiUserTheme-dark')) return true;
+    if (c.contains('sakaiUserTheme-light')) return false;
+    return !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: dark)').matches);
+  };
+
   // Replace all the children of an element.
   MAK.fill = function (el, ...children) {
     el.replaceChildren();

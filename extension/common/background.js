@@ -458,6 +458,24 @@ const handlers = {
       return { ok: true };
     }
   },
+  // A name from the user for a site (the pencil in the popup or in MiAulario). An empty name,
+  // or the automatic name, removes the name from the user.
+  renameSite: {
+    content: true,
+    run: async (msg) => {
+      if (!(await knownSite(msg.siteId))) return null;
+      const { sites } = await store.get('sites');
+      const site = sites.find((s) => s.id === msg.siteId);
+      const next = await store.update('settings', (cur) => {
+        const base = MAK.withDefaults(cur);
+        const auto = MAK.siteName(site, Object.assign({}, base, { nicknames: {} }));
+        const name = MAK.cleanName(typeof msg.name === 'string' ? msg.name : '');
+        const nicknames = Object.assign({}, base.nicknames, { [msg.siteId]: name && name !== auto ? name : null });
+        return MAK.withDefaults(Object.assign({}, base, { nicknames }));
+      });
+      return { ok: true, name: MAK.siteName(site, next) };
+    }
+  },
   // Nothing before now is new in this site (or in all sites).
   markSiteSeen: {
     run: async (msg) => {

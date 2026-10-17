@@ -26,6 +26,7 @@
       "js": [
         "lib/core.js",
         "lib/store.js",
+        "lib/names.js",
         "content-early.js"
       ],
       "run_at": "document_start"
@@ -39,6 +40,7 @@
         "lib/i18n.js",
         "lib/ui.js",
         "content-banner.js",
+        "content-names.js",
         "content.js"
       ],
       "run_at": "document_idle"

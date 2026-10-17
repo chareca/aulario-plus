@@ -15,7 +15,12 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync(COMMON, OUT, { recursive: true });
 
 const data = F.make(Date.now());
+// Titles in the form of the UPNA (code + capital letters), as in the real MiAulario.
+const UPNA_TITLES = { [F.MATH]: '26_0_100001_1_G MATEMÁTICAS I', [F.CS]: '26_0_100002_1_G INFORMÁTICA Y PROGRAMACIÓN' };
+for (const s of data.SITES) if (UPNA_TITLES[s.id]) s.title = UPNA_TITLES[s.id];
 const routes = data.routes();
+const withoutCode = (t) => t.replace(/^\d+(?:_[0-9A-Za-z]+)+\s+/, '');
+const csTitle = data.SITES.find((s) => s.id === F.CS).title;
 // File bodies for the ZIP tests: each file URL answers with a small text.
 for (const site of data.SITES) {
   for (const r of data.resources(site.id)) {
@@ -138,10 +143,10 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js', 'content-names.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
-<head><meta charset="utf-8"><title>Harness: MiAulario site</title>
+<head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
 <style>
   body { margin: 0; font: 15px/1.5 Georgia, serif; background: #fff; color: #222; }
   html.sakaiUserTheme-dark body { background: #121212; color: #ddd; }
@@ -152,15 +157,16 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <body>
 <aside id="portal-nav-sidebar" style="font:13px sans-serif;border-bottom:1px solid #ccc;padding:6px 24px">
   <ul style="display:flex;gap:16px;list-style:none;margin:0;padding:0">
-    ${data.SITES.map((s) => `<li class="site-list-item" data-site="${s.id}">${s.title}</li>`).join('')}
+    ${data.SITES.map((s) => `<li class="site-list-item" data-site="${s.id}"><div class="site-link-block"><a class="sidebar-site-title" href="#" title="${s.title}">${withoutCode(s.title)}</a></div></li>`).join('')}
   </ul>
 </aside>
 <main id="content" class="portal-main-content">
   <h1 id="tocontent" style="position:absolute;left:-9999px">Los contenidos empiezan aquí</h1>
-  <div class="portal-header-breadcrumb">Computer Science › Inicio</div>
+  <div class="portal-header-breadcrumb"><div id="header-site-title" class="portal-header-breadcrumb-item portal-header-site-title"><a href="#">${csTitle}</a></div> › Inicio</div>
   <div class="row"><p>Contenido del sitio (simulado).</p></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
+<script>history.replaceState(null, '', '/portal/site/${F.CS}' + location.search); // the path of a site, as in MiAulario</script>
 ${siteTags}
 <script>
   // Show the banner: install time 10 days ago, then a visit of Computer Science.

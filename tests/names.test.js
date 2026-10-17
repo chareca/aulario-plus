@@ -57,3 +57,21 @@ test('background: setSettings merges the names; null removes one; the grade noti
   await bg.send({ type: 'syncNow' });
   assert.equal(bg.ext._notes.get('grade:503').title, 'Nota nueva · CS');
 });
+
+test('background: renameSite from the popup or from MiAulario; the automatic name removes the name', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  await bg.send({ type: 'syncNow' });
+  const CONTENT = { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: `https://miaulario.unavarra.es/portal/site/${F.CS}` };
+  const nick = async () => (await bg.ext.storage.local.get('settings')).settings.nicknames;
+  assert.deepEqual(await bg.send({ type: 'renameSite', siteId: F.CS, name: '  IyP\n' }, CONTENT), { ok: true, name: 'IyP' });
+  assert.deepEqual({ ...(await nick()) }, { [F.CS]: 'IyP' });
+  assert.deepEqual(await bg.send({ type: 'renameSite', siteId: F.CS, name: 'Computer Science' }), { ok: true, name: 'Computer Science' });
+  assert.deepEqual({ ...(await nick()) }, {}, 'the automatic name: no name from the user');
+  await bg.send({ type: 'renameSite', siteId: F.CS, name: 'x'.repeat(80) });
+  assert.equal((await nick())[F.CS].length, 40);
+  await bg.send({ type: 'renameSite', siteId: F.CS, name: '' });
+  assert.deepEqual({ ...(await nick()) }, {});
+  assert.equal(await bg.send({ type: 'renameSite', siteId: 'unknown', name: 'X' }, CONTENT), null);
+  assert.equal(await bg.send({ type: 'renameSite', siteId: '~user', name: 'X' }, CONTENT), null);
+  assert.equal(await bg.send({ type: 'renameSite', siteId: F.CS, name: 'X' }, Object.assign({}, CONTENT, { frameId: 2 })), null, 'not from a frame');
+});
