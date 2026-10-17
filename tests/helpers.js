@@ -2,6 +2,8 @@
 // and a fetch function that returns MiAulario responses from the synthetic fixtures.
 'use strict';
 const path = require('node:path');
+const assert = require('node:assert/strict');
+const { hkdfSync, createDecipheriv } = require('node:crypto');
 
 const ROOT = path.join(__dirname, '..');
 const COMMON = path.join(ROOT, 'extension', 'common');
@@ -78,6 +80,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
   const sessionArea = memoryArea();
   const badge = { text: '', color: null };
   const tabsCreated = [];
+  const granted = new Set();
   const notes = new Map();
   // Send storage.onChanged events, the same as the browser does.
   for (const area of [localArea]) {
@@ -121,6 +124,11 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       setTitle: async ({ title }) => { badge.title = title; }
     },
     tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; } },
+    // Host permissions that the user gave (optional_host_permissions).
+    permissions: {
+      contains: async ({ origins }) => origins.every((o) => granted.has(o)),
+      request: async ({ origins }) => { for (const o of origins) granted.add(o); return true; }
+    },
     notifications: {
       create: async (id, o) => { notes.set(id, o); return id; },
       clear: async (id) => notes.delete(id),
@@ -131,12 +139,14 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
     _notes: notes,
     _alarms: alarms,
     _badge: badge,
-    _tabs: tabsCreated
+    _tabs: tabsCreated,
+    _granted: granted
   };
 }
 
 // Load background.js and the shared scripts in an isolated context with a mock extension API.
-function loadBackground({ fetch, local, now } = {}) {
+// "web": more browser functions for the background (crypto, WebSocket, ...).
+function loadBackground({ fetch, local, now, web } = {}) {
   const vm = require('node:vm');
   const fs = require('node:fs');
   const ext = mockExtension({ local });
@@ -149,7 +159,8 @@ function loadBackground({ fetch, local, now } = {}) {
     TextEncoder,
     setTimeout,
     clearTimeout,
-    Date: now ? fixedDate(now) : Date
+    Date: now ? fixedDate(now) : Date,
+    ...(web || {})
   };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
@@ -186,4 +197,31 @@ function fixedDate(nowRef) {
   return FixedDate;
 }
 
-module.exports = { ROOT, COMMON, loadLib, memoryArea, response, fakeFetch, clone, mockExtension, loadBackground, fixedDate };
+// Decrypt the "aes128gcm" content of Send. It also checks the record size and the delimiters.
+function eceDecrypt(secret, data) {
+  const buf = Buffer.from(data);
+  const salt = buf.subarray(0, 16);
+  const rs = buf.readUInt32BE(16);
+  assert.equal(rs, 64 * 1024);
+  assert.equal(buf[20], 0, 'no key id');
+  const key = Buffer.from(hkdfSync('sha256', secret, salt, 'Content-Encoding: aes128gcm\0', 16));
+  const nonceBase = Buffer.from(hkdfSync('sha256', secret, salt, 'Content-Encoding: nonce\0', 12));
+  const out = [];
+  for (let off = 21, seq = 0; off < buf.length; off += rs, seq++) {
+    const rec = buf.subarray(off, off + rs);
+    const last = off + rs >= buf.length;
+    if (!last) assert.equal(rec.length, rs, 'a record that is not the last has the full size');
+    const nonce = Buffer.from(nonceBase);
+    nonce.writeUInt32BE((nonce.readUInt32BE(8) ^ seq) >>> 0, 8);
+    const d = createDecipheriv('aes-128-gcm', key, nonce);
+    d.setAuthTag(rec.subarray(rec.length - 16));
+    const plain = Buffer.concat([d.update(rec.subarray(0, rec.length - 16)), d.final()]);
+    let i = plain.length - 1;
+    while (i >= 0 && plain[i] === 0) i--;
+    assert.equal(plain[i], last ? 2 : 1, 'the delimiter of the record');
+    out.push(plain.subarray(0, i));
+  }
+  return Buffer.concat(out);
+}
+
+module.exports = { eceDecrypt, ROOT, COMMON, loadLib, memoryArea, response, fakeFetch, clone, mockExtension, loadBackground, fixedDate };
