@@ -214,6 +214,7 @@
       h('label', { class: 'field', text: t('mail.message') }),
       body,
       h('label', { class: 'check' }, copy, h('span', { text: t('mail.copy') })),
+      files.length ? h('p', { class: 'help', text: t('mail.linkNote') }) : null,
       h('div', { class: 'actions' }, openBtn, sendBtn, shareBtn),
       confirmBox,
       status
