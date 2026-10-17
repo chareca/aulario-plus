@@ -1,6 +1,6 @@
 # Aulario Plus
 
-Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items, calendar events and grades of all your courses in one place, with short names for your sites and one search for all of them.
+Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items, calendar events and grades of all your courses in one place, with short names for your sites and one search for all of them. You can send the files of a site by the internal mail of MiAulario, without a download.
 
 The interface is in Spanish. You can change it to English in the settings.
 
@@ -44,7 +44,7 @@ The interface is in Spanish. You can change it to English in the settings.
 - **Sites:** Hide the sites that you do not use. Select if a hidden site hides only in the sidebar of MiAulario, or also in the extension.
   - **Short names:** The extension removes the code at the start of a site title and changes a title in capital letters to the capitalization of a Spanish title: "26_0_240504_1 ANÁLISIS DE APLICACIONES EMPRESARIALES" becomes "Análisis de Aplicaciones Empresariales". You can turn this off in the settings.
   - **Your own names:** Click ✎ next to a name to write a name of your choice, for example "AAE". The extension keeps it and shows it in all the tabs, in MiAulario, in the ZIP and in the calendar export. An empty name goes back to the automatic name. The pencil is also on the cards of the Grades and New items tabs.
-- **Settings:** The keep-alive controls, the course data sync, the grade notifications, the site names, the search shortcut, the number on the icon, the calendar export and the language.
+- **Settings:** The keep-alive controls, the course data sync, the grade notifications, the site names, the search shortcut, the forward guide for the internal mail, the MiAulario checks, the number on the icon, the calendar export and the language.
 
 ### In MiAulario
 
@@ -53,6 +53,18 @@ The interface is in Spanish. You can change it to English in the settings.
 - **Banner of new items:** When you open a site, a banner shows the items that came after your previous visit of that site: files, announcements, deliveries, changed due dates, forum posts and new grades. For a grade, the banner shows the name of the item, but not the grade. The next pages of the same visit show a short line. A new visit starts after 30 minutes without pages of the site.
 - **Download all (ZIP):** In the Resources tool, a button downloads all the files of the site as one ZIP file with the same folders. You can also start it from the Sites tab of the popup.
 - **Hidden sites:** The sidebar does not show the sites that you hid.
+
+### Internal mail ("Correo interno")
+
+The "Correo interno" of MiAulario is the Messages tool of each site. It sends only to the persons of that site. A copy goes to the email address of each recipient in MiAulario (for students, `@e.unavarra.es`).
+
+- **Send files of the Resources tool:** In the Resources tool, each file has a button ✉. When you select files, a bar shows "Send by mail" and "Send them to me". The server of MiAulario attaches a copy of each file: nothing is downloaded to your computer.
+- **The send window:** select "To me" or "To other persons" (with a search in the list of the site). The extension writes a subject and a message; you can change them. The option "Also send a copy to their email address" is on. Then:
+  - **Open the mail:** the extension prepares the message with the files in the internal mail of the site and opens it in a new tab. You examine it and send it.
+  - **Send now:** the extension sends it. A message to you needs one confirmation.
+  - **Share:** the share menu of the system with the files (only if your browser has it). The files stay in memory.
+- **Quick message:** In the Inbox tab of the popup, "New message" opens the same window for a site, without files.
+- **Receive in a different email:** The internal mail cannot send to an address outside MiAulario. The subject of the messages to you starts with `[Aulario Plus]`, so a forward filter in your UPNA email can send them to your other address. The settings show the steps for Gmail and Outlook.
 
 ### Grade notifications
 
@@ -80,13 +92,15 @@ The extension reads your course data from MiAulario with these requests:
 | Every 4 hours | All the announcements of the last 60 days, and the files and forum topics of all the sites |
 | Every 6 hours | The sites, and the events of the MiAulario calendar of this week and the next 5 weeks |
 | Every 24 hours | The pages (menu) of each site |
+| When you use the internal mail | The forms of the Messages tool of the site, and the attachment page |
+| When you start the MiAulario checks | The APIs above, some pages of a site, and the forms of the internal mail (cancelled) |
 | When you open a site (a new visit) | The same as every 15 minutes, plus the files and the forum topics of that site |
 | When you open the popup | The same as every 15 minutes, if the data is older than 2 minutes |
 | When you click **Calculate** in the Grades tab | The Gradebook page of that site |
 
 - The extension sends one request at a time, with a pause between the requests.
 - Each request of the sync has the parameter `auto=true`. Sakai then does not record the request as activity. Only the keep-alive ping records activity.
-- The Gradebook page is different: MiAulario records it as activity, also with `auto=true`. The extension reads this page only when you click **Calculate**.
+- The Gradebook page, the pages of a site and the forms of the internal mail are different: MiAulario records them as activity, also with `auto=true`. The extension reads them only when you use these functions.
 - After a server error, the extension waits longer each time before it sends more requests.
 - The extension does not send requests for hidden sites if you hide them also in the extension.
 - To stop all these requests, turn off **Sync course data** in the settings.
@@ -130,11 +144,26 @@ The script makes these items in `dist/`:
 
 ## Tests
 
-Node.js 20 or later is necessary. The tests do not need other packages.
+Node.js 22 or later is necessary. The tests do not need other packages.
 
 ```bash
 node --test 'tests/*.test.js'
 ```
+
+Some tests read HTML pages, so they run in a headless Chromium (`tests/browser/run.mjs`). The script finds the Chrome for Testing of Playwright or Chromium, or uses the browser in `CHROME_PATH`. Without a browser, these tests are skipped.
+
+### When MiAulario changes
+
+The MiAulario checks tell which part of MiAulario changed. They only read: in the internal mail, they open the compose form and the attachment page, then they cancel.
+
+- **In the extension:** Settings → "MiAulario checks". The page shows each result and has "Copy the report" (without personal data).
+- **For the development:** a test browser opens with the extension and its own profile. The first time, log in to MiAulario in that window.
+
+```bash
+./build.sh && node tests/live/run.mjs
+```
+
+The exit code is 1 if a check fails.
 
 To see the popup and the pages with synthetic data in a normal browser tab:
 
@@ -142,7 +171,7 @@ To see the popup and the pages with synthetic data in a normal browser tab:
 node tests/harness/make.js
 ```
 
-Then serve `tests/harness/out/` with a local web server, for example `python3 -m http.server 8766 --directory tests/harness/out`, and open `popup.html`, `site.html` or `tools.html?ics=1`.
+Then serve `tests/harness/out/` with a local web server, for example `python3 -m http.server 8766 --directory tests/harness/out`, and open `popup.html`, `site.html`, `tools.html?ics=1` or `tools.html?check=1`.
 
 ## Contribute
 

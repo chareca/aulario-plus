@@ -125,12 +125,38 @@ Limits:
 - `/api/users/me/grades` does not give the maximum points or the categories. The calculator must read the Gradebook page.
 - Deep links: `/portal/directtool/{placement}?itemReference=/announcement/msg/{site}/main/{uuid}&sakai_action=doShowmetadata` opens one announcement. `/portal/directtool/{placement}?assignmentId={id}&panel=Main&sakai_action=doView_submission` opens one delivery.
 
+## The internal mail (version 1.5.0)
+
+"Correo interno" is the Messages tool of Sakai (`sakai.messages`, JSF). It is in 9 of 11 sites of the test account. MiAulario has no API to send a message (`/direct/describe`: 87 entity providers, none sends). The extension uses the forms, the same as a person:
+
+| Step | Request | Form data |
+|---|---|---|
+| Inbox | `GET /portal/tool/{placement}/privateMsg/pvtMsgHpView` | form `msgForum`, link `msgForum:composeMessage` (`mojarra.jsfcljs`) |
+| Compose form | `POST` the form `msgForum` with `msgForum:composeMessage` | form `compose`: `compose:list1` ("To", values = user ids), `compose:list2` (BCC), `compose:send_email_out` (copy by email, on by default), `compose:subject`, `compose:pvt_message_body_inputRichText`, and the buttons "Añadir adjuntos", "Enviar", "Vista preliminar", "Guardar borrador", "Cancelar" (names `compose:j_id_jsp_…`, they change) |
+| Attachment page | `POST` the form `compose` with "Añadir adjuntos" (the server keeps all the fields) | `sakai.filepicker.helper`: form `doattachitem` (`sakai_action=doAttachitem`, `itemId`, `sakai_csrf_token`) and form `attachForm` |
+| Attach a file | `POST` (multipart) `doattachitem` with `itemId=/group/{site}/{path}` | The server attaches a copy of the resource. Nothing is downloaded. |
+| Back to the form | `POST` `attachForm` to `?sakai_action=doAddattachments` ("Continuar") or `?sakai_action=doCancel` | The compose form, with the fields and the files |
+| Send | `POST` the form `compose` with "Enviar" | The inbox (`msgForum`) |
+
+Live tests (2026-10-17):
+
+- A prepared form stays on the server. When the user opens the tool (the URL of its page), the tool shows the form with the recipient, the subject, the message and the files. This is "Open the mail".
+- "Send now" to the user: sent in 0.85 s. The message was in the folder "Recibido", and the copy went to the email address.
+- The user is in the list "To". The list has "Todos los participantes", the roles and each person (`SURNAME, Name (eid)`).
+- `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site (`userId` = the value of the list "To"). For version 1.5.1.
+- `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
+- "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
+
+## Login and the persistent cookies
+
+A bug of versions 1.0 to 1.4: the extension wrote the value of each cookie event. At login, MiAulario changes `SAKAISESSIONID` a few milliseconds after the previous change. A late event of the old cookie could then write the old (logged-out) session over the new session, and the user saw the page "not logged in" after a correct login. Since version 1.5.0, the extension reads the cookie before it writes, and writes only the value that the browser has now.
+
 ## Not in the design
 
 - **A remote server that sends pings with your session cookie.** This method keeps the session active when your computer is off. But your session is then on a different computer, and a person with that cookie has access to your account. Also, this method does not agree with the purpose of the UPNA rules.
 - **The password in the extension.** The storage of an extension is not encrypted. The password manager of the browser is safer.
 
-## Design of the extension (version 1.4.0)
+## Design of the extension (version 1.5.0)
 
 The extension has one source code for Chromium browsers and Firefox (128 or later). It uses Manifest V3 and no build tools. The shared files are classic scripts that attach to `globalThis.MAK`. Node can also load them for the tests.
 
@@ -147,6 +173,7 @@ extension/
     content-banner.js      the banner of new items and the ZIP button (closed shadow root)
     content-names.js       the pencils next to the site names (sidebar and page header)
     content-search.js      the search palette (Ctrl+K)
+    content-mail.js        the buttons "Send by mail" in the Resources tool
     popup.html, popup.js   tabs: deliveries, inbox, new items, grades, sites, settings
     tools.html, tools.js   ZIP download and calendar export (in a tab)
     _locales/              name and description of the extension (Spanish, English)
@@ -158,9 +185,14 @@ extension/
     lib/grades.js          new grades, and the grade calculator
     lib/names.js           short names and names from the user
     lib/search.js          the search index of all the sites
+    lib/pm.js              the engine of the internal mail (readers of the pages, and the flow)
+    lib/mail-ui.js         the send window
+    lib/checks.js          the MiAulario checks (diagnostic page and live checks)
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
 tests/                     Node tests, synthetic data and a test harness
+  browser/                 the DOM tests in a headless Chromium
+  live/                    the MiAulario checks in a test browser
 ```
 
 ### Rules
@@ -175,9 +207,10 @@ tests/                     Node tests, synthetic data and a test harness
 
 ## Tests
 
-1. Node tests: `node --test 'tests/*.test.js'`. They use synthetic data with the same shapes as the real responses.
-2. Test harness: `node tests/harness/make.js` makes a copy of the pages with a mock extension API, the real background script and synthetic data.
-3. Manual tests in Chrome and Firefox:
+1. Node tests: `node --test 'tests/*.test.js'`. They use synthetic data with the same shapes as the real responses. The DOM tests run in a headless Chromium (`tests/browser/run.mjs`).
+2. MiAulario checks: `node tests/live/run.mjs` (or Settings → "MiAulario checks"). The first live run passed all 15 checks.
+3. Test harness: `node tests/harness/make.js` makes a copy of the pages with a mock extension API, the real background script and synthetic data.
+4. Manual tests in Chrome and Firefox:
    - The session must stay active after 70 minutes without use.
    - Close the browser and open it again after 15 minutes. The session must stay active.
    - Read an announcement in the extension, and look at the bell of MiAulario. Read one in MiAulario, and look at the extension.
@@ -189,6 +222,7 @@ tests/                     Node tests, synthetic data and a test harness
    - Give a name to a site with ✎ in the popup and in the page header. Look at the sidebar, the favorites, the header and the tab title.
    - Search from the popup and with Ctrl+K in MiAulario. Press Ctrl+K in the editor of an announcement: the editor must get it.
    - Click a bar of the week view.
+   - In the Resources tool, send a file to you: "Open the mail" and "Send now". Select two files and use the bar.
    - Click **Log out**. The extension must not open the login page.
 
 ## Open questions
