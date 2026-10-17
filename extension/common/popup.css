@@ -37,6 +37,14 @@ h1 { font-size: 14px; margin: 0; font-weight: 600; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .icon-btn.spin { animation: none; opacity: 0.6; } }
 
+/* MiAulario checks (tools page) */
+ul.checks { list-style: none; padding: 0; margin: 10px 0; }
+ul.checks li { display: grid; grid-template-columns: 1.4em 12em 1fr; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+ul.checks .mark { font-weight: 700; }
+ul.checks li.ok .mark { color: var(--green); }
+ul.checks li.bad .mark, ul.checks li.bad .meta { color: var(--red); }
+ul.checks li.skip .mark { color: var(--muted); }
+
 /* Search */
 .searchbar { display: flex; padding: 8px 12px 0; }
 .searchbar input { flex: 1; }

@@ -169,3 +169,19 @@ test('buttons in English and Basque; an unknown language uses the place of the 5
 test('pmBodyHtml: paragraphs, line breaks and no HTML from the text', () => {
   assert.equal(MAK.pmBodyHtml('Hola <b>\nlínea 2\n\nOtro & más'), '<p>Hola &lt;b&gt;<br>línea 2</p><p>Otro &amp; más</p>');
 });
+
+test('inspect: up to the attachment page, then cancel and cancel; never "Send"', async () => {
+  const s = fakeServer();
+  const r = await MAK.createPm({ load: s.load }).inspect('T', 'chareca.1');
+  assert.equal(r.recipients.filter((x) => x.me).length, 1);
+  assert.deepEqual(r.picker, { item: ['sakai_action', 'itemId', 'sakai_csrf_token'], continueUrl: true, cancelUrl: true });
+  assert.equal(r.closed, true);
+  const urls = s.log.map((l) => l.url.replace(TOOL, ''));
+  assert.deepEqual(urls, ['/privateMsg/pvtMsgHpView', '/privateMsg/pvtMsgHpView', '/compose', '/sakai.filepicker.helper?sakai_action=doCancel', '/compose']);
+  assert.ok(!s.log.some((l) => l.body.some(([, v]) => v === 'Enviar')), 'never the button "Send"');
+  assert.ok(!s.log.some((l) => l.url.endsWith('/sakai.filepicker.helper')), 'no file is attached');
+});
+
+test('a known language without "Send" fails: the place of the buttons is not used', () => {
+  assert.throws(() => MAK.pmCompose(composeSnap({ labels: ['Añadir adjuntos', 'Vista preliminar', 'Guardar borrador', 'Otro', 'Cancelar'] })), (e) => e.code === 'pm.noButtons' && /send/.test(e.message));
+});

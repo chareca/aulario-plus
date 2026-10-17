@@ -1,6 +1,8 @@
 // Aulario Plus: the tools page (a tab of the extension).
 //   tools.html?zip=<siteId>   download all the files of a site as one ZIP
 //   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
+//   tools.html?message=<site> a quick message by the internal mail of a site
+//   tools.html?check=1        the MiAulario checks (diagnostic); "&auto=1" starts them at once
 // A tab is used (not the popup) because the popup closes when it loses the focus.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { t } = MAK;
@@ -216,6 +218,65 @@ function runMessage(siteId, store) {
   });
 }
 
+// ---- MiAulario checks (diagnostic) ---------------------------------------------------
+// window.__checkResults and window.__checksDone are for tests/live/run.mjs.
+
+function runChecks(auto) {
+  const { h, fill } = MAK;
+  const box = $('checks');
+  box.hidden = false;
+  $('title').textContent = t('diag.title');
+  document.title = t('diag.title');
+  const list = h('ul', { class: 'checks' });
+  const summary = h('p', { class: 'status', attrs: { role: 'status' } });
+  const start = h('button', { class: 'btn primary', text: t('diag.start'), attrs: { type: 'button' } });
+  const copy = h('button', { class: 'btn', text: t('diag.copy'), attrs: { type: 'button' }, hidden: true });
+  let report = '';
+  fill(box, h('p', { class: 'meta', text: t('diag.intro') }), h('div', { class: 'row' }, start, copy), summary, list);
+  const getDoc = async (path) => {
+    const r = await fetch(MAK.BASE + path, { credentials: 'include', cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return new DOMParser().parseFromString(await r.text(), 'text/html');
+  };
+  async function go() {
+    start.disabled = true;
+    copy.hidden = true;
+    summary.textContent = t('diag.running');
+    const rows = new Map();
+    fill(list, MAK.CHECKS.map((c) => {
+      const li = h('li', { class: 'pending' }, h('span', { class: 'mark', text: '…' }), h('strong', { text: t(`check.${c.id}`) }), h('span', { class: 'meta' }));
+      rows.set(c.id, li);
+      return li;
+    }));
+    const ctx = { api: MAK.createApi({ fetch: (u, i) => fetch(u, i) }), now: Date.now(), getDoc, pm: MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) }) };
+    const results = await MAK.runChecks(ctx, {
+      onResult: (r) => {
+        const li = rows.get(r.id);
+        li.className = r.ok === true ? 'ok' : r.ok === false ? 'bad' : 'skip';
+        li.firstChild.textContent = r.ok === true ? '✓' : r.ok === false ? '✗' : '–';
+        li.lastChild.textContent = r.detail;
+      }
+    });
+    const failed = results.filter((r) => r.ok === false).length;
+    summary.textContent = failed ? t('diag.failed', { n: failed }) : t('diag.allOk', { n: results.length });
+    const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '?';
+    report = MAK.checksReport(results, { version, date: new Date().toISOString().slice(0, 16).replace('T', ' ') });
+    copy.hidden = false;
+    start.disabled = false;
+    window.__checkResults = results;
+    window.__checksDone = true;
+  }
+  start.addEventListener('click', go);
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(report);
+      copy.textContent = t('diag.copied');
+      setTimeout(() => { copy.textContent = t('diag.copy'); }, 1500);
+    } catch {}
+  });
+  if (auto) go();
+}
+
 async function init() {
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
@@ -236,6 +297,8 @@ async function init() {
     await runIcs(store);
   } else if (params.has('message')) {
     runMessage(params.get('message'), store);
+  } else if (params.has('check')) {
+    runChecks(params.has('auto'));
   }
 }
 

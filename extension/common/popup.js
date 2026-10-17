@@ -906,6 +906,13 @@ function renderSettings(el) {
     h(
       'div',
       { class: 'section' },
+      h('h2', { text: t('diag.title') }),
+      h('p', { class: 'small', text: t('diag.help') }),
+      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('diag.open'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?check=1') }); window.close(); } } }))
+    ),
+    h(
+      'div',
+      { class: 'section' },
       h('h2', { text: t('set.badge') }),
       checkbox(t('set.badgeShow'), t('set.badgeHelp'), s.badge.enabled, (v) => send({ type: 'setSettings', patch: { badge: { enabled: v } } })),
       h(

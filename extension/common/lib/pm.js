@@ -105,8 +105,10 @@
     const missing = ['to', 'subject', 'body'].filter((k) => !fields[k]);
     if (missing.length) throw new PmError('pm.noFields', missing.join(', '));
     const submits = snap.controls.filter((c) => c.type === 'submit');
-    // By the text of the button; if MiAulario uses an unknown language, by its place.
-    const button = (re, index) => submits.find((b) => re.test(b.label)) || (submits.length === 5 ? submits[index] : null);
+    // By the text of the button. Only if no button has a known text (an unknown language), by
+    // its place in the 5 buttons. Never mix the two: a missing "Send" must not become "Preview".
+    const known = submits.some((b) => Object.values(MAK.PM_LABELS).some((re) => re.test(b.label)));
+    const button = (re, index) => submits.find((b) => re.test(b.label)) || (!known && submits.length === 5 ? submits[index] : null);
     const buttons = { attach: button(MAK.PM_LABELS.attach, 0), send: button(MAK.PM_LABELS.send, 1), cancel: button(MAK.PM_LABELS.cancel, 4) };
     const noButtons = Object.keys(buttons).filter((k) => !buttons[k]);
     if (noButtons.length) throw new PmError('pm.noButtons', noButtons.join(', '));
@@ -211,7 +213,21 @@
       return after.kind === 'home';
     }
 
-    return { open, prepare, send, cancel };
+    // For the checks of MiAulario: go through the forms up to the attachment page, then cancel
+    // the attachment page and the compose form. Nothing is sent and nothing is attached.
+    async function inspect(placement, myEid) {
+      const compose = await open(placement);
+      const recipients = MAK.pmRecipients(compose, myEid);
+      const empty = { to: [], subject: '', body: '', emailCopy: false };
+      const pick = await post(compose.snap.action, composeBody(compose, empty, compose.buttons.attach));
+      if (pick.kind !== 'picker') throw new PmError('pm.noPicker', pick.kind);
+      const picker = { item: pick.item.controls.map((c) => c.name), continueUrl: !!pick.continueUrl, cancelUrl: !!pick.cancelUrl };
+      const back = MAK.pmCompose(await post(pick.cancelUrl || `${pick.attach.action}?sakai_action=doCancel`, multipart(pick.attach)));
+      const closed = await cancel(back);
+      return { compose, recipients, picker, closed };
+    }
+
+    return { open, prepare, send, cancel, inspect };
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;
