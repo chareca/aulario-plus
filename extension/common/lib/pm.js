@@ -183,7 +183,8 @@
       checkData(data);
       const files = data.files || [];
       let pick = await post(compose.snap.action, composeBody(compose, data, compose.buttons.attach));
-      if (pick.kind !== 'picker') throw new PmError('pm.noPicker', pick.kind);
+      // MiAulario can show the compose form again with an error (the text tells why).
+      if (pick.kind !== 'picker') throw new PmError('pm.noPicker', pick.kind === 'compose' && pick.error ? `compose: ${pick.error}` : pick.kind);
       for (const f of files) {
         pick = await post(pick.item.action, multipart(pick.item, { itemId: f.itemId }));
         if (pick.kind !== 'picker') throw new PmError('pm.noAttach', f.title);

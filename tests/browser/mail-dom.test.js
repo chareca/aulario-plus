@@ -13,20 +13,26 @@
   const FILES = [{ itemId: '/group/S/Tema 1.pdf', title: 'Tema 1.pdf' }];
   const LINK = { link: 'https://is.gd/AbC12x', password: 'k7m2x9qp', downloads: 1, expires: Date.UTC(2026, 9, 18, 12, 0) };
 
-  function openWindow({ links, mode = 'me' } = {}) {
+  function openWindow({ links, mode = 'me', fail = [] } = {}) {
     MAK.setLang('es');
     const into = document.createElement('div');
     document.body.append(into);
     const log = { made: 0, prepared: [], sent: [], opened: 0 };
+    // "fail": the errors of the next calls of prepare (then it works).
     const pm = {
       open: async () => COMPOSE,
-      prepare: async (c, d) => (log.prepared.push(d), c),
+      prepare: async (c, d) => {
+        log.prepared.push(d);
+        const code = fail.shift();
+        if (code) throw Object.assign(new Error(code), { code });
+        return c;
+      },
       send: async (c, d) => { log.sent.push(d); },
       cancel: async () => {}
     };
     MAK.mailWindow(into, {
       site: { id: 'S', name: 'Cálculo' }, files: FILES, mode, placement: 'P', pm,
-      myEid: async () => 'me1', openTool: async () => { log.opened++; }, share: null, onClose: () => {},
+      myEid: async () => 'me1', openTool: async () => { log.opened++; }, share: null, onClose: () => {}, retryMs: 10,
       links: links === null ? null : Object.assign({ mode: 'password', downloads: 1, seconds: 86400, make: async () => (log.made++, LINK) }, links)
     });
     const button = (text) => [...into.querySelectorAll('button')].find((b) => b.textContent === text);
@@ -82,6 +88,30 @@
     const w = openWindow({ links: null });
     assert.ok(!w.button(MAK.t('link.make')), 'no link button');
     assert.ok(w.into.textContent.includes(MAK.t('link.hintSettings')));
+    w.into.remove();
+  });
+
+  test('mail window: one more try when MiAulario does not show the attachment page; never two sends', async () => {
+    const w = openWindow({ links: null, fail: ['pm.noPicker'] });
+    w.button(MAK.t('mail.sendNow')).click();
+    w.button(MAK.t('mail.confirmYes')).click();
+    await until(() => w.log.sent.length === 1);
+    assert.equal(w.log.prepared.length, 2, 'prepared two times');
+    assert.equal(w.status(), MAK.t('mail.sent', { n: 1 }));
+    w.into.remove();
+  });
+
+  test('mail window: no second try after a file was attached, or after two errors', async () => {
+    let w = openWindow({ links: null, fail: ['pm.noAttach'] });
+    w.button(MAK.t('mail.open')).click();
+    await until(() => w.status().includes('pm.noAttach') || w.status() === MAK.t('mail.error.pm.noAttach'));
+    assert.equal(w.log.prepared.length, 1);
+    w.into.remove();
+    w = openWindow({ links: null, fail: ['pm.noPicker', 'pm.noPicker'] });
+    w.button(MAK.t('mail.open')).click();
+    await until(() => w.status().includes('pm.noPicker'));
+    assert.equal(w.log.prepared.length, 2);
+    assert.equal(w.log.sent.length + w.log.opened, 0);
     w.into.remove();
   });
 

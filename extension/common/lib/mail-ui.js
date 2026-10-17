@@ -43,7 +43,8 @@
     const key = `mail.error.${code}`;
     const detail = e && e.message ? e.message.replace(/^[\w.]+:?\s*/, '') : '';
     const text = MAK.t(key, { detail });
-    return text === key ? MAK.t('mail.error', { code }) : text;
+    // An error without its own text: the code and the detail (for a report).
+    return text === key ? MAK.t('mail.error', { code: detail ? `${code}: ${detail.slice(0, 200)}` : code }) : text;
   };
 
   MAK.MAIL_CSS = `
@@ -128,9 +129,33 @@
       );
     }
     const drawChosen = () => { chosenText.textContent = st.chosen.size ? t('mail.chosen', { n: st.chosen.size }) : ''; };
+    // MiAulario sometimes fails one time (an error 500, or the compose form again). The window
+    // tries one more time, but only in the first steps: before a file is attached. Preparing never
+    // sends, and "Send" is never repeated.
+    const RETRY = ['pm.http', 'pm.network', 'pm.noHome', 'pm.noCompose', 'pm.noPicker'];
+    const pause = () => new Promise((r) => setTimeout(r, opts.retryMs === undefined ? 1000 : opts.retryMs));
+    async function openCompose() {
+      try {
+        return await opts.pm.open(opts.placement);
+      } catch (e) {
+        if (!RETRY.includes(e && e.code)) throw e;
+        await pause();
+        return opts.pm.open(opts.placement);
+      }
+    }
+    async function prepareCompose(d) {
+      try {
+        return await opts.pm.prepare(await openCompose(), d);
+      } catch (e) {
+        if (!(e && e.code === 'pm.noPicker')) throw e;
+        await pause();
+        return opts.pm.prepare(await openCompose(), d);
+      }
+    }
+
     const loading = Promise.resolve()
       .then(async () => {
-        const [compose, eid] = await Promise.all([opts.pm.open(opts.placement), opts.myEid()]);
+        const [compose, eid] = await Promise.all([openCompose(), opts.myEid()]);
         const list = MAK.pmRecipients(compose, eid);
         st.me = list.find((p) => p.me) || null;
         st.people = list.filter((p) => !p.me);
@@ -214,7 +239,7 @@
           d = await data();
         }
         say(t(kind === 'send' ? 'mail.sending' : 'mail.preparing'));
-        const ready = await opts.pm.prepare(await opts.pm.open(opts.placement), d);
+        const ready = await prepareCompose(d);
         if (kind === 'send') {
           await opts.pm.send(ready, d);
           say(t('mail.sent', { n: d.to.length }), 'ok');
