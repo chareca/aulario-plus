@@ -1,6 +1,6 @@
 # Aulario Plus
 
-Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items and grades of all your courses in one place.
+Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items, calendar events and grades of all your courses in one place, with short names for your sites and one search for all of them.
 
 The interface is in Spanish. You can change it to English in the settings.
 
@@ -8,7 +8,7 @@ The interface is in Spanish. You can change it to English in the settings.
 
 - The extension sends requests only to MiAulario (`miaulario.unavarra.es`). It does not connect to other servers. It has no analytics and no servers of its own.
 - The extension also makes the cookie of the UPNA login page (`sso.unavarra.es`) last longer. It does not send requests to that page. Your browser opens it when you log in.
-- The extension keeps the data that it needs only in your browser: the settings, a copy of your course data (deliveries, announcements, new items and grades) and what you read. Nobody else receives this data. The extension removes the course data when you log out.
+- The extension keeps the data that it needs only in your browser: the settings (also the names that you give to the sites), a copy of your course data (deliveries, announcements, calendar events, new items and grades) and what you read. Nobody else receives this data. The extension removes the course data when you log out.
 - The developers do not receive or keep any data.
 
 > **Important**
@@ -27,23 +27,30 @@ The interface is in Spanish. You can change it to English in the settings.
 
 ### Popup
 
+- **Search:** The box below the header searches all your sites at the same time: sites, tools, deliveries, calendar events, files (with their folders), announcements, grade items and forum topics. Each word must be the start of a word: "inf rec" finds the Resources tool of "Informática". Case and accents are not important. `/` or Ctrl+K (⌘K on macOS) puts the focus in the box. The search uses the stored data and sends no requests.
 - **Deliveries:** The deliveries of all your courses, with a countdown and a color for the urgency: red (less than 24 hours or late), orange (less than 72 hours), yellow (less than 7 days) and green. Groups: late, to do, returned, submitted and closed. A filter shows one site. A delivery is submitted only if its submission is not a draft.
+  - **Week view:** 6 bars above the list: this week and the next 5 weeks (Monday to Sunday). Each bar shows the open deliveries and the events of the MiAulario calendar of the week. The color shows the load: grey for 0, green for 1 to 2, orange for 3 to 4, red for 5 or more. Click a bar to see only that week, with its calendar events.
+  - **Changed dates:** If a teacher moves the due date of a delivery, the delivery has the mark "Date changed" for 7 days. The tooltip shows the earlier date.
 - **Inbox:** The unread announcements, private messages and forum posts of all your sites in one list. Filter by type, by site and by unread items. The search does not use the case or the accents of the letters.
   - An announcement is read if you read it in the extension, or if the bell of MiAulario shows it as viewed.
   - When no unread announcement is left in a site, the extension tells the bell of MiAulario that the announcements of that site are viewed.
   - When you open the Announcements tool of a site in MiAulario, the extension marks the announcements of that site as read, also in the bell of MiAulario. MiAulario itself does not do this.
   - For messages and forums, MiAulario gives only the numbers of unread items. The inbox shows these numbers and a link to the tool.
-- **New items:** For each site, the files, announcements, deliveries and forum posts that came after your last visit of that site. A visit of one site does not change the other sites. Use **Mark as seen** for one site or for all sites.
+- **New items:** For each site, the files, announcements, deliveries, changed due dates and forum posts that came after your last visit of that site. A visit of one site does not change the other sites. Use **Mark as seen** for one site or for all sites.
 - **Grades:** The grade items of each site, with the grade or "Not graded". A new grade has the mark "New" until you open the tab.
   - **Calculator:** Click **Calculate** in a site. The calculator shows your current grade, the average that you need in the items without a grade to get your target (5 by default, you can change it for each site), and the lowest and highest possible final grade. It uses the weights of the categories, or the points if the site has no weights.
   - **Simulator:** Write possible grades for the items without a grade, and see the result. The extension does not keep these values.
   - The calculator gives an estimate. The page of MiAulario does not show all the rules of a site (for example, "drop the lowest grade"). If a grade of MiAulario is different from the calculation by more than 1 point, the calculator tells you that the result is approximate.
 - **Sites:** Hide the sites that you do not use. Select if a hidden site hides only in the sidebar of MiAulario, or also in the extension.
-- **Settings:** The keep-alive controls, the course data sync, the grade notifications, the number on the icon, the calendar export and the language.
+  - **Short names:** The extension removes the code at the start of a site title and changes a title in capital letters to the capitalization of a Spanish title: "26_0_240504_1 ANÁLISIS DE APLICACIONES EMPRESARIALES" becomes "Análisis de Aplicaciones Empresariales". You can turn this off in the settings.
+  - **Your own names:** Click ✎ next to a name to write a name of your choice, for example "AAE". The extension keeps it and shows it in all the tabs, in MiAulario, in the ZIP and in the calendar export. An empty name goes back to the automatic name. The pencil is also on the cards of the Grades and New items tabs.
+- **Settings:** The keep-alive controls, the course data sync, the grade notifications, the site names, the search shortcut, the number on the icon, the calendar export and the language.
 
 ### In MiAulario
 
-- **Banner of new items:** When you open a site, a banner shows the items that came after your previous visit of that site: files, announcements, deliveries, forum posts and new grades. For a grade, the banner shows the name of the item, but not the grade. The next pages of the same visit show a short line. A new visit starts after 30 minutes without pages of the site.
+- **Site names:** MiAulario shows the short names or your own names: in the sidebar, in the favorites, in the page header and in the title of the browser tab. A ✎ next to the name in the page header lets you change the name of the site. The extension does not change text fields, editors, or a site title inside a longer text.
+- **Search (Ctrl+K):** Ctrl+K (⌘K on macOS) opens the same search as the popup. Enter opens the result in the same tab, Ctrl+Enter (⌘Enter) in a new tab. The shortcut does not operate in a text field or in an editor, where Ctrl+K adds a link. You can turn it off in the settings.
+- **Banner of new items:** When you open a site, a banner shows the items that came after your previous visit of that site: files, announcements, deliveries, changed due dates, forum posts and new grades. For a grade, the banner shows the name of the item, but not the grade. The next pages of the same visit show a short line. A new visit starts after 30 minutes without pages of the site.
 - **Download all (ZIP):** In the Resources tool, a button downloads all the files of the site as one ZIP file with the same folders. You can also start it from the Sites tab of the popup.
 - **Hidden sites:** The sidebar does not show the sites that you hid.
 
@@ -71,6 +78,8 @@ The extension reads your course data from MiAulario with these requests:
 |---|---|
 | Every 15 minutes (every hour after 12 hours without use) | Session, deliveries, grades, unread counts, bell notifications, announcements of the last 7 days, and forum topics of the sites with unread posts |
 | Every 4 hours | All the announcements of the last 60 days, and the files and forum topics of all the sites |
+| Every 6 hours | The sites, and the events of the MiAulario calendar of this week and the next 5 weeks |
+| Every 24 hours | The pages (menu) of each site |
 | When you open a site (a new visit) | The same as every 15 minutes, plus the files and the forum topics of that site |
 | When you open the popup | The same as every 15 minutes, if the data is older than 2 minutes |
 | When you click **Calculate** in the Grades tab | The Gradebook page of that site |

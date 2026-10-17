@@ -75,14 +75,14 @@ The test reads `currentTime - lastAccessedTime` with `?auto=true`. This read doe
 | The session stays active while the computer is off or in sleep mode. | **No**, because no code operates | Sakai ends the session on the server after 60 minutes. |
 | You start the computer and open MiAulario. You are logged in. | **Partially** | The extension opens the SAML login. If `idpsession` is active, a password is not necessary. If not, the password manager of the browser can fill the form. |
 
-## APIs for the course data (versions 1.2.0 and 1.3.0)
+## APIs for the course data (versions 1.2.0 to 1.4.0)
 
 All these endpoints answer with JSON for the session cookie. The parameter `auto=true` works on all of them: Sakai does not record the request as activity (test: 9 requests, and the inactivity timer did not go back to zero).
 
 | Data | Endpoint | Fields that the extension uses |
 |---|---|---|
 | Sites | `/direct/site.json?_limit=200` | `id`, `title`, `type` |
-| Tools of a site | `/direct/site/{id}/pages.json` | page `id` and `url`, tool `id` (placement) and `toolId` |
+| Tools of a site | `/direct/site/{id}/pages.json` | page `id`, `title` and `url` (the menu of the site, for the search), tool `id` (placement) and `toolId` |
 | Deliveries of all sites | `/direct/assignment/my.json` | `dueTime`, `closeTime`, `openTime`, `timeCreated` (`{epochSecond, nano}`), `submissionType`, `submissions[]` (`submitted`, `draft`, `returned`, `graded`, `canSubmit`) |
 | Announcements of all sites | `/direct/announcement/user.json?n=&d=` | `id` (`{site}:main:{uuid}`), `announcementId` (uuid), `createdOn` (ms), `body` (HTML), `attachments` |
 | Bell notifications | `GET /api/users/me/notifications` | `event` (`annc.new`, ...), `ref` (`/announcement/msg/{site}/main/{uuid}`), `viewed`, `url` |
@@ -108,6 +108,16 @@ Live tests (2026-10-16, with the code of version 1.3.0):
 - `/direct/gradebook/...` returns HTTP 501. The Gradebook page is the only source of the weights and the maximum points.
 - The calculator read the 3 real Gradebooks: one with 2 weighted categories, two without categories. Each Gradebook has one item with the flag "not counted" (a visible icon with a title).
 
+Live tests (2026-10-17, with the code of version 1.4.0):
+
+- **How MiAulario shows the name of a site:**
+  - The page header (`.portal-header-site-title a`) and the tab title show the full title ("26_0_240802_1_G COMPLEJIDAD Y COMPUTABILIDAD").
+  - The sidebar (`a.sidebar-site-title`), the favorites (`.fav-title span.fullTitle`) and the organizer of the favorites show the title without the code, in capital letters. The `title` attribute of these elements has the full title.
+  - The renamer of the extension changed all these places and did not change the site description (a title inside a longer text).
+- No script of the MiAulario page (42 scripts) uses Ctrl+K.
+- `/direct/calendar/my.json?firstDate=&lastDate=` with `auto=true`: the inactivity timer did not go back to zero. 12 events in 6 weeks, all with `siteId`.
+- `pages.json`: each page has `title` and `url` ("Recursos", "Tareas", "Libro de evaluación", ...).
+
 Limits:
 
 - Private messages and forum posts: MiAulario gives only the numbers of unread items. The Messages tool is a JSF page, and the endpoint for one forum message returns HTTP 500.
@@ -120,7 +130,7 @@ Limits:
 - **A remote server that sends pings with your session cookie.** This method keeps the session active when your computer is off. But your session is then on a different computer, and a person with that cookie has access to your account. Also, this method does not agree with the purpose of the UPNA rules.
 - **The password in the extension.** The storage of an extension is not encrypted. The password manager of the browser is safer.
 
-## Design of the extension (version 1.3.0)
+## Design of the extension (version 1.4.0)
 
 The extension has one source code for Chromium browsers and Firefox (128 or later). It uses Manifest V3 and no build tools. The shared files are classic scripts that attach to `globalThis.MAK`. Node can also load them for the tests.
 
@@ -132,9 +142,11 @@ extension/
   manifest.firefox.json    Firefox manifest ("background.scripts")
   common/
     background.js          ping, persistent cookies, message and alarm routers, badge
-    content-early.js       at document_start: hides the selected sites
+    content-early.js       at document_start: hides the selected sites and shows the site names
     content.js             login page, logout, visits, Announcements tool, ZIP button
     content-banner.js      the banner of new items and the ZIP button (closed shadow root)
+    content-names.js       the pencil next to the site name in the page header
+    content-search.js      the search palette (Ctrl+K)
     popup.html, popup.js   tabs: deliveries, inbox, new items, grades, sites, settings
     tools.html, tools.js   ZIP download and calendar export (in a tab)
     _locales/              name and description of the extension (Spanish, English)
@@ -144,6 +156,8 @@ extension/
     lib/sync.js            the sync engine
     lib/due.js, inbox.js, news.js   the models of the popup tabs
     lib/grades.js          new grades, and the grade calculator
+    lib/names.js           short names and names from the user
+    lib/search.js          the search index of all the sites
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
 tests/                     Node tests, synthetic data and a test harness
@@ -172,6 +186,9 @@ tests/                     Node tests, synthetic data and a test harness
    - Hide a site in the two modes.
    - Open the Grades tab. Click **Calculate** in each site and compare the result with the Gradebook of MiAulario. Change the target and use the simulator.
    - When a new grade comes: a system notification, the mark "New" in the Grades tab, the number on the icon and the banner of the site.
+   - Give a name to a site with ✎ in the popup and in the page header. Look at the sidebar, the favorites, the header and the tab title.
+   - Search from the popup and with Ctrl+K in MiAulario. Press Ctrl+K in the editor of an announcement: the editor must get it.
+   - Click a bar of the week view.
    - Click **Log out**. The extension must not open the login page.
 
 ## Open questions
