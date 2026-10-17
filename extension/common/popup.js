@@ -809,6 +809,26 @@ function renderSites(el) {
 
 // ---- Settings ----------------------------------------------------------------
 
+// How to receive the messages to me in a different email: a forward filter in the UPNA email.
+function forwardGuide() {
+  const copyBtn = h('button', { class: 'btn', text: t('fwd.copy'), attrs: { type: 'button' } });
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(MAK.MAIL_MARK);
+      copyBtn.textContent = t('fwd.copied');
+      setTimeout(() => { copyBtn.textContent = t('fwd.copy'); }, 1500);
+    } catch {}
+  });
+  return h(
+    'div',
+    { class: 'section' },
+    h('h2', { text: t('fwd.section') }),
+    h('p', { class: 'small', text: t('fwd.text') }),
+    h('details', null, h('summary', { text: t('fwd.steps') }), h('p', { class: 'small', text: t('fwd.gmail') }), h('p', { class: 'small', text: t('fwd.outlook') }), h('p', { class: 'small meta', text: t('fwd.share') })),
+    h('div', { class: 'row' }, copyBtn)
+  );
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -863,6 +883,7 @@ function renderSettings(el) {
       h('h2', { text: t('search.section') }),
       checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
     ),
+    forwardGuide(),
     h(
       'div',
       { class: 'section' },
