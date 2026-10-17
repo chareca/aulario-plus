@@ -147,6 +147,30 @@ Live tests (2026-10-17):
 - `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
 - "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
 
+## Download links without a login (version 1.5.0)
+
+The copy by email of the internal mail has a link to `/access/content/...`, and this link asks for a MiAulario login. The extension makes a download link with [Send](https://github.com/timvisee/send) (the fork of Firefox Send by timvisee), from the source code of Send (`app/keychain.js`, `app/ece.js`, `app/api.js`, `server/routes/ws.js`, `server/middleware/auth.js`):
+
+| Step | Data |
+|---|---|
+| Keys | secret = 16 random bytes. HKDF-SHA-256 (empty salt): `metadata` → AES-128-GCM key; `authentication` → HMAC-SHA-256 key (64 bytes) |
+| Metadata | AES-GCM (IV of 12 zero bytes) of `{name, size, type, manifest: {files: [...]}}` |
+| Content | `aes128gcm`: header = salt (16) + record size (65536) + 0. Key and nonce base with HKDF (`Content-Encoding: aes128gcm\0`, `Content-Encoding: nonce\0`). Each record: data + 1 (the last record: data + 2). The nonce of a record: the last 4 bytes XOR the sequence number |
+| Upload | WebSocket `/api/ws`: JSON `{fileMetadata, authorization: "send-v1 <auth key>", timeLimit, dlimit}` → `{url, id, ownerToken}` → the records → one byte 0 → `{ok: true}` |
+| Password | `POST /api/password/{id}` `{owner_token, auth}`. auth = PBKDF2-SHA-256 (100 iterations, 64 bytes) of the password, with the full link (with `#key`) as salt. The download page uses `location.href` as salt |
+| Limits | `GET /config`. send.vis.ee: 2.5 GiB, 20 downloads, 3 days |
+
+Live tests (2026-10-17, synthetic file of 150 000 bytes, 1 download, 5 minutes):
+
+- Upload, password and short link: about 1 s. In a real Chrome, the short link opened the download page of Send. The page asked for the password, refused a wrong password and accepted the correct password. The downloaded file had the same bytes. A second visit showed "This link has expired".
+- Send and the shorteners send no CORS headers. The extension needs host permissions for them (`optional_host_permissions`, asked when the user enables the links).
+- Shorteners without an API key:
+  - is.gd (and v.gd, the same operator): on this day, it gave only links that existed before. New links: "Error, database insert failed".
+  - spoo.me: correct. The browser keeps the `#` part after the redirect.
+  - TinyURL: correct for a full link. The browser loses the `#` part of the short link after the redirect, so TinyURL is not used for the form "Short, no password".
+  - da.gd: a page "This short url was created recently" before the redirect. Not used.
+- The order: is.gd, spoo.me, TinyURL (TinyURL only for the full link).
+
 ## Login and the persistent cookies
 
 A bug of versions 1.0 to 1.4: the extension wrote the value of each cookie event. At login, MiAulario changes `SAKAISESSIONID` a few milliseconds after the previous change. A late event of the old cookie could then write the old (logged-out) session over the new session, and the user saw the page "not logged in" after a correct login. Since version 1.5.0, the extension reads the cookie before it writes, and writes only the value that the browser has now.
@@ -190,6 +214,7 @@ extension/
     lib/checks.js          the MiAulario checks (diagnostic page and live checks)
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
+    lib/send.js            the client of Send (encryption, upload, password) and the shorteners
 tests/                     Node tests, synthetic data and a test harness
   browser/                 the DOM tests in a headless Chromium
   live/                    the MiAulario checks in a test browser
@@ -204,6 +229,7 @@ tests/                     Node tests, synthetic data and a test harness
 - The badge uses the `action` API. The ZIP and the `.ics` file are saved from a page of the extension.
 - Version 1.3.0 adds the `notifications` permission for the grade notifications. A notification shows the site and the item, but not the grade.
 - The service worker of Chrome has no `DOMParser`. The popup reads the Gradebook page and calculates. It does not keep the page.
+- Version 1.5.0 adds `optional_host_permissions` (`https://*/*`) for the download links. The extension asks only for the Send server and the shorteners, and only when the user enables the links.
 
 ## Tests
 
@@ -223,6 +249,7 @@ tests/                     Node tests, synthetic data and a test harness
    - Search from the popup and with Ctrl+K in MiAulario. Press Ctrl+K in the editor of an announcement: the editor must get it.
    - Click a bar of the week view.
    - In the Resources tool, send a file to you: "Open the mail" and "Send now". Select two files and use the bar.
+   - Enable the download links. Make a link with "Only make the link", open it in a private window, type the password and download the file. Open the link again: it must show that the link expired.
    - Click **Log out**. The extension must not open the login page.
 
 ## Open questions

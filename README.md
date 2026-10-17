@@ -1,12 +1,13 @@
 # Aulario Plus
 
-Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items, calendar events and grades of all your courses in one place, with short names for your sites and one search for all of them. You can send the files of a site by the internal mail of MiAulario, without a download.
+Aulario Plus is a browser extension for MiAulario, the virtual campus of the UPNA. It operates in Chromium browsers and Firefox. It keeps your MiAulario session active while the browser is open. It also shows your deliveries, announcements, messages, new items, calendar events and grades of all your courses in one place, with short names for your sites and one search for all of them. You can send the files of a site by the internal mail of MiAulario, without a download. You can also make a download link that works without a MiAulario login: the file is encrypted in your browser.
 
 The interface is in Spanish. You can change it to English in the settings.
 
 ## Privacy
 
-- The extension sends requests only to MiAulario (`miaulario.unavarra.es`). It does not connect to other servers. It has no analytics and no servers of its own.
+- The extension sends requests only to MiAulario (`miaulario.unavarra.es`). It has no analytics and no servers of its own.
+- Exception, only if you enable the download links (off by default): the file goes, encrypted, to the Send server that you select, and the address of the link goes to a shortener. Neither of them can open the file alone. Refer to [Download links without a login](#download-links-without-a-login).
 - The extension also makes the cookie of the UPNA login page (`sso.unavarra.es`) last longer. It does not send requests to that page. Your browser opens it when you log in.
 - The extension keeps the data that it needs only in your browser: the settings (also the names that you give to the sites), a copy of your course data (deliveries, announcements, calendar events, new items and grades) and what you read. Nobody else receives this data. The extension removes the course data when you log out.
 - The developers do not receive or keep any data.
@@ -65,6 +66,35 @@ The "Correo interno" of MiAulario is the Messages tool of each site. It sends on
   - **Share:** the share menu of the system with the files (only if your browser has it). The files stay in memory.
 - **Quick message:** In the Inbox tab of the popup, "New message" opens the same window for a site, without files.
 - **Receive in a different email:** The internal mail cannot send to an address outside MiAulario. The subject of the messages to you starts with `[Aulario Plus]`, so a forward filter in your UPNA email can send them to your other address. The settings show the steps for Gmail and Outlook.
+
+### Download links without a login
+
+The copy by email of the internal mail has a link to the file, and this link asks for a MiAulario login. To send a file to a person who is not in the site, the send window can add a download link that works without a login. Enable it in Settings → "Download links without a login". The browser asks for permission for the Send server and for the shorteners.
+
+How the extension makes the link:
+
+1. The background script gets the files from MiAulario with your session. More than one file: one ZIP file.
+2. The browser encrypts the file and its name with a new random key (16 bytes). It uses the format of [Send](https://github.com/timvisee/send) (the open-source fork of Firefox Send): AES-128-GCM in records of 64 KiB.
+3. The extension uploads only the encrypted data to the Send server (default `send.vis.ee`), with the number of downloads and the time limit (default: 1 download, 1 day).
+4. The key goes in the link after `#`. A browser never sends this part to a server.
+5. The shortener makes a short address. If one shortener does not answer, the next one makes it: is.gd, then spoo.me, then TinyURL. None needs an API key.
+
+The forms of the link:
+
+| Form | Example | The shortener gets | The recipient |
+|---|---|---|---|
+| Very short + password (default) | `https://spoo.me/AbC123` and `k7m2x9qp` | the full link, with the key | clicks and types the password one time |
+| Short, no password | `https://is.gd/AbC12x#q3Xz9Lk2Pw8rT5vN1mB7cA` | the address without the key | clicks |
+| Long, no shortener | `https://send.vis.ee/download/…/#…` | nothing | clicks |
+
+Who sees what:
+
+- **The Send server** keeps only encrypted data. It never gets the key, so it cannot read the file or its name.
+- **The shortener**, with "Very short + password", gets the key but not the password. Without the password, the Send server does not give the encrypted file. The password (8 characters, about 2<sup>40</sup> possible values) does not go to the shortener. The Send server keeps only a value made from it (PBKDF2), with the full link as salt.
+- **The shortener**, with "Short, no password", gets only the address before `#`.
+- **A person with the link and the password** can download the file, for the number of downloads and the time that you selected. After that, the Send server deletes it.
+
+The send window adds the link, the password and the limits to the message ("Open the mail" or "Send now"). "Only make the link" makes the link to copy and send in a different way.
 
 ### Grade notifications
 
