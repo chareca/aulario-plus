@@ -3,3 +3,4 @@ dist/
 .DS_Store
 __pycache__/
 tests/harness/out/
+tests/live/.profile/

@@ -1,7 +1,7 @@
 // A small client of the Chrome DevTools Protocol for the browser tests and the live checks.
 // It needs no packages: Node 22+ has WebSocket and fetch.
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, mkdtempSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -31,6 +31,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // checks); else a new empty profile.
 export async function launch({ chrome, headless = true, profile, extension, args = [] }) {
   const userDir = profile || mkdtempSync(join(tmpdir(), 'aulario-test-'));
+  // A profile that stays keeps the port file of the last run: remove it, then wait for the new one.
+  rmSync(join(userDir, 'DevToolsActivePort'), { force: true });
   const flags = [
     `--user-data-dir=${userDir}`, '--remote-debugging-port=0', '--no-first-run', '--no-default-browser-check',
     '--use-mock-keychain', '--password-store=basic', '--allow-file-access-from-files', ...args
@@ -49,12 +51,18 @@ export async function launch({ chrome, headless = true, profile, extension, args
     proc.kill();
     throw new Error('The browser did not start');
   }
-  const version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
-  const ws = new WebSocket(version.webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => {
-    ws.addEventListener('open', resolve);
-    ws.addEventListener('error', reject);
-  });
+  let ws;
+  try {
+    const version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+    ws = new WebSocket(version.webSocketDebuggerUrl);
+    await new Promise((resolve, reject) => {
+      ws.addEventListener('open', resolve);
+      ws.addEventListener('error', reject);
+    });
+  } catch (e) {
+    proc.kill(); // no browser stays open after an error
+    throw new Error(`No connection to the browser: ${e.message}`);
+  }
   let id = 0;
   const pending = new Map();
   const listeners = [];
