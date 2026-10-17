@@ -467,8 +467,11 @@ function renderInbox(el) {
       chip('', 'inbox.type.all', c.total),
       chip('announcement', 'inbox.type.announcement', c.announcements),
       chip('messages', 'inbox.type.messages', c.messages),
-      chip('forum', 'inbox.type.forum', c.forums)
+      chip('forum', 'inbox.type.forum', c.forums),
+      // Not a filter: a button that writes a new internal message (at the right of the filters).
+      h('button', { class: 'compose-btn', text: t('mail.newMessage'), attrs: { type: 'button', 'aria-expanded': String(ui.newMessage), title: t('mail.titleNew') }, on: { click: () => { ui.newMessage = !ui.newMessage; renderCurrent(); } } })
     ),
+    ui.newMessage ? newMessageRow() : null,
     h(
       'div',
       { class: 'toolbar' },
@@ -482,10 +485,8 @@ function renderInbox(el) {
       'div',
       { class: 'toolbar' },
       h('label', { class: 'check' }, h('input', { attrs: { type: 'checkbox', checked: ui.inbox.unreadOnly }, on: { change: (e) => { ui.inbox.unreadOnly = e.target.checked; renderInboxList(); } } }), t('inbox.unreadOnly')),
-      c.announcements ? h('button', { class: 'link-btn', text: t('inbox.markAllRead'), on: { click: () => send({ type: 'markAllAnnRead', siteId: ui.inbox.siteId }) } }) : null,
-      h('button', { class: 'link-btn', text: t('mail.newMessage'), attrs: { 'aria-expanded': String(ui.newMessage) }, on: { click: () => { ui.newMessage = !ui.newMessage; renderCurrent(); } } })
+      c.announcements ? h('button', { class: 'link-btn', text: t('inbox.markAllRead'), on: { click: () => send({ type: 'markAllAnnRead', siteId: ui.inbox.siteId }) } }) : null
     ),
-    ui.newMessage ? newMessageRow() : null,
     h('div', { attrs: { id: 'inbox-list' } })
   );
   renderInboxList();

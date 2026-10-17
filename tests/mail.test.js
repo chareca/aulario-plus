@@ -20,11 +20,11 @@ test('mailDefaults: the mark [Aulario Plus] only in the messages to me; the list
   MAK.setLang('es');
 });
 
-test('mailError: a known code has its own text; an unknown code says "Open the mail"', () => {
+test('mailError: a known code has its own text; an unknown code says "Open in MiAulario"', () => {
   MAK.setLang('es');
   assert.equal(MAK.mailError(new MAK.PmError('pm.noSubject')), 'Escribe un asunto.');
   assert.equal(MAK.mailError(new MAK.PmError('pm.notSent', 'Falta el asunto')), 'MiAulario no envió el mensaje: Falta el asunto');
-  assert.match(MAK.mailError(new MAK.PmError('pm.noPicker', 'other')), /\(pm\.noPicker: other\).*Abrir correo/, 'the detail helps a report');
+  assert.match(MAK.mailError(new MAK.PmError('pm.noPicker', 'other')), /\(pm\.noPicker: other\).*Abrir en MiAulario/, 'the detail helps a report');
   assert.match(MAK.mailError(new Error('x')), /\(error\)/);
 });
 

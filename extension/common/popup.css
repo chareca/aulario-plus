@@ -116,9 +116,11 @@ label.check small { display: block; color: var(--muted); font-size: 12px; }
 
 /* Inbox */
 .chips { display: flex; gap: 4px; flex-wrap: wrap; }
-.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 2px 9px; cursor: pointer; font-size: 12px; }
+.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 2px 7px; cursor: pointer; font-size: 12px; white-space: nowrap; }
 .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .chips .n { opacity: 0.8; margin-left: 3px; }
+.chips button.compose-btn { margin-left: auto; border-radius: 6px; border: 1px solid var(--accent); background: var(--btn); color: var(--fg); font-weight: 600; padding: 3px 8px; }
+.chips button.compose-btn:hover, .chips button.compose-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-fg); }
 .item.unread { border-color: var(--blue); }
 .item.unread .bar { background: var(--blue); }
 .item.read .title, .item.read .title-btn { font-weight: 500; }
