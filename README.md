@@ -48,7 +48,7 @@ The interface is in Spanish. You can change it to English in the settings.
 
 ### In MiAulario
 
-- **Site names:** MiAulario shows the short names or your own names: in the sidebar, in the favorites, in the page header and in the title of the browser tab. A ✎ next to the name in the page header lets you change the name of the site. The extension does not change text fields, editors, or a site title inside a longer text.
+- **Site names:** MiAulario shows the short names or your own names: in the sidebar, in the favorites, in the page header and in the title of the browser tab. A ✎ next to each name in the sidebar, and next to the name in the page header, lets you change the name of the site. The extension does not change text fields, editors, or a site title inside a longer text.
 - **Search (Ctrl+K):** Ctrl+K (⌘K on macOS) opens the same search as the popup. Enter opens the result in the same tab, Ctrl+Enter (⌘Enter) in a new tab. The shortcut does not operate in a text field or in an editor, where Ctrl+K adds a link. You can turn it off in the settings.
 - **Banner of new items:** When you open a site, a banner shows the items that came after your previous visit of that site: files, announcements, deliveries, changed due dates, forum posts and new grades. For a grade, the banner shows the name of the item, but not the grade. The next pages of the same visit show a short line. A new visit starts after 30 minutes without pages of the site.
 - **Download all (ZIP):** In the Resources tool, a button downloads all the files of the site as one ZIP file with the same folders. You can also start it from the Sites tab of the popup.

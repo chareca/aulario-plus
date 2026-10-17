@@ -145,7 +145,7 @@ extension/
     content-early.js       at document_start: hides the selected sites and shows the site names
     content.js             login page, logout, visits, Announcements tool, ZIP button
     content-banner.js      the banner of new items and the ZIP button (closed shadow root)
-    content-names.js       the pencil next to the site name in the page header
+    content-names.js       the pencils next to the site names (sidebar and page header)
     content-search.js      the search palette (Ctrl+K)
     popup.html, popup.js   tabs: deliveries, inbox, new items, grades, sites, settings
     tools.html, tools.js   ZIP download and calendar export (in a tab)
