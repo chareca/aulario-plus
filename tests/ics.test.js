@@ -52,7 +52,7 @@ test('the calendar file: header, deliveries, events, no duplicates and no alarms
   assert.match(flat, /DESCRIPTION:Exam\\nRoom A1/, 'the HTML of the description is plain text');
   // The exam has a duration (DTEND); the delivery is a point in time (DTSTART only).
   assert.match(flat, new RegExp(`UID:cal-ev-1@aulario-plus\\r\\nDTSTAMP:\\d{8}T\\d{6}Z\\r\\nDTSTART:${MAK.icsDate(F.NOW + 7 * F.D)}\\r\\nDTEND:${MAK.icsDate(F.NOW + 7 * F.D + 2 * F.H)}`));
-  assert.match(flat, /URL:https:\/\/miaulario\.unavarra\.es\/portal\/directtool\//);
+  assert.match(flat, /URL:https:\/\/miaulario\.unavarra\.es\/portal\/site\/[^/]+\/tool\/[^?]+\?assignmentReference=%2Fassignment%2Fa%2F/);
 });
 
 test('the file is the same for the same data (fixed UIDs), and English works', () => {

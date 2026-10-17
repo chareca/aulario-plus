@@ -171,6 +171,15 @@ Live tests (2026-10-17, synthetic file of 150 000 bytes, 1 download, 5 minutes):
   - da.gd: a page "This short url was created recently" before the redirect. Not used.
 - The order: is.gd, spoo.me, TinyURL (TinyURL only for the full link).
 
+## Links to a delivery and to an announcement
+
+Versions 1.2.0 to 1.5.0 opened a delivery with `/portal/directtool/{placement}?assignmentId={id}&sakai_action=doView_submission`. In `AssignmentAction` (Sakai 23), `getAssignment` accepts an id or a reference, but `getSubmission(reference, user)` accepts only the reference (`/assignment/a/{site}/{id}`). With the id only, the tool did not find the submission of the user:
+
+- An assignment with an honor pledge showed the pledge again after "De acuerdo" (live test, 2026-10-17: the pledge was accepted, and this link still showed it).
+- An assignment without a pledge could show an empty submission.
+
+Since version 1.5.0, the link is the same as the link of the list in the tool: `/portal/site/{site}/tool/{placement}?assignmentReference=/assignment/a/{site}/{id}&panel=Main&sakai_action=doView_submission`. Live test: it opens the submission page. The link of an announcement also opens in the page of the site (`itemReference`, `doShowmetadata`), with the menu of the site. Sakai answers a request with `sakai_action` with a redirect to `?panel=Main`, so a reload does not do the action again.
+
 ## Login and the persistent cookies
 
 A bug of versions 1.0 to 1.4: the extension wrote the value of each cookie event. At login, MiAulario changes `SAKAISESSIONID` a few milliseconds after the previous change. A late event of the old cookie could then write the old (logged-out) session over the new session, and the user saw the page "not logged in" after a correct login. Since version 1.5.0, the extension reads the cookie before it writes, and writes only the value that the browser has now.

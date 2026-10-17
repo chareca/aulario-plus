@@ -77,7 +77,7 @@ test('announcements and deliveries: own site only, late publication counts, not 
   const n = MAK.newSince({ siteId: F.CS, since, announcements, assignments, pages, now: since + 2 * HOUR });
   assert.deepEqual(n.announcements.map((a) => a.title).sort(), ['New', 'Old date, seen later']);
   assert.deepEqual(n.deliveries.map((d) => d.title), ['Released late']);
-  assert.match(n.announcements[0].url, /^https:\/\/miaulario\.unavarra\.es\/portal\/directtool\//);
+  assert.match(n.announcements[0].url, /^https:\/\/miaulario\.unavarra\.es\/portal\/site\/[^/]+\/tool\/[^?]+\?itemReference=/);
   assert.equal(n.total, 3);
 });
 

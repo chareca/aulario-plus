@@ -23,12 +23,15 @@
     return 'pending';
   };
 
-  // Link to the delivery. Use the direct link of the tool if possible.
+  // Link to the delivery: the same link as the list of the Assignments tool, in the page of the
+  // site. It must have the full reference ("/assignment/a/{site}/{id}"). With only the id, Sakai
+  // finds the assignment but not the submission of the user: the honor pledge comes back after
+  // "De acuerdo", and the user sees an empty submission.
   MAK.deliveryUrl = function (a, pages) {
     const tool = pages && pages[a.siteId] && pages[a.siteId].tools['sakai.assignment.grades'];
-    if (tool && tool.placement) {
-      const q = new URLSearchParams({ assignmentId: a.id, panel: 'Main', sakai_action: 'doView_submission' });
-      return MAK.safeSiteUrl(`/portal/directtool/${encodeURIComponent(tool.placement)}?${q}`);
+    if (tool && tool.placement && a.siteId && a.id) {
+      const q = new URLSearchParams({ assignmentReference: `/assignment/a/${a.siteId}/${a.id}`, panel: 'Main', sakai_action: 'doView_submission' });
+      return MAK.safeSiteUrl(`/portal/site/${encodeURIComponent(a.siteId)}/tool/${encodeURIComponent(tool.placement)}?${q}`);
     }
     return MAK.toolUrl(pages, a.siteId, 'sakai.assignment.grades');
   };

@@ -47,7 +47,7 @@ test('forum counts of MiAulario are used when the topics are not known', () => {
 test('announcement links open the announcement in MiAulario', () => {
   const x = build().items.find((i) => i.id === `${F.CS}:main:ann-1`);
   const u = new URL(x.url);
-  assert.equal(u.pathname, `/portal/directtool/${F.CS}-tool-1`);
+  assert.equal(u.pathname, `/portal/site/${F.CS}/tool/${F.CS}-tool-1`);
   assert.equal(u.searchParams.get('itemReference'), `/announcement/msg/${F.CS}/main/ann-1`);
   assert.equal(u.searchParams.get('sakai_action'), 'doShowmetadata');
 });

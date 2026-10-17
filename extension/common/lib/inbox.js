@@ -26,12 +26,13 @@
     return n ? !n.viewed : true;
   };
 
-  // Link to one announcement. Use the direct link of the tool, then the notification link.
+  // Link to one announcement: the tool in the page of the site (with the menu of the site), then
+  // the notification link.
   MAK.announcementUrl = function (a, pages, notif) {
     const tool = pages && pages[a.siteId] && pages[a.siteId].tools[MAK.ANN_TOOL];
-    if (tool && tool.placement) {
-      const q = new URLSearchParams({ itemReference: `/announcement/msg/${a.siteId}/${a.channel || 'main'}/${a.uuid}`, sakai_action: 'doShowmetadata' });
-      return MAK.safeSiteUrl(`/portal/directtool/${encodeURIComponent(tool.placement)}?${q}`);
+    if (tool && tool.placement && a.siteId) {
+      const q = new URLSearchParams({ itemReference: `/announcement/msg/${a.siteId}/${a.channel || 'main'}/${a.uuid}`, panel: 'Main', sakai_action: 'doShowmetadata' });
+      return MAK.safeSiteUrl(`/portal/site/${encodeURIComponent(a.siteId)}/tool/${encodeURIComponent(tool.placement)}?${q}`);
     }
     return (notif && MAK.safeSiteUrl(notif.url)) || MAK.toolUrl(pages, a.siteId, MAK.ANN_TOOL);
   };

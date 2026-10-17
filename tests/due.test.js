@@ -57,7 +57,12 @@ test('hidden sites are not in the list', () => {
 
 test('links go to the delivery in MiAulario', () => {
   const x = build().groups.late[0];
-  assert.equal(x.url, `https://miaulario.unavarra.es/portal/directtool/${F.CS}-tool-3?assignmentId=asg-late&panel=Main&sakai_action=doView_submission`);
+  // The full reference: with only the id, Sakai does not find the submission (the honor pledge comes back).
+  assert.equal(x.url, `https://miaulario.unavarra.es/portal/site/${F.CS}/tool/${F.CS}-tool-3?assignmentReference=%2Fassignment%2Fa%2F${F.CS}%2Fasg-late&panel=Main&sakai_action=doView_submission`);
+  const u = new URL(x.url);
+  assert.equal(u.searchParams.get('assignmentReference'), `/assignment/a/${F.CS}/asg-late`);
+  assert.equal(u.searchParams.get('assignmentId'), null);
+  assert.deepEqual(MAK.parsePortalPath(u.pathname), { siteId: F.CS, pageOrTool: `${F.CS}-tool-3` }, 'the content scripts know the site of the page');
   assert.equal(MAK.deliveryUrl({ id: 'z', siteId: 'no-pages' }, pages), 'https://miaulario.unavarra.es/portal/site/no-pages');
 });
 
