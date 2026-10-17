@@ -2,7 +2,8 @@
 // - A button ✉ next to each file of the list.
 // - A bar when the user selects files: "Send by mail" and "Send them to me".
 // Both open the mail window (lib/mail-ui.js). The files go as attachments of the internal mail
-// of the site: the server attaches a copy, nothing is downloaded.
+// of the site: the server attaches a copy, nothing is downloaded. If the user enabled the download
+// links, the background makes a link without a login (Send) for the message.
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
@@ -16,6 +17,15 @@
 
   let mailTool = null; // { placement, page }
   let siteName = siteId;
+  let linkSettings = null; // settings.links
+
+  // A download link without a login: the background gets the files, encrypts them and uploads them.
+  async function makeLink(files) {
+    const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'makeLink', siteId, name: siteName, files: files.map((f) => ({ itemId: f.itemId })) }), null);
+    if (r && r.link) return r;
+    const code = (r && r.error) || 'send.network';
+    throw Object.assign(new Error(r && r.detail ? `${code}: ${r.detail}` : code), { code });
+  }
 
   // The files of the list: the checkbox has the id of the resource ("/group/<site>/<path>").
   function fileRows() {
@@ -91,6 +101,9 @@
       myEid: async () => (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid,
       openTool: () => MAK.safeCall(() => ext.runtime.sendMessage({ type: 'openMailTool', siteId }), null),
       share: shareFiles(files),
+      links: linkSettings && linkSettings.enabled
+        ? { mode: linkSettings.mode, downloads: linkSettings.downloads, seconds: linkSettings.seconds, make: () => makeLink(files) }
+        : null,
       onClose: close
     });
   }
@@ -131,7 +144,7 @@
         display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff; }
         .dark.bar { color: #e8ecee; background: #1e2a28; }
-        button { font: inherit; cursor: pointer; border-radius: 6px; padding: 5px 10px; border: 1px solid #c9d2d6; background: transparent; color: inherit; }
+        button { font: inherit; cursor: pointer; border-radius: 6px; padding: 5px 10px; border: 1px solid #c9d2d6; background: transparent; color: inherit; white-space: nowrap; }
         button.primary { background: #10524e; border-color: #10524e; color: #fff; } .dark button.primary { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }`;
       const text = h('span');
       const send = h('button', { class: 'primary', attrs: { type: 'button' } });
@@ -177,6 +190,7 @@
     MAK.setLang(settings.lang);
     const site = (raw.sites || []).find((s) => s.id === siteId);
     siteName = site ? MAK.siteName(site, settings) : siteId;
+    linkSettings = settings.links;
     mailTool = { placement: tool.placement, page: tool.page };
     addButtons();
   }

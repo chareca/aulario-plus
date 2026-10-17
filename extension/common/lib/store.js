@@ -15,9 +15,36 @@
       targets: {}, // the target grade (0..10) of the calculator for each site
       searchShortcut: true, // Ctrl+K (⌘K) opens the search in MiAulario
       shortNames: true, // show "Análisis de Datos" for "26_0_240504_1 ANÁLISIS DE DATOS"
-      nicknames: {} // a name from the user for each site
+      nicknames: {}, // a name from the user for each site
+      // Download links without a MiAulario login (Send). The user must enable them.
+      links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 }
     };
   };
+
+  MAK.SEND_DEFAULT_SERVER = 'https://send.vis.ee';
+  MAK.LINK_MODES = ['key', 'password', 'long'];
+
+  // The origin of a Send server ("https://host[:port]"), or null.
+  MAK.sendServerOrigin = function (v) {
+    try {
+      const u = new URL(String(v).trim());
+      return u.protocol === 'https:' && !u.username && !u.password && u.hostname.includes('.') ? u.origin : null;
+    } catch {
+      return null;
+    }
+  };
+
+  function cleanLinks(l, d) {
+    const s = l && typeof l === 'object' && !Array.isArray(l) ? l : {};
+    const int = (v, min, max, def) => (Number.isInteger(v) && v >= min && v <= max ? v : def);
+    return {
+      enabled: 'enabled' in s ? !!s.enabled : d.enabled,
+      server: MAK.sendServerOrigin(s.server) || d.server,
+      mode: MAK.LINK_MODES.includes(s.mode) ? s.mode : d.mode,
+      downloads: int(s.downloads, 1, 1000, d.downloads),
+      seconds: int(s.seconds, 60, 365 * 86400, d.seconds)
+    };
+  }
 
   // A name from the user: one line, no control or invisible characters, at most 40 characters.
   MAK.cleanName = function (v) {
@@ -70,7 +97,8 @@
       targets: cleanTargets(s.targets),
       searchShortcut: 'searchShortcut' in s ? !!s.searchShortcut : d.searchShortcut,
       shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
-      nicknames: cleanNicknames(s.nicknames)
+      nicknames: cleanNicknames(s.nicknames),
+      links: cleanLinks(s.links, d.links)
     };
   };
 

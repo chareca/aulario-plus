@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -388,7 +388,7 @@ const handlers = {
       const next = await store.update('settings', (cur) => {
         const base = MAK.withDefaults(cur);
         const part = (key) => Object.assign({}, base[key], patch[key] && typeof patch[key] === 'object' ? patch[key] : {});
-        return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets'), nicknames: part('nicknames') }));
+        return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets'), nicknames: part('nicknames'), links: part('links') }));
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});
       return next;
@@ -485,6 +485,28 @@ const handlers = {
       if (!url) return { ok: false };
       await ext.tabs.create({ url });
       return { ok: true };
+    }
+  },
+  // A download link without a MiAulario login (Send): the files of the site, encrypted in the
+  // browser, on the Send server of the settings. More than one file: one ZIP file.
+  makeLink: {
+    content: true,
+    run: async (msg) => {
+      if (!(await knownSite(msg.siteId))) return { error: 'send.noFiles' };
+      const links = MAK.withDefaults((await store.get('settings')).settings).links;
+      if (!links.enabled) return { error: 'send.disabled' };
+      if (!(await ext.permissions.contains({ origins: MAK.linkOrigins(links) }))) return { error: 'send.permission' };
+      const files = MAK.linkFiles(msg.files, msg.siteId);
+      if (!files.length) return { error: 'send.noFiles' };
+      try {
+        const file = await MAK.linkPayload({ files, name: typeof msg.name === 'string' ? msg.name.slice(0, 100) : '', fetchFile: (url) => fetch(url, { credentials: 'include' }) });
+        return await MAK.sendLink({
+          server: links.server, mode: links.mode, downloads: links.downloads, seconds: links.seconds,
+          data: file.data, name: file.name, type: file.type, doFetch: (url, init) => fetch(url, init)
+        });
+      } catch (e) {
+        return { error: (e && e.code) || 'send.network', detail: e && e.code ? String(e.message || '').replace(/^[\w.]+:?\s*/, '') : '' };
+      }
     }
   },
   // The search palette in MiAulario (Ctrl+K). Only the stored data, no requests.

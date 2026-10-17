@@ -108,6 +108,11 @@ label.check { display: flex; align-items: flex-start; gap: 7px; padding: 4px 0; 
 label.check input { margin-top: 2px; }
 label.check small { display: block; color: var(--muted); font-size: 12px; }
 .indent { margin-left: 22px; }
+.field-row { display: grid; grid-template-columns: 110px 1fr; gap: 6px; align-items: center; margin: 5px 0; }
+.field-row select, .field-row input { width: 100%; box-sizing: border-box; }
+.field-row select:disabled, .field-row input:disabled { opacity: 0.55; }
+.small.meta { color: var(--muted); }
+.field-row input[type="text"] { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
 
 /* Inbox */
 .chips { display: flex; gap: 4px; flex-wrap: wrap; }

@@ -150,10 +150,12 @@
 
   // Plain text -> the HTML of the message body.
   MAK.pmBodyHtml = function (text) {
-    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // An "https://" address becomes a link (the copy by email also has a link that works).
+    const links = (s) => s.split(/(https:\/\/[^\s<>"']*[^\s<>"'.,;:!?)\]])/).map((part, i) => (i % 2 ? `<a href="${esc(part)}">${esc(part)}</a>` : esc(part))).join('');
     return String(text || '')
       .split(/\n{2,}/)
-      .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
+      .map((p) => `<p>${links(p).replace(/\n/g, '<br>')}</p>`)
       .join('');
   };
 

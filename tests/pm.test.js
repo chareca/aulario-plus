@@ -168,6 +168,11 @@ test('buttons in English and Basque; an unknown language uses the place of the 5
 
 test('pmBodyHtml: paragraphs, line breaks and no HTML from the text', () => {
   assert.equal(MAK.pmBodyHtml('Hola <b>\nlínea 2\n\nOtro & más'), '<p>Hola &lt;b&gt;<br>línea 2</p><p>Otro &amp; más</p>');
+  assert.equal(
+    MAK.pmBodyHtml('Enlace: https://is.gd/AbC12x#k-y_Z.\n"https://a.example/x?b=1&c=2"'),
+    '<p>Enlace: <a href="https://is.gd/AbC12x#k-y_Z">https://is.gd/AbC12x#k-y_Z</a>.<br>&quot;<a href="https://a.example/x?b=1&amp;c=2">https://a.example/x?b=1&amp;c=2</a>&quot;</p>'
+  );
+  assert.equal(MAK.pmBodyHtml('http://no.example y javascript:alert(1)'), '<p>http://no.example y javascript:alert(1)</p>', 'only https addresses become links');
 });
 
 test('inspect: up to the attachment page, then cancel and cancel; never "Send"', async () => {

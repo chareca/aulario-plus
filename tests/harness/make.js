@@ -32,6 +32,9 @@ for (const site of data.SITES) {
   }
 }
 
+// The files of the Resources list of site.html (the mail window and the download links).
+routes[`/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip`] = { __file: 'Synthetic content of Práctica 2.zip\n', type: 'application/zip' };
+
 // The Gradebook pages for the grade calculator.
 for (const site of data.SITES) routes[`/portal/tool/${site.id}-tool-6`] = { __file: data.gradebookHtml(site.id), type: 'text/html; charset=UTF-8' };
 
@@ -135,17 +138,24 @@ ${background}
 })();
 `;
 fs.writeFileSync(path.join(OUT, 'bg-harness.js'), bg);
+// No real upload in the harness: the download link of Send is a fixed answer after a short time.
+fs.writeFileSync(path.join(OUT, 'send-harness.js'), `MAK.sendLink = async (o) => {
+  await new Promise((r) => setTimeout(r, 700));
+  window.__sendUploads = (window.__sendUploads || []).concat([{ name: o.name, size: o.data.length, mode: o.mode }]);
+  return { link: o.mode === 'key' ? 'https://spoo.me/Demo12#nPjepisRUBuN80t_uD5AKA' : 'https://spoo.me/Demo12', password: o.mode === 'password' ? 'k7m2x9qp' : null, downloads: o.downloads, expires: Date.now() + o.seconds * 1000 };
+};
+`);
 
 for (const page of ['popup.html', 'tools.html']) {
   const file = path.join(OUT, page);
   if (!fs.existsSync(file)) continue;
-  const tags = ['mock-ext.js', ...libs, 'bg-harness.js'].map((s) => `<script src="${s}"></script>`).join('\n  ');
+  const tags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js'].map((s) => `<script src="${s}"></script>`).join('\n  ');
   const html = fs.readFileSync(file, 'utf8').replace(/<script src="/, `${tags}\n  <script src="`);
   fs.writeFileSync(file, html);
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>

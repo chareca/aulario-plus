@@ -848,6 +848,87 @@ function forwardGuide() {
   );
 }
 
+// Download links without a login (Send). In the same click: save the setting, then ask for the
+// host permission (Firefox can close the popup while it asks, and the setting is saved before).
+const LINK_DOWNLOADS = [1, 2, 3, 5, 10, 20];
+const LINK_SECONDS = [300, 3600, 86400, 259200];
+let linkConfig = null; // the limits of the server (GET /config): { server, downloads, seconds }
+function linksSection() {
+  const l = settings().links;
+  const saveLinks = (patch) => send({ type: 'setSettings', patch: { links: patch } });
+  const missing = h('p', { class: 'small meta', hidden: true });
+  const grant = h('button', { class: 'btn', text: t('link.grant'), attrs: { type: 'button' }, hidden: true });
+  const askFor = (next) => Promise.resolve(ext.permissions.request({ origins: MAK.linkOrigins(next) })).catch(() => false);
+  function change(patch) {
+    const next = Object.assign({}, l, patch);
+    saveLinks(patch);
+    if (!next.enabled) return;
+    askFor(next).then((ok) => {
+      if (!ok && patch.enabled) saveLinks({ enabled: false });
+      checkLinkPermission(next);
+    });
+  }
+  async function checkLinkPermission(cur) {
+    const origins = MAK.linkOrigins(cur);
+    let ok = true;
+    try {
+      ok = !cur.enabled || (await ext.permissions.contains({ origins }));
+    } catch {}
+    missing.hidden = grant.hidden = ok;
+    missing.textContent = t('link.noPermission', { hosts: origins.map((o) => new URL(o.replace('/*', '/')).host).join(', ') });
+    if (ok && cur.enabled && (!linkConfig || linkConfig.server !== cur.server)) {
+      const c = await MAK.sendConfig(cur.server, (u, i) => fetch(u, i));
+      if (c && settings().links.server === cur.server) {
+        linkConfig = { server: cur.server, downloads: c.downloads, seconds: c.seconds };
+        fillLimits();
+      }
+    }
+  }
+  grant.addEventListener('click', () => askFor(l).then(() => checkLinkPermission(l)));
+
+  const select = (label, options, value, onChange) =>
+    h('label', { class: 'field-row' }, h('span', { class: 'small', text: label }),
+      h('select', { attrs: { disabled: !l.enabled }, on: { change: (e) => onChange(e.target.value) } },
+        options.map(([v, text]) => h('option', { attrs: { value: String(v), selected: String(v) === String(value) }, text }))));
+  const modes = select(t('link.mode'), [['password', t('link.modePassword')], ['key', t('link.modeKey')], ['long', t('link.modeLong')]], l.mode, (v) => change({ mode: v }));
+  const downloads = select(t('link.downloads'), [], l.downloads, (v) => change({ downloads: Number(v) }));
+  const expires = select(t('link.expires'), [], l.seconds, (v) => change({ seconds: Number(v) }));
+  function fillLimits() {
+    const c = linkConfig && linkConfig.server === l.server ? linkConfig : { downloads: LINK_DOWNLOADS, seconds: LINK_SECONDS };
+    const list = (values, cur) => [...new Set(values.concat(cur))].sort((a, b) => a - b);
+    fill(downloads.querySelector('select'), list(c.downloads, l.downloads).map((n) => h('option', { attrs: { value: String(n), selected: n === l.downloads }, text: String(n) })));
+    fill(expires.querySelector('select'), list(c.seconds, l.seconds).map((n) => h('option', { attrs: { value: String(n), selected: n === l.seconds }, text: MAK.durationText(n) })));
+  }
+  fillLimits();
+
+  // The server: a known server, or "Other…" with an address.
+  const known = MAK.SEND_SERVERS.includes(l.server);
+  const other = h('input', { attrs: { type: 'text', value: known ? '' : l.server, placeholder: 'https://send.example.org', 'aria-label': t('link.server'), disabled: !l.enabled }, hidden: known });
+  other.addEventListener('change', () => {
+    const origin = MAK.sendServerOrigin(other.value);
+    if (origin) change({ server: origin });
+    else other.value = l.server;
+  });
+  const server = select(t('link.server'), MAK.SEND_SERVERS.map((u) => [u, new URL(u).host]).concat([['other', t('link.serverOther')]]), known ? l.server : 'other', (v) => {
+    other.hidden = v !== 'other';
+    if (v === 'other') {
+      server.after(h('div', { class: 'field-row' }, h('span'), other));
+      other.focus();
+    } else change({ server: v });
+  });
+
+  checkLinkPermission(l);
+  return h(
+    'div',
+    { class: 'section', attrs: { id: 'links' } },
+    h('h2', { text: t('link.section') }),
+    h('p', { class: 'small', text: t('link.sectionHelp') }),
+    checkbox(t('link.enable'), t('link.enableHelp'), l.enabled, (v) => change({ enabled: v })),
+    h('div', { class: 'indent' }, modes, h('p', { class: 'small meta', text: t(`link.modeHelp.${l.mode}`) }), downloads, expires, server, known ? other : h('div', { class: 'field-row' }, h('span'), other), missing, h('div', { class: 'row' }, grant)),
+    h('details', null, h('summary', { text: t('privacy.title') }), h('p', { class: 'small', text: t('link.privacy') }))
+  );
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -902,6 +983,7 @@ function renderSettings(el) {
       h('h2', { text: t('search.section') }),
       checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
     ),
+    linksSection(),
     forwardGuide(),
     h(
       'div',
@@ -945,7 +1027,7 @@ function renderSettings(el) {
       'div',
       { class: 'section', attrs: { id: 'privacy' } },
       h('h2', { text: t('privacy.title') }),
-      ['privacy.text1', 'privacy.text2', 'privacy.text3'].map((k) => h('p', { class: 'small', text: t(k) }))
+      ['privacy.text1', 'privacy.text2', 'privacy.text3', 'privacy.text4'].map((k) => h('p', { class: 'small', text: t(k) }))
     )
   );
   updateKeepAlive(Date.now());

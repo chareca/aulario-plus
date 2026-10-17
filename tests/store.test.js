@@ -66,3 +66,17 @@ test('hideSitesCss escapes characters that could break the CSS', () => {
   assert.equal(css.split('{').length - 1, 1, 'only the final rule has a brace');
   assert.equal((css.match(/"/g) || []).length, 6, 'only the quotes of the 3 attribute selectors');
 });
+
+test('the settings of the download links: off by default, and only correct values', () => {
+  assert.deepEqual(MAK.withDefaults({}).links, { enabled: false, server: 'https://send.vis.ee', mode: 'password', downloads: 1, seconds: 86400 });
+  assert.deepEqual(
+    MAK.withDefaults({ links: { enabled: true, server: 'https://send.example.org/some/path', mode: 'key', downloads: 5, seconds: 3600, other: 1 } }).links,
+    { enabled: true, server: 'https://send.example.org', mode: 'key', downloads: 5, seconds: 3600 }
+  );
+  const bad = MAK.withDefaults({ links: { enabled: 'yes', server: 'http://send.example.org', mode: 'x', downloads: 0, seconds: 1.5 } }).links;
+  assert.deepEqual(bad, { enabled: true, server: 'https://send.vis.ee', mode: 'password', downloads: 1, seconds: 86400 });
+  for (const server of ['https://user:pw@send.example.org', 'https://localhost', 'javascript:alert(1)', 42]) {
+    assert.equal(MAK.withDefaults({ links: { server } }).links.server, 'https://send.vis.ee', String(server));
+  }
+  assert.equal(MAK.withDefaults({ links: [] }).links.enabled, false);
+});

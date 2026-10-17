@@ -14,6 +14,9 @@
     "https://miaulario.unavarra.es/*",
     "https://sso.unavarra.es/*"
   ],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
   "background": {
     "scripts": [
       "lib/core.js",
@@ -27,6 +30,8 @@
       "lib/inbox.js",
       "lib/news.js",
       "lib/search.js",
+      "lib/zip.js",
+      "lib/send.js",
       "background.js"
     ]
   },
