@@ -62,7 +62,7 @@
   // The items of one site that are newer than "since".
   // forumBase: {topicId: total} at the reference time, or null (then no forum news).
   MAK.newSince = function ({ siteId, since, resources, announcements, assignments, forums, forumBase, grades, pages, now }) {
-    const out = { files: [], announcements: [], deliveries: [], forums: [], grades: [], total: 0 };
+    const out = { files: [], announcements: [], deliveries: [], dateChanges: [], forums: [], grades: [], total: 0 };
     const ref = since || 0;
 
     for (const r of (resources && resources.items) || []) {
@@ -87,6 +87,13 @@
       out.deliveries.push({ id: a.id, title: a.title, url: MAK.deliveryUrl(a, pages), due: a.due, time });
     }
 
+    // Deliveries with a new due date after the visit (a new delivery is in "deliveries" only).
+    const fresh = new Set(out.deliveries.map((d) => d.id));
+    for (const a of assignments || []) {
+      if (a.siteId !== siteId || !a.dueChange || a.dueChange.at <= ref || fresh.has(a.id)) continue;
+      out.dateChanges.push({ id: a.id, title: a.title, url: MAK.deliveryUrl(a, pages), from: a.dueChange.from, to: a.due, time: a.dueChange.at });
+    }
+
     if (forumBase) {
       const forumUrl = MAK.toolUrl(pages, siteId, 'sakai.forums');
       for (const tp of (forums && forums.topics) || []) {
@@ -106,8 +113,9 @@
     out.files.sort(byTime);
     out.announcements.sort(byTime);
     out.deliveries.sort(byTime);
+    out.dateChanges.sort(byTime);
     out.grades.sort(byTime);
-    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.grades.length + out.forums.reduce((n, f) => n + f.delta, 0);
+    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.dateChanges.length + out.grades.length + out.forums.reduce((n, f) => n + f.delta, 0);
     return out;
   };
 

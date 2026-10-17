@@ -81,10 +81,16 @@
     if (news.files.length) parts.push(MAK.t('news.files', { n: news.files.length }));
     if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
     if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
+    if (news.dateChanges && news.dateChanges.length) parts.push(MAK.t('news.dateChanges', { n: news.dateChanges.length }));
     if (news.grades && news.grades.length) parts.push(MAK.t('news.grades', { n: news.grades.length }));
     const posts = news.forums.reduce((n, f) => n + f.delta, 0);
     if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));
     return parts.join(' · ');
+  };
+
+  // "20 oct → 25 oct": a delivery with a new due date.
+  MAK.dateMove = function (from, to) {
+    return MAK.t('news.dateMove', { from: MAK.formatDate(from), to: to ? MAK.formatDate(to) : MAK.t('due.noDate') });
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

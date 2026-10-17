@@ -153,6 +153,8 @@ function openIcs() {
   ext.tabs.create({ url: ext.runtime.getURL('tools.html?ics=1') });
 }
 
+const DATE_CHANGE_DAYS = 7; // the mark "Date changed" stays for 7 days
+
 function deliveryRow(x, now) {
   const cls = ['item', `s-${x.state}`];
   if (x.urgency) cls.push(`u-${x.urgency}`);
@@ -169,7 +171,12 @@ function deliveryRow(x, now) {
       'div',
       { class: 'body' },
       h('a', { class: 'title', href: x.url, text: x.title }),
-      h('div', { class: 'meta', text: `${x.siteTitle} · ${x.due ? MAK.formatDate(x.due) : t('due.noDate')}` })
+      h(
+        'div',
+        { class: 'meta' },
+        `${x.siteTitle} · ${x.due ? MAK.formatDate(x.due) : t('due.noDate')}`,
+        x.dueChange && now - x.dueChange.at < DATE_CHANGE_DAYS * MAK.DAY ? [' ', h('span', { class: 'tag info', text: t('due.tagMoved'), title: t('due.movedFrom', { date: MAK.formatDate(x.dueChange.from) }) })] : null
+      )
     ),
     h('div', { class: 'side' }, side)
   );
@@ -354,6 +361,7 @@ function newsCard(x) {
       newsGroup('news.groupFiles', x.files, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: `tag ${f.label === 'new' ? 'new' : 'info'}`, text: t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
       newsGroup('news.groupAnnouncements', x.announcements, (a) => h('li', null, h('a', { href: a.url, text: a.title }), ' ', h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
       newsGroup('news.groupDeliveries', x.deliveries, (d) => h('li', null, h('a', { href: d.url, text: d.title }), d.due ? [' ', h('span', { class: 'meta', text: t('news.due', { date: MAK.formatDate(d.due) }) })] : null)),
+      newsGroup('news.groupDates', x.dateChanges || [], (d) => h('li', null, h('a', { href: d.url, text: d.title }), ' ', h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
       newsGroup('news.groupForums', x.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: 'meta', text: t('news.forumDelta', { n: f.delta }) })))
     ),
     h('div', { class: 'row' }, h('button', { class: 'link-btn', text: t('news.markSeen'), on: { click: () => send({ type: 'markSiteSeen', siteId: x.siteId }) } }))

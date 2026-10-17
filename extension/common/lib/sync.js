@@ -29,6 +29,20 @@
     });
   }
 
+  // Keep "dueChange" for a delivery with a new due date: { from: the first date, at: the time when
+  // the extension saw the last change }. A date that goes back to "from" removes the change.
+  // The first fetch (baseline) records no change.
+  MAK.trackDueChanges = function (items, previous, now, baseline) {
+    const old = new Map((previous || []).map((x) => [x.id, x]));
+    return items.map((x) => {
+      const p = old.get(x.id);
+      let change = p && p.dueChange ? p.dueChange : null;
+      if (!baseline && p && p.due && x.due && p.due !== x.due) change = { from: change ? change.from : p.due, at: now };
+      if (change && change.from === x.due) change = null;
+      return change ? Object.assign(x, { dueChange: change }) : x;
+    });
+  };
+
   // Announcements: a full fetch replaces the list; a small fetch adds to it and changes the
   // items that it contains. Keep the items of the last 60 days, newest first.
   MAK.mergeAnnouncements = function (prev, fetched, full, minDate) {
@@ -172,7 +186,7 @@
         // 3. Deliveries.
         await step('assignments', async () => {
           const list = (await api.assignments()).filter((a) => a && !a.draft).map(MAK.trimAssignment);
-          await store.update('assignments', (prev) => withSeen(list, prev, (x) => x.id, t, !meta.baselined.asg));
+          await store.update('assignments', (prev) => MAK.trackDueChanges(withSeen(list, prev, (x) => x.id, t, !meta.baselined.asg), prev, t, !meta.baselined.asg));
           meta.baselined.asg = true;
         });
 
