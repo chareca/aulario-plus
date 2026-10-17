@@ -72,6 +72,35 @@
     return { groups, soon, urgent };
   };
 
+  // The week view: for each week (Monday to Sunday) from this week, the open deliveries and the
+  // calendar events. The events of a delivery (with assignmentId) are not shown two times.
+  MAK.buildWeeks = function ({ deliveries, events, sites, hidden, now, count = 6 }) {
+    const hide = hidden || new Set();
+    const names = new Map((sites || []).map((s) => [s.id, s.title]));
+    const weeks = [];
+    for (let i = 0, start = MAK.startOfWeek(now); i < count; i++) {
+      const end = MAK.startOfWeek(start + 8 * DAY); // the next Monday, also with a change of the time
+      weeks.push({ start, end, deliveries: [], events: [], total: 0 });
+      start = end;
+    }
+    const weekOf = (ms) => (ms ? weeks.find((w) => ms >= w.start && ms < w.end) : null);
+    for (const d of deliveries || []) {
+      const w = weekOf(d.due);
+      if (w) w.deliveries.push(d);
+    }
+    for (const e of events || []) {
+      if (e.assignmentId || hide.has(e.siteId)) continue;
+      const w = weekOf(e.start);
+      if (w) w.events.push(Object.assign({}, e, { siteTitle: names.get(e.siteId) || e.siteTitle }));
+    }
+    for (const w of weeks) {
+      w.deliveries.sort((x, y) => x.due - y.due);
+      w.events.sort((x, y) => x.start - y.start);
+      w.total = w.deliveries.length + w.events.length;
+    }
+    return weeks;
+  };
+
   // Text for the time that remains, for example "quedan 2d 04h 12m" or "vencida hace 3h 05m".
   MAK.countdownText = function (due, now) {
     if (!due) return MAK.t('due.noDate');

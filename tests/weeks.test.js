@@ -37,3 +37,26 @@ test('the sync gets the calendar of the week view every 6 hours, from Monday of 
   assert.equal(calls().length, 2, 'again after 6 hours');
   assert.ok(MAK.DATA_KEYS.includes('events'), 'logout removes the events');
 });
+
+test('buildWeeks: 6 weeks from Monday; open deliveries and events; no events of deliveries; no hidden sites', () => {
+  const now = new Date(2026, 9, 17, 12).getTime(); // Saturday
+  const mon = new Date(2026, 9, 12).getTime();
+  const at = (days, h = 10) => new Date(2026, 9, 12 + days, h).getTime();
+  const deliveries = [{ id: 'd1', due: at(6, 23) }, { id: 'd2', due: at(7, 0) }, { id: 'd3', due: at(3) }, { id: 'far', due: at(60) }, { id: 'nodate', due: null }];
+  const events = [
+    { id: 'e1', siteId: 'a', siteTitle: 'A full', start: at(8), assignmentId: null },
+    { id: 'e2', siteId: 'a', siteTitle: 'A full', start: at(9), assignmentId: 'asg' },
+    { id: 'e3', siteId: 'hidden', siteTitle: 'H', start: at(9), assignmentId: null },
+    { id: 'e4', siteId: 'b', siteTitle: 'B', start: at(41, 23) }
+  ];
+  const weeks = MAK.buildWeeks({ deliveries, events, sites: [{ id: 'a', title: 'A' }], hidden: new Set(['hidden']), now });
+  assert.equal(weeks.length, 6);
+  assert.equal(weeks[0].start, mon);
+  assert.equal(weeks[1].start, new Date(2026, 9, 19).getTime());
+  assert.equal(weeks[2].start, new Date(2026, 9, 26).getTime(), 'Monday after the change of the time');
+  assert.deepEqual(weeks[0].deliveries.map((d) => d.id), ['d3', 'd1'], 'Sunday 23:00 is in this week, sorted by date');
+  assert.deepEqual(weeks[1].deliveries.map((d) => d.id), ['d2'], 'Monday 00:00 is in the next week');
+  assert.deepEqual(weeks[1].events.map((e) => [e.id, e.siteTitle]), [['e1', 'A']], 'the name of the site; no delivery event; no hidden site');
+  assert.deepEqual(weeks[5].events.map((e) => e.id), ['e4'], 'the last Sunday');
+  assert.deepEqual(weeks.map((w) => w.total), [2, 2, 0, 0, 0, 1]);
+});

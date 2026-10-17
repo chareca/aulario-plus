@@ -88,6 +88,11 @@
     return parts.join(' · ');
   };
 
+  // "3 nov" or "3 Nov".
+  MAK.formatDay = function (ms) {
+    return ms ? format('short').format(ms) : '';
+  };
+
   // "20 oct → 25 oct": a delivery with a new due date.
   MAK.dateMove = function (from, to) {
     return MAK.t('news.dateMove', { from: MAK.formatDate(from), to: to ? MAK.formatDate(to) : MAK.t('due.noDate') });

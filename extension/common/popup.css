@@ -143,6 +143,24 @@ body.tools { width: auto; height: auto; min-height: 100vh; max-width: 640px; mar
 .grade-row .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .grade-row .score.none { color: var(--muted); font-weight: 400; }
 
+/* Week view */
+.weeks { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 0 0 10px; }
+.week { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; font: inherit; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.week:hover { border-color: var(--muted); }
+.week.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.week .n { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.week .track { height: 34px; width: 16px; display: flex; align-items: flex-end; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.week .bar { width: 100%; border-radius: 3px; background: var(--grey); }
+.week.load-low .bar { background: var(--accent); }
+.week.load-mid .bar { background: var(--orange); }
+.week.load-high .bar { background: var(--red); }
+.week .label { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.week-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 4px; }
+.event-row { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.event-row .when { font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 9.5em; }
+.event-row .body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
 /* Site names */
 .site-name { overflow-wrap: anywhere; }
 .card .head .site-name { flex: 1; min-width: 0; }

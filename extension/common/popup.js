@@ -14,7 +14,7 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { editSite: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
+const ui = { editSite: null, dueWeek: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
 // The popup reads only the Gradebook page (for the calculator). All other data comes from the storage.
 const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
@@ -182,6 +182,63 @@ function deliveryRow(x, now) {
   );
 }
 
+// ---- Week view (above the deliveries) -----------------------------------------
+// ui.dueWeek: the index of the selected week, or null for all.
+
+const loadClass = (n) => (n >= 5 ? 'high' : n >= 3 ? 'mid' : n >= 1 ? 'low' : 'none');
+
+function weekLabel(w, i) {
+  if (i === 0) return t('weeks.this');
+  if (i === 1) return t('weeks.next');
+  return MAK.formatDay(w.start);
+}
+
+function weekStrip(weeks) {
+  const max = Math.max(1, ...weeks.map((w) => w.total));
+  return h(
+    'div',
+    { class: 'weeks', attrs: { role: 'group', 'aria-label': t('weeks.label') } },
+    weeks.map((w, i) => {
+      const bar = h('span', { class: 'bar' });
+      bar.style.height = `${w.total ? Math.max(12, Math.round((w.total / max) * 100)) : 6}%`;
+      return h(
+        'button',
+        {
+          class: `week load-${loadClass(w.total)}${ui.dueWeek === i ? ' on' : ''}`,
+          attrs: { type: 'button', 'aria-pressed': String(ui.dueWeek === i), title: `${t('weeks.of', { date: MAK.formatDay(w.start) })}: ${t('weeks.tip', { d: w.deliveries.length, e: w.events.length })}` },
+          on: { click: () => { ui.dueWeek = ui.dueWeek === i ? null : i; renderCurrent(); } }
+        },
+        h('span', { class: 'n', text: String(w.total) }),
+        h('span', { class: 'track' }, bar),
+        h('span', { class: 'label', text: weekLabel(w, i) })
+      );
+    })
+  );
+}
+
+function eventRow(e) {
+  const url = MAK.toolUrl(S.pages, e.siteId, 'sakai.schedule');
+  return h(
+    'div',
+    { class: 'event-row' },
+    h('span', { class: 'when', text: MAK.formatDate(e.start) }),
+    h('div', { class: 'body' }, url ? h('a', { href: url, text: e.title }) : h('span', { text: e.title }), h('div', { class: 'meta', text: e.siteTitle }))
+  );
+}
+
+function weekDetail(w, i) {
+  return [
+    h(
+      'div',
+      { class: 'week-head' },
+      h('strong', { text: `${weekLabel(w, i)} · ${t('weeks.of', { date: MAK.formatDay(w.start) })}` }),
+      h('button', { class: 'link-btn', text: t('weeks.clear'), on: { click: () => { ui.dueWeek = null; renderCurrent(); } } })
+    ),
+    w.events.length ? [h('h2', { class: 'group', text: `${t('weeks.events')} (${w.events.length})` }), w.events.map(eventRow)] : null,
+    w.total ? null : emptyBox(t('weeks.nothing'))
+  ];
+}
+
 function renderDue(el) {
   const now = Date.now();
   const none = noDataMessage('what.deliveries');
@@ -189,17 +246,22 @@ function renderDue(el) {
   const model = MAK.buildDue({ assignments: S.assignments, sites: namedSites(), pages: S.pages, hidden: hiddenSet(), now });
   const g = model.groups;
   const all = [...g.late, ...g.pending, ...g.action, ...g.submitted, ...g.closed];
-  if (!all.length) return fill(el, emptyBox(t('due.none')));
+  if (!all.length && !(S.events || []).length) return fill(el, emptyBox(t('due.none')));
   const siteIds = [...new Set(all.map((x) => x.siteId))];
   if (ui.dueSite && !siteIds.includes(ui.dueSite)) ui.dueSite = '';
-  const keep = (list) => list.filter((x) => !ui.dueSite || x.siteId === ui.dueSite);
+  const bySite = (list) => list.filter((x) => !ui.dueSite || x.siteId === ui.dueSite);
+  const weeks = MAK.buildWeeks({ deliveries: bySite([...g.late, ...g.pending, ...g.action]), events: bySite(S.events || []), sites: namedSites(), hidden: hiddenSet(), now });
+  const week = ui.dueWeek === null ? null : weeks[ui.dueWeek];
+  const keep = (list) => bySite(list).filter((x) => !week || (x.due >= week.start && x.due < week.end));
   const group = (title, list) => (list.length ? [h('h2', { class: 'group', text: `${title} (${list.length})` }), list.map((x) => deliveryRow(x, now))] : null);
   const folded = (title, list) => (list.length ? h('details', null, h('summary', { text: `${title} (${list.length})` }), list.map((x) => deliveryRow(x, now))) : null);
   const open = [...keep(g.late), ...keep(g.pending), ...keep(g.action)];
   fill(
     el,
     h('div', { class: 'toolbar' }, siteSelect(siteIds, ui.dueSite, (v) => { ui.dueSite = v; renderCurrent(); }), h('button', { class: 'link-btn', text: t('ics.button'), on: { click: openIcs } })),
-    open.length ? null : emptyBox(t('due.nothing')),
+    weekStrip(weeks),
+    week ? weekDetail(week, ui.dueWeek) : null,
+    open.length || week ? null : emptyBox(t('due.nothing')),
     group(t('due.late'), keep(g.late)),
     group(t('due.todo'), keep(g.pending)),
     group(t('due.returned'), keep(g.action)),
