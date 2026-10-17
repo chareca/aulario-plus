@@ -8,14 +8,14 @@ const MAK = loadLib('core', 'pm');
 const TOOL = 'https://miaulario.unavarra.es/portal/tool/T';
 const PICKER = `${TOOL}/sakai.filepicker.helper`;
 const button = (n, label) => ({ name: `compose:j_id_jsp_1_${n}`, tag: 'input', type: 'submit', value: label, label });
-function composeSnap({ labels = ['Añadir adjuntos', 'Enviar', 'Vista preliminar', 'Guardar borrador', 'Cancelar'], subject = '', text = '', error = '', noSubject = false } = {}) {
+function composeSnap({ labels = ['Añadir adjuntos', 'Enviar', 'Vista preliminar', 'Guardar borrador', 'Cancelar'], subject = '', text = '', error = '', noSubject = false, ids = '' } = {}) {
   const controls = [
     { name: 'compose', type: 'hidden', value: 'compose' },
     { name: 'compose:list1', tag: 'select', type: 'select-multiple', options: [
-      { value: 'all', label: 'Todos los participantes', selected: false },
-      { value: 'role-1', label: 'Rol Instructor', selected: false },
-      { value: 'u-me', label: 'Chareca , Nicolas (chareca.1)', selected: false },
-      { value: 'u-2', label: 'GARCIA LOPEZ, ANA (agarcia)', selected: false }
+      { value: `${ids}all`, label: 'Todos los participantes', selected: false },
+      { value: `${ids}role-1`, label: 'Rol Instructor', selected: false },
+      { value: `${ids}u-me`, label: 'Chareca , Nicolas (chareca.1)', selected: false },
+      { value: `${ids}u-2`, label: 'GARCIA LOPEZ, ANA (agarcia)', selected: false }
     ] },
     { name: 'compose:bcc_toggle', type: 'checkbox', value: 'on', checked: false },
     { name: 'compose:list2', tag: 'select', type: 'select-multiple', options: [{ value: 'u-2', label: 'GARCIA LOPEZ, ANA (agarcia)', selected: false }] },
@@ -41,7 +41,9 @@ const pickerSnap = (attached) => ({ kind: 'picker', url: `${PICKER}/tool`,
 // A fake MiAulario: it answers like the real tool and records each request.
 function fakeServer(o = {}) {
   const log = [];
-  const state = { subject: '', attached: [] };
+  const state = { subject: '', attached: [], forms: 0 };
+  // "newIds": new values in the list "To" for each new compose form, as MiAulario does.
+  const compose = (more) => composeSnap(Object.assign({}, o.compose, o.newIds ? { ids: `f${state.forms}-` } : {}, more));
   const entries = (b) => (b ? [...b.entries()] : []);
   async function load(url, init = {}) {
     const body = init.body || null;
@@ -49,7 +51,10 @@ function fakeServer(o = {}) {
     log.push({ url, method: init.method || 'GET', body: e, multipart: typeof FormData !== 'undefined' && body instanceof FormData });
     const has = (name, value) => e.some(([k, v]) => k === name && (value === undefined || v === value));
     if (!init.method) return o.home || homeSnap();
-    if (url.endsWith('/pvtMsgHpView')) return composeSnap(o.compose);
+    if (url.endsWith('/pvtMsgHpView')) {
+      state.forms++;
+      return compose();
+    }
     if (url === `${TOOL}/compose`) {
       const btn = e.find(([k]) => k.startsWith('compose:j_id_jsp_1_'));
       if (btn && /Añadir|Add|Eranskin/i.test(btn[1])) {
@@ -64,7 +69,7 @@ function fakeServer(o = {}) {
       if (!o.dropAttach) state.attached.push(id.split('/').pop());
       return pickerSnap(state.attached);
     }
-    if (url.startsWith(`${PICKER}?sakai_action=`)) return composeSnap(Object.assign({}, o.compose, { subject: o.loseSubject ? '' : state.subject, text: state.attached.join(' ') }));
+    if (url.startsWith(`${PICKER}?sakai_action=`)) return compose({ subject: o.loseSubject ? '' : state.subject, text: state.attached.join(' ') });
     return { kind: 'other' };
   }
   return { load, log, state };
@@ -131,6 +136,24 @@ test('send: the button "Send" with the data; the inbox means sent; the form agai
   const bad = fakeServer({ sendFails: true });
   const pm2 = MAK.createPm({ load: bad.load });
   await assert.rejects(pm2.send(await pm2.open('T'), DATA), (e) => e.code === 'pm.notSent' && /destinatario/.test(e.message));
+});
+
+test('recipients of an older form: found again by their text in the new form (MiAulario makes new values)', async () => {
+  const s = fakeServer({ newIds: true });
+  const pm = MAK.createPm({ load: s.load });
+  const first = await pm.open('T');
+  const me = MAK.pmRecipients(first, 'chareca.1').find((p) => p.me);
+  assert.equal(me.value, 'f1-u-me');
+  const data = Object.assign({}, DATA, { to: [{ value: me.value, label: me.label }] });
+  const ready = await pm.prepare(await pm.open('T'), data);
+  const list1 = (entry) => entry.body.filter(([k]) => k === 'compose:list1').map(([, v]) => v);
+  assert.deepEqual(list1(s.log.find((l) => l.url === `${TOOL}/compose` && l.body.some(([k, v]) => /Añadir/.test(v)))), ['f2-u-me'], 'the value of the new form');
+  await pm.send(ready, data);
+  assert.deepEqual(list1(s.log.at(-1)), ['f2-u-me']);
+  // A value of this form still works; an unknown person is an error with the name.
+  const c = await pm.open('T');
+  await pm.prepare(c, Object.assign({}, DATA, { to: ['f3-u-2'] }));
+  await assert.rejects(pm.prepare(await pm.open('T'), Object.assign({}, DATA, { to: [{ value: 'x', label: 'NADIE, Persona (nadie)' }] })), (e) => e.code === 'pm.recipientGone' && /NADIE/.test(e.message));
 });
 
 test('cancel: the button "Cancel", without recipients', async () => {

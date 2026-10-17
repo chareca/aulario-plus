@@ -54,6 +54,7 @@
     .dark .mail { color: #e8ecee; background: #1e2a28; }
     header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
     header h2 { font-size: 16px; margin: 0; flex: 1; }
+    .help.intro { margin: -4px 0 8px; }
     .muted, .help { color: #5f6b73; font-size: 12px; }
     .dark .muted, .dark .help { color: #9aa6ad; }
     ul.files { margin: 0 0 10px; padding-left: 18px; max-height: 110px; overflow: auto; }
@@ -103,7 +104,8 @@
     };
     const subject = h('input', { attrs: { type: 'text', maxlength: 250 }, on: { input: () => { st.edited.subject = true; } } });
     const body = h('textarea', { on: { input: () => { st.edited.body = true; } } });
-    const copy = h('input', { attrs: { type: 'checkbox', checked: true } });
+    // A copy by email: on for files (users often send files to themselves), off for a message.
+    const copy = h('input', { attrs: { type: 'checkbox', checked: files.length > 0 } });
     const fillDefaults = () => {
       const d = defaults();
       if (!st.edited.subject) subject.value = d.subject;
@@ -177,11 +179,13 @@
     // The data for the engine; null (and a message) if a part is missing.
     async function data() {
       await loading;
+      // The recipients with their text: the engine finds them again in the new compose form.
+      const person = (p) => ({ value: p.value, label: p.label });
       let to;
       if (st.mode === 'me') {
         if (!st.me) throw Object.assign(new Error('noMe'), { code: 'noMe' });
-        to = [st.me.value];
-      } else to = [...st.chosen];
+        to = [person(st.me)];
+      } else to = st.people.filter((p) => st.chosen.has(p.value)).map(person);
       return { to, subject: subject.value.trim(), body: MAK.pmBodyHtml(body.value), emailCopy: copy.checked, files: files.map((f) => ({ itemId: f.itemId, title: f.title })) };
     }
 
@@ -315,7 +319,8 @@
     const win = h(
       'div',
       { class: 'mail', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': t('mail.title') } },
-      h('header', null, h('h2', { text: `✉ ${t('mail.title')}` }), h('span', { class: 'muted', text: opts.site.name }), close),
+      h('header', null, h('h2', { text: `✉ ${t(files.length ? 'mail.title' : 'mail.titleNew')}` }), h('span', { class: 'muted', text: opts.site.name }), close),
+      h('p', { class: 'help intro', text: t('mail.internalHelp') }),
       files.length ? [h('div', { class: 'muted', text: t('mail.files', { n: files.length }) }), h('ul', { class: 'files' }, files.map((f) => h('li', { text: f.title })))] : null,
       h('div', { class: 'modes', attrs: { role: 'radiogroup' } }, modeRadio('me', t('mail.toMe')), modeRadio('others', t('mail.toOthers'))),
       people,

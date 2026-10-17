@@ -52,7 +52,7 @@
     assert.ok(html.includes('<a href="https://is.gd/AbC12x">https://is.gd/AbC12x</a>'), html);
     assert.ok(html.includes('Contraseña: k7m2x9qp'), html);
     assert.ok(/1 descarga; caduca el 18\/10\/2026/.test(html), html);
-    assert.deepEqual(w.log.sent[0].to, ['u-me']);
+    assert.deepEqual(w.log.sent[0].to, [{ value: 'u-me', label: 'YO, Test (me1)' }], 'the recipient with its text (the engine finds it again in the new form)');
     const box = w.into.querySelector('.linkbox');
     assert.ok(!box.hidden, 'the link stays in the window');
     assert.equal(box.querySelector('input').value, 'https://is.gd/AbC12x');
@@ -88,6 +88,21 @@
     const w = openWindow({ links: null });
     assert.ok(!w.button(MAK.t('link.make')), 'no link button');
     assert.ok(w.into.textContent.includes(MAK.t('link.hintSettings')));
+    w.into.remove();
+  });
+
+  test('mail window: a message without files is an internal message, without a copy by email by default', async () => {
+    MAK.setLang('es');
+    const into = document.createElement('div');
+    document.body.append(into);
+    MAK.mailWindow(into, { site: { id: 'S', name: 'Cálculo' }, files: [], mode: 'others', placement: 'P', pm: { open: async () => COMPOSE }, myEid: async () => 'me1', openTool: async () => {}, share: null, onClose: () => {} });
+    assert.ok(into.querySelector('h2').textContent.includes(MAK.t('mail.titleNew')));
+    assert.ok(into.textContent.includes(MAK.t('mail.internalHelp')));
+    const copy = [...into.querySelectorAll('label.check')].find((l) => l.textContent.includes(MAK.t('mail.copy'))).querySelector('input');
+    assert.equal(copy.checked, false);
+    into.remove();
+    const w = openWindow();
+    assert.equal([...w.into.querySelectorAll('label.check')].find((l) => l.textContent.includes(MAK.t('mail.copy'))).querySelector('input').checked, true, 'with files: on');
     w.into.remove();
   });
 

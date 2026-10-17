@@ -164,6 +164,24 @@
     if (!String(data.subject || '').trim()) throw new PmError('pm.noSubject');
   }
 
+  // MiAulario gives new values to the list "To" each time it makes the compose form (live test:
+  // 75 of 75 values changed, the texts did not). A value of an older form gives the error
+  // "compose:list1: Error de validación: el valor no es válido". Thus each recipient ({ value,
+  // label } from MAK.pmRecipients, or a value of this form) is found again by its text.
+  function resolveTo(compose, to) {
+    const options = compose.fields.to.options;
+    const byLabel = new Map(options.map((o) => [o.label, o.value]));
+    const values = new Set(options.map((o) => o.value));
+    return to.map((r) => {
+      const label = r && typeof r === 'object' ? r.label : null;
+      const value = r && typeof r === 'object' ? r.value : r;
+      if (label && byLabel.has(label)) return byLabel.get(label);
+      if (values.has(value)) return value;
+      throw new PmError(label ? 'pm.recipientGone' : 'pm.noRecipient', label || '');
+    });
+  }
+  const withTo = (compose, data) => Object.assign({}, data, { to: resolveTo(compose, data.to) });
+
   MAK.createPm = function ({ load }) {
     const post = (url, body) => load(url, { method: 'POST', body });
 
@@ -179,8 +197,9 @@
 
     // Fill the form and attach the files on the server. The result is the compose form with
     // all the data: "Send" sends it, or the user opens the tool and sees it ready.
-    async function prepare(compose, data) {
-      checkData(data);
+    async function prepare(compose, given) {
+      checkData(given);
+      const data = withTo(compose, given);
       const files = data.files || [];
       let pick = await post(compose.snap.action, composeBody(compose, data, compose.buttons.attach));
       // MiAulario can show the compose form again with an error (the text tells why).
@@ -201,8 +220,9 @@
     }
 
     // Send the prepared message. MiAulario then shows the inbox.
-    async function send(compose, data) {
-      checkData(data);
+    async function send(compose, given) {
+      checkData(given);
+      const data = withTo(compose, given);
       const after = await post(compose.snap.action, composeBody(compose, data, compose.buttons.send));
       if (after.kind === 'compose') throw new PmError('pm.notSent', after.error || '');
       if (after.kind !== 'home') throw new PmError('pm.unknownAfterSend', after.kind);

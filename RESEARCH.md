@@ -132,7 +132,7 @@ Limits:
 | Step | Request | Form data |
 |---|---|---|
 | Inbox | `GET /portal/tool/{placement}/privateMsg/pvtMsgHpView` | form `msgForum`, link `msgForum:composeMessage` (`mojarra.jsfcljs`) |
-| Compose form | `POST` the form `msgForum` with `msgForum:composeMessage` | form `compose`: `compose:list1` ("To", values = user ids), `compose:list2` (BCC), `compose:send_email_out` (copy by email, on by default), `compose:subject`, `compose:pvt_message_body_inputRichText`, and the buttons "Añadir adjuntos", "Enviar", "Vista preliminar", "Guardar borrador", "Cancelar" (names `compose:j_id_jsp_…`, they change) |
+| Compose form | `POST` the form `msgForum` with `msgForum:composeMessage` | form `compose`: `compose:list1` ("To", values = new ids for each form), `compose:list2` (BCC), `compose:send_email_out` (copy by email, on by default), `compose:subject`, `compose:pvt_message_body_inputRichText`, and the buttons "Añadir adjuntos", "Enviar", "Vista preliminar", "Guardar borrador", "Cancelar" (names `compose:j_id_jsp_…`, they change) |
 | Attachment page | `POST` the form `compose` with "Añadir adjuntos" (the server keeps all the fields) | `sakai.filepicker.helper`: form `doattachitem` (`sakai_action=doAttachitem`, `itemId`, `sakai_csrf_token`) and form `attachForm` |
 | Attach a file | `POST` (multipart) `doattachitem` with `itemId=/group/{site}/{path}` | The server attaches a copy of the resource. Nothing is downloaded. |
 | Back to the form | `POST` `attachForm` to `?sakai_action=doAddattachments` ("Continuar") or `?sakai_action=doCancel` | The compose form, with the fields and the files |
@@ -140,9 +140,10 @@ Limits:
 
 Live tests (2026-10-17):
 
-- A prepared form stays on the server. When the user opens the tool (the URL of its page), the tool shows the form with the recipient, the subject, the message and the files. This is "Open the mail".
+- A prepared form stays on the server. When the user opens the tool (the URL of its page), the tool shows the form with the recipient, the subject, the message and the files. This is "Open in MiAulario".
 - "Send now" to the user: sent in 0.85 s. The message was in the folder "Recibido", and the copy went to the email address.
 - The user is in the list "To". The list has "Todos los participantes", the roles and each person (`SURNAME, Name (eid)`).
+- The values of the list "To" change each time MiAulario makes the compose form (live test: 75 of 75 values changed, the texts and the order did not). A value of an older form gives "compose:list1: Error de validación: el valor no es válido". The engine finds each recipient again by its text in the new form.
 - `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site (`userId` = the value of the list "To"). For version 1.5.1.
 - `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
 - "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
@@ -206,7 +207,7 @@ extension/
     content-banner.js      the banner of new items and the ZIP button (closed shadow root)
     content-names.js       the pencils next to the site names (sidebar and page header)
     content-search.js      the search palette (Ctrl+K)
-    content-mail.js        the buttons "Send by mail" in the Resources tool
+    content-mail.js        the buttons "Send as an internal message" in the Resources tool
     popup.html, popup.js   tabs: deliveries, inbox, new items, grades, sites, settings
     tools.html, tools.js   ZIP download and calendar export (in a tab)
     _locales/              name and description of the extension (Spanish, English)
@@ -257,7 +258,7 @@ tests/                     Node tests, synthetic data and a test harness
    - Give a name to a site with ✎ in the popup and in the page header. Look at the sidebar, the favorites, the header and the tab title.
    - Search from the popup and with Ctrl+K in MiAulario. Press Ctrl+K in the editor of an announcement: the editor must get it.
    - Click a bar of the week view.
-   - In the Resources tool, send a file to you: "Open the mail" and "Send now". Select two files and use the bar.
+   - In the Resources tool, send a file to you: "Open in MiAulario" and "Send now". Select two files and use the bar.
    - Enable the download links. Make a link with "Only make the link", open it in a private window, type the password and download the file. Open the link again: it must show that the link expired.
    - Click **Log out**. The extension must not open the login page.
 
