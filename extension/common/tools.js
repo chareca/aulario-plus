@@ -1,7 +1,6 @@
 // Aulario Plus: the tools page (a tab of the extension).
 //   tools.html?zip=<siteId>   download all the files of a site as one ZIP
 //   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
-//   tools.html?message=<site> a quick message by the internal mail of a site
 //   tools.html?check=1        the MiAulario checks (diagnostic); "&auto=1" starts them at once
 // A tab is used (not the popup) because the popup closes when it loses the focus.
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -188,36 +187,6 @@ async function runIcs(store) {
 
 // ---- Start ---------------------------------------------------------------------
 
-// ---- Quick message (the mail window, without files) ---------------------------------
-
-function runMessage(siteId, store) {
-  const box = $('message');
-  box.hidden = false;
-  $('title').hidden = true;
-  const site = (store.sites || []).find((s) => s.id === siteId);
-  const tool = site && store.pages && store.pages[siteId] && store.pages[siteId].tools['sakai.messages'];
-  if (!tool || !tool.placement) {
-    box.textContent = t('mail.noTool');
-    return;
-  }
-  document.title = `${t('mail.title')} · ${site.title}`;
-  const style = document.createElement('style');
-  style.textContent = `${MAK.MAIL_CSS} .mail { box-shadow: none; margin: 0 auto; }`;
-  document.head.append(style);
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) box.classList.add('dark');
-  MAK.mailWindow(box, {
-    site: { id: siteId, name: site.title },
-    files: [],
-    mode: 'others',
-    placement: tool.placement,
-    pm: MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) }),
-    myEid: async () => (await (await fetch(`${MAK.BASE}/direct/session/current.json?auto=true`, { credentials: 'include' })).json()).userEid,
-    openTool: () => ext.tabs.create({ url: MAK.safeSiteUrl(tool.page) || MAK.siteUrl(siteId) }),
-    share: null,
-    onClose: () => window.close()
-  });
-}
-
 // ---- MiAulario checks (diagnostic) ---------------------------------------------------
 // window.__checkResults and window.__checksDone are for tests/live/run.mjs.
 
@@ -295,8 +264,6 @@ async function init() {
     await runZip(siteId, site);
   } else if (params.has('ics')) {
     await runIcs(store);
-  } else if (params.has('message')) {
-    runMessage(params.get('message'), store);
   } else if (params.has('check')) {
     runChecks(params.has('auto'));
   }

@@ -1,5 +1,5 @@
-// Aulario Plus: the window "Send by the internal mail". It opens in MiAulario (from the Resources
-// tool, in a closed shadow root) and in a page of the extension (quick message). It always offers:
+// Aulario Plus: the window "Send as an internal message". It opens in MiAulario, from the Resources
+// tool, in a closed shadow root. It always offers:
 // - "Open the mail": the extension prepares the message in the internal mail of the site, and the
 //   tool opens with all the data. The user examines it and sends it.
 // - "Send now": the extension sends it. To me: after one confirmation.
@@ -104,8 +104,7 @@
     };
     const subject = h('input', { attrs: { type: 'text', maxlength: 250 }, on: { input: () => { st.edited.subject = true; } } });
     const body = h('textarea', { on: { input: () => { st.edited.body = true; } } });
-    // A copy by email: on for files (users often send files to themselves), off for a message.
-    const copy = h('input', { attrs: { type: 'checkbox', checked: files.length > 0 } });
+    const copy = h('input', { attrs: { type: 'checkbox', checked: true } });
     const fillDefaults = () => {
       const d = defaults();
       if (!st.edited.subject) subject.value = d.subject;
@@ -319,7 +318,7 @@
     const win = h(
       'div',
       { class: 'mail', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': t('mail.title') } },
-      h('header', null, h('h2', { text: `✉ ${t(files.length ? 'mail.title' : 'mail.titleNew')}` }), h('span', { class: 'muted', text: opts.site.name }), close),
+      h('header', null, h('h2', { text: `✉ ${t('mail.title')}` }), h('span', { class: 'muted', text: opts.site.name }), close),
       h('p', { class: 'help intro', text: t('mail.internalHelp') }),
       files.length ? [h('div', { class: 'muted', text: t('mail.files', { n: files.length }) }), h('ul', { class: 'files' }, files.map((f) => h('li', { text: f.title })))] : null,
       h('div', { class: 'modes', attrs: { role: 'radiogroup' } }, modeRadio('me', t('mail.toMe')), modeRadio('others', t('mail.toOthers'))),

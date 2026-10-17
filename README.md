@@ -60,11 +60,10 @@ The interface is in Spanish. You can change it to English in the settings.
 The "Correo interno" of MiAulario is the Messages tool of each site. It sends only to the persons of that site. A copy goes to the email address of each recipient in MiAulario (for students, `@e.unavarra.es`).
 
 - **Send files of the Resources tool:** In the Resources tool, each file has a button ✉. When you select files, a bar shows "Send as a message" and "Send them to me". The server of MiAulario attaches a copy of each file: nothing is downloaded to your computer.
-- **The send window:** select "To me" or "To other persons" (with a search in the list of the site). The extension writes a subject and a message; you can change them. The message is an internal message of MiAulario: it goes to the message inbox of each recipient. The option "Also send a copy to their email address" is on for files and off for a message without files. Then:
+- **The send window:** select "To me" or "To other persons" (with a search in the list of the site). The extension writes a subject and a message; you can change them. The message is an internal message of MiAulario: it goes to the message inbox of each recipient. The option "Also send a copy to their email address" is on. Then:
   - **Open in MiAulario:** the extension prepares the message with the files in the internal mail of the site and opens it in a new tab. You examine it and send it.
   - **Send now:** the extension sends it. A message to you needs one confirmation.
   - **Share:** the share menu of the system with the files (only if your browser has it). The files stay in memory.
-- **Quick message:** In the Inbox tab of the popup, the button "New message" (at the right of the filters) opens the same window for a site, without files.
 - **Receive in a different email:** The internal mail cannot send to an address outside MiAulario. The subject of the messages to you starts with `[Aulario Plus]`, so a forward filter in your UPNA email can send them to your other address. The settings show the steps for Gmail and Outlook.
 
 ### Download links without a login
