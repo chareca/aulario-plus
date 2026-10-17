@@ -98,20 +98,5 @@
     return { text: `${lines.map(MAK.icsFold).join('\r\n')}\r\n`, count };
   };
 
-  // Trim the events of /direct/calendar/my.json.
-  MAK.trimEvent = function (e) {
-    return {
-      id: String(e.eventId || e.id || ''),
-      title: String(e.title || ''),
-      text: MAK.htmlToText(e.description).slice(0, 1000),
-      type: String(e.type || ''),
-      start: MAK.toMs(e.firstTime),
-      duration: Number(e.duration) || 0,
-      siteId: String(e.siteId || ''),
-      siteTitle: String(e.siteName || ''),
-      assignmentId: e.assignmentId ? String(e.assignmentId) : null
-    };
-  };
-
   if (typeof module === 'object' && module.exports) module.exports = MAK;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

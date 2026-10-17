@@ -13,6 +13,20 @@
 
   // Change the date formats of Sakai into milliseconds. Return null if the value is not a date.
   // Formats: number (ms), {epochSecond, nano}, {time}, 'yyyyMMddHHmmssSSS' (UTC), ISO string.
+  // "2026-10-16" in the local time.
+  MAK.ymd = function (ms) {
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Monday at 00:00 (local time) of the week of a time.
+  MAK.startOfWeek = function (ms) {
+    const d = new Date(ms);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getTime();
+  };
+
   MAK.toMs = function (value) {
     if (value === null || value === undefined || value === '') return null;
     if (typeof value === 'number') return Number.isFinite(value) ? value : null;

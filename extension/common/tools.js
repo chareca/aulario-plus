@@ -21,12 +21,6 @@ function saveFile(parts, type, name) {
   }, 60000);
 }
 
-// "2026-10-16" in the local time.
-function ymd(ms) {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 // ---- ZIP of the files of one site ---------------------------------------------
 
 async function fetchFile(url, signal) {
@@ -79,7 +73,7 @@ async function runZip(siteId, site) {
     warning.hidden = false;
   }
 
-  const name = MAK.safeFileName(t('zip.fileName', { site: site.title, date: ymd(Date.now()) }));
+  const name = MAK.safeFileName(t('zip.fileName', { site: site.title, date: MAK.ymd(Date.now()) }));
   start.textContent = t('zip.start');
   cancel.textContent = t('zip.cancel');
   start.hidden = false;
@@ -165,7 +159,7 @@ async function runIcs(store) {
       try {
         const api = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
         const names = new Map(store.sites.map((s) => [s.id, s.title]));
-        evs = (await api.calendar(ymd(now - 30 * MAK.DAY), ymd(now + 365 * MAK.DAY)))
+        evs = (await api.calendar(MAK.ymd(now - 30 * MAK.DAY), MAK.ymd(now + 365 * MAK.DAY)))
           .map(MAK.trimEvent)
           .filter((e) => !hidden.has(e.siteId))
           .map((e) => Object.assign(e, { siteTitle: names.get(e.siteId) || e.siteTitle }));
@@ -181,7 +175,7 @@ async function runIcs(store) {
       create.disabled = false;
       return;
     }
-    const name = t('ics.fileName', { date: ymd(Date.now()) });
+    const name = t('ics.fileName', { date: MAK.ymd(Date.now()) });
     saveFile([text], 'text/calendar;charset=utf-8', name);
     status.textContent = t('ics.done', { n: count, name });
     help.textContent = `${t('ics.help')} ${t('ics.snapshot')}`;

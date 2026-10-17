@@ -196,6 +196,21 @@
     return { id: String(s.id), title: String(s.title || s.id), type: String(s.type || '') };
   };
 
+  // A calendar event (/direct/calendar/my.json).
+  MAK.trimEvent = function (e) {
+    return {
+      id: String(e.eventId || e.id || ''),
+      title: String(e.title || ''),
+      text: MAK.htmlToText(e.description).slice(0, 1000),
+      type: String(e.type || ''),
+      start: MAK.toMs(e.firstTime),
+      duration: Number(e.duration) || 0,
+      siteId: String(e.siteId || ''),
+      siteTitle: String(e.siteName || ''),
+      assignmentId: e.assignmentId ? String(e.assignmentId) : null
+    };
+  };
+
   MAK.trimSynoptic = function (x) {
     return { siteId: String(x.siteId || ''), messages: Number(x.newMessagesCount) || 0, forums: Number(x.newForumCount) || 0 };
   };

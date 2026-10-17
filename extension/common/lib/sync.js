@@ -14,6 +14,8 @@
   const IDLE_AFTER_MS = 12 * HOUR;
   const FULL_MS = 4 * HOUR;
   const SITES_MS = 6 * HOUR;
+  const CALENDAR_MS = 6 * HOUR;
+  const CALENDAR_DAYS = 6 * 7; // the week view: this week and the next 5 weeks
   const PAGES_MS = DAY;
   const LOCK_MS = 3 * MINUTE;
   const ANNOUNCEMENT_DAYS = 60;
@@ -210,6 +212,16 @@
           meta.baselined.grades = true;
           if (changed.length && opts.onNewGrades) await opts.onNewGrades(changed);
         });
+
+        // 4c. Calendar events of the week view (every 6 hours, and on a full sync).
+        if (full || !meta.calendarAt || t - meta.calendarAt >= CALENDAR_MS) {
+          await step('calendar', async () => {
+            const from = MAK.startOfWeek(t);
+            const events = (await api.calendar(MAK.ymd(from), MAK.ymd(from + CALENDAR_DAYS * DAY))).map(MAK.trimEvent);
+            await store.set({ events });
+            meta.calendarAt = t;
+          });
+        }
 
         // 5. Notifications of the bell (read state of announcements).
         await step('notifications', async () => {
