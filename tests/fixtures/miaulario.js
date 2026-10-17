@@ -217,7 +217,7 @@ function make(NOW) {
   // Routes for tests/helpers.js fakeFetch.
   function routes(o = {}) {
     const r = {
-      '/direct/session/current.json': { userId: o.userId || 'user-1', active: true, maxInactiveInterval: 3600, currentTime: NOW, lastAccessedTime: NOW },
+      '/direct/session/current.json': { userId: o.userId || 'user-1', userEid: o.userEid || 'chareca.1', active: true, maxInactiveInterval: 3600, currentTime: NOW, lastAccessedTime: NOW },
       '/direct/site.json': { entityPrefix: 'site', site_collection: SITES },
       '/direct/assignment/my.json': { entityPrefix: 'assignment', assignment_collection: ASSIGNMENTS },
       '/direct/announcement/user.json': { entityPrefix: 'announcement', announcement_collection: ANNOUNCEMENTS },

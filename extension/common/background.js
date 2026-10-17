@@ -460,6 +460,19 @@ const handlers = {
       return { ok: true };
     }
   },
+  // "Open the mail": the internal mail of the site in a new tab, with the prepared message.
+  openMailTool: {
+    content: true,
+    run: async (msg) => {
+      if (!(await knownSite(msg.siteId))) return { ok: false };
+      const { pages } = await store.get('pages');
+      const tool = pages && pages[msg.siteId] && pages[msg.siteId].tools['sakai.messages'];
+      const url = tool && MAK.safeSiteUrl(tool.page);
+      if (!url) return { ok: false };
+      await ext.tabs.create({ url });
+      return { ok: true };
+    }
+  },
   // The search palette in MiAulario (Ctrl+K). Only the stored data, no requests.
   search: {
     content: true,

@@ -51,9 +51,12 @@
         "lib/core.js",
         "lib/i18n.js",
         "lib/ui.js",
+        "lib/pm.js",
+        "lib/mail-ui.js",
         "content-banner.js",
         "content-names.js",
         "content-search.js",
+        "content-mail.js",
         "content.js"
       ],
       "run_at": "document_idle"

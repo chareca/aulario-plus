@@ -13,6 +13,8 @@ const OUT = path.join(__dirname, 'out');
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync(COMMON, OUT, { recursive: true });
+// The synthetic pages of the internal mail (also used by the browser tests).
+fs.copyFileSync(path.join(__dirname, '..', 'browser', 'fixtures-pm.js'), path.join(OUT, 'fixtures-pm.js'));
 
 const data = F.make(Date.now());
 // Titles in the form of the UPNA (code + capital letters), as in the real MiAulario.
@@ -143,7 +145,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js', 'content-names.js', 'content-search.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
@@ -163,13 +165,30 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <main id="content" class="portal-main-content">
   <h1 id="tocontent" style="position:absolute;left:-9999px">Los contenidos empiezan aquí</h1>
   <div class="portal-header-breadcrumb"><div id="header-site-title" class="portal-header-breadcrumb-item portal-header-site-title"><a href="#">${csTitle}</a></div> › Inicio</div>
-  <div class="row"><p>Contenido del sitio (simulado).</p></div>
+  <div class="row"><p>Contenido del sitio (simulado).</p>
+  <table class="table table-striped table-hover"><tbody>
+    <tr><td class="attach"><input type="checkbox" name="selectall"></td><td class="specialLink title">Título</td></tr>
+    <tr><td class="attach"><input type="checkbox" name="selectedMembers" value="/group/${F.CS}/Apuntes/"></td><td class="specialLink title"><a href="#">Apuntes</a></td></tr>
+    <tr><td class="attach"><input type="checkbox" name="selectedMembers" value="/group/${F.CS}/Apuntes/Tema 1.pdf"></td><td class="specialLink title"><a class="si" href="https://miaulario.unavarra.es/access/content/group/${F.CS}/Apuntes/Tema%201.pdf"></a><a href="https://miaulario.unavarra.es/access/content/group/${F.CS}/Apuntes/Tema%201.pdf">Tema 1.pdf</a></td></tr>
+    <tr><td class="attach"><input type="checkbox" name="selectedMembers" value="/group/${F.CS}/Práctica 2.zip"></td><td class="specialLink title"><a href="https://miaulario.unavarra.es/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip">Práctica 2.zip</a></td></tr>
+  </tbody></table></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
 <script>history.replaceState(null, '', '/portal/site/${F.CS}' + location.search); // the path of a site, as in MiAulario</script>
 ${siteTags}
 <script>
   // Show the banner: install time 10 days ago, then a visit of Computer Science.
+  // A fake engine of the internal mail: the same compose form as the real one, and a log.
+  window.__pmLog = [];
+  MAK.createPm = function () {
+    const compose = () => MAK.pmCompose(MAK.pmSnapshot(new DOMParser().parseFromString(PM_FIXTURES.COMPOSE(), 'text/html'), 'x'));
+    return {
+      open: async (placement) => { __pmLog.push(['open', placement]); return compose(); },
+      prepare: async (c, data) => { __pmLog.push(['prepare', data]); return c; },
+      send: async (c, data) => { __pmLog.push(['send', data.to]); return true; },
+      cancel: async () => true
+    };
+  };
   window.showBanner = async function (siteId, compact) {
     const { meta } = await chrome.storage.local.get('meta');
     await chrome.storage.local.set({ meta: Object.assign({}, meta, { installedAt: Date.now() - 10 * 86400000 }) });

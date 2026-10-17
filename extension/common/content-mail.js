@@ -1,0 +1,190 @@
+// Aulario Plus: "Send by mail" in the Resources tool of MiAulario.
+// - A button ✉ next to each file of the list.
+// - A bar when the user selects files: "Send by mail" and "Send them to me".
+// Both open the mail window (lib/mail-ui.js). The files go as attachments of the internal mail
+// of the site: the server attaches a copy, nothing is downloaded.
+(function () {
+  'use strict';
+  const ext = globalThis.browser ?? globalThis.chrome;
+  const where = MAK.parsePortalPath(location.pathname);
+  const siteId = where && where.siteId && !MAK.isSpecialSite(where.siteId) ? where.siteId : null;
+  if (!siteId) return;
+  const h = MAK.h;
+  const BUTTON = 'mak-mail-button';
+  const MAX_SHARE_BYTES = 25 * 1024 * 1024;
+  const oneLine = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+
+  let mailTool = null; // { placement, page }
+  let siteName = siteId;
+
+  // The files of the list: the checkbox has the id of the resource ("/group/<site>/<path>").
+  function fileRows() {
+    const out = [];
+    for (const cb of document.querySelectorAll('input[type=checkbox][name="selectedMembers"]')) {
+      if (!cb.value || cb.value.endsWith('/')) continue; // a folder
+      const row = cb.closest('tr');
+      const cell = row && row.querySelector('td.title');
+      const link = cell && [...cell.querySelectorAll('a[href]')].find((a) => /\/access\/content\//.test(a.href) && oneLine(a.textContent));
+      if (!link) continue;
+      out.push({ cb, cell, link, itemId: cb.value, title: oneLine(link.textContent), url: link.href });
+    }
+    return out;
+  }
+
+  // ---- The window ----------------------------------------------------------------
+
+  let open = null; // the host of the window, while it is open
+  function shareFiles(files) {
+    if (!(navigator.canShare && navigator.share)) return null;
+    try {
+      if (!navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] })) return null;
+    } catch {
+      return null;
+    }
+    // The files go to the memory of the page, never to Downloads.
+    return {
+      files: (async () => {
+        let total = 0;
+        const out = [];
+        for (const f of files) {
+          const r = await fetch(f.url, { credentials: 'include' });
+          if (!r.ok) throw new Error(String(r.status));
+          const blob = await r.blob();
+          total += blob.size;
+          if (total > MAX_SHARE_BYTES) throw Object.assign(new Error('tooBig'), { code: 'tooBig' });
+          out.push(new File([blob], f.title, { type: blob.type || 'application/octet-stream' }));
+        }
+        return out;
+      })()
+    };
+  }
+
+  function openWindow(files, mode) {
+    if (open || !mailTool) return;
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = `:host { all: initial; } .backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: flex-start;
+      justify-content: center; padding-top: 6vh; background: rgba(0, 0, 0, 0.35); } ${MAK.MAIL_CSS}`;
+    const into = h('div');
+    const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, into);
+    let view = null;
+    const close = () => {
+      host.remove();
+      open = null;
+    };
+    backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop && !(view && view.isBusy())) close(); });
+    // The keys stay in the window: the page does not get them.
+    backdrop.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape' && !(view && view.isBusy())) close();
+    });
+    shadow.append(style, backdrop);
+    document.documentElement.append(host);
+    open = host;
+    view = MAK.mailWindow(into, {
+      site: { id: siteId, name: siteName },
+      files,
+      mode,
+      placement: mailTool.placement,
+      pm: MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) }),
+      myEid: async () => (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid,
+      openTool: () => MAK.safeCall(() => ext.runtime.sendMessage({ type: 'openMailTool', siteId }), null),
+      share: shareFiles(files),
+      onClose: close
+    });
+  }
+
+  // ---- The buttons and the bar -----------------------------------------------------
+
+  function buttonFor(file) {
+    const host = document.createElement('span');
+    host.className = BUTTON;
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = `:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; }
+      button { font: 14px/1 system-ui, sans-serif; color: inherit; cursor: pointer; border: 1px solid rgba(127, 127, 127, 0.4); background: none;
+        border-radius: 6px; padding: 2px 6px; opacity: 0.8; } button:hover, button:focus-visible { opacity: 1; background: rgba(127, 127, 127, 0.18); }`;
+    const btn = h('button', { text: '✉', attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } });
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openWindow([file], 'me');
+    });
+    shadow.append(style, btn);
+    return host;
+  }
+
+  let bar = null;
+  function drawBar() {
+    const chosen = fileRows().filter((f) => f.cb.checked);
+    if (!chosen.length) {
+      if (bar) bar.host.remove();
+      bar = null;
+      return;
+    }
+    if (!bar) {
+      const host = document.createElement('div');
+      const shadow = host.attachShadow({ mode: 'closed' });
+      const style = document.createElement('style');
+      style.textContent = `:host { all: initial; } .bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 2147482999;
+        display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+        font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff; }
+        .dark.bar { color: #e8ecee; background: #1e2a28; }
+        button { font: inherit; cursor: pointer; border-radius: 6px; padding: 5px 10px; border: 1px solid #c9d2d6; background: transparent; color: inherit; }
+        button.primary { background: #10524e; border-color: #10524e; color: #fff; } .dark button.primary { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }`;
+      const text = h('span');
+      const send = h('button', { class: 'primary', attrs: { type: 'button' } });
+      const me = h('button', { attrs: { type: 'button' } });
+      const box = h('div', { class: 'bar', attrs: { role: 'region', 'aria-label': MAK.t('mail.title') } }, text, send, me);
+      shadow.append(style, box);
+      document.documentElement.append(host);
+      bar = { host, box, text, send, me };
+      send.addEventListener('click', () => openWindow(fileRows().filter((f) => f.cb.checked), 'others'));
+      me.addEventListener('click', () => openWindow(fileRows().filter((f) => f.cb.checked), 'me'));
+    }
+    bar.box.className = `bar${MAK.isDarkPage() ? ' dark' : ''}`;
+    bar.text.textContent = MAK.t('mail.bar', { n: chosen.length });
+    bar.send.textContent = MAK.t('mail.barSend');
+    bar.me.textContent = MAK.t('mail.barMe', { n: chosen.length });
+  }
+
+  function addButtons() {
+    if (!mailTool) return;
+    for (const f of fileRows()) if (!f.cell.querySelector(`.${BUTTON}`)) f.link.after(buttonFor(f));
+    drawBar();
+  }
+
+  // The selection: the checkboxes of the files and "select all".
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el && el.type === 'checkbox' && (el.name === 'selectedMembers' || el.name === 'selectall')) setTimeout(drawBar, 0);
+  }, true);
+
+  let timer = null;
+  new MutationObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(addButtons, 200);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+
+  // The internal mail of the site, its name and the language. Also when the first sync comes later.
+  const raw = {};
+  function setup(next) {
+    Object.assign(raw, next);
+    const tool = raw.pages && raw.pages[siteId] && raw.pages[siteId].tools['sakai.messages'];
+    if (!tool || !tool.placement) return; // this site has no internal mail
+    const settings = MAK.withDefaults(raw.settings);
+    MAK.setLang(settings.lang);
+    const site = (raw.sites || []).find((s) => s.id === siteId);
+    siteName = site ? MAK.siteName(site, settings) : siteId;
+    mailTool = { placement: tool.placement, page: tool.page };
+    addButtons();
+  }
+  MAK.safeCall(() => ext.storage.local.get(['pages', 'sites', 'settings']), null).then((d) => setup(d || {}));
+  ext.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    const next = {};
+    for (const k of ['pages', 'sites', 'settings']) if (changes[k]) next[k] = changes[k].newValue;
+    if (Object.keys(next).length) setup(next);
+  });
+})();
