@@ -114,6 +114,7 @@
         return list;
       })
       .catch((e) => {
+        MAK.fill(peopleList);
         say(MAK.mailError(e), 'error');
         throw e;
       });

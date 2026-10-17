@@ -14,7 +14,7 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { query: '', searchSel: 0, searchList: [], editSite: null, dueWeek: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
+const ui = { newMessage: false, query: '', searchSel: 0, searchList: [], editSite: null, dueWeek: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
 // The popup reads only the Gradebook page (for the calculator). All other data comes from the storage.
 const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
@@ -428,6 +428,23 @@ function renderInboxList() {
   updateTabCounts();
 }
 
+// "New message": select the site, then the mail window opens in a tab of the extension.
+function newMessageRow() {
+  const hidden = hiddenSet();
+  const sites = namedSites().filter((s) => !hidden.has(s.id) && S.pages && S.pages[s.id] && S.pages[s.id].tools['sakai.messages']);
+  const select = h(
+    'select',
+    { attrs: { 'aria-label': t('mail.siteLabel') } },
+    sites.map((s) => h('option', { attrs: { value: s.id, selected: s.id === ui.inbox.siteId }, text: s.title }))
+  );
+  const write = () => {
+    if (!select.value) return;
+    ext.tabs.create({ url: ext.runtime.getURL(`tools.html?message=${encodeURIComponent(select.value)}`) });
+    window.close();
+  };
+  return h('div', { class: 'toolbar' }, select, h('button', { class: 'btn primary', text: t('mail.write'), attrs: { type: 'button', disabled: !sites.length }, on: { click: write } }));
+}
+
 function renderInbox(el) {
   const none = noDataMessage('what.inbox');
   if (none) return fill(el, none);
@@ -465,8 +482,10 @@ function renderInbox(el) {
       'div',
       { class: 'toolbar' },
       h('label', { class: 'check' }, h('input', { attrs: { type: 'checkbox', checked: ui.inbox.unreadOnly }, on: { change: (e) => { ui.inbox.unreadOnly = e.target.checked; renderInboxList(); } } }), t('inbox.unreadOnly')),
-      c.announcements ? h('button', { class: 'link-btn', text: t('inbox.markAllRead'), on: { click: () => send({ type: 'markAllAnnRead', siteId: ui.inbox.siteId }) } }) : null
+      c.announcements ? h('button', { class: 'link-btn', text: t('inbox.markAllRead'), on: { click: () => send({ type: 'markAllAnnRead', siteId: ui.inbox.siteId }) } }) : null,
+      h('button', { class: 'link-btn', text: t('mail.newMessage'), attrs: { 'aria-expanded': String(ui.newMessage) }, on: { click: () => { ui.newMessage = !ui.newMessage; renderCurrent(); } } })
     ),
+    ui.newMessage ? newMessageRow() : null,
     h('div', { attrs: { id: 'inbox-list' } })
   );
   renderInboxList();
