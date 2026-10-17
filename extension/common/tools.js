@@ -164,7 +164,11 @@ async function runIcs(store) {
       status.textContent = t('ics.reading');
       try {
         const api = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
-        evs = (await api.calendar(ymd(now - 30 * MAK.DAY), ymd(now + 365 * MAK.DAY))).map(MAK.trimEvent).filter((e) => !hidden.has(e.siteId));
+        const names = new Map(store.sites.map((s) => [s.id, s.title]));
+        evs = (await api.calendar(ymd(now - 30 * MAK.DAY), ymd(now + 365 * MAK.DAY)))
+          .map(MAK.trimEvent)
+          .filter((e) => !hidden.has(e.siteId))
+          .map((e) => Object.assign(e, { siteTitle: names.get(e.siteId) || e.siteTitle }));
       } catch {
         status.textContent = t('ics.error');
         create.disabled = false;
@@ -190,6 +194,7 @@ async function runIcs(store) {
 
 async function init() {
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
+  store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
   const { settings, sites } = store;
   MAK.setLang(MAK.withDefaults(settings).lang);
   MAK.applyI18n(document);

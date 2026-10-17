@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -235,17 +235,19 @@ const isGradeNote = (id) => id === GRADES_NOTE || id.startsWith(GRADE_NOTE);
 // The notification shows the site and the item, but not the grade (other persons can see the screen).
 async function notifyNewGrades(changed) {
   if (!ext.notifications) return;
-  const { settings } = await store.get('settings');
+  const { settings, sites } = await store.get(['settings', 'sites']);
   const s = MAK.withDefaults(settings);
   if (!s.notifyGrades) return;
+  const names = new Map(MAK.namedSites(sites, s).map((x) => [x.id, x.title]));
+  const siteOf = (g) => names.get(g.siteId) || g.siteTitle;
   const hidden = MAK.hiddenEverywhere(s);
   const list = changed.filter((g) => !hidden.has(g.siteId));
   if (!list.length) return;
   MAK.setLang(s.lang);
   const notes =
     list.length <= GRADE_NOTE_MAX
-      ? list.map((g) => [GRADE_NOTE + g.id, MAK.t('note.grade', { site: g.siteTitle }), g.name || MAK.t('tab.grades')])
-      : [[GRADES_NOTE, MAK.t('note.grades', { n: list.length }), [...new Set(list.map((g) => g.siteTitle))].join(' · ')]];
+      ? list.map((g) => [GRADE_NOTE + g.id, MAK.t('note.grade', { site: siteOf(g) }), g.name || MAK.t('tab.grades')])
+      : [[GRADES_NOTE, MAK.t('note.grades', { n: list.length }), [...new Set(list.map(siteOf))].join(' · ')]];
   const iconUrl = ext.runtime.getURL('icons/icon128.png');
   for (const [id, title, message] of notes) {
     try {
@@ -363,14 +365,14 @@ const handlers = {
     }
   },
   // Change some settings. MAK.withDefaults checks the result (unknown keys go away).
-  // "badge" and "targets" merge with the current values. A target of null removes it.
+  // "badge", "targets" and "nicknames" merge with the current values. null removes a target or a name.
   setSettings: {
     run: async (msg) => {
       const patch = msg && msg.patch && typeof msg.patch === 'object' ? msg.patch : {};
       const next = await store.update('settings', (cur) => {
         const base = MAK.withDefaults(cur);
         const part = (key) => Object.assign({}, base[key], patch[key] && typeof patch[key] === 'object' ? patch[key] : {});
-        return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets') }));
+        return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets'), nicknames: part('nicknames') }));
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});
       return next;

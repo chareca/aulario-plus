@@ -12,9 +12,33 @@
       hiddenSites: [],
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
       lang: 'es', // 'es' (default) or 'en'
-      targets: {} // the target grade (0..10) of the calculator for each site
+      targets: {}, // the target grade (0..10) of the calculator for each site
+      shortNames: true, // show "Análisis de Datos" for "26_0_240504_1 ANÁLISIS DE DATOS"
+      nicknames: {} // a name from the user for each site
     };
   };
+
+  // A name from the user: one line, no control or invisible characters, at most 40 characters.
+  MAK.cleanName = function (v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 40)
+      .trim();
+  };
+
+  const MAX_NICKNAMES = 200;
+  function cleanNicknames(n) {
+    const out = {};
+    if (!n || typeof n !== 'object' || Array.isArray(n)) return out;
+    for (const [k, v] of Object.entries(n)) {
+      if (Object.keys(out).length >= MAX_NICKNAMES) break;
+      const name = typeof v === 'string' && k.length < 300 ? MAK.cleanName(v) : '';
+      if (name) out[k] = name;
+    }
+    return out;
+  }
 
   const MAX_TARGETS = 200;
   function cleanTargets(t) {
@@ -42,7 +66,9 @@
       hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
       lang: s.lang === 'en' ? 'en' : 'es',
-      targets: cleanTargets(s.targets)
+      targets: cleanTargets(s.targets),
+      shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
+      nicknames: cleanNicknames(s.nicknames)
     };
   };
 

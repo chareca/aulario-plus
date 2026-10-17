@@ -14,13 +14,22 @@ let syncing = false;
 let flash = null; // { text, until }: a short message in the header
 let lastRender = 0;
 let pendingRender = false;
-const ui = { dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
+const ui = { editSite: null, dueSite: '', inbox: { type: '', siteId: '', unreadOnly: false, query: '' }, openAnn: new Set(), gradesSeenAt: null, calc: null };
 // The popup reads only the Gradebook page (for the calculator). All other data comes from the storage.
 const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
 const settings = () => MAK.withDefaults(S.settings);
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
-const siteTitle = (id) => ((S.sites || []).find((s) => s.id === id) || {}).title || id;
+// The sites with the names to show (short names or names from the user). Made again only when
+// the sites or the settings change.
+let named = { sites: null, settings: null, list: [] };
+function namedSites() {
+  if (named.sites !== S.sites || named.settings !== S.settings) named = { sites: S.sites, settings: S.settings, list: MAK.namedSites(S.sites, settings()) };
+  return named.list;
+}
+const siteOf = (id) => namedSites().find((s) => s.id === id) || null;
+const siteTitle = (id) => (siteOf(id) || {}).title || id;
+const withNames = () => Object.assign({}, S, { sites: namedSites() });
 
 // ---- Panels ------------------------------------------------------------------
 
@@ -64,7 +73,7 @@ function setCount(id, n) {
 function updateTabCounts() {
   const ok = S.meta && S.meta.lastSync && settings().syncEnabled;
   setCount('count-inbox', ok ? inboxModel().counts.total : 0);
-  setCount('count-new', ok ? MAK.buildNews(S, Date.now()).reduce((n, x) => n + x.total, 0) : 0);
+  setCount('count-new', ok ? MAK.buildNews(withNames(), Date.now()).reduce((n, x) => n + x.total, 0) : 0);
   // While the Grades tab is open, its count stays at the value of the moment when it opened.
   setCount('count-grades', ok && current !== 'grades' ? MAK.unseenGrades(S.grades, S.gradesSeenAt, hiddenSet()).length : 0);
 }
@@ -170,7 +179,7 @@ function renderDue(el) {
   const now = Date.now();
   const none = noDataMessage('what.deliveries');
   if (none) return fill(el, none);
-  const model = MAK.buildDue({ assignments: S.assignments, sites: S.sites, pages: S.pages, hidden: hiddenSet(), now });
+  const model = MAK.buildDue({ assignments: S.assignments, sites: namedSites(), pages: S.pages, hidden: hiddenSet(), now });
   const g = model.groups;
   const all = [...g.late, ...g.pending, ...g.action, ...g.submitted, ...g.closed];
   if (!all.length) return fill(el, emptyBox(t('due.none')));
@@ -201,7 +210,7 @@ function inboxModel() {
     readAnn: S.readAnn,
     synoptic: S.synoptic,
     forums: S.forums,
-    sites: S.sites,
+    sites: namedSites(),
     pages: S.pages,
     hidden: hiddenSet()
   });
@@ -335,7 +344,7 @@ function newsCard(x) {
     h(
       'div',
       { class: 'head' },
-      h('a', { href: MAK.siteUrl(x.siteId), text: x.siteTitle }),
+      siteNameEditor(x.siteId, true),
       h('span', { class: 'meta', text: x.visited ? t('news.since', { date: MAK.formatDate(x.since) }) : t('news.neverVisited') })
     ),
     h(
@@ -354,7 +363,7 @@ function newsCard(x) {
 function renderNew(el) {
   const none = noDataMessage('what.news');
   if (none) return fill(el, none);
-  const list = MAK.buildNews(S, Date.now());
+  const list = MAK.buildNews(withNames(), Date.now());
   if (!list.length) return fill(el, emptyBox(t('news.empty')));
   fill(
     el,
@@ -390,7 +399,7 @@ function gradesCard(siteId, list) {
     h(
       'div',
       { class: 'head' },
-      h('a', { href: MAK.siteUrl(siteId), text: siteTitle(siteId) }),
+      siteNameEditor(siteId, true),
       gradebookPlacement(siteId) ? h('button', { class: 'link-btn', attrs: { 'aria-expanded': String(!!open) }, text: t(open ? 'calc.close' : 'calc.open'), on: { click: () => toggleCalc(siteId) } }) : null
     ),
     list.map(gradeRow),
@@ -553,8 +562,62 @@ function siteActions(site) {
   });
 }
 
+// ---- Site names ----------------------------------------------------------------
+// ui.editSite: the site whose name the user edits now. An empty name, or the automatic name,
+// removes the name from the user.
+
+function autoName(siteId) {
+  const site = siteOf(siteId);
+  if (!site) return siteId;
+  return MAK.siteName({ id: siteId, title: site.fullTitle }, Object.assign({}, settings(), { nicknames: {} }));
+}
+
+function saveName(siteId, value) {
+  ui.editSite = null;
+  const name = MAK.cleanName(value);
+  send({ type: 'setSettings', patch: { nicknames: { [siteId]: name && name !== autoName(siteId) ? name : null } } }).then(() => renderCurrent());
+}
+
+// The name of a site (a link or text) with a pencil. While the user edits it: a text field.
+function siteNameEditor(siteId, asLink) {
+  if (ui.editSite === siteId) {
+    let done = false;
+    const input = h('input', {
+      class: 'name-input',
+      attrs: { type: 'text', maxlength: 40, value: siteTitle(siteId), placeholder: autoName(siteId), 'aria-label': t('names.editSite', { site: siteTitle(siteId) }) },
+      on: {
+        keydown: (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            done = true;
+            saveName(siteId, input.value);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            done = true;
+            ui.editSite = null;
+            renderCurrent();
+          }
+        },
+        blur: () => {
+          if (!done) saveName(siteId, input.value);
+          done = true;
+        }
+      }
+    });
+    setTimeout(() => { input.focus(); input.select(); }, 0);
+    return input;
+  }
+  const name = siteTitle(siteId);
+  return h(
+    'span',
+    { class: 'site-name' },
+    asLink ? h('a', { href: MAK.siteUrl(siteId), text: name }) : h('span', { text: name }),
+    h('button', { class: 'pencil', text: '✎', attrs: { type: 'button', title: t('names.edit'), 'aria-label': t('names.editSite', { site: name }) }, on: { click: () => { ui.editSite = siteId; renderCurrent(); } } })
+  );
+}
+
 function renderSites(el) {
-  const sites = S.sites;
+  const sites = namedSites();
   if (!Array.isArray(sites) || !sites.length) return fill(el, noDataMessage('what.sites') || emptyBox(t('empty.noData')));
   const s = settings();
   const hidden = new Set(s.hiddenSites);
@@ -578,7 +641,13 @@ function renderSites(el) {
         h(
           'div',
           { class: `site-row${hidden.has(site.id) ? ' hidden-site' : ''}` },
-          h('div', { class: 'name' }, h('div', { text: site.title }), h('div', { class: 'meta', text: MAK.STRINGS.es[typeKey(site.type)] ? t(typeKey(site.type)) : site.type })),
+          h(
+            'div',
+            { class: 'name' },
+            h('div', null, siteNameEditor(site.id, false)),
+            h('div', { class: 'meta', text: [site.fullTitle !== site.title ? site.fullTitle : null, MAK.STRINGS.es[typeKey(site.type)] ? t(typeKey(site.type)) : site.type].filter(Boolean).join(' · ') }),
+            settings().nicknames[site.id] ? h('button', { class: 'link-btn', text: t('names.auto'), attrs: { title: t('names.autoHelp') }, on: { click: () => send({ type: 'setSettings', patch: { nicknames: { [site.id]: null } } }) } }) : null
+          ),
           siteActions(site),
           h('label', null, h('input', { attrs: { type: 'checkbox', checked: hidden.has(site.id) }, on: { change: (e) => setHidden(site.id, e.target.checked) } }), t('sites.hide'))
         )
@@ -630,6 +699,12 @@ function renderSettings(el) {
       { class: 'section' },
       h('h2', { text: t('set.calendar') }),
       h('button', { class: 'btn', text: t('ics.button'), on: { click: openIcs } })
+    ),
+    h(
+      'div',
+      { class: 'section' },
+      h('h2', { text: t('names.section') }),
+      checkbox(t('names.short'), t('names.shortHelp'), s.shortNames, (v) => send({ type: 'setSettings', patch: { shortNames: v } }))
     ),
     h(
       'div',

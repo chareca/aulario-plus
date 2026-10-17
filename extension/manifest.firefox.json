@@ -18,6 +18,7 @@
     "scripts": [
       "lib/core.js",
       "lib/store.js",
+      "lib/names.js",
       "lib/api.js",
       "lib/grades.js",
       "lib/sync.js",

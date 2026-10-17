@@ -143,6 +143,15 @@ body.tools { width: auto; height: auto; min-height: 100vh; max-width: 640px; mar
 .grade-row .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .grade-row .score.none { color: var(--muted); font-weight: 400; }
 
+/* Site names */
+.site-name { overflow-wrap: anywhere; }
+.card .head .site-name { flex: 1; min-width: 0; }
+.card .head .site-name a { flex: none; }
+.pencil { background: none; border: 0; padding: 0 3px; color: var(--muted); cursor: pointer; font-size: 13px; line-height: 1; }
+.pencil:hover, .pencil:focus-visible { color: var(--fg); }
+.name-input { flex: 1; min-width: 0; font: inherit; font-weight: 600; color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 6px; }
+.site-row .name .link-btn { margin-top: 2px; }
+
 /* Grade calculator */
 .card .head .link-btn { flex: none; }
 .calc { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 6px; }
