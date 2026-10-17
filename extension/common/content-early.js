@@ -114,7 +114,7 @@
     setNames(state.sites, state.settings);
   }
 
-  Promise.resolve(ext.storage.local.get(['settings', 'sites']))
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites']), null)
     .then((d) => {
       state.settings = MAK.withDefaults(d && d.settings);
       state.sites = (d && d.sites) || [];

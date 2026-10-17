@@ -20,7 +20,7 @@
   const THROTTLE_MS = 2 * 60 * 1000;
   const THROTTLE_KEY = 'aulario-plus-last-relogin';
 
-  const send = (msg) => Promise.resolve(ext.runtime.sendMessage(msg)).catch(() => null);
+  const send = (msg) => MAK.safeCall(() => ext.runtime.sendMessage(msg), null);
 
   // Manual logout: the background script pauses and removes the persistent cookies.
   document.addEventListener('click', (e) => {
@@ -57,7 +57,7 @@
   async function currentTool() {
     const where = MAK.parsePortalPath(location.pathname);
     if (!where) return null;
-    const { pages } = await ext.storage.local.get('pages');
+    const { pages } = await MAK.safeCall(() => ext.storage.local.get('pages'), {});
     if (!pages) return where.siteId ? { siteId: where.siteId, toolIds: [] } : null;
     if (where.siteId) {
       const p = pages[where.siteId];
@@ -75,7 +75,7 @@
     const here = await currentTool();
     if (here && here.toolIds.includes('sakai.announcements')) send({ type: 'toolVisit', siteId: here.siteId, toolId: 'sakai.announcements' });
     if (here && here.toolIds.includes('sakai.resources') && !MAK.isSpecialSite(here.siteId)) {
-      const { settings } = await ext.storage.local.get('settings');
+      const { settings } = await MAK.safeCall(() => ext.storage.local.get('settings'), {});
       MAK.setLang(settings && settings.lang);
       MAK.showZipButton(() => send({ type: 'openZip', siteId: here.siteId }));
     }
@@ -111,6 +111,7 @@
   reportToolVisit();
   flushPendingMarkViewed();
   reportVisit('load');
-  window.addEventListener('pageshow', (e) => { if (e.persisted) reportVisit('return'); });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reportVisit('return'); });
+  // After a reload of the extension, the old script of this tab does nothing more.
+  window.addEventListener('pageshow', (e) => { if (e.persisted && MAK.extensionAlive()) reportVisit('return'); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && MAK.extensionAlive()) reportVisit('return'); });
 })();

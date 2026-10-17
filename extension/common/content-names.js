@@ -49,7 +49,7 @@
     };
     const save = async (value) => {
       close();
-      await Promise.resolve(ext.runtime.sendMessage({ type: 'renameSite', siteId, name: value })).catch(() => null);
+      await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'renameSite', siteId, name: value }), null);
     };
     MAK.fill(pop, [
       h('label', { text: MAK.t('names.editSite', { site: name() }) }),
@@ -105,7 +105,7 @@
     }
   }
 
-  Promise.resolve(ext.storage.local.get(['settings', 'sites']))
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites']), null)
     .then((d) => {
       current = MAK.withDefaults(d && d.settings);
       setup(d && d.sites);

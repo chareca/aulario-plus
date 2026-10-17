@@ -1,4 +1,4 @@
-// Aulario Plus: shared helpers without browser dependencies.
+// Aulario Plus: shared helpers. Only extensionAlive and safeCall use the extension API.
 // All shared files attach to globalThis.MAK. Node tests load them with require().
 (function (root) {
   'use strict';
@@ -122,6 +122,29 @@
   };
 
   // ---- URLs and ids --------------------------------------------------------
+
+  // False when the extension API stopped in this tab. After a reload or an update of the
+  // extension, the content scripts of an open tab stay, but each call of the API fails
+  // ("Extension context invalidated").
+  MAK.extensionAlive = function () {
+    try {
+      const ext = root.browser || root.chrome;
+      return !!(ext && ext.runtime && ext.runtime.id);
+    } catch {
+      return false;
+    }
+  };
+
+  // Call the extension API from a content script. The result, or "fallback" if the call fails
+  // or the extension API stopped.
+  MAK.safeCall = async function (fn, fallback) {
+    if (!MAK.extensionAlive()) return fallback;
+    try {
+      return await fn();
+    } catch {
+      return fallback;
+    }
+  };
 
   // Return the URL only if it is http or https. Else return null.
   MAK.safeHttpUrl = function (u) {

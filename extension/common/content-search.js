@@ -112,7 +112,7 @@
 
     async function search() {
       const id = ++ask;
-      const r = await Promise.resolve(ext.runtime.sendMessage({ type: 'search', query: input.value })).catch(() => null);
+      const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'search', query: input.value }), null);
       if (id !== ask || !host) return; // an older answer
       results = (r && r.results) || [];
       sel = 0;
@@ -150,6 +150,7 @@
     'keydown',
     (e) => {
       if (!enabled || e.key.toLowerCase() !== 'k' || !(MAC ? e.metaKey : e.ctrlKey) || e.altKey || e.shiftKey) return;
+      if (!MAK.extensionAlive()) return; // the extension was reloaded: the browser gets the shortcut
       if (host || typing(e)) return;
       e.preventDefault();
       e.stopPropagation();
@@ -164,7 +165,7 @@
     MAK.setLang(s.lang);
     if (!enabled) close();
   }
-  Promise.resolve(ext.storage.local.get('settings')).then((d) => apply(d && d.settings)).catch(() => {});
+  MAK.safeCall(() => ext.storage.local.get('settings'), null).then((d) => apply(d && d.settings));
   ext.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.settings) apply(changes.settings.newValue);
   });
