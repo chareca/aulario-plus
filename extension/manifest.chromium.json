@@ -41,6 +41,7 @@
         "lib/ui.js",
         "content-banner.js",
         "content-names.js",
+        "content-search.js",
         "content.js"
       ],
       "run_at": "document_idle"

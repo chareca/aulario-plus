@@ -143,7 +143,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js', 'content-names.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'content-early.js', 'content-names.js', 'content-search.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>

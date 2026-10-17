@@ -860,6 +860,12 @@ function renderSettings(el) {
     h(
       'div',
       { class: 'section' },
+      h('h2', { text: t('search.section') }),
+      checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
+    ),
+    h(
+      'div',
+      { class: 'section' },
       h('h2', { text: t('set.badge') }),
       checkbox(t('set.badgeShow'), t('set.badgeHelp'), s.badge.enabled, (v) => send({ type: 'setSettings', patch: { badge: { enabled: v } } })),
       h(

@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadLib, memoryArea, fakeFetch } = require('./helpers');
+const { loadLib, loadBackground, memoryArea, fakeFetch } = require('./helpers');
 const F = require('./fixtures/miaulario');
 const MAK = loadLib('core', 'store', 'names', 'api', 'grades', 'sync', 'due', 'inbox', 'search');
 
@@ -59,4 +59,23 @@ test('the sync gets again the pages that have no menu (data of version 1.3)', as
   await sync.run();
   assert.equal(log.filter((l) => /\/pages\.json/.test(l.url)).length, F.SITES.length);
   assert.ok(Object.values(area.data.pages).every((p) => Array.isArray(p.nav)));
+});
+
+test('background: the search message for the palette in MiAulario; the index follows the data', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  await bg.send({ type: 'syncNow', full: true });
+  const CONTENT = { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: `https://miaulario.unavarra.es/portal/site/${F.CS}` };
+  let r = await bg.send({ type: 'search', query: 'comp rec' }, CONTENT);
+  assert.deepEqual(r.results.map((x) => [x.type, x.title, x.site]), [['tool', 'Recursos', 'Computer Science']]);
+  await bg.send({ type: 'renameSite', siteId: F.CS, name: 'CS' });
+  r = await bg.send({ type: 'search', query: 'cs rec' }, CONTENT);
+  assert.deepEqual(r.results.map((x) => x.site), ['CS'], 'a new index after a change of the settings');
+  assert.deepEqual(await bg.send({ type: 'search', query: '' }, CONTENT), { results: [] });
+  assert.deepEqual(await bg.send({ type: 'search', query: 42 }, CONTENT), { results: [] });
+  r = await bg.send({ type: 'search', query: 'a'.repeat(5000) }, CONTENT);
+  assert.deepEqual(r.results, [], 'a long query is cut');
+  assert.equal(await bg.send({ type: 'search', query: 'lab' }, Object.assign({}, CONTENT, { url: 'https://evil.example/' })), null, 'other origin');
+  assert.ok((await bg.send({ type: 'search', query: 'lab' }, CONTENT)).results.length <= 20);
+  assert.equal(MAK.withDefaults({}).searchShortcut, true);
+  assert.equal(MAK.withDefaults({ searchShortcut: false }).searchShortcut, false);
 });

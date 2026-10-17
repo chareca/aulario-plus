@@ -283,7 +283,9 @@ if (ext.notifications) ext.notifications.onClicked.addListener((id) => { openGra
 
 // Draw the badge again when the data or the settings change (wait a moment to group the changes).
 let badgeTimer = null;
+let searchCache = null; // the search index; made again after a change of the data
 ext.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local') searchCache = null;
   if (area !== 'local' || !Object.keys(changes).some((k) => BADGE_KEYS.includes(k))) return;
   clearTimeout(badgeTimer);
   badgeTimer = setTimeout(updateBadge, 300);
@@ -456,6 +458,19 @@ const handlers = {
     run: async () => {
       await store.set({ gradesSeenAt: Date.now() });
       return { ok: true };
+    }
+  },
+  // The search palette in MiAulario (Ctrl+K). Only the stored data, no requests.
+  search: {
+    content: true,
+    run: async (msg) => {
+      const query = typeof msg.query === 'string' ? msg.query.slice(0, 100) : '';
+      if (!query.trim()) return { results: [] };
+      if (!searchCache) {
+        const d = await ext.storage.local.get(null);
+        searchCache = MAK.buildSearchIndex(d, MAK.withDefaults(d.settings));
+      }
+      return { results: MAK.searchIndex(searchCache, query, 20) };
     }
   },
   // A name from the user for a site (the pencil in the popup or in MiAulario). An empty name,

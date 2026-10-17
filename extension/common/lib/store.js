@@ -13,6 +13,7 @@
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
       lang: 'es', // 'es' (default) or 'en'
       targets: {}, // the target grade (0..10) of the calculator for each site
+      searchShortcut: true, // Ctrl+K (⌘K) opens the search in MiAulario
       shortNames: true, // show "Análisis de Datos" for "26_0_240504_1 ANÁLISIS DE DATOS"
       nicknames: {} // a name from the user for each site
     };
@@ -67,6 +68,7 @@
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
       lang: s.lang === 'en' ? 'en' : 'es',
       targets: cleanTargets(s.targets),
+      searchShortcut: 'searchShortcut' in s ? !!s.searchShortcut : d.searchShortcut,
       shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
       nicknames: cleanNicknames(s.nicknames)
     };
