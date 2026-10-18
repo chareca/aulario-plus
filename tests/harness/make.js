@@ -43,6 +43,11 @@ for (const site of [F.MATH, F.CS]) {
   routes[`/portal/tool/${site}-tool-7`] = { __file: '<html><body><iframe src="https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&amp;codPlan=240&amp;codAsig=240999&amp;anio=2026"></iframe></body></html>', type: 'text/html; charset=UTF-8' };
 }
 routes['/ficha-asignaturaDOA/'] = { __file: GUIDE.window.GUIDE_HTML, type: 'text/html; charset=utf-8' };
+// A second guide with long texts and values without "%", as some real guides (Mathematics).
+routes['/portal/tool/' + F.MATH + '-tool-7'] = { __file: '<html><body><iframe src="https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&amp;codPlan=240&amp;codAsig=240998&amp;anio=2026"></iframe></body></html>', type: 'text/html; charset=UTF-8' };
+routes['/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=240998&anio=2026'] = { __file: GUIDE.window.GUIDE_HTML
+  .replace('<td>Examen teórico-práctico</td><td>60%</td><td>Sí, en el examen de recuperación</td><td>5 sobre 10</td>', '<td>Trabajo en grupo en el que se aplican los conocimientos adquiridos para construir un compilador</td><td>60</td><td>Recuperable mediante una prueba de laboratorio en la que el alumno corregirá los defectos que el profesor le señale</td><td>Nota mínima para que pondere en la calificación: 4,5 sobre 10</td>')
+  .replace('<td>30 %</td><td>No</td><td>No</td>', '<td>30</td><td>NO</td><td>N/A</td>'), type: 'text/html; charset=utf-8' };
 
 // The files of the Resources list of site.html (the mail window and the download links).
 routes[`/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip`] = { __file: 'Synthetic content of Práctica 2.zip\n', type: 'application/zip' };

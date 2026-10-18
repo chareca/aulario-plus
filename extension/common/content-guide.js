@@ -25,20 +25,61 @@
     .head strong { flex: 1; min-width: 200px; }
     a { color: #1a5fb4; } .dark a { color: #8ab4f8; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    table { border-collapse: collapse; width: 100%; margin: 8px 0 4px; font-size: 13px; }
-    th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #d6e3e0; vertical-align: top; }
+    .content { max-width: 1400px; }
+    .content.one { max-width: 900px; }
+    /* "Mi sitio": one card for each site, in 1, 2 or 3 columns. */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 10px; margin-top: 8px; }
+    .card { border: 1px solid #d6e3e0; border-radius: 8px; padding: 8px 10px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
+    .dark .card { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
+    .card h4 { margin: 0; font-size: 14px; }
+    /* The weights as one bar: one part for each activity. */
+    .bar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; margin: 6px 0 2px; background: #d6e3e0; }
+    .dark .bar { background: #2e4440; }
+    .bar span { display: block; height: 100%; border-right: 2px solid #f3f8f7; box-sizing: border-box; }
+    .dark .bar span { border-right-color: #1e2a28; }
+    .bar span:last-child { border-right: 0; }
+    .bar .c0 { background: #10524e; } .bar .c1 { background: #2a8c7f; } .bar .c2 { background: #57b8a6; } .bar .c3 { background: #8fd3c4; }
+    .dark .bar .c0 { background: #4fd1a5; } .dark .bar .c1 { background: #37a98a; } .dark .bar .c2 { background: #2b7f6c; } .dark .bar .c3 { background: #9ce6cc; }
+    /* Columns of a fixed width: the activity, the weight next to it, then the other columns. */
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0 4px; font-size: 13px; }
+    col.a { width: 40%; } col.w { width: 4.2em; }
+    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #d6e3e0; vertical-align: top; overflow-wrap: anywhere; }
     .dark th, .dark td { border-color: #2e4440; }
     th { font-size: 12px; color: #5f6b73; font-weight: 600; } .dark th { color: #9aa6ad; }
     td.w, th.w { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
     tr.total td { font-weight: 600; border-bottom: 0; }
     details { margin-top: 6px; } summary { cursor: pointer; }
-    details.site { border-top: 1px solid #d6e3e0; padding-top: 6px; } .dark details.site { border-color: #2e4440; }
-    details.site > summary { font-weight: 600; }
     .notes p { margin: 4px 0; font-size: 13px; }
     .teacher { margin-top: 2px; }
     ${MAK.EXT_BUTTON_CSS}
     .mak-btn { padding: 2px 12px; }
   `;
+
+  // The same form for all the guides: "60" -> "60 %", "NO" -> "No", "sí" -> "Sí".
+  const percent = (r) => (typeof r.weight === 'number' ? `${r.weight.toLocaleString(MAK.locale())} %` : r.weightText || '–');
+  const tidy = (v) => {
+    const s = String(v || '').trim();
+    if (!s) return '–';
+    if (/^\p{Lu}{2,4}$/u.test(s)) return s.charAt(0) + s.slice(1).toLocaleLowerCase('es'); // "NO" -> "No"; "N/A" stays
+    return s.charAt(0).toLocaleUpperCase('es') + s.slice(1);
+  };
+  // A long text of a cell: the start, and all the text in the tooltip (the card stays short).
+  const LONG = 90;
+  const cell = (text) => (text.length > LONG ? h('td', { text: `${text.slice(0, LONG).replace(/\s+\S*$/, '')}…`, title: text }) : h('td', { text }));
+
+  // The weights of the activities as one bar (the name and the weight in the tooltip).
+  function weightBar(rows) {
+    const parts = rows.filter((r) => r.weight > 0);
+    const total = parts.reduce((n, r) => n + r.weight, 0);
+    if (!total) return null;
+    return h('div', { class: 'bar', attrs: { role: 'img', 'aria-label': parts.map((r) => `${r.activity}: ${percent(r)}`).join(', ') } },
+      parts.map((r, i) => {
+        // The width with the CSSOM: a "style" attribute can be blocked by the CSP of the page.
+        const part = h('span', { class: `c${i % 4}`, title: `${r.activity}: ${percent(r)}` });
+        part.style.width = `${(r.weight / total) * 100}%`;
+        return part;
+      }));
+  }
 
   // The table of one guide.
   function assessment(guide) {
@@ -47,17 +88,21 @@
     const has = (k) => rows.some((r) => r[k]);
     const cols = [['recoverable', 'guide.recoverable'], ['minimum', 'guide.minimum'], ['attendance', 'guide.attendance']].filter(([k]) => has(k));
     const total = rows.reduce((n, r) => n + (r.weight || 0), 0);
-    return h(
-      'table',
-      null,
-      h('thead', null, h('tr', null, h('th', { text: MAK.t('guide.activity') }), h('th', { class: 'w', text: MAK.t('guide.weight') }), cols.map(([, key]) => h('th', { text: MAK.t(key) })))),
+    return [
+      weightBar(rows),
       h(
-        'tbody',
+        'table',
         null,
-        rows.map((r) => h('tr', null, h('td', { text: r.activity }), h('td', { class: 'w', text: r.weightText || '–' }), cols.map(([k]) => h('td', { text: r[k] || '–' })))),
-        total > 0 ? h('tr', { class: 'total' }, h('td', { text: MAK.t('guide.total') }), h('td', { class: 'w', text: `${total.toLocaleString(MAK.locale())} %` }), cols.map(() => h('td'))) : null
+        h('colgroup', null, h('col', { class: 'a' }), h('col', { class: 'w' }), cols.map(() => h('col'))),
+        h('thead', null, h('tr', null, h('th', { text: MAK.t('guide.activity') }), h('th', { class: 'w', text: MAK.t('guide.weight') }), cols.map(([, key]) => h('th', { text: MAK.t(key) })))),
+        h(
+          'tbody',
+          null,
+          rows.map((r) => h('tr', null, cell(r.activity), h('td', { class: 'w', text: percent(r) }), cols.map(([k]) => cell(tidy(r[k]))))),
+          total > 0 ? h('tr', { class: 'total' }, h('td', { text: MAK.t('guide.total') }), h('td', { class: 'w', text: `${total.toLocaleString(MAK.locale())} %` }), cols.map(() => h('td'))) : null
+        )
       )
-    );
+    ];
   }
 
   function guideBody(guide) {
@@ -83,7 +128,7 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
     style.textContent = CSS;
-    const content = h('div', null, body);
+    const content = h('div', { class: `content${mySite ? '' : ' one'}` }, body);
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`) === '1'; } catch {}
     content.hidden = hidden;
@@ -126,9 +171,9 @@
       const guide = await guideOf(s.id, data).catch(() => null);
       if (!guide) continue;
       const total = guide.evaluation.rows.reduce((n, r) => n + (r.weight || 0), 0);
-      parts.push(h('details', { class: 'site', attrs: { open: true } }, h('summary', null, MAK.publicSiteName(s), total ? h('span', { class: 'meta', text: ` · ${guide.evaluation.rows.length} ${MAK.t('guide.activities')}` }) : null), guideBody(guide)));
+      parts.push(h('section', { class: 'card' }, h('h4', null, MAK.publicSiteName(s), total ? h('span', { class: 'meta', text: ` · ${guide.evaluation.rows.length} ${MAK.t('guide.activities')}` }) : null), guideBody(guide)));
     }
-    if (parts.length) show(MAK.t('guide.allTitle'), parts);
+    if (parts.length) show(MAK.t('guide.allTitle'), h('div', { class: 'grid' }, parts));
   }
 
   // The sync can store the pages of the sites after the page loads (the first sync after an update):
