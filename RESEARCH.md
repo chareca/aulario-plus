@@ -144,11 +144,11 @@ Live tests (2026-10-17):
 - "Send now" to the user: sent in 0.85 s. The message was in the folder "Recibido", and the copy went to the email address.
 - The user is in the list "To". The list has "Todos los participantes", the roles and each person (`SURNAME, Name (eid)`).
 - The values of the list "To" change each time MiAulario makes the compose form (live test: 75 of 75 values changed, the texts and the order did not). A value of an older form gives "compose:list1: Error de validación: el valor no es válido". The engine finds each recipient again by its text in the new form.
-- `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site: `userEid`, `memberRole` and the names. Live test (2026-10-18, 9 sites): the roles are "Instructor" (1 to 3 in a course, 5 to 20 in a degree site), "Student" and "Teaching Assistant" (98 and 436 in the two degree sites). All the instructors and assistants are in the list "To". Two sites answer 403 (no roles). The user names of the students have digits (2786 of 2799 in the largest site); some instructors have a user name without a dot. Version 1.5.1 uses the roles for "Write to a teacher", and the user names without digits only when a site answers 403.
+- `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site: `userEid`, `memberRole` and the names. Live test (2026-10-18, 9 sites): the roles are "Instructor" (1 to 3 in a course, 5 to 20 in a degree site), "Student" and "Teaching Assistant" (98 and 436 in the two degree sites). All the instructors and assistants are in the list "To". Two sites answer 403 (no roles). The user names of the students have digits (2786 of 2799 in the largest site); some instructors have a user name without a dot. Version 1.6.0 uses the roles for "Write to a teacher", and the user names without digits only when a site answers 403.
 - `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
 - "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
 
-## The course guide (version 1.5.1)
+## The course guide (version 1.6.0)
 
 The page "Guía docente" of 5 of the 11 sites is a "Web content" tool (`sakai.iframe`). Its page has an iframe with the public guide of the UPNA: `https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig={code}&anio={year}` (HTML in UTF-8, not a PDF). `curl` gets 403 from this address; a browser gets the page. The page has:
 
