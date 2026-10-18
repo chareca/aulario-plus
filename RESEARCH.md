@@ -148,6 +148,16 @@ Live tests (2026-10-17):
 - `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
 - "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
 
+## The course guide (version 1.5.1)
+
+The page "Guía docente" of 5 of the 11 sites is a "Web content" tool (`sakai.iframe`). Its page has an iframe with the public guide of the UPNA: `https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig={code}&anio={year}` (HTML in UTF-8, not a PDF). `curl` gets 403 from this address; a browser gets the page. The page has:
+
+- A first table: "Código", "Asignatura", "Créditos", "Tipo", "Curso", "Periodo", "Departamento", and the teachers as links to `/pdi?…`. The responsible teacher has "(Resp)". After each teacher, a link "[Tutorías ]" goes to the office hours.
+- Sections with `h3`: Módulo/Materia, Descripción/Contenidos, Competencias, Resultados de aprendizaje, Metodología (a table of hours), Evaluación, Temario, Bibliografía, ODSs, Idiomas, Lugar de impartición.
+- "Evaluación": text, a table and more text. The columns are "Resultado(s) de aprendizaje", "Actividad de evaluación", "Peso (%)", "Recuperable" or "Carácter recuperable", and "Nota mínima requerida" or "Asistencia obligatoria" (different in each guide). The text has the rules (for example, a minimum grade in the exam).
+
+The extension finds the page of the guide in `pages.json` (the title "Guía docente" and the tool `sakai.iframe`), reads the address in the iframe of the tool page, and the background script gets the guide (host permission `https://www.unavarra.es/*`). A page with a DOM (a content script or the popup) reads it (`lib/guide.js`), and the background script stores it for 7 days.
+
 ## Download links without a login (version 1.5.0)
 
 The copy by email of the internal mail has a link to `/access/content/...`, and this link asks for a MiAulario login. The extension makes a download link with [Send](https://github.com/timvisee/send) (the fork of Firefox Send by timvisee), from the source code of Send (`app/keychain.js`, `app/ece.js`, `app/api.js`, `server/routes/ws.js`, `server/middleware/auth.js`):
@@ -222,6 +232,8 @@ extension/
     lib/pm.js              the engine of the internal mail (readers of the pages, and the flow)
     lib/mail-ui.js         the send window
     lib/teachers.js        the teachers of a site ("Write to a teacher")
+    lib/guide.js           the course guide: find it, read it, its weights in the calculator
+    content-guide.js       the assessment table on the home page of a site and of "Mi sitio"
     lib/checks.js          the MiAulario checks (diagnostic page and live checks)
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
@@ -261,6 +273,7 @@ tests/                     Node tests, synthetic data and a test harness
    - Click a bar of the week view.
    - In the Resources tool, send a file to you: "Open in MiAulario" and "Send now". Select two files and use the bar.
    - Click ✉ next to the ✎ of a site, select a teacher: the internal mail opens with this recipient. Do not send.
+   - Open the home page of a site with a course guide, and the home page of "Mi sitio": the assessment table. In the Grades tab, Calculate, then "Weights: Course guide".
    - Enable the download links. Make a link with "Only make the link", open it in a private window, type the password and download the file. Open the link again: it must show that the link expired.
    - Click **Log out**. The extension must not open the login page.
 
