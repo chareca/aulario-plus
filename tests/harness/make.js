@@ -162,7 +162,7 @@ for (const page of ['popup.html', 'tools.html']) {
 const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/teachers.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
-<head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
 <style>
   body { margin: 0; font: 15px/1.5 Georgia, serif; background: #fff; color: #222; }
   html.sakaiUserTheme-dark body { background: #121212; color: #ddd; }

@@ -15,8 +15,14 @@
 
   // The buttons ✎ and ✉ have the color of the extension (MAK.EXT_BUTTON_CSS).
   const PENCIL_CSS = `
-    :host { all: initial; color: inherit; display: inline-flex; align-items: center; flex: none; margin-left: 4px; }
+    :host { all: initial; color: inherit; display: inline-flex; align-items: center; align-self: center; vertical-align: middle; flex: none; margin-left: 4px; }
     ${MAK.EXT_BUTTON_CSS}
+  `;
+  // In the page header, only on a narrow screen (a phone): MiAulario shows the sidebar from 768 px,
+  // and the sidebar has the same buttons.
+  const HEADER_CSS = `${PENCIL_CSS}
+    :host { display: none; }
+    @media (max-width: 767.98px) { :host { display: inline-flex; } }
   `;
   const EDITOR_CSS = `
     :host { all: initial; }
@@ -262,12 +268,12 @@
     return picker;
   }
 
-  function makeEnvelope(siteId) {
+  function makeEnvelope(siteId, inHeader) {
     const host = document.createElement('span');
     host.className = ENVELOPE;
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
-    style.textContent = PENCIL_CSS;
+    style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
     const btn = h('button', {
       class: `${MAK.extButtonClass('icon')} mak-envelope`,
       text: '✉',
@@ -285,21 +291,21 @@
   }
 
   // The button ✉ after the pencil, for a site with the internal mail.
-  function addEnvelope(pencil, siteId) {
+  function addEnvelope(pencil, siteId, inHeader) {
     const next = pencil.nextElementSibling;
     const has = next && next.classList.contains(ENVELOPE);
-    if (mailTool(siteId) && !has) pencil.after(makeEnvelope(siteId));
+    if (mailTool(siteId) && !has) pencil.after(makeEnvelope(siteId, inHeader));
     else if (!mailTool(siteId) && has) next.remove();
   }
 
   // ---- The pencils -------------------------------------------------------------
 
-  function makePencil(siteId) {
+  function makePencil(siteId, inHeader) {
     const host = document.createElement('span');
     host.className = PENCIL;
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
-    style.textContent = PENCIL_CSS;
+    style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
     const pen = h('button', {
       class: MAK.extButtonClass('icon'),
       text: '✎',
@@ -321,8 +327,8 @@
     if (!settings) return;
     if (pageSite && sites.has(pageSite)) {
       for (const box of document.querySelectorAll('.portal-header-site-title')) {
-        if (!box.querySelector(`.${PENCIL}`)) box.append(makePencil(pageSite));
-        addEnvelope(box.querySelector(`.${PENCIL}`), pageSite);
+        if (!box.querySelector(`.${PENCIL}`)) box.append(makePencil(pageSite, true));
+        addEnvelope(box.querySelector(`.${PENCIL}`), pageSite, true);
       }
     }
     for (const li of document.querySelectorAll('li.site-list-item[data-site]')) {
