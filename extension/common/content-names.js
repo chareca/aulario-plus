@@ -187,11 +187,13 @@
 
     // The person is the recipient of a new message in the internal mail of the site. MiAulario
     // keeps the prepared form, and its page opens with it. Nothing is sent.
-    async function write(siteId, tool, pm, compose, person, buttons) {
+    async function write(siteId, tool, pm, compose, person, me, buttons) {
       busy = true;
       for (const b of buttons) b.disabled = true;
       say(MAK.t('teach.preparing', { name: person.name }));
-      const data = { to: [{ value: person.value, label: person.label }], subject: '', body: '', emailCopy: true, files: [] };
+      // The text: "Hola <first name>," an empty line, "Saludos," and the name of the user.
+      const body = MAK.teacherMessage(person.label, me && me.label);
+      const data = { to: [{ value: person.value, label: person.label }], subject: '', body, emailCopy: true, files: [] };
       try {
         try {
           await pm.prepare(compose, data, { open: true });
@@ -208,10 +210,10 @@
       }
     }
 
-    function draw(siteId, tool, pm, compose, groups) {
+    function draw(siteId, tool, pm, compose, groups, me) {
       const buttons = [];
       const personButton = (p) => {
-        const b = h('button', { text: p.name, attrs: { type: 'button' }, on: { click: () => write(siteId, tool, pm, compose, p, buttons) } });
+        const b = h('button', { text: p.eid ? `${p.name} (${p.eid})` : p.name, attrs: { type: 'button' }, on: { click: () => write(siteId, tool, pm, compose, p, me, buttons) } });
         buttons.push(b);
         return b;
       };
@@ -251,8 +253,8 @@
         try {
           const pm = MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) });
           const myEid = (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid;
-          const { compose, groups } = await MAK.loadTeachers({ siteId, placement: tool.placement, pm, myEid, doFetch: (u, i) => fetch(u, i) });
-          if (mine === run) draw(siteId, tool, pm, compose, groups);
+          const { compose, groups, me } = await MAK.loadTeachers({ siteId, placement: tool.placement, pm, myEid, doFetch: (u, i) => fetch(u, i) });
+          if (mine === run) draw(siteId, tool, pm, compose, groups, me);
         } catch (e) {
           if (mine === run) say(MAK.mailError(e), true);
         }

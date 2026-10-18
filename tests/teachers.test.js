@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadLib } = require('./helpers');
-const MAK = loadLib('core', 'pm', 'teachers');
+const MAK = loadLib('core', 'i18n', 'pm', 'teachers');
 
 // The list "Para" of a compose form: everybody, a role, the user, teachers and students.
 const recipients = () => MAK.pmRecipients({ fields: { to: { options: [
@@ -51,9 +51,40 @@ test('loadTeachers: the compose form and the members together; a 403 uses the us
   const r = await MAK.loadTeachers({ siteId: 'S 1', placement: 'P', pm, myEid: 'x', doFetch: ok });
   assert.equal(asked[0], '/direct/site/S%201/memberships.json?auto=true');
   assert.equal(r.compose, compose);
-  assert.deepEqual(r.groups, [{ key: 'instructor', people: [{ value: 'a', label: 'ZUBIRI, MIREN (miren.zubiri)', name: 'ZUBIRI, MIREN' }] }]);
+  assert.deepEqual(r.groups, [{ key: 'instructor', people: [{ value: 'a', label: 'ZUBIRI, MIREN (miren.zubiri)', name: 'ZUBIRI, MIREN', eid: 'miren.zubiri' }] }]);
+  assert.equal(r.me, null, 'the user is not in this list');
   const denied = await MAK.loadTeachers({ siteId: 'S', placement: 'P', pm, myEid: 'x', doFetch: async () => ({ ok: false, status: 403 }) });
   assert.deepEqual(denied.groups.map((g) => g.key), ['probable']);
   const offline = await MAK.loadTeachers({ siteId: 'S', placement: 'P', pm, myEid: 'x', doFetch: async () => { throw new Error('offline'); } });
   assert.deepEqual(offline.groups.map((g) => g.key), ['probable']);
+});
+
+test('properName and personParts: names in capital letters become proper names; mixed names stay', () => {
+  assert.equal(MAK.properName('MIGUEL ANGEL'), 'Miguel Angel');
+  assert.equal(MAK.properName('DE LA FUENTE GARCÍA'), 'De la Fuente García');
+  assert.equal(MAK.properName('MARÍA DEL CARMEN'), 'María del Carmen');
+  assert.equal(MAK.properName("O'NEILL-PÉREZ"), "O'Neill-Pérez");
+  assert.equal(MAK.properName('Nicolas'), 'Nicolas', 'mixed letters stay');
+  assert.deepEqual(MAK.personParts('ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)'), { first: 'Miguel Angel', last: 'Aldaz Zaragueta', eid: 'maldaz' });
+  assert.deepEqual(MAK.personParts('Chareca , Nicolas (chareca.165075)'), { first: 'Nicolas', last: 'Chareca', eid: 'chareca.165075' });
+  assert.deepEqual(MAK.personParts('Coordinación'), { first: 'Coordinación', last: '', eid: null });
+});
+
+test('teacherMessage: "Hola <first name>," an empty line, "Saludos," and the name of the user', () => {
+  MAK.setLang('es');
+  assert.equal(
+    MAK.teacherMessage('ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)', 'Chareca , Nicolas (chareca.165075)'),
+    '<p>Hola Miguel Angel,</p><p>&nbsp;</p><p>Saludos,<br>Nicolas Chareca.</p>'
+  );
+  assert.equal(MAK.teacherMessage('PEREZ, <B>JUAN</B> (juan.perez)', null), '<p>Hola &lt;b&gt;juan&lt;/b&gt;,</p><p>&nbsp;</p><p>Saludos,</p>', 'no HTML from a name; no name of the user: only "Saludos,"');
+  MAK.setLang('en');
+  assert.match(MAK.teacherMessage('ZUBIRI, MIREN (mz)', 'X, Y (y)'), /^<p>Hello Miren,<\/p>.*Regards,<br>Y X\.<\/p>$/);
+  MAK.setLang('es');
+});
+
+test('loadTeachers gives the user of the list (for the name in the message)', async () => {
+  const compose = { fields: { to: { options: [{ value: 'a', label: 'ZUBIRI, MIREN (miren.zubiri)' }, { value: 'b', label: 'Chareca , Nicolas (chareca.1)' }] } } };
+  const r = await MAK.loadTeachers({ siteId: 'S', placement: 'P', pm: { open: async () => compose }, myEid: 'chareca.1', doFetch: async () => ({ ok: false, status: 403 }) });
+  assert.equal(r.me.label, 'Chareca , Nicolas (chareca.1)');
+  assert.deepEqual(r.groups[0].people.map((p) => p.eid), ['miren.zubiri'], 'the user is not a teacher');
 });
