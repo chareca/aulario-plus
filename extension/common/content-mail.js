@@ -116,10 +116,8 @@
     host.className = BUTTON;
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
-    style.textContent = `:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; }
-      button { font: 14px/1 system-ui, sans-serif; color: inherit; cursor: pointer; border: 1px solid rgba(127, 127, 127, 0.4); background: none;
-        border-radius: 6px; padding: 2px 6px; opacity: 0.8; } button:hover, button:focus-visible { opacity: 1; background: rgba(127, 127, 127, 0.18); }`;
-    const btn = h('button', { text: '✉', attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } });
+    style.textContent = `:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; } ${MAK.EXT_BUTTON_CSS}`;
+    const btn = h('button', { class: `${MAK.extButtonClass('icon')} mak-envelope`, text: '✉', attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } });
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -145,11 +143,10 @@
         display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
         font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff; }
         .dark.bar { color: #e8ecee; background: #1e2a28; }
-        button { font: inherit; cursor: pointer; border-radius: 6px; padding: 5px 10px; border: 1px solid #c9d2d6; background: transparent; color: inherit; white-space: nowrap; }
-        button.primary { background: #10524e; border-color: #10524e; color: #fff; } .dark button.primary { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }`;
+        ${MAK.EXT_BUTTON_CSS} .mak-btn { white-space: nowrap; padding: 5px 10px; }`;
       const text = h('span');
-      const send = h('button', { class: 'primary', attrs: { type: 'button' } });
-      const me = h('button', { attrs: { type: 'button' } });
+      const send = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' } });
+      const me = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' } });
       const box = h('div', { class: 'bar', attrs: { role: 'region', 'aria-label': MAK.t('mail.title') } }, text, send, me);
       shadow.append(style, box);
       document.documentElement.append(host);

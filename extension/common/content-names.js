@@ -13,11 +13,10 @@
   const pageSite = where && where.siteId && !MAK.isSpecialSite(where.siteId) ? where.siteId : null;
   const h = MAK.h;
 
+  // The buttons ✎ and ✉ have the color of the extension (MAK.EXT_BUTTON_CSS).
   const PENCIL_CSS = `
     :host { all: initial; color: inherit; display: inline-flex; align-items: center; flex: none; margin-left: 4px; }
-    button { font: 15px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: inherit; cursor: pointer; border: 0;
-      background: none; opacity: 0.55; padding: 3px 5px; border-radius: 4px; }
-    button:hover, button:focus-visible { opacity: 1; background: rgba(127, 127, 127, 0.18); }
+    ${MAK.EXT_BUTTON_CSS}
   `;
   const EDITOR_CSS = `
     :host { all: initial; }
@@ -270,6 +269,7 @@
     const style = document.createElement('style');
     style.textContent = PENCIL_CSS;
     const btn = h('button', {
+      class: `${MAK.extButtonClass('icon')} mak-envelope`,
       text: '✉',
       attrs: { type: 'button', title: MAK.t('teach.button'), 'aria-label': `${MAK.t('teach.button')}: ${nameOf(siteId)}` },
       on: {
@@ -301,6 +301,7 @@
     const style = document.createElement('style');
     style.textContent = PENCIL_CSS;
     const pen = h('button', {
+      class: MAK.extButtonClass('icon'),
       text: '✎',
       attrs: { type: 'button', title: MAK.t('names.edit'), 'aria-label': MAK.t('names.edit') },
       on: {

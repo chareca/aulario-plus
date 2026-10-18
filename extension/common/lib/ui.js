@@ -31,6 +31,22 @@
     return el;
   };
 
+  // The look of the buttons that the extension adds to the pages of MiAulario: the color of the
+  // extension (teal, the same as "Download all (ZIP)"), so the user sees which buttons are of the
+  // extension. ".mak-btn": a button with text. ".mak-icon": a button with one symbol (✎, ✉), a little
+  // larger. ".dark": for the dark theme of the page (MAK.extButtonClass adds it).
+  MAK.EXT_BUTTON_CSS = `
+    .mak-btn, .mak-icon { cursor: pointer; border-radius: 6px; border: 1px solid #10524e; background: #10524e; color: #fff; opacity: 1; }
+    .mak-btn { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 5px 12px; }
+    .mak-icon { font: 17px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 3px 6px; min-width: 28px; }
+    .mak-btn:hover, .mak-btn:focus-visible, .mak-icon:hover, .mak-icon:focus-visible { background: #0b3d3a; border-color: #0b3d3a; }
+    .mak-btn.dark, .mak-icon.dark { border-color: #4fd1a5; background: #4fd1a5; color: #0b1a17; }
+    .mak-btn.dark:hover, .mak-btn.dark:focus-visible, .mak-icon.dark:hover, .mak-icon.dark:focus-visible { border-color: #7fe0bf; background: #7fe0bf; }
+    .mak-btn:disabled, .mak-icon:disabled { opacity: 0.5; cursor: default; }
+    .mak-icon.mak-envelope { font-size: 21px; padding: 1px 5px; } /* the glyph ✉ is small in the system fonts */
+  `;
+  MAK.extButtonClass = (kind) => `mak-${kind}${MAK.isDarkPage() ? ' dark' : ''}`;
+
   // True if the MiAulario page uses the dark theme (the Sakai setting, or the system setting).
   MAK.isDarkPage = function () {
     const c = document.documentElement.classList;
