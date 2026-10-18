@@ -142,6 +142,39 @@
     };
   };
 
+  // ---- The kind of an activity ---------------------------------------------------------
+  // The guide does not give the kind of an activity: the extension finds it in the name. The order
+  // of the rules is important: "Examen teórico-práctico" is an exam, "Asistencia a sesiones de
+  // laboratorio" is participation, "Entrega de prácticas" is practice, "Entrega 1" is work.
+  const KINDS = [
+    ['exam', /examen|parcial|prueba escrita|prueba de respuesta|cuestionario|\btest\b|ex[aá]men/],
+    ['participation', /participaci|asistencia|actitud|intervenci|evoluci|seguimiento|registro del profesor/],
+    ['practice', /pr[aá]ctic|laborator|\blab\b|experimental|taller/],
+    ['work', /entrega|trabajo|proyecto|informe|memoria|ejercicio|problema|caso|portafolio|portfolio/],
+    ['presentation', /presentaci|exposici|defensa|\boral\b/],
+    ['exam', /prueba|teor[ií]/]
+  ];
+  MAK.ACTIVITY_KINDS = ['exam', 'practice', 'work', 'participation', 'presentation', 'other'];
+  MAK.activityKind = function (name) {
+    const s = String(name || '').toLowerCase();
+    const k = KINDS.find(([, re]) => re.test(s));
+    return k ? k[0] : 'other';
+  };
+
+  // The weights by kind, in the order of the first activity of each kind: [{ kind, weight, names }].
+  MAK.weightsByKind = function (rows) {
+    const out = [];
+    for (const r of rows || []) {
+      if (!(r.weight > 0)) continue;
+      const kind = MAK.activityKind(r.activity);
+      let part = out.find((p) => p.kind === kind);
+      if (!part) out.push((part = { kind, weight: 0, names: [] }));
+      part.weight += r.weight;
+      part.names.push(r.activity);
+    }
+    return out;
+  };
+
   // ---- Names -------------------------------------------------------------------
 
   // "García López, Jesús" and "GARCIA LOPEZ, JESUS (jgarcia)" -> "GARCIA LOPEZ, JESUS".

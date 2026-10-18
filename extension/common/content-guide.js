@@ -32,14 +32,16 @@
     .card { border: 1px solid #d6e3e0; border-radius: 8px; padding: 8px 10px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
     .dark .card { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
     .card h4 { margin: 0; font-size: 14px; }
-    /* The weights as one bar: one part for each activity. */
-    .bar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; margin: 6px 0 2px; background: #d6e3e0; }
-    .dark .bar { background: #2e4440; }
-    .bar span { display: block; height: 100%; border-right: 2px solid #f3f8f7; box-sizing: border-box; }
-    .dark .bar span { border-right-color: #1e2a28; }
-    .bar span:last-child { border-right: 0; }
-    .bar .c0 { background: #10524e; } .bar .c1 { background: #2a8c7f; } .bar .c2 { background: #57b8a6; } .bar .c3 { background: #8fd3c4; }
-    .dark .bar .c0 { background: #4fd1a5; } .dark .bar .c1 { background: #37a98a; } .dark .bar .c2 { background: #2b7f6c; } .dark .bar .c3 { background: #9ce6cc; }
+    /* The weights as one bar: one part for each kind of activity, with its name and weight. */
+    .bar { display: flex; gap: 2px; height: 22px; border-radius: 6px; overflow: hidden; margin: 8px 0 4px; }
+    .bar span { display: flex; align-items: center; min-width: 0; padding: 0 7px; box-sizing: border-box; font-size: 11.5px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* The same color for a kind in all the sites (light and dark theme); the dot of a row has it too. */
+    .k-exam { background: #10524e; color: #fff; } .k-practice { background: #2a8c7f; color: #fff; } .k-work { background: #8fd3c4; color: #0b1a17; }
+    .k-participation { background: #b8742a; color: #fff; } .k-presentation { background: #5b5bd6; color: #fff; } .k-other { background: #7a868d; color: #fff; }
+    .dark .k-exam { background: #4fd1a5; color: #0b1a17; } .dark .k-practice { background: #2b9c80; color: #fff; } .dark .k-work { background: #a7e9d6; color: #0b1a17; }
+    .dark .k-participation { background: #e0a253; color: #1a1205; } .dark .k-presentation { background: #9a9af2; color: #0d0d26; } .dark .k-other { background: #9aa6ad; color: #111; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
     /* Columns of a fixed width: the activity, the weight next to it, then the other columns. */
     table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0 4px; font-size: 13px; }
     col.a { width: 40%; } col.w { width: 4.2em; }
@@ -65,18 +67,23 @@
   };
   // A long text of a cell: the start, and all the text in the tooltip (the card stays short).
   const LONG = 90;
-  const cell = (text) => (text.length > LONG ? h('td', { text: `${text.slice(0, LONG).replace(/\s+\S*$/, '')}…`, title: text }) : h('td', { text }));
+  const cell = (text, kind) => {
+    const short = text.length > LONG ? `${text.slice(0, LONG).replace(/\s+\S*$/, '')}…` : text;
+    return h('td', text.length > LONG ? { title: text } : null, kind ? h('span', { class: `dot k-${kind}`, title: MAK.t(`guide.kind.${kind}`) }) : null, short);
+  };
 
-  // The weights of the activities as one bar (the name and the weight in the tooltip).
+  // The weights as one bar: one part for each kind of activity (exam, practice, work, ...), with
+  // its name and its weight. The tooltip has the activities of the part.
   function weightBar(rows) {
-    const parts = rows.filter((r) => r.weight > 0);
-    const total = parts.reduce((n, r) => n + r.weight, 0);
+    const parts = MAK.weightsByKind(rows);
+    const total = parts.reduce((n, p) => n + p.weight, 0);
     if (!total) return null;
-    return h('div', { class: 'bar', attrs: { role: 'img', 'aria-label': parts.map((r) => `${r.activity}: ${percent(r)}`).join(', ') } },
-      parts.map((r, i) => {
+    const label = (p) => `${MAK.t(`guide.kind.${p.kind}`)} · ${p.weight.toLocaleString(MAK.locale())} %`;
+    return h('div', { class: 'bar', attrs: { role: 'img', 'aria-label': parts.map(label).join(', ') } },
+      parts.map((p) => {
+        const part = h('span', { class: `k-${p.kind}`, text: label(p), title: `${label(p)}\n${p.names.map((n) => `• ${n}`).join('\n')}` });
         // The width with the CSSOM: a "style" attribute can be blocked by the CSP of the page.
-        const part = h('span', { class: `c${i % 4}`, title: `${r.activity}: ${percent(r)}` });
-        part.style.width = `${(r.weight / total) * 100}%`;
+        part.style.flex = `${p.weight} 1 0`;
         return part;
       }));
   }
@@ -98,7 +105,7 @@
         h(
           'tbody',
           null,
-          rows.map((r) => h('tr', null, cell(r.activity), h('td', { class: 'w', text: percent(r) }), cols.map(([k]) => cell(tidy(r[k]))))),
+          rows.map((r) => h('tr', null, cell(r.activity, MAK.activityKind(r.activity)), h('td', { class: 'w', text: percent(r) }), cols.map(([k]) => cell(tidy(r[k]))))),
           total > 0 ? h('tr', { class: 'total' }, h('td', { text: MAK.t('guide.total') }), h('td', { class: 'w', text: `${total.toLocaleString(MAK.locale())} %` }), cols.map(() => h('td'))) : null
         )
       )

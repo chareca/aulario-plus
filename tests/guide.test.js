@@ -107,3 +107,23 @@ test('loadGuide: the stored guide while it is recent; else read again and store'
   assert.deepEqual(calls, ['/portal/tool/P%201', URL_OK, ['save', null]]);
   assert.equal(await MAK.loadGuide(Object.assign({ tool: null, stored: null, now: 0 }, io)), null, 'no page of the guide');
 });
+
+test('activityKind: the kind of an activity from its name (the activities of real guides)', () => {
+  const cases = {
+    exam: ['Examen teórico-práctico', 'Prueba de respuesta larga', 'Prueba escrita que recoja los conceptos adquiridos (examen parcial)', 'Prueba escrita que recoja los conceptos adquiridos', 'Test final'],
+    participation: ['Asistencia a sesiones de laboratorio y participación activa en la asignatura. Intervención y aportaciones.', 'Registro del profesor sobre la evolución de las prácticas'],
+    practice: ['Entrega de prácticas en tiempo y forma', 'Pruebas e informes de trabajo experimental', 'Prácticas'],
+    work: ['Entrega 1', 'Entrega 5', 'Entrega y exposición del proyecto final', 'Elaboración de trabajos y proyectos', 'Trabajo en grupo en el que se aplican los conocimientos adquiridos para construir un compilador', 'Trabajos e informes', 'Lab report 1'.replace('Lab', 'Informe')],
+    presentation: ['Presentación oral', 'Defensa pública'],
+    other: ['Otros méritos', '']
+  };
+  for (const [kind, names] of Object.entries(cases)) for (const n of names) assert.equal(MAK.activityKind(n), kind, n);
+});
+
+test('weightsByKind: the weights of the same kind together, in the order of the guide', () => {
+  const rows = [
+    { activity: 'Entrega 1', weight: 10 }, { activity: 'Examen final', weight: 60 }, { activity: 'Entrega 2', weight: 20 },
+    { activity: 'Asistencia', weight: 10 }, { activity: 'Sin peso', weight: null }
+  ];
+  assert.deepEqual(MAK.weightsByKind(rows).map((p) => [p.kind, p.weight, p.names.length]), [['work', 30, 2], ['exam', 60, 1], ['participation', 10, 1]]);
+});
