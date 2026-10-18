@@ -890,7 +890,10 @@ function linksSection() {
   const saveLinks = (patch) => send({ type: 'setSettings', patch: { links: patch } });
   const missing = h('p', { class: 'small meta', hidden: true });
   const grant = h('button', { class: 'btn', text: t('link.grant'), attrs: { type: 'button' }, hidden: true });
+  // Each request in its own click: Firefox does not accept the data consent with other permissions.
   const askFor = (next) => Promise.resolve(ext.permissions.request({ origins: MAK.linkOrigins(next) })).catch(() => false);
+  const askData = () => Promise.resolve(ext.permissions.request(MAK.LINK_DATA)).catch(() => false);
+  let lack = null; // 'origins' or 'data': what the button "Give permission" asks for
   function change(patch) {
     const next = Object.assign({}, l, patch);
     saveLinks(patch);
@@ -902,12 +905,11 @@ function linksSection() {
   }
   async function checkLinkPermission(cur) {
     const origins = MAK.linkOrigins(cur);
-    let ok = true;
-    try {
-      ok = !cur.enabled || (await ext.permissions.contains({ origins }));
-    } catch {}
+    const p = cur.enabled ? await MAK.linkPermissions(ext.permissions, cur) : { origins: true, data: true };
+    const ok = p.origins && p.data;
+    lack = !p.origins ? 'origins' : !p.data ? 'data' : null;
     missing.hidden = grant.hidden = ok;
-    missing.textContent = t('link.noPermission', { hosts: origins.map((o) => new URL(o.replace('/*', '/')).host).join(', ') });
+    missing.textContent = lack === 'data' ? t('link.noData') : t('link.noPermission', { hosts: origins.map((o) => new URL(o.replace('/*', '/')).host).join(', ') });
     if (ok && cur.enabled && (!linkConfig || linkConfig.server !== cur.server)) {
       const c = await MAK.sendConfig(cur.server, (u, i) => fetch(u, i));
       if (c && settings().links.server === cur.server) {
@@ -916,7 +918,7 @@ function linksSection() {
       }
     }
   }
-  grant.addEventListener('click', () => askFor(l).then(() => checkLinkPermission(l)));
+  grant.addEventListener('click', () => (lack === 'data' ? askData() : askFor(l)).then(() => checkLinkPermission(l)));
 
   const select = (label, options, value, onChange) =>
     h('label', { class: 'field-row' }, h('span', { class: 'small', text: label }),
@@ -933,21 +935,8 @@ function linksSection() {
   }
   fillLimits();
 
-  // The server: a known server, or "Other…" with an address.
-  const known = MAK.SEND_SERVERS.includes(l.server);
-  const other = h('input', { attrs: { type: 'text', value: known ? '' : l.server, placeholder: 'https://send.example.org', 'aria-label': t('link.server'), disabled: !l.enabled }, hidden: known });
-  other.addEventListener('change', () => {
-    const origin = MAK.sendServerOrigin(other.value);
-    if (origin) change({ server: origin });
-    else other.value = l.server;
-  });
-  const server = select(t('link.server'), MAK.SEND_SERVERS.map((u) => [u, new URL(u).host]).concat([['other', t('link.serverOther')]]), known ? l.server : 'other', (v) => {
-    other.hidden = v !== 'other';
-    if (v === 'other') {
-      server.after(h('div', { class: 'field-row' }, h('span'), other));
-      other.focus();
-    } else change({ server: v });
-  });
+  // The server: one of the known servers (the manifest has a host permission for each of them).
+  const server = select(t('link.server'), MAK.SEND_SERVERS.map((u) => [u, new URL(u).host]), l.server, (v) => change({ server: v }));
 
   checkLinkPermission(l);
   return h(
@@ -956,7 +945,7 @@ function linksSection() {
     h('h2', { text: t('link.section') }),
     h('p', { class: 'small', text: t('link.sectionHelp') }),
     checkbox(t('link.enable'), t('link.enableHelp'), l.enabled, (v) => change({ enabled: v })),
-    h('div', { class: 'indent' }, modes, h('p', { class: 'small meta', text: t(`link.modeHelp.${l.mode}`) }), downloads, expires, server, known ? other : h('div', { class: 'field-row' }, h('span'), other), missing, h('div', { class: 'row' }, grant)),
+    h('div', { class: 'indent' }, modes, h('p', { class: 'small meta', text: t(`link.modeHelp.${l.mode}`) }), downloads, expires, server, missing, h('div', { class: 'row' }, grant)),
     h('details', null, h('summary', { text: t('privacy.title') }), h('p', { class: 'small', text: t('link.privacy') }))
   );
 }

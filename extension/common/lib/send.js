@@ -17,7 +17,6 @@
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
 
-  MAK.SEND_SERVERS = ['https://send.vis.ee', 'https://send.artemislena.eu', 'https://send.monks.tools'];
   MAK.SEND_RECORD = 64 * 1024; // the record size of Send
   const TAG = 16;
   const encoder = new TextEncoder();
@@ -229,6 +228,27 @@
   // The host permissions that the links need: the Send server, and the shorteners if the mode uses them.
   MAK.linkOrigins = function (links) {
     return [`${links.server}/*`].concat(links.mode === 'long' ? [] : MAK.SHORTENERS);
+  };
+
+  // Firefox: the consent to send "website content" out of the extension (the encrypted files of a
+  // link). The manifest has it in data_collection_permissions.optional. Firefox does not accept it
+  // in the same request as the host permissions, so the popup asks for it with a different click.
+  MAK.LINK_DATA = { data_collection: ['websiteContent'] };
+  MAK.isFirefox = () => !!(root.browser && root.browser.runtime && typeof root.browser.runtime.getBrowserInfo === 'function');
+  // What the browser gives for the links: { origins, data }.
+  MAK.linkPermissions = async function (perms, links) {
+    const out = { origins: false, data: true };
+    try {
+      out.origins = !!(await perms.contains({ origins: MAK.linkOrigins(links) }));
+    } catch {}
+    if (MAK.isFirefox()) {
+      try {
+        out.data = !!(await perms.contains(MAK.LINK_DATA));
+      } catch {
+        out.data = true; // a version of Firefox without the data consent
+      }
+    }
+    return out;
   };
 
   // The files of a request: only resources of the site, without folders. [{ itemId, url, name }].

@@ -70,12 +70,13 @@ test('hideSitesCss escapes characters that could break the CSS', () => {
 test('the settings of the download links: off by default, and only correct values', () => {
   assert.deepEqual(MAK.withDefaults({}).links, { enabled: false, server: 'https://send.vis.ee', mode: 'password', downloads: 1, seconds: 86400 });
   assert.deepEqual(
-    MAK.withDefaults({ links: { enabled: true, server: 'https://send.example.org/some/path', mode: 'key', downloads: 5, seconds: 3600, other: 1 } }).links,
-    { enabled: true, server: 'https://send.example.org', mode: 'key', downloads: 5, seconds: 3600 }
+    MAK.withDefaults({ links: { enabled: true, server: 'https://send.monks.tools/some/path', mode: 'key', downloads: 5, seconds: 3600, other: 1 } }).links,
+    { enabled: true, server: 'https://send.monks.tools', mode: 'key', downloads: 5, seconds: 3600 }
   );
   const bad = MAK.withDefaults({ links: { enabled: 'yes', server: 'http://send.example.org', mode: 'x', downloads: 0, seconds: 1.5 } }).links;
   assert.deepEqual(bad, { enabled: true, server: 'https://send.vis.ee', mode: 'password', downloads: 1, seconds: 86400 });
-  for (const server of ['https://user:pw@send.example.org', 'https://localhost', 'javascript:alert(1)', 42]) {
+  // Only the known servers: the manifest has a host permission for each of them.
+  for (const server of ['https://send.example.org', 'https://user:pw@send.example.org', 'https://localhost', 'javascript:alert(1)', 42]) {
     assert.equal(MAK.withDefaults({ links: { server } }).links.server, 'https://send.vis.ee', String(server));
   }
   assert.equal(MAK.withDefaults({ links: [] }).links.enabled, false);

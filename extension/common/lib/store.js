@@ -22,13 +22,15 @@
   };
 
   MAK.SEND_DEFAULT_SERVER = 'https://send.vis.ee';
+  // The Send servers that the user can select (the host permissions of the manifest name them).
+  MAK.SEND_SERVERS = ['https://send.vis.ee', 'https://send.artemislena.eu', 'https://send.monks.tools'];
   MAK.LINK_MODES = ['key', 'password', 'long'];
 
-  // The origin of a Send server ("https://host[:port]"), or null.
+  // The origin of a known Send server, or null.
   MAK.sendServerOrigin = function (v) {
     try {
-      const u = new URL(String(v).trim());
-      return u.protocol === 'https:' && !u.username && !u.password && u.hostname.includes('.') ? u.origin : null;
+      const origin = new URL(String(v).trim()).origin;
+      return MAK.SEND_SERVERS.includes(origin) ? origin : null;
     } catch {
       return null;
     }

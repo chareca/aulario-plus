@@ -495,7 +495,8 @@ const handlers = {
       if (!(await knownSite(msg.siteId))) return { error: 'send.noFiles' };
       const links = MAK.withDefaults((await store.get('settings')).settings).links;
       if (!links.enabled) return { error: 'send.disabled' };
-      if (!(await ext.permissions.contains({ origins: MAK.linkOrigins(links) }))) return { error: 'send.permission' };
+      const granted = await MAK.linkPermissions(ext.permissions, links);
+      if (!granted.origins || !granted.data) return { error: 'send.permission' };
       const files = MAK.linkFiles(msg.files, msg.siteId);
       if (!files.length) return { error: 'send.noFiles' };
       try {

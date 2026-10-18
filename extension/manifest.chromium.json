@@ -17,7 +17,12 @@
     "https://www.unavarra.es/*"
   ],
   "optional_host_permissions": [
-    "https://*/*"
+    "https://send.vis.ee/*",
+    "https://send.artemislena.eu/*",
+    "https://send.monks.tools/*",
+    "https://is.gd/*",
+    "https://spoo.me/*",
+    "https://tinyurl.com/*"
   ],
   "background": {
     "service_worker": "background.js"

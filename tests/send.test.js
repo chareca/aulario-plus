@@ -290,3 +290,20 @@ test('the payload of a link: the login page, the copyright page and errors of Mi
   const html = MAK.linkFiles([{ itemId: '/group/S1/page.html' }], 'S1');
   assert.equal((await MAK.linkPayload({ files: html, fetchFile: async (url) => fileResponse(url, '<p>x', 'text/html') })).name, 'page.html');
 });
+
+test('linkPermissions: the host permissions; in Firefox also the consent for website content', async () => {
+  const links = { server: 'https://send.vis.ee', mode: 'password' };
+  const asked = [];
+  const perms = (granted) => ({ contains: async (q) => (asked.push(q), q.origins ? granted.origins : granted.data) });
+  assert.deepEqual(await MAK.linkPermissions(perms({ origins: true, data: false }), links), { origins: true, data: true }, 'Chrome: no data consent');
+  assert.deepEqual(asked, [{ origins: MAK.linkOrigins(links) }]);
+  globalThis.browser = { runtime: { getBrowserInfo: async () => ({ name: 'Firefox' }) } };
+  try {
+    assert.deepEqual(await MAK.linkPermissions(perms({ origins: true, data: false }), links), { origins: true, data: false });
+    assert.deepEqual(asked.at(-1), { data_collection: ['websiteContent'] });
+    const old = { contains: async (q) => { if (q.data_collection) throw new Error('unknown key'); return true; } };
+    assert.deepEqual(await MAK.linkPermissions(old, links), { origins: true, data: true }, 'a Firefox without the data consent');
+  } finally {
+    delete globalThis.browser;
+  }
+});
