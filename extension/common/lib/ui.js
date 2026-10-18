@@ -38,14 +38,32 @@
   MAK.EXT_BUTTON_CSS = `
     .mak-btn, .mak-icon { cursor: pointer; border-radius: 6px; border: 1px solid #10524e; background: #10524e; color: #fff; opacity: 1; }
     .mak-btn { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 5px 12px; }
-    .mak-icon { font: 17px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 3px 6px; min-width: 28px; }
+    .mak-icon { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 30px; height: 26px; padding: 0; line-height: 0; }
+    .mak-icon svg { width: 17px; height: 17px; display: block; }
     .mak-btn:hover, .mak-btn:focus-visible, .mak-icon:hover, .mak-icon:focus-visible { background: #0b3d3a; border-color: #0b3d3a; }
     .mak-btn.dark, .mak-icon.dark { border-color: #4fd1a5; background: #4fd1a5; color: #0b1a17; }
     .mak-btn.dark:hover, .mak-btn.dark:focus-visible, .mak-icon.dark:hover, .mak-icon.dark:focus-visible { border-color: #7fe0bf; background: #7fe0bf; }
     .mak-btn:disabled, .mak-icon:disabled { opacity: 0.5; cursor: default; }
-    .mak-icon.mak-envelope { font-size: 21px; padding: 1px 5px; } /* the glyph ✉ is small in the system fonts */
   `;
   MAK.extButtonClass = (kind) => `mak-${kind}${MAK.isDarkPage() ? ' dark' : ''}`;
+
+  // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
+  // character such as ✉ does not give. name: 'pencil' or 'mail'.
+  const ICONS = {
+    pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
+    mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]]
+  };
+  MAK.icon = function (name) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) svg.setAttribute(k, v);
+    for (const [tag, attrs] of ICONS[name] || []) {
+      const el = document.createElementNS(ns, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+      svg.append(el);
+    }
+    return svg;
+  };
 
   // True if the MiAulario page uses the dark theme (the Sakai setting, or the system setting).
   MAK.isDarkPage = function () {

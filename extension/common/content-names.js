@@ -275,8 +275,7 @@
     const style = document.createElement('style');
     style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
     const btn = h('button', {
-      class: `${MAK.extButtonClass('icon')} mak-envelope`,
-      text: '✉',
+      class: MAK.extButtonClass('icon'),
       attrs: { type: 'button', title: MAK.t('teach.button'), 'aria-label': `${MAK.t('teach.button')}: ${nameOf(siteId)}` },
       on: {
         click: (e) => {
@@ -285,7 +284,7 @@
           getPicker().toggle(siteId, host);
         }
       }
-    });
+    }, MAK.icon('mail'));
     shadow.append(style, btn);
     return host;
   }
@@ -308,7 +307,6 @@
     style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
     const pen = h('button', {
       class: MAK.extButtonClass('icon'),
-      text: '✎',
       attrs: { type: 'button', title: MAK.t('names.edit'), 'aria-label': MAK.t('names.edit') },
       on: {
         click: (e) => {
@@ -318,7 +316,7 @@
           getEditor().toggle(siteId, host);
         }
       }
-    });
+    }, MAK.icon('pencil'));
     shadow.append(style, pen);
     return host;
   }

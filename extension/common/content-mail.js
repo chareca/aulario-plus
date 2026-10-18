@@ -117,7 +117,7 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
     style.textContent = `:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; } ${MAK.EXT_BUTTON_CSS}`;
-    const btn = h('button', { class: `${MAK.extButtonClass('icon')} mak-envelope`, text: '✉', attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } });
+    const btn = h('button', { class: MAK.extButtonClass('icon'), attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } }, MAK.icon('mail'));
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
