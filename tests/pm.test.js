@@ -156,6 +156,18 @@ test('recipients of an older form: found again by their text in the new form (Mi
   await assert.rejects(pm.prepare(await pm.open('T'), Object.assign({}, DATA, { to: [{ value: 'x', label: 'NADIE, Persona (nadie)' }] })), (e) => e.code === 'pm.recipientGone' && /NADIE/.test(e.message));
 });
 
+test('prepare with "open": a recipient without a subject (the user writes it in MiAulario)', async () => {
+  const s = fakeServer();
+  const pm = MAK.createPm({ load: s.load });
+  const data = { to: ['u-2'], subject: '', body: '', emailCopy: true, files: [] };
+  await assert.rejects(pm.prepare(await pm.open('T'), data), { code: 'pm.noSubject' });
+  const ready = await pm.prepare(await pm.open('T'), data, { open: true });
+  assert.equal(ready.fields.subject.value, '');
+  const fill = s.log.filter((l) => l.url === `${TOOL}/compose` && l.body.some(([, v]) => /Añadir/.test(v))).at(-1);
+  assert.deepEqual(fill.body.filter(([k]) => k === 'compose:list1').map(([, v]) => v), ['u-2']);
+  assert.equal(s.log.at(-1).url, `${PICKER}?sakai_action=doCancel`, 'no files: "Cancel" in the attachment page keeps the fields');
+});
+
 test('cancel: the button "Cancel", without recipients', async () => {
   const s = fakeServer();
   const pm = MAK.createPm({ load: s.load });

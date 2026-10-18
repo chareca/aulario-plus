@@ -32,6 +32,10 @@ for (const site of data.SITES) {
   }
 }
 
+// The members of the site of site.html, for "Write to a teacher": the person of the fake compose
+// form is a teacher.
+routes[`/direct/site/${F.CS}/memberships.json`] = { membership_collection: [{ userEid: 'agarcia', memberRole: 'Instructor' }, { userEid: 'chareca.1', memberRole: 'Student' }] };
+
 // The files of the Resources list of site.html (the mail window and the download links).
 routes[`/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip`] = { __file: 'Synthetic content of Práctica 2.zip\n', type: 'application/zip' };
 
@@ -155,7 +159,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/teachers.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>

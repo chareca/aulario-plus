@@ -144,7 +144,7 @@ Live tests (2026-10-17):
 - "Send now" to the user: sent in 0.85 s. The message was in the folder "Recibido", and the copy went to the email address.
 - The user is in the list "To". The list has "Todos los participantes", the roles and each person (`SURNAME, Name (eid)`).
 - The values of the list "To" change each time MiAulario makes the compose form (live test: 75 of 75 values changed, the texts and the order did not). A value of an older form gives "compose:list1: Error de validación: el valor no es válido". The engine finds each recipient again by its text in the new form.
-- `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site (`userId` = the value of the list "To"). For version 1.5.1.
+- `/direct/site/{site}/memberships.json` (with `auto=true`) gives the members of a site: `userEid`, `memberRole` and the names. Live test (2026-10-18, 9 sites): the roles are "Instructor" (1 to 3 in a course, 5 to 20 in a degree site), "Student" and "Teaching Assistant" (98 and 436 in the two degree sites). All the instructors and assistants are in the list "To". Two sites answer 403 (no roles). The user names of the students have digits (2786 of 2799 in the largest site); some instructors have a user name without a dot. Version 1.5.1 uses the roles for "Write to a teacher", and the user names without digits only when a site answers 403.
 - `/direct/profile/{id}/connections.json` returns the profile of the user, not a list of friends.
 - "Mi cuenta" is LDAP: the user cannot change the email address. The domain `e.unavarra.es` uses Proofpoint (MX).
 
@@ -221,6 +221,7 @@ extension/
     lib/search.js          the search index of all the sites
     lib/pm.js              the engine of the internal mail (readers of the pages, and the flow)
     lib/mail-ui.js         the send window
+    lib/teachers.js        the teachers of a site ("Write to a teacher")
     lib/checks.js          the MiAulario checks (diagnostic page and live checks)
     lib/i18n.js, ui.js     texts (Spanish and English) and DOM helpers
     lib/zip.js, ics.js     ZIP writer and iCalendar writer
@@ -259,6 +260,7 @@ tests/                     Node tests, synthetic data and a test harness
    - Search from the popup and with Ctrl+K in MiAulario. Press Ctrl+K in the editor of an announcement: the editor must get it.
    - Click a bar of the week view.
    - In the Resources tool, send a file to you: "Open in MiAulario" and "Send now". Select two files and use the bar.
+   - Click ✉ next to the ✎ of a site, select a teacher: the internal mail opens with this recipient. Do not send.
    - Enable the download links. Make a link with "Only make the link", open it in a private window, type the password and download the file. Open the link again: it must show that the link expired.
    - Click **Log out**. The extension must not open the login page.
 

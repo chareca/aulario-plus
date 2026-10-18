@@ -159,9 +159,9 @@
       .join('');
   };
 
-  function checkData(data) {
+  function checkData(data, needSubject = true) {
     if (!data || !Array.isArray(data.to) || !data.to.length) throw new PmError('pm.noRecipient');
-    if (!String(data.subject || '').trim()) throw new PmError('pm.noSubject');
+    if (needSubject && !String(data.subject || '').trim()) throw new PmError('pm.noSubject');
   }
 
   // MiAulario gives new values to the list "To" each time it makes the compose form (live test:
@@ -197,8 +197,9 @@
 
     // Fill the form and attach the files on the server. The result is the compose form with
     // all the data: "Send" sends it, or the user opens the tool and sees it ready.
-    async function prepare(compose, given) {
-      checkData(given);
+    // opts.open: only the recipients are necessary; the user writes the subject in MiAulario.
+    async function prepare(compose, given, opts = {}) {
+      checkData(given, !opts.open);
       const data = withTo(compose, given);
       const files = data.files || [];
       let pick = await post(compose.snap.action, composeBody(compose, data, compose.buttons.attach));

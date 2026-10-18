@@ -1,10 +1,14 @@
 // Aulario Plus: a pencil next to the name of each site in MiAulario: in the sidebar, and in the
 // page header for the site of the page. The pencil opens a small editor: the user writes a name of
 // choice for the site, or goes back to the automatic name. content-early.js shows the new name.
+// Next to the pencil, the button ✉ "Write to a teacher" (sites with the internal mail): the user
+// selects a teacher, and the internal mail of the site opens with this recipient. The user writes
+// the message and sends it in MiAulario.
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
   const PENCIL = 'mak-name-pencil';
+  const ENVELOPE = 'mak-teacher-button';
   const where = MAK.parsePortalPath(location.pathname);
   const pageSite = where && where.siteId && !MAK.isSpecialSite(where.siteId) ? where.siteId : null;
   const h = MAK.h;
@@ -33,7 +37,24 @@
     .dark button.save { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }
   `;
 
+  const PICKER_CSS = `${EDITOR_CSS}
+    .pop { width: 360px; max-height: min(480px, calc(100vh - 16px)); overflow: auto; }
+    header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+    h2 { font-size: 14px; margin: 0; flex: 1; }
+    button.x { border: 0; font-size: 16px; line-height: 1; padding: 2px 6px; }
+    h3 { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #5f6b73; }
+    .dark h3 { color: #9aa6ad; }
+    .people { display: flex; flex-direction: column; gap: 4px; }
+    .people button { text-align: left; width: 100%; }
+    .people button:hover, .people button:focus-visible { border-color: #10524e; }
+    .help, .status { font-size: 12px; color: #5f6b73; margin: 8px 0 0; }
+    .dark .help, .dark .status { color: #9aa6ad; }
+    .status.error { color: #c5221f; } .dark .status.error { color: #f28b82; }
+    input[type=search] { margin-bottom: 4px; border-color: #c9d2d6; }
+  `;
+
   let settings = null;
+  let pages = {}; // id -> stored pages (the tools of the site)
   let sites = new Map(); // id -> stored site (full title)
   const nameOf = (siteId) => (sites.has(siteId) ? MAK.siteName(sites.get(siteId), settings) : siteId);
 
@@ -116,6 +137,159 @@
     return editor;
   }
 
+  // ---- "Write to a teacher": one window for all the buttons ✉ -------------------------
+
+  const mailTool = (siteId) => {
+    const tool = pages[siteId] && pages[siteId].tools && pages[siteId].tools['sakai.messages'];
+    return tool && tool.placement && MAK.safeSiteUrl(tool.page) ? tool : null;
+  };
+  let picker = null;
+  function getPicker() {
+    if (picker) return picker;
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = PICKER_CSS;
+    const title = h('h2');
+    const list = h('div');
+    const status = h('p', { class: 'status', attrs: { role: 'status' } });
+    let anchor = null;
+    let run = 0; // a new opening makes the old answers useless
+    let busy = false;
+    const close = () => {
+      if (busy) return;
+      pop.hidden = true;
+      run++;
+    };
+    const pop = h(
+      'div',
+      { class: 'pop', hidden: true, attrs: { role: 'dialog', 'aria-label': MAK.t('teach.button') } },
+      h('header', null, title, h('button', { class: 'x', text: '✕', attrs: { type: 'button', 'aria-label': MAK.t('mail.close') }, on: { click: close } })),
+      list,
+      status,
+      h('p', { class: 'help', text: MAK.t('teach.help') })
+    );
+    pop.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') close();
+    });
+    pop.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('mousedown', (e) => {
+      const path = e.composedPath();
+      if (!pop.hidden && !path.includes(host) && !path.includes(anchor)) close();
+    }, true);
+    shadow.append(style, pop);
+    document.documentElement.append(host);
+    const say = (text, error) => {
+      status.className = `status${error ? ' error' : ''}`;
+      status.textContent = text || '';
+    };
+
+    // The person is the recipient of a new message in the internal mail of the site. MiAulario
+    // keeps the prepared form, and its page opens with it. Nothing is sent.
+    async function write(siteId, tool, pm, compose, person, buttons) {
+      busy = true;
+      for (const b of buttons) b.disabled = true;
+      say(MAK.t('teach.preparing', { name: person.name }));
+      const data = { to: [{ value: person.value, label: person.label }], subject: '', body: '', emailCopy: true, files: [] };
+      try {
+        try {
+          await pm.prepare(compose, data, { open: true });
+        } catch (e) {
+          // MiAulario sometimes fails one time: a new compose form, one more time.
+          if (!['pm.noPicker', 'pm.http', 'pm.network', 'pm.recipientGone'].includes(e && e.code)) throw e;
+          await pm.prepare(await pm.open(tool.placement), data, { open: true });
+        }
+        location.assign(MAK.safeSiteUrl(tool.page));
+      } catch (e) {
+        busy = false;
+        for (const b of buttons) b.disabled = false;
+        say(MAK.mailError(e), true);
+      }
+    }
+
+    function draw(siteId, tool, pm, compose, groups) {
+      const buttons = [];
+      const personButton = (p) => {
+        const b = h('button', { text: p.name, attrs: { type: 'button' }, on: { click: () => write(siteId, tool, pm, compose, p, buttons) } });
+        buttons.push(b);
+        return b;
+      };
+      const parts = groups.map((g) => {
+        const people = h('div', { class: 'people' }, g.people.map(personButton));
+        let search = null;
+        if (g.people.length > 12) {
+          search = h('input', { attrs: { type: 'search', placeholder: MAK.t('teach.search'), 'aria-label': MAK.t('teach.search') }, on: { input: () => {
+            for (const b of people.children) b.hidden = !MAK.matchesQuery(b.textContent, search.value);
+          } } });
+        }
+        const head = h('h3', { text: `${MAK.t(`teach.group.${g.key}`)} (${g.people.length})` });
+        // Many other teaching staff (sites of a degree): closed, to open if necessary.
+        if (g.key === 'assistant' && groups.length > 1) return h('details', null, h('summary', null, head), search, people);
+        return [head, search, people];
+      });
+      MAK.fill(list, groups.length ? parts : h('p', { class: 'status', text: MAK.t('teach.none') }));
+      say('');
+      if (buttons[0]) buttons[0].focus();
+    }
+
+    picker = {
+      async toggle(siteId, button) {
+        if (!pop.hidden && anchor === button) return close();
+        const tool = mailTool(siteId);
+        if (!tool || busy) return;
+        const mine = ++run;
+        anchor = button;
+        pop.className = `pop${MAK.isDarkPage() ? ' dark' : ''}`;
+        title.textContent = `✉ ${MAK.t('teach.title', { site: nameOf(siteId) })}`;
+        MAK.fill(list);
+        say(MAK.t('teach.loading'));
+        pop.hidden = false;
+        const r = button.getBoundingClientRect();
+        pop.style.left = `${Math.max(8, Math.min(r.left - 8, window.innerWidth - pop.offsetWidth - 8))}px`;
+        pop.style.top = `${Math.max(8, r.bottom + 6 + pop.offsetHeight > window.innerHeight - 8 ? r.top - 6 - pop.offsetHeight : r.bottom + 6)}px`;
+        try {
+          const pm = MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) });
+          const myEid = (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid;
+          const { compose, groups } = await MAK.loadTeachers({ siteId, placement: tool.placement, pm, myEid, doFetch: (u, i) => fetch(u, i) });
+          if (mine === run) draw(siteId, tool, pm, compose, groups);
+        } catch (e) {
+          if (mine === run) say(MAK.mailError(e), true);
+        }
+      }
+    };
+    return picker;
+  }
+
+  function makeEnvelope(siteId) {
+    const host = document.createElement('span');
+    host.className = ENVELOPE;
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style');
+    style.textContent = PENCIL_CSS;
+    const btn = h('button', {
+      text: '✉',
+      attrs: { type: 'button', title: MAK.t('teach.button'), 'aria-label': `${MAK.t('teach.button')}: ${nameOf(siteId)}` },
+      on: {
+        click: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          getPicker().toggle(siteId, host);
+        }
+      }
+    });
+    shadow.append(style, btn);
+    return host;
+  }
+
+  // The button ✉ after the pencil, for a site with the internal mail.
+  function addEnvelope(pencil, siteId) {
+    const next = pencil.nextElementSibling;
+    const has = next && next.classList.contains(ENVELOPE);
+    if (mailTool(siteId) && !has) pencil.after(makeEnvelope(siteId));
+    else if (!mailTool(siteId) && has) next.remove();
+  }
+
   // ---- The pencils -------------------------------------------------------------
 
   function makePencil(siteId) {
@@ -145,6 +319,7 @@
     if (pageSite && sites.has(pageSite)) {
       for (const box of document.querySelectorAll('.portal-header-site-title')) {
         if (!box.querySelector(`.${PENCIL}`)) box.append(makePencil(pageSite));
+        addEnvelope(box.querySelector(`.${PENCIL}`), pageSite);
       }
     }
     for (const li of document.querySelectorAll('li.site-list-item[data-site]')) {
@@ -153,6 +328,7 @@
       if (!sites.has(id) || !link) continue;
       const next = link.nextElementSibling;
       if (!(next && next.classList.contains(PENCIL))) link.after(makePencil(id));
+      addEnvelope(link.nextElementSibling, id);
     }
   }
 
@@ -163,20 +339,22 @@
     timer = setTimeout(addPencils, 150);
   }).observe(document.documentElement, { childList: true, subtree: true });
 
-  let raw = { settings: null, sites: [] }; // the stored values
+  let raw = { settings: null, sites: [], pages: {} }; // the stored values
   function apply(next) {
     raw = Object.assign({}, raw, next);
     settings = MAK.withDefaults(raw.settings);
     sites = new Map((raw.sites || []).map((s) => [s.id, s]));
+    pages = raw.pages || {};
     MAK.setLang(settings.lang);
     addPencils();
   }
-  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites']), null).then((d) => apply({ settings: d && d.settings, sites: (d && d.sites) || [] }));
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites', 'pages']), null).then((d) => apply({ settings: d && d.settings, sites: (d && d.sites) || [], pages: (d && d.pages) || {} }));
   ext.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !(changes.settings || changes.sites)) return;
+    if (area !== 'local' || !(changes.settings || changes.sites || changes.pages)) return;
     const next = {};
     if (changes.settings) next.settings = changes.settings.newValue;
     if (changes.sites) next.sites = changes.sites.newValue || [];
+    if (changes.pages) next.pages = changes.pages.newValue || {};
     apply(next);
   });
 })();
