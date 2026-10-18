@@ -191,7 +191,7 @@
       busy = true;
       for (const b of buttons) b.disabled = true;
       say(MAK.t('teach.preparing', { name: person.name }));
-      // The text: "Hola <first name>," an empty line, "Saludos," and the name of the user.
+      // The text: "Hola <first name>," an empty line, "Saludos," and the first name of the user.
       const body = MAK.teacherMessage(person.label, me && me.label);
       const data = { to: [{ value: person.value, label: person.label }], subject: '', body, emailCopy: true, files: [] };
       try {

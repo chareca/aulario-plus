@@ -70,15 +70,15 @@ test('properName and personParts: names in capital letters become proper names; 
   assert.deepEqual(MAK.personParts('Coordinación'), { first: 'Coordinación', last: '', eid: null });
 });
 
-test('teacherMessage: "Hola <first name>," an empty line, "Saludos," and the name of the user', () => {
+test('teacherMessage: "Hola <first name>," an empty line, "Saludos," and the first name of the user', () => {
   MAK.setLang('es');
   assert.equal(
     MAK.teacherMessage('ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)', 'Chareca , Nicolas (chareca.165075)'),
-    '<p>Hola Miguel Angel,</p><p>&nbsp;</p><p>Saludos,<br>Nicolas Chareca.</p>'
+    '<p>Hola Miguel Angel,</p><p>&nbsp;</p><p>Saludos,<br>Nicolas.</p>'
   );
   assert.equal(MAK.teacherMessage('PEREZ, <B>JUAN</B> (juan.perez)', null), '<p>Hola &lt;b&gt;juan&lt;/b&gt;,</p><p>&nbsp;</p><p>Saludos,</p>', 'no HTML from a name; no name of the user: only "Saludos,"');
   MAK.setLang('en');
-  assert.match(MAK.teacherMessage('ZUBIRI, MIREN (mz)', 'X, Y (y)'), /^<p>Hello Miren,<\/p>.*Regards,<br>Y X\.<\/p>$/);
+  assert.match(MAK.teacherMessage('ZUBIRI, MIREN (mz)', 'X, Y (y)'), /^<p>Hello Miren,<\/p>.*Regards,<br>Y\.<\/p>$/);
   MAK.setLang('es');
 });
 

@@ -43,12 +43,12 @@
   };
 
   // The text of a new message to a teacher (HTML of the editor of MiAulario): a greeting with the
-  // first name of the teacher, an empty line for the user, and the name of the user.
+  // first name of the teacher, an empty line for the user, and the first name of the user.
   MAK.teacherMessage = function (teacherLabel, myLabel) {
     const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const t = MAK.personParts(teacherLabel);
     const me = myLabel ? MAK.personParts(myLabel) : null;
-    const myName = me ? [me.first, me.last].filter(Boolean).join(' ') : '';
+    const myName = me ? me.first || me.last : '';
     return `<p>${esc(MAK.t('teach.hello', { name: t.first || t.last }))}</p><p>&nbsp;</p><p>${esc(MAK.t('teach.regards'))}${myName ? `<br>${esc(myName)}.` : ''}</p>`;
   };
 
