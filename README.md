@@ -11,6 +11,7 @@ The interface is in Spanish. You can change it to English in the settings.
 - The extension also makes the cookie of the UPNA login page (`sso.unavarra.es`) last longer. It does not send requests to that page. Your browser opens it when you log in.
 - The extension keeps the data that it needs only in your browser: the settings (also the names that you give to the sites), a copy of your course data (deliveries, announcements, calendar events, new items and grades) and what you read. Nobody else receives this data. The extension removes the course data when you log out.
 - The developers do not receive or keep any data.
+- The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 
 > **Important**
 > - The UPNA did not make this extension and does not support it.
@@ -72,7 +73,7 @@ The "Correo interno" of MiAulario is the Messages tool of each site. It sends on
 
 ### Download links without a login
 
-The copy by email of the internal mail has a link to the file, and this link asks for a MiAulario login. To send a file to a person who is not in the site, the send window can add a download link that works without a login. Enable it in Settings → "Download links without a login". The browser asks for permission for the Send server and for the shorteners.
+The copy by email of the internal mail has a link to the file, and this link asks for a MiAulario login. To send a file to a person who is not in the site, the send window can add a download link that works without a login. Enable it in Settings → "Download links without a login". The browser asks for permission for the Send server and for the shorteners. The extension can use only these Send servers: `send.vis.ee`, `send.artemislena.eu` and `send.monks.tools`. In Firefox, the browser also asks for your consent for "website content" (the encrypted files): a second click.
 
 How the extension makes the link:
 
@@ -142,7 +143,7 @@ The extension reads your course data from MiAulario with these requests:
 
 Download the ZIP file for your browser from the [latest release](https://github.com/chareca/aulario-plus/releases/latest).
 
-The extension asks for these permissions: `alarms` (the ping), `cookies` (the persistent session cookies), `storage` (the settings and the course data), `notifications` (the grade notifications), and access to `miaulario.unavarra.es` and `sso.unavarra.es`.
+The extension asks for these permissions: `alarms` (the ping), `cookies` (the persistent session cookies), `storage` (the settings and the course data), `notifications` (the grade notifications), and access to `miaulario.unavarra.es`, `sso.unavarra.es` and `www.unavarra.es` (the public course guides). The download links ask for access to the Send servers and the shorteners only when you enable them.
 
 ### Chromium browsers (Chrome, Edge, Brave, Opera, Vivaldi, Arc, Helium)
 
