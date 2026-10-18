@@ -39,6 +39,7 @@
   `;
 
   // Put a host element at the top of the main content, below the breadcrumb.
+  // Put a box at the top of the content of the page (after the breadcrumb). Also for content-guide.js.
   function insertAtTop(host) {
     const main = document.querySelector('main#content') || document.querySelector('main');
     if (!main) return false;
@@ -47,6 +48,7 @@
     else main.prepend(host);
     return true;
   }
+  MAK.insertAtTop = insertAtTop;
 
   function group(titleKey, items, render) {
     if (!items.length) return null;

@@ -2,7 +2,7 @@
 // The popup reads the storage and sends messages. Only the background script writes.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { h, fill, t } = MAK;
-const ORIGINS = ['https://miaulario.unavarra.es/*', 'https://sso.unavarra.es/*'];
+const ORIGINS = ['https://miaulario.unavarra.es/*', 'https://sso.unavarra.es/*', 'https://www.unavarra.es/*'];
 const MAX_INACTIVE_MIN = 60;
 const $ = (id) => document.getElementById(id);
 const send = (msg) => Promise.resolve(ext.runtime.sendMessage(msg)).catch(() => null);
@@ -560,7 +560,8 @@ function gradesCard(siteId, list) {
 }
 
 // ---- Grade calculator ----------------------------------------------------------
-// ui.calc = { siteId, status: 'loading' | 'error' | 'ready', book, values, simOpen }. Nothing is stored.
+// ui.calc = { siteId, status: 'loading' | 'error' | 'ready', book, guideBook, useGuide, values, simOpen }.
+// guideBook: the same grades with the weights of the course guide (lib/guide.js). Nothing is stored.
 
 const GRADEBOOK_TOOL = 'sakai.gradebookng';
 const num = (n) => n.toLocaleString(MAK.locale(), { maximumFractionDigits: 2 });
@@ -576,18 +577,59 @@ async function toggleCalc(siteId) {
     ui.calc = null;
     return renderCurrent();
   }
-  const calc = (ui.calc = { siteId, status: 'loading', book: null, values: {}, simOpen: false });
+  const calc = (ui.calc = { siteId, status: 'loading', book: null, guideBook: null, useGuide: false, values: {}, simOpen: false });
   renderCurrent();
   try {
-    const html = await courseApi.gradebook(gradebookPlacement(siteId));
+    const [html, guide] = await Promise.all([courseApi.gradebook(gradebookPlacement(siteId)), siteGuide(siteId).catch(() => null)]);
     const data = MAK.extractGradebookRows(new DOMParser().parseFromString(html, 'text/html'));
     if (!data.found) throw new Error('no gradebook');
     calc.book = MAK.buildGradebook(data);
+    calc.guideBook = guide ? MAK.guideBook(guide, calc.book) : null;
+    // The weights of the guide by default if the gradebook has no weights of its own.
+    calc.useGuide = !!calc.guideBook && !calc.book.weighted;
     calc.status = 'ready';
   } catch {
     calc.status = 'error';
   }
   if (ui.calc === calc) renderCurrent();
+}
+
+// The course guide of a site: the stored one, or read it again (the page of MiAulario and the
+// public page of the UPNA). The background script stores it.
+function siteGuide(siteId) {
+  return MAK.loadGuide({
+    tool: S.pages && S.pages[siteId] && S.pages[siteId].guide,
+    stored: S.guides && S.guides[siteId],
+    now: Date.now(),
+    fetchMia: async (path) => (await fetch(new URL(path, MAK.BASE).href, { credentials: 'include' })).text(),
+    fetchGuide: async (url) => {
+      const r = await send({ type: 'fetchGuide', url });
+      if (!r || !r.html) throw new Error((r && r.error) || 'guide.network');
+      return r.html;
+    },
+    parse: (html) => new DOMParser().parseFromString(html, 'text/html'),
+    save: (guide) => send({ type: 'saveGuide', siteId, guide })
+  });
+}
+
+// How the grades of MiAulario go to the activities of the guide, with the minimum grades.
+function guideMap(book) {
+  return h(
+    'details',
+    { class: 'calc-guide' },
+    h('summary', { text: t('calc.guideMap') }),
+    Math.round(book.total) !== 100 ? h('div', { class: 'meta', text: t('calc.guideTotal', { total: num(book.total) }) }) : null,
+    h('ul', null, book.categories.map((c) => {
+      const graded = c.items.filter((i) => i.score !== null && !i.placeholder);
+      const own = graded.length ? (graded.reduce((n, i) => n + i.score, 0) / graded.reduce((n, i) => n + i.max, 0)) * 10 : null;
+      const min = MAK.guideMinimum(c.minimum);
+      const below = min !== null && own !== null && own < min - 1e-9;
+      return h('li', null,
+        h('strong', { text: `${c.name} · ${num(c.weight)} %` }),
+        h('div', { class: 'meta', text: c.matched ? c.items.map((i) => i.name).join(', ') : t('calc.noMatch') }),
+        below ? h('div', { class: 'calc-min', text: t('calc.belowMin', { grade: num(own), min: num(min) }) }) : null);
+    }))
+  );
 }
 
 function setTarget(siteId, text) {
@@ -659,9 +701,16 @@ function calcPanel(siteId) {
   const c = ui.calc;
   if (c.status === 'loading') return h('div', { class: 'calc meta', text: t('calc.loading') });
   if (c.status === 'error') return h('div', { class: 'calc' }, h('div', { class: 'notice', text: t('calc.error') }));
-  const book = c.book;
+  const book = c.useGuide && c.guideBook ? c.guideBook : c.book;
   const official = /\d/.test(book.courseGradeText) ? h('div', { class: 'meta', text: t('calc.official', { grade: book.courseGradeText }) }) : null;
-  if (!book.categories.length) return h('div', { class: 'calc' }, h('div', { class: 'meta', text: t('calc.noItems') }), official, unusedList(book));
+  // The weights: of the course guide, or of the gradebook of MiAulario.
+  const source = c.guideBook
+    ? h('div', { class: 'calc-row chips' },
+      h('span', { class: 'meta', text: t('calc.source') }),
+      h('button', { attrs: { type: 'button', 'aria-pressed': String(!!c.useGuide) }, text: t('calc.fromGuide'), on: { click: () => { c.useGuide = true; renderCurrent(); } } }),
+      h('button', { attrs: { type: 'button', 'aria-pressed': String(!c.useGuide) }, text: t('calc.fromBook'), on: { click: () => { c.useGuide = false; renderCurrent(); } } }))
+    : null;
+  if (!book.categories.length) return h('div', { class: 'calc' }, source, h('div', { class: 'meta', text: t('calc.noItems') }), official, unusedList(book));
   const target = targetOf(siteId);
   const result = h('div', { class: 'calc-result' });
   const update = () => fill(result, calcResult(book, c.values, target));
@@ -669,16 +718,18 @@ function calcPanel(siteId) {
   return h(
     'div',
     { class: 'calc' },
-    MAK.gradebookMismatch(book, MAK.gradeModel(book)) ? h('div', { class: 'notice', text: t('calc.mismatch') }) : null,
+    source,
+    !book.fromGuide && MAK.gradebookMismatch(book, MAK.gradeModel(book)) ? h('div', { class: 'notice', text: t('calc.mismatch') }) : null,
     h(
       'label',
       { class: 'calc-row' },
       h('span', { text: t('calc.target') }),
       h('input', { attrs: { type: 'text', inputmode: 'decimal', value: num(target) }, on: { change: (e) => setTarget(siteId, e.target.value) } }),
       h('span', { class: 'meta', text: t('calc.of10') }),
-      h('span', { class: 'meta mode', text: t(book.weighted ? 'calc.weighted' : 'calc.points') })
+      h('span', { class: 'meta mode', text: t(book.fromGuide ? 'calc.byGuide' : book.weighted ? 'calc.weighted' : 'calc.points') })
     ),
     result,
+    book.fromGuide ? guideMap(book) : null,
     official,
     simulator(book, c.values, update),
     unusedList(book),

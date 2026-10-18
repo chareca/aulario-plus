@@ -52,6 +52,11 @@
     .people { display: flex; flex-direction: column; gap: 4px; }
     .people button { text-align: left; width: 100%; }
     .people button:hover, .people button:focus-visible { border-color: #10524e; }
+    .person { display: flex; gap: 6px; align-items: center; }
+    .person button { flex: 1; }
+    .person a { font-size: 12px; color: #1a5fb4; white-space: nowrap; } .dark .person a { color: #8ab4f8; }
+    .tag { font-size: 11px; margin-left: 6px; padding: 0 6px; border-radius: 9px; background: #e6f4ea; color: #137333; white-space: nowrap; }
+    .dark .tag { background: #1e3326; color: #81c995; }
     .help, .status { font-size: 12px; color: #5f6b73; margin: 8px 0 0; }
     .dark .help, .dark .status { color: #9aa6ad; }
     .status.error { color: #c5221f; } .dark .status.error { color: #f28b82; }
@@ -215,15 +220,24 @@
       }
     }
 
-    function draw(siteId, tool, pm, compose, groups, me) {
+    function draw(siteId, tool, pm, compose, groups, me, guide) {
       const buttons = [];
-      const personButton = (p) => {
-        const b = h('button', { text: p.eid ? `${p.name} (${p.eid})` : p.name, attrs: { type: 'button' }, on: { click: () => write(siteId, tool, pm, compose, p, me, buttons) } });
+      // With the course guide: the responsible teacher first, and the link to the office hours.
+      const withGuide = (list) => list
+        .map((p) => {
+          const g = guide ? MAK.guideTeacher(guide, p.label) : null;
+          return Object.assign({}, p, { resp: !!(g && g.resp), tutorias: (g && g.tutorias) || null });
+        })
+        .sort((a, b) => Number(b.resp) - Number(a.resp));
+      const personRow = (p) => {
+        const b = h('button', { attrs: { type: 'button' }, on: { click: () => write(siteId, tool, pm, compose, p, me, buttons) } },
+          p.eid ? `${p.name} (${p.eid})` : p.name,
+          p.resp ? h('span', { class: 'tag', text: MAK.t('teach.responsible') }) : null);
         buttons.push(b);
-        return b;
+        return h('div', { class: 'person' }, b, p.tutorias ? h('a', { href: p.tutorias, text: MAK.t('guide.officeHours'), attrs: { title: MAK.t('teach.officeHoursHelp') } }) : null);
       };
       const parts = groups.map((g) => {
-        const people = h('div', { class: 'people' }, g.people.map(personButton));
+        const people = h('div', { class: 'people' }, withGuide(g.people).map(personRow));
         let search = null;
         if (g.people.length > 12) {
           search = h('input', { attrs: { type: 'search', placeholder: MAK.t('teach.search'), 'aria-label': MAK.t('teach.search') }, on: { input: () => {
@@ -258,8 +272,13 @@
         try {
           const pm = MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) });
           const myEid = (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid;
-          const { compose, groups, me } = await MAK.loadTeachers({ siteId, placement: tool.placement, pm, myEid, doFetch: (u, i) => fetch(u, i) });
-          if (mine === run) draw(siteId, tool, pm, compose, groups, me);
+          const send = (m) => MAK.safeCall(() => ext.runtime.sendMessage(m), null);
+          const data = (await MAK.safeCall(() => ext.storage.local.get(['pages', 'guides']), null)) || {};
+          const [{ compose, groups, me }, guide] = await Promise.all([
+            MAK.loadTeachers({ siteId, placement: tool.placement, pm, myEid, doFetch: (u, i) => fetch(u, i) }),
+            MAK.pageGuide(siteId, data, send).catch(() => null)
+          ]);
+          if (mine === run) draw(siteId, tool, pm, compose, groups, me, guide);
         } catch (e) {
           if (mine === run) say(MAK.mailError(e), true);
         }

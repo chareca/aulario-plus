@@ -155,17 +155,21 @@
     };
   };
 
+  // home: the id of the first page ("Inicio"). guide: the page "Guía docente" (a "Web content"
+  // tool with the public guide of the UPNA, lib/guide.js).
   MAK.trimPages = function (pages, at) {
-    const out = { at, tools: {}, pageTools: {}, placements: {}, nav: [] };
+    const out = { at, tools: {}, pageTools: {}, placements: {}, nav: [], home: null, guide: null };
     for (const p of Array.isArray(pages) ? pages : []) {
       const pageUrl = MAK.safeSiteUrl(p.url);
       if (pageUrl && p.title) out.nav.push({ title: String(p.title), url: pageUrl }); // the menu of the site, for the search
+      if (out.home === null && p.id) out.home = String(p.id);
       const ids = [];
       for (const t of Array.isArray(p.tools) ? p.tools : []) {
         if (!t || !t.toolId) continue;
         ids.push(t.toolId);
         if (t.id) out.placements[t.id] = t.toolId;
         if (!out.tools[t.toolId]) out.tools[t.toolId] = { page: pageUrl, placement: t.id || null };
+        if (!out.guide && t.id && t.toolId === 'sakai.iframe' && /gu[ií]a\s*docente|teaching\s*guide|irakaskuntza[-\s]*gida/i.test(`${p.title || ''} ${t.title || ''}`)) out.guide = { page: pageUrl, placement: String(t.id) };
       }
       if (p.id) out.pageTools[p.id] = ids;
     }

@@ -178,7 +178,8 @@
         pages = pages && typeof pages === 'object' ? pages : {};
         const visible = sites.filter((s) => !hidden.has(s.id));
         for (const s of visible) {
-          if (pages[s.id] && pages[s.id].nav && t - pages[s.id].at < PAGES_MS) continue; // pages from 1.3 have no menu: get them again
+          // Pages from 1.3 have no menu, and pages from 1.5.0 have no "guide": get them again.
+          if (pages[s.id] && pages[s.id].nav && 'guide' in pages[s.id] && t - pages[s.id].at < PAGES_MS) continue;
           await step(`pages:${s.id}`, async () => {
             pages[s.id] = MAK.trimPages(await api.pages(s.id), t);
             await store.update('pages', (cur) => Object.assign({}, cur, { [s.id]: pages[s.id] }));

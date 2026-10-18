@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -507,6 +507,31 @@ const handlers = {
       } catch (e) {
         return { error: (e && e.code) || 'send.network', detail: e && e.code ? String(e.message || '').replace(/^[\w.]+:?\s*/, '') : '' };
       }
+    }
+  },
+  // The public page of a course guide (www.unavarra.es), for the pages that read it (DOMParser).
+  fetchGuide: {
+    content: true,
+    run: async (msg) => {
+      const url = MAK.guideUrl(msg.url);
+      if (!url) return { error: 'guide.url' };
+      try {
+        const r = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+        if (!r.ok) return { error: 'guide.http', status: r.status };
+        return { html: await r.text() };
+      } catch {
+        return { error: 'guide.network' };
+      }
+    }
+  },
+  // Store the guide of a site (read in a page). null: the site has no guide (do not ask again soon).
+  saveGuide: {
+    content: true,
+    run: async (msg) => {
+      if (!(await knownSite(msg.siteId))) return { ok: false };
+      const guide = MAK.cleanGuide(msg.guide);
+      await store.update('guides', (cur) => Object.assign({}, cur, { [msg.siteId]: { at: Date.now(), guide } }));
+      return { ok: true };
     }
   },
   // The search palette in MiAulario (Ctrl+K). Only the stored data, no requests.

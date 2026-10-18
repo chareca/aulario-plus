@@ -210,6 +210,9 @@ body.tools { width: auto; height: auto; min-height: 100vh; max-width: 640px; mar
 .calc-item { padding: 2px 0; }
 .calc-item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .calc-unused ul { margin: 4px 0 0; padding-left: 18px; }
+.calc-guide summary { cursor: pointer; font-weight: 600; }
+.calc-guide ul { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.calc-min { color: var(--red); font-size: 12px; }
 
 /* Privacy note */
 footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-align: center; }

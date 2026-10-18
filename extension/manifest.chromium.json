@@ -13,7 +13,8 @@
   ],
   "host_permissions": [
     "https://miaulario.unavarra.es/*",
-    "https://sso.unavarra.es/*"
+    "https://sso.unavarra.es/*",
+    "https://www.unavarra.es/*"
   ],
   "optional_host_permissions": [
     "https://*/*"
@@ -44,8 +45,10 @@
         "lib/ui.js",
         "lib/pm.js",
         "lib/teachers.js",
+        "lib/guide.js",
         "lib/mail-ui.js",
         "content-banner.js",
+        "content-guide.js",
         "content-names.js",
         "content-search.js",
         "content-mail.js",

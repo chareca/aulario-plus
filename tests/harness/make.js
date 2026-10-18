@@ -36,6 +36,14 @@ for (const site of data.SITES) {
 // form is a teacher.
 routes[`/direct/site/${F.CS}/memberships.json`] = { membership_collection: [{ userEid: 'agarcia', memberRole: 'Instructor' }, { userEid: 'chareca.1', memberRole: 'Student' }] };
 
+// The course guides: the page of the tool "Guía docente" has an iframe with the public guide.
+const GUIDE = { window: {} };
+require('node:vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'browser', 'fixtures-guide.js'), 'utf8'), GUIDE);
+for (const site of [F.MATH, F.CS]) {
+  routes[`/portal/tool/${site}-tool-7`] = { __file: '<html><body><iframe src="https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&amp;codPlan=240&amp;codAsig=240999&amp;anio=2026"></iframe></body></html>', type: 'text/html; charset=UTF-8' };
+}
+routes['/ficha-asignaturaDOA/'] = { __file: GUIDE.window.GUIDE_HTML, type: 'text/html; charset=utf-8' };
+
 // The files of the Resources list of site.html (the mail window and the download links).
 routes[`/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip`] = { __file: 'Synthetic content of Práctica 2.zip\n', type: 'application/zip' };
 
@@ -159,7 +167,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'content-banner.js', 'lib/pm.js', 'lib/teachers.js', 'lib/mail-ui.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/guide.js', 'lib/mail-ui.js', 'content-banner.js', 'content-guide.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
@@ -188,7 +196,7 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   </tbody></table></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
-<script>history.replaceState(null, '', '/portal/site/${F.CS}' + location.search); // the path of a site, as in MiAulario</script>
+<script>history.replaceState(null, '', (new URLSearchParams(location.search).has('mine') ? '/portal' : '/portal/site/${F.CS}') + location.search); // the path of a site (or "Mi sitio" with ?mine), as in MiAulario</script>
 ${siteTags}
 <script>
   // Show the banner: install time 10 days ago, then a visit of Computer Science.

@@ -21,7 +21,7 @@ test('each GET adds auto=true and sends the cookies', async () => {
 test('the API finds the array in all the response shapes', async () => {
   const api = MAK.createApi({ fetch: fakeFetch(F.routes()) });
   assert.equal((await api.notifications()).length, F.NOTIFICATIONS.length); // plain array
-  assert.equal((await api.pages(F.CS)).length, 7); // plain array
+  assert.equal((await api.pages(F.CS)).length, 8); // plain array (with the course guide)
   assert.equal((await api.forums(F.CS)).length, 1); // forums_collection
   assert.equal((await api.sites()).length, F.SITES.length);
   const detail = await api.forum(F.CS, 7);
@@ -62,4 +62,15 @@ test('gradebook: the HTML of the Gradebook page, with auto=true; other content t
   assert.equal(await api.gradebook(`${F.MATH}-tool-6`), html);
   assert.match(log[0].url, /\/portal\/tool\/.+-tool-6\?auto=true$/);
   await assert.rejects(api.gradebook('x'), (e) => e.kind === 'not-html');
+});
+
+test('trimPages keeps the home page and the page of the course guide', () => {
+  const p = MAK.trimPages(F.pages(F.CS), F.NOW);
+  assert.equal(p.home, `${F.CS}-page-0`);
+  assert.deepEqual(p.guide, { page: `https://miaulario.unavarra.es/portal/site/${F.CS}/page/${F.CS}-page-7`, placement: `${F.CS}-tool-7` });
+  const none = MAK.trimPages(F.pages(F.PHYS), F.NOW);
+  assert.equal(none.guide, null);
+  // Another "Web content" tool is not the guide.
+  const other = MAK.trimPages([{ id: 'p', title: 'Zoom', url: 'https://miaulario.unavarra.es/portal/site/S/page/p', tools: [{ id: 't', toolId: 'sakai.iframe', title: 'Zoom' }] }], 0);
+  assert.equal(other.guide, null);
 });

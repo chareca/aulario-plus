@@ -18,7 +18,7 @@ function make(NOW) {
   const [MATH, CS, PHYS, COORD] = SITES.map((s) => s.id);
 
   function pages(siteId) {
-    const NAMES = { 'sakai.synoptic.announcement': 'Inicio', 'sakai.announcements': 'Anuncios', 'sakai.resources': 'Recursos', 'sakai.assignment.grades': 'Tareas', 'sakai.forums': 'Foros', 'sakai.messages': 'Mensajes', 'sakai.gradebookng': 'Calificaciones' };
+    const NAMES = { 'sakai.synoptic.announcement': 'Inicio', 'sakai.announcements': 'Anuncios', 'sakai.resources': 'Recursos', 'sakai.assignment.grades': 'Tareas', 'sakai.forums': 'Foros', 'sakai.messages': 'Mensajes', 'sakai.gradebookng': 'Calificaciones', 'sakai.iframe': 'Guía docente' };
     const tool = (toolId, n) => ({
       id: `${siteId}-page-${n}`,
       title: NAMES[toolId],
@@ -32,7 +32,9 @@ function make(NOW) {
       tool('sakai.assignment.grades', 3),
       tool('sakai.forums', 4),
       tool('sakai.messages', 5),
-      tool('sakai.gradebookng', 6)
+      tool('sakai.gradebookng', 6),
+      // The course guide (a "Web content" tool), in Mathematics and Computer Science.
+      ...(siteId === MATH || siteId === CS ? [tool('sakai.iframe', 7)] : [])
     ];
   }
 
