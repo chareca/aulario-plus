@@ -21,6 +21,18 @@ function pythonRead(file) {
   const script = 'import json,sys,zipfile\nz=zipfile.ZipFile(sys.argv[1])\nbad=z.testzip()\nprint(json.dumps({"bad":bad,"names":z.namelist(),"files":{n:z.read(n).decode("utf-8","replace") for n in z.namelist() if not n.endswith("/")}}))';
   return JSON.parse(execFileSync('python3', ['-I', '-c', script, file]).toString());
 }
+// Extract with bsdtar (the same UTF-8 handling as Finder, Windows Explorer and 7-Zip). On macOS,
+// "tar" is bsdtar. On Linux, "tar" is GNU tar, which does not read ZIP files: use "bsdtar", or
+// else Python's zipfile, which also reads the UTF-8 flag.
+function extract(file, to) {
+  for (const cmd of ['bsdtar', 'tar']) {
+    try {
+      const version = execFileSync(cmd, ['--version'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      if (/bsdtar/.test(version)) return execFileSync(cmd, ['-xf', file, '-C', to]);
+    } catch {}
+  }
+  return execFileSync('python3', ['-I', '-c', 'import sys,zipfile\nzipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])', file, to]);
+}
 
 test('crc32 with known values', () => {
   assert.equal(MAK.crc32(bytes('123456789')), 0xcbf43926);
@@ -45,10 +57,9 @@ test('the ZIP is valid for Python zipfile and unzip, with UTF-8 names, folders a
   assert.equal(r.files['Matemáticas/ñandú €.txt'], 'hola ñandú €\n');
   const out = execFileSync('unzip', ['-t', file]).toString();
   assert.match(out, /No errors detected/);
-  // Extract with bsdtar (the same UTF-8 handling as Finder, Windows Explorer and 7-Zip).
   // The old unzip 6.0 of macOS ignores the UTF-8 flag, so it is not used to extract.
   fs.mkdirSync(path.join(dir, 'x'));
-  execFileSync('tar', ['-xf', file, '-C', path.join(dir, 'x')]);
+  extract(file, path.join(dir, 'x'));
   const extracted = fs.readFileSync(path.join(dir, 'x', 'Matemáticas', 'Tema 1 – Integrales.pdf'));
   assert.ok(Buffer.from(binary).equals(extracted));
   assert.ok(fs.statSync(path.join(dir, 'x', 'Matemáticas', 'Prácticas vacía')).isDirectory());
