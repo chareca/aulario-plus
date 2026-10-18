@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "__MSG_extDescription__",
   "default_locale": "es",
   "minimum_chrome_version": "116",
@@ -43,6 +43,7 @@
         "lib/i18n.js",
         "lib/ui.js",
         "lib/pm.js",
+        "lib/teachers.js",
         "lib/mail-ui.js",
         "content-banner.js",
         "content-names.js",
