@@ -48,11 +48,13 @@
   MAK.extButtonClass = (kind) => `mak-${kind}${MAK.isDarkPage() ? ' dark' : ''}`;
 
   // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
-  // character such as ✉ does not give. name: 'pencil', 'mail' or 'chevron' (an arrow down).
+  // character such as ✉ does not give. name: 'pencil', 'mail', 'chevron' (an arrow down) or 'arrow'
+  // (up and to the right: a link).
   const ICONS = {
     pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
     mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
-    chevron: [['path', { d: 'M6 9l6 6 6-6' }]]
+    chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
+    arrow: [['path', { d: 'M7 17L17 7' }], ['path', { d: 'M8 7h9v9' }]]
   };
   MAK.icon = function (name) {
     const ns = 'http://www.w3.org/2000/svg';
@@ -64,6 +66,24 @@
       svg.append(el);
     }
     return svg;
+  };
+
+  // A text link of the extension: the text and a small arrow (the link opens in a new tab). On hover,
+  // the text is underlined and the arrow moves up a little. Put MAK.LINK_CSS in the styles of each
+  // shadow root (and of the popup) with these links. --mak-link changes the color.
+  MAK.LINK_CSS = `
+    .mak-link { color: var(--mak-link, #1a5fb4); text-decoration: none; cursor: pointer; }
+    .dark .mak-link { color: var(--mak-link-dark, #8ab4f8); }
+    .mak-link .mak-arrow { display: inline-block; width: 0.8em; height: 0.8em; margin-left: 0.2em; vertical-align: -0.05em; transition: transform 0.15s ease; }
+    .mak-link:hover .t, .mak-link:focus-visible .t { text-decoration: underline; text-underline-offset: 2px; }
+    .mak-link:hover .mak-arrow, .mak-link:focus-visible .mak-arrow { transform: translate(1px, -2px); }
+    @media (prefers-reduced-motion: reduce) { .mak-link .mak-arrow { transition: none; } }
+  `;
+  MAK.link = function (href, text, props) {
+    const p = props || {};
+    const arrow = MAK.icon('arrow');
+    arrow.setAttribute('class', 'mak-arrow');
+    return MAK.h('a', Object.assign({}, p, { href, class: ['mak-link', p.class].filter(Boolean).join(' ') }), MAK.h('span', { class: 't', text }), arrow);
   };
 
   // True if the MiAulario page uses the dark theme (the Sakai setting, or the system setting).

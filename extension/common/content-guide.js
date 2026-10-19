@@ -62,6 +62,7 @@
     .notes p { margin: 4px 0; font-size: 13px; }
     .teacher { margin-top: 2px; }
     ${MAK.EXT_BUTTON_CSS}
+    ${MAK.LINK_CSS}
     .mak-btn { padding: 2px 12px; }
   `;
 
@@ -123,17 +124,18 @@
   const teachers = (guide) =>
     guide.teachers.filter((t) => t.resp).map((t) => {
       const n = MAK.personParts(t.name);
-      return h('div', { class: 'teacher meta' }, `${MAK.t('guide.responsible')}: ${[n.first, n.last].filter(Boolean).join(' ')}`, t.tutorias ? [' · ', h('a', { href: t.tutorias, text: MAK.t('guide.officeHours') })] : null);
+      return h('div', { class: 'teacher meta' }, `${MAK.t('guide.responsible')}: ${[n.first, n.last].filter(Boolean).join(' ')}`, t.tutorias ? [' · ', MAK.link(t.tutorias, MAK.t('guide.officeHours'))] : null);
     });
 
   // The table, the rules of the assessment and the link to the full guide.
-  const details = (guide) => [
-    assessment(guide),
-    guide.evaluation.notes.length
-      ? h('details', { class: 'notes' }, h('summary', { class: 'meta', text: MAK.t('guide.notes', { n: guide.evaluation.notes.length }) }), guide.evaluation.notes.map((n) => h('p', { text: n })))
-      : null,
-    guide.url ? h('div', { class: 'meta' }, h('a', { href: guide.url, text: MAK.t('guide.full') })) : null
-  ];
+  const details = (guide) => {
+    const notes = MAK.guideNotes(guide);
+    return [
+      assessment(guide),
+      notes.length ? h('details', { class: 'notes' }, h('summary', { class: 'meta', text: MAK.t('guide.notes', { n: notes.length }) }), notes.map((n) => h('p', { text: n }))) : null,
+      guide.url ? h('div', { class: 'meta' }, MAK.link(guide.url, MAK.t('guide.full'))) : null
+    ];
+  };
 
   // The home page of a site: all the guide.
   const guideBody = (guide) => [teachers(guide), weightBar(guide.evaluation.rows), details(guide)];

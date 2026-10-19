@@ -27,8 +27,7 @@
     .dark h3 { color: #9aa6ad; }
     ul { margin: 0; padding-left: 18px; }
     li { margin: 2px 0; }
-    a { color: #1a5fb4; }
-    .dark a { color: #8ab4f8; }
+    ${MAK.LINK_CSS}
     .tag { font-size: 11px; border-radius: 9px; padding: 0 6px; margin-left: 6px; background: #e6f4ea; color: #137333; }
     .tag.updated { background: #e8f0fe; color: #1a5fb4; }
     .dark .tag { background: #1e3326; color: #81c995; }
@@ -93,12 +92,12 @@
     const list = h(
       'div',
       { class: 'list', hidden: compact || news.total > 6 },
-      group('news.groupFiles', news.files, (f) => h('li', null, h('a', { href: f.url, text: f.title }), h('span', { class: `tag ${f.label}`, text: MAK.t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
-      group('news.groupAnnouncements', news.announcements, (a) => h('li', null, h('a', { href: a.url, text: a.title }), h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
-      group('news.groupDeliveries', news.deliveries, (d) => h('li', null, h('a', { href: d.url, text: d.title }), d.due ? h('span', { class: 'meta', text: MAK.t('news.due', { date: MAK.formatDate(d.due) }) }) : null)),
-      group('news.groupDates', news.dateChanges || [], (d) => h('li', null, h('a', { href: d.url, text: d.title }), h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
-      group('news.groupForums', news.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), h('span', { class: 'meta', text: MAK.t('news.forumDelta', { n: f.delta }) }))),
-      group('news.groupGrades', news.grades || [], (g) => h('li', null, h('a', { href: g.url, text: g.title }), h('span', { class: 'meta', text: MAK.t('news.graded', { date: MAK.formatDate(g.time) }) })))
+      group('news.groupFiles', news.files, (f) => h('li', null, MAK.link(f.url, f.title), h('span', { class: `tag ${f.label}`, text: MAK.t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
+      group('news.groupAnnouncements', news.announcements, (a) => h('li', null, MAK.link(a.url, a.title), h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
+      group('news.groupDeliveries', news.deliveries, (d) => h('li', null, MAK.link(d.url, d.title), d.due ? h('span', { class: 'meta', text: MAK.t('news.due', { date: MAK.formatDate(d.due) }) }) : null)),
+      group('news.groupDates', news.dateChanges || [], (d) => h('li', null, MAK.link(d.url, d.title), h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
+      group('news.groupForums', news.forums, (f) => h('li', null, MAK.link(f.url, f.title), h('span', { class: 'meta', text: MAK.t('news.forumDelta', { n: f.delta }) }))),
+      group('news.groupGrades', news.grades || [], (g) => h('li', null, MAK.link(g.url, g.title), h('span', { class: 'meta', text: MAK.t('news.graded', { date: MAK.formatDate(g.time) }) })))
     );
     const toggle = h('button', {
       class: MAK.extButtonClass('btn'),

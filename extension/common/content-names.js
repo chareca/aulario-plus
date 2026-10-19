@@ -54,7 +54,8 @@
     .people button:hover, .people button:focus-visible { border-color: #10524e; }
     .person { display: flex; gap: 6px; align-items: center; }
     .person button { flex: 1; }
-    .person a { font-size: 12px; color: #1a5fb4; white-space: nowrap; } .dark .person a { color: #8ab4f8; }
+    ${MAK.LINK_CSS}
+    .person .mak-link { font-size: 12px; white-space: nowrap; }
     .tag { font-size: 11px; margin-left: 6px; padding: 0 6px; border-radius: 9px; background: #e6f4ea; color: #137333; white-space: nowrap; }
     .dark .tag { background: #1e3326; color: #81c995; }
     .help, .status { font-size: 12px; color: #5f6b73; margin: 8px 0 0; }
@@ -234,7 +235,7 @@
           p.eid ? `${p.name} (${p.eid})` : p.name,
           p.resp ? h('span', { class: 'tag', text: MAK.t('teach.responsible') }) : null);
         buttons.push(b);
-        return h('div', { class: 'person' }, b, p.tutorias ? h('a', { href: p.tutorias, text: MAK.t('guide.officeHours'), attrs: { title: MAK.t('teach.officeHoursHelp') } }) : null);
+        return h('div', { class: 'person' }, b, p.tutorias ? MAK.link(p.tutorias, MAK.t('guide.officeHours'), { attrs: { title: MAK.t('teach.officeHoursHelp') } }) : null);
       };
       const parts = groups.map((g) => {
         const people = h('div', { class: 'people' }, withGuide(g.people).map(personRow));

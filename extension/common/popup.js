@@ -19,6 +19,8 @@ const ui = { query: '', searchSel: 0, searchList: [], editSite: null, dueWeek: n
 const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
 const settings = () => MAK.withDefaults(S.settings);
+// The style of the text links (lib/ui.js), with the colors of the popup.
+document.head.append(h('style', { text: MAK.LINK_CSS }));
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
 // The sites with the names to show (short names or names from the user). Made again only when
 // the sites or the settings change.
@@ -304,7 +306,7 @@ function eventRow(e) {
     'div',
     { class: 'event-row' },
     h('span', { class: 'when', text: MAK.formatDate(e.start) }),
-    h('div', { class: 'body' }, url ? h('a', { href: url, text: e.title }) : h('span', { text: e.title }), h('div', { class: 'meta', text: e.siteTitle }))
+    h('div', { class: 'body' }, url ? MAK.link(url, e.title) : h('span', { text: e.title }), h('div', { class: 'meta', text: e.siteTitle }))
   );
 }
 
@@ -399,9 +401,9 @@ function inboxRow(x) {
               null,
               x.text ? h('p', { class: 'ann-text', text: x.text }) : null,
               x.attachments.length
-                ? h('div', { class: 'links' }, h('span', { class: 'meta', text: t('inbox.attachments') }), x.attachments.map((f) => h('a', { href: f.url, text: f.name })))
+                ? h('div', { class: 'links' }, h('span', { class: 'meta', text: t('inbox.attachments') }), x.attachments.map((f) => MAK.link(f.url, f.name)))
                 : null,
-              h('div', { class: 'links' }, h('a', { href: x.url, text: t('inbox.open') }))
+              h('div', { class: 'links' }, MAK.link(x.url, t('inbox.open')))
             )
           : null
       )
@@ -502,11 +504,11 @@ function newsCard(x) {
       'details',
       null,
       h('summary', { text: MAK.newsSummary(x) }),
-      newsGroup('news.groupFiles', x.files, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: `tag ${f.label === 'new' ? 'new' : 'info'}`, text: t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
-      newsGroup('news.groupAnnouncements', x.announcements, (a) => h('li', null, h('a', { href: a.url, text: a.title }), ' ', h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
-      newsGroup('news.groupDeliveries', x.deliveries, (d) => h('li', null, h('a', { href: d.url, text: d.title }), d.due ? [' ', h('span', { class: 'meta', text: t('news.due', { date: MAK.formatDate(d.due) }) })] : null)),
-      newsGroup('news.groupDates', x.dateChanges || [], (d) => h('li', null, h('a', { href: d.url, text: d.title }), ' ', h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
-      newsGroup('news.groupForums', x.forums, (f) => h('li', null, h('a', { href: f.url, text: f.title }), ' ', h('span', { class: 'meta', text: t('news.forumDelta', { n: f.delta }) })))
+      newsGroup('news.groupFiles', x.files, (f) => h('li', null, MAK.link(f.url, f.title), ' ', h('span', { class: `tag ${f.label === 'new' ? 'new' : 'info'}`, text: t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
+      newsGroup('news.groupAnnouncements', x.announcements, (a) => h('li', null, MAK.link(a.url, a.title), ' ', h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
+      newsGroup('news.groupDeliveries', x.deliveries, (d) => h('li', null, MAK.link(d.url, d.title), d.due ? [' ', h('span', { class: 'meta', text: t('news.due', { date: MAK.formatDate(d.due) }) })] : null)),
+      newsGroup('news.groupDates', x.dateChanges || [], (d) => h('li', null, MAK.link(d.url, d.title), ' ', h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
+      newsGroup('news.groupForums', x.forums, (f) => h('li', null, MAK.link(f.url, f.title), ' ', h('span', { class: 'meta', text: t('news.forumDelta', { n: f.delta }) })))
     ),
     h('div', { class: 'row' }, h('button', { class: 'link-btn', text: t('news.markSeen'), on: { click: () => send({ type: 'markSiteSeen', siteId: x.siteId }) } }))
   );
