@@ -63,11 +63,11 @@
     /* A tile with one action: the text, then a large button in the center. */
     .tile.action { text-align: center; display: flex; flex-direction: column; }
     .tile.action .note { margin: 0 0 10px; }
-    a.big { display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: 100%; max-width: 280px;
+    .big { display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: 100%; max-width: 280px;
       margin: auto auto 0; padding: 10px 14px; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; }
-    a.big .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
-    a.big:hover .mak-arrow, a.big:focus-visible .mak-arrow { transform: translate(1px, -2px); }
-    @media (prefers-reduced-motion: reduce) { a.big .mak-arrow { transition: none; } }
+    .big .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
+    .big:hover .mak-arrow, .big:focus-visible .mak-arrow { transform: translate(1px, -2px); }
+    @media (prefers-reduced-motion: reduce) { .big .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font: inherit; font-size: 13px; max-width: 100%; }
     button.plain { font: inherit; font-size: 12px; background: none; border: 0; padding: 0; cursor: pointer; color: #1a5fb4; }
@@ -101,10 +101,13 @@
     });
     const title = t('short.title');
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `⚡ ${title}` }), toggle), content));
-    // Above the course guides; below the banner of new items; else at the top of the content.
+    // In the block "Mostrar información de Mi Sitio", first. Else above the course guides, below the
+    // banner of new items, or at the top of the content.
+    const slot = MAK.mySiteSlot();
     const guide = document.getElementById(GUIDE_ID);
     const banner = document.getElementById(BANNER_ID);
-    if (guide) guide.before(host);
+    if (slot) slot.prepend(host);
+    else if (guide) guide.before(host);
     else if (banner) banner.after(host);
     else MAK.insertAtTop(host);
     return content;
@@ -266,6 +269,16 @@
       bigButton(MAK.EXPEDIENTE_URL, t('short.recordLink')));
   }
 
+  // The forward of the internal mail of the sites to an email address (content-forward.js).
+  function mailTile() {
+    const open = h('button', { class: `${MAK.extButtonClass('btn')} big`, attrs: { type: 'button', 'aria-haspopup': 'dialog' } }, h('span', { text: t('short.mailButton') }));
+    open.addEventListener('click', () => { if (MAK.openForwardWindow) MAK.openForwardWindow(); });
+    return h('section', { class: 'tile action' },
+      h('h4', { text: `📨 ${t('short.mail')}` }),
+      h('p', { class: 'note meta', text: t('short.mailHelp') }),
+      open);
+  }
+
   // The notes of the degree in Wuolah, at the year of the user (two buttons for a double degree).
   // links: MAK.wuolahLinks, or null while the degree is not known.
   function wuolahTile(tile, links) {
@@ -297,7 +310,7 @@
     const now = Date.now();
     const examTile = h('section', { class: 'tile' }, h('h4', { text: `📅 ${t('short.exams')}` }), h('p', { class: 'meta', text: t('short.loading') }));
     const notesTile = wuolahTile(h('section', { class: 'tile action' }), null);
-    MAK.fill(box(), examTile, h('div', { class: 'side' }, recordTile(), notesTile));
+    MAK.fill(box(), examTile, h('div', { class: 'side' }, recordTile(), notesTile, mailTile()));
     noGuides = !guides.length && !settings.degree;
     if (noGuides) {
       examTile.remove();

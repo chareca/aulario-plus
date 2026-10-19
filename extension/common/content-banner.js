@@ -49,6 +49,24 @@
   }
   MAK.insertAtTop = insertAtTop;
 
+  // "Mi sitio": the block "Mostrar información de Mi Sitio" (the tool sakai.iframe.myworkspace, with
+  // the text "Bienvenido a MiSitio"). The boxes of the extension go in its body, and its own content
+  // hides. No block: null (the boxes go at the top of the page).
+  MAK.mySiteSlot = function () {
+    const titled = (c) => /informaci[oó]n de mi ?sitio|my ?workspace information/i.test(((c.querySelector('.Mrphs-toolTitleNav__title') || {}).textContent) || '');
+    const block = document.querySelector('.Mrphs-sakai-iframe-myworkspace') || [...document.querySelectorAll('.Mrphs-container')].find(titled);
+    const body = block && block.querySelector('.Mrphs-toolBody');
+    if (!body) return null;
+    if (!body.dataset.makSlot) {
+      body.dataset.makSlot = '1';
+      // The width with the CSSOM: a "style" attribute can be blocked by the CSP of the page.
+      for (const el of [...body.children]) if (!/^mak-/.test(el.id)) el.style.display = 'none';
+      body.style.height = 'auto';
+      body.style.overflow = 'visible';
+    }
+    return body;
+  };
+
   function group(titleKey, items, render) {
     if (!items.length) return null;
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));

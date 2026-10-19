@@ -198,9 +198,14 @@
       try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, content.hidden ? '1' : '0'); } catch {}
     });
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `📘 ${title}` }), toggle), content));
-    // Below the shortcuts (content-shortcuts.js) or the banner of new items; else at the top of the content.
-    const above = document.getElementById(SHORTCUTS_ID) || document.getElementById(BANNER_ID);
-    if (above) above.after(host);
+    // "Mi sitio": in the block "Mostrar información de Mi Sitio", after the shortcuts. Else below the
+    // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
+    const slot = mySite ? MAK.mySiteSlot() : null;
+    const shortcuts = document.getElementById(SHORTCUTS_ID);
+    const above = shortcuts || document.getElementById(BANNER_ID);
+    if (shortcuts && slot && slot.contains(shortcuts)) shortcuts.after(host);
+    else if (slot) slot.append(host);
+    else if (above) above.after(host);
     else MAK.insertAtTop(host);
   }
 

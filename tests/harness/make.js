@@ -215,6 +215,7 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   </tbody></table></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
+<script>if (new URLSearchParams(location.search).has('mine')) document.querySelector('.row').insertAdjacentHTML('beforebegin', '<div class="Mrphs-container Mrphs-sakai-iframe-myworkspace"><nav class="Mrphs-toolTitleNav Mrphs-container--toolTitleNav"><h2 class="Mrphs-toolTitleNav__title"><span class="Mrphs-toolTitleNav__text">Mostrar información de Mi Sitio</span></h2></nav><div class="Mrphs-toolBody Mrphs-toolBody__iframe Mrphs-toolBody--sakai-iframe-myworkspace" style="height:300px;overflow:auto;border:1px solid #ccc"><div id="welcome"><h3>Bienvenido a MiSitio</h3><p>MiAulario proporciona a cada participante un espacio personal (texto simulado).</p></div></div></div>'); // the block of the home page of "Mi sitio"</script>
 <script>if (new URLSearchParams(location.search).has('messages')) document.querySelector('.row').innerHTML = '<form id="msgForum"><p>Correo interno (simulado): Recibido, Enviado.</p></form>'; // the inbox of the internal mail</script>
 <script>history.replaceState(null, '', (new URLSearchParams(location.search).has('mine') ? '/portal' : '/portal/site/${F.CS}') + location.search); // the path of a site (or "Mi sitio" with ?mine), as in MiAulario</script>
 ${siteTags}
