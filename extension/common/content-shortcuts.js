@@ -30,7 +30,7 @@
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .head strong { flex: 1; min-width: 200px; font-size: 15px; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    .tiles { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; margin-top: 8px; align-items: start; max-width: 1400px; }
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 10px; margin-top: 8px; align-items: start; }
     @media (max-width: 760px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
     .tile { border: 1px solid #d6e3e0; border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
     .dark .tile { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
@@ -40,14 +40,20 @@
     .period { margin: 2px 0; }
     .period b { font-weight: 600; }
     .period.other { color: #5f6b73; font-size: 12px; } .dark .period.other { color: #9aa6ad; }
-    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 6px; }
-    .exams li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 6px 8px; border-radius: 6px; background: rgba(16, 82, 78, 0.06); }
-    .dark .exams li { background: rgba(79, 209, 165, 0.08); }
-    .exams .name { font-weight: 600; overflow-wrap: anywhere; }
-    .exams .when { font-variant-numeric: tabular-nums; }
-    .exams .count { font-size: 12px; font-weight: 600; color: #10524e; white-space: nowrap; align-self: center; grid-row: span 2; }
-    .dark .exams .count { color: #4fd1a5; }
-    .exams .past { opacity: 0.6; }
+    /* One small card for each subject, in columns: the name and the countdown, then the two dates. */
+    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+    .exams li { min-width: 0; padding: 5px 8px; border-radius: 6px; border-left: 3px solid #10524e; background: rgba(16, 82, 78, 0.06); }
+    .dark .exams li { border-left-color: #4fd1a5; background: rgba(79, 209, 165, 0.08); }
+    .exams .top { display: flex; gap: 6px; align-items: flex-start; }
+    .exams .name { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+    .exams .count { flex: none; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 9px; background: #d9efe9; color: #10524e; white-space: nowrap; }
+    .dark .exams .count { background: #1e3a33; color: #7fe0bf; }
+    .exams li.soon .count { background: #feefe3; color: #b45309; } .dark .exams li.soon .count { background: #3d2a16; color: #fcad70; }
+    .exams li.now .count { background: #fce8e6; color: #c5221f; } .dark .exams li.now .count { background: #3c1f1e; color: #f28b82; }
+    .exams .when { font-size: 12px; line-height: 1.4; color: #5f6b73; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dark .exams .when { color: #9aa6ad; }
+    .exams .when b { font-weight: 600; color: #1d2327; } .dark .exams .when b { color: #e8ecee; }
+    .exams .when.past { opacity: 0.55; text-decoration: line-through; }
     h5 { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: #5f6b73; text-transform: uppercase; letter-spacing: 0.04em; }
     .dark h5 { color: #9aa6ad; }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -156,12 +162,12 @@
         p.recovery ? [' · ', `${t('short.recovery')}: ${p.recovery}`] : null)));
   }
 
-  // "hoy", "mañana", "en 12 días", "pasado".
-  function countdown(ms, now) {
+  // The days to a date (0 = today), and "hoy", "mañana", "en 12 días", "pasado".
+  const daysTo = (ms, now) => {
     const start = (x) => new Date(new Date(x).toDateString()).getTime();
-    const days = Math.round((start(ms) - start(now)) / DAY);
-    return days < 0 ? t('short.done') : days === 0 ? t('short.today') : days === 1 ? t('short.tomorrow') : t('short.inDays', { n: days });
-  }
+    return Math.round((start(ms) - start(now)) / DAY);
+  };
+  const countdown = (days) => (days < 0 ? t('short.done') : days === 0 ? t('short.today') : days === 1 ? t('short.tomorrow') : t('short.inDays', { n: days }));
 
   function examList(mine, sites, now) {
     const siteName = (id) => {
@@ -170,11 +176,17 @@
     };
     return h('ul', { class: 'exams' }, mine.map((r) => {
       const next = [r.final, r.recovery].filter((x) => x && x >= now - DAY).sort((a, b) => a - b)[0];
-      const line = (label, ms, room) => (ms ? h('div', { class: `when meta${ms < now - DAY ? ' past' : ''}` }, `${label}: ${MAK.formatDate(ms)}${room ? ` · ${room}` : ''}`) : null);
-      return h('li', null,
-        h('div', { class: 'name', text: siteName(r.siteId) || r.name }),
-        h('span', { class: 'count', text: next ? countdown(next, now) : t('short.done') }),
-        h('div', null, line(t('short.final'), r.final, r.finalRoom), line(t('short.rec'), r.recovery, r.recoveryRoom)));
+      const days = next ? daysTo(next, now) : -1;
+      const name = siteName(r.siteId) || r.name;
+      const line = (label, ms, room) => {
+        if (!ms) return null;
+        const text = `${MAK.formatDate(ms)}${room ? ` · ${room}` : ''}`;
+        return h('div', { class: `when${ms < now - DAY ? ' past' : ''}`, title: `${label}: ${text}` }, h('b', { text: label }), ` ${text}`);
+      };
+      return h('li', { class: days >= 0 && days <= 2 ? 'now' : days >= 0 && days <= 7 ? 'soon' : '' },
+        h('div', { class: 'top' }, h('span', { class: 'name', text: name, title: name }), h('span', { class: 'count', text: countdown(days) })),
+        line(t('short.final'), r.final, r.finalRoom),
+        line(t('short.rec'), r.recovery, r.recoveryRoom));
     }));
   }
 
