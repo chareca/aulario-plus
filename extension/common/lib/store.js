@@ -17,7 +17,8 @@
       shortNames: true, // show "Análisis de Datos" for "26_0_240504_1 ANÁLISIS DE DATOS"
       nicknames: {}, // a name from the user for each site
       // Download links without a MiAulario login (Send). The user must enable them.
-      links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 }
+      links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 },
+      degree: '' // the degree that the user selected (its base address), or '': the degree of the guides
     };
   };
 
@@ -100,7 +101,8 @@
       searchShortcut: 'searchShortcut' in s ? !!s.searchShortcut : d.searchShortcut,
       shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
       nicknames: cleanNicknames(s.nicknames),
-      links: cleanLinks(s.links, d.links)
+      links: cleanLinks(s.links, d.links),
+      degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : ''
     };
   };
 
@@ -126,7 +128,7 @@
   // when the user logs out or when a different user logs in.
   MAK.DATA_KEYS = [
     'sites', 'pages', 'assignments', 'announcements', 'notifications', 'synoptic', 'forums',
-    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'last', 'log' // "log": v1.1 data
+    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'last', 'log' // "log": v1.1 data
   ];
   MAK.RESOURCE_PREFIX = 'res:';
 

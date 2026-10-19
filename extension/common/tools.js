@@ -2,6 +2,7 @@
 //   tools.html?zip=<siteId>   download all the files of a site as one ZIP
 //   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
 //   tools.html?check=1        the MiAulario checks (diagnostic); "&auto=1" starts them at once
+//   tools.html?perm=exams     the permission to read the exam calendars (www2.unavarra.es)
 // A tab is used (not the popup) because the popup closes when it loses the focus.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { t } = MAK;
@@ -246,6 +247,31 @@ function runChecks(auto) {
   if (auto) go();
 }
 
+// The optional permission for the exam calendars. Only a page of the extension can ask for it
+// (not a content script), and only after a click.
+async function runExamPermission() {
+  const box = $('perm');
+  box.hidden = false;
+  $('title').textContent = t('perm.examsTitle');
+  const status = MAK.h('p', { class: 'status', attrs: { role: 'status' } });
+  const grant = MAK.h('button', { class: 'btn primary', text: t('perm.examsGrant'), attrs: { type: 'button' } });
+  const done = (ok) => {
+    status.textContent = t(ok ? 'perm.examsDone' : 'perm.examsDenied');
+    grant.hidden = ok;
+  };
+  grant.addEventListener('click', async () => {
+    let ok = false;
+    try {
+      ok = await ext.permissions.request(MAK.EXAMS_PERMISSION);
+    } catch {}
+    done(ok);
+  });
+  MAK.fill(box, MAK.h('p', { text: t('perm.examsHelp') }), MAK.h('div', { class: 'row' }, grant), status);
+  try {
+    if (await ext.permissions.contains(MAK.EXAMS_PERMISSION)) done(true);
+  } catch {}
+}
+
 async function init() {
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
@@ -266,6 +292,8 @@ async function init() {
     await runIcs(store);
   } else if (params.has('check')) {
     runChecks(params.has('auto'));
+  } else if (params.get('perm') === 'exams') {
+    await runExamPermission();
   }
 }
 

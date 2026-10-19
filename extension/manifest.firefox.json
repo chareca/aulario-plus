@@ -21,7 +21,8 @@
     "https://send.monks.tools/*",
     "https://is.gd/*",
     "https://spoo.me/*",
-    "https://tinyurl.com/*"
+    "https://tinyurl.com/*",
+    "https://www2.unavarra.es/*"
   ],
   "background": {
     "scripts": [
@@ -39,6 +40,8 @@
       "lib/zip.js",
       "lib/send.js",
       "lib/guide.js",
+      "lib/pdftext.js",
+      "lib/degree.js",
       "background.js"
     ]
   },
@@ -66,9 +69,11 @@
         "lib/pm.js",
         "lib/teachers.js",
         "lib/guide.js",
+        "lib/degree.js",
         "lib/mail-ui.js",
         "content-banner.js",
         "content-guide.js",
+        "content-shortcuts.js",
         "content-names.js",
         "content-search.js",
         "content-mail.js",

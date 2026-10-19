@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -38,6 +38,21 @@ const COOKIE_HOSTS = {
 const SESSION_HOST = 'miaulario.unavarra.es';
 // Wait this time without a change of a cookie before the extension writes it again.
 const SETTLE_MS = 1500;
+
+// The optional permission to read the exam calendars of www2.unavarra.es.
+async function hasExamPermission() {
+  try {
+    return await ext.permissions.contains(MAK.EXAMS_PERMISSION);
+  } catch {
+    return false;
+  }
+}
+// When the user gives the permission, the pages of MiAulario read the calendars (storage event).
+if (ext.permissions && ext.permissions.onAdded) {
+  ext.permissions.onAdded.addListener((p) => {
+    if ((p.origins || []).some((o) => o.startsWith(MAK.EXAMS_ORIGIN))) store.set({ examsGranted: Date.now() }).catch(() => {});
+  });
+}
 
 async function getState() {
   const d = await ext.storage.local.get(['paused', 'autoLogin']);
@@ -565,6 +580,85 @@ const handlers = {
       } catch {
         return { error: 'guide.network' };
       }
+    }
+  },
+  // The public pages of the degrees: the list of degrees and the page "Evaluación" of a degree.
+  // The content script reads them (DOMParser) and stores the result with saveDegree.
+  fetchDegreePage: {
+    content: true,
+    run: async (msg) => {
+      const url = String(msg.url || '');
+      const page = '/evaluacion.html';
+      if (url !== MAK.DEGREE_LIST_URL && !(url.endsWith(page) && MAK.isDegreeBase(url.slice(0, -page.length)))) return { error: 'degree.url' };
+      try {
+        const r = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+        if (!r.ok) return { error: 'degree.http', status: r.status };
+        return { html: await r.text() };
+      } catch {
+        return { error: 'degree.network' };
+      }
+    }
+  },
+  // Store the degree of the user (read in a page), and the list of degrees if it comes too.
+  saveDegree: {
+    content: true,
+    run: async (msg) => {
+      const degree = MAK.cleanDegree(msg.degree);
+      if (!degree) return { ok: false };
+      const patch = { degree: Object.assign({ at: Date.now() }, degree) };
+      const list = Array.isArray(msg.list)
+        ? msg.list.slice(0, 200).map((d) => ({ name: d && typeof d.name === 'string' ? d.name.slice(0, 200) : '', base: d && d.base })).filter((d) => d.name && MAK.isDegreeBase(d.base))
+        : [];
+      if (list.length) patch.degreeList = { at: Date.now(), list };
+      await store.set(patch);
+      return { ok: true };
+    }
+  },
+  // The degree that the user selected in "Mi sitio" ("" = the degree of the guides).
+  setDegree: {
+    content: true,
+    run: async (msg) => {
+      const base = msg.base === '' ? '' : MAK.isDegreeBase(msg.base) ? msg.base : null;
+      if (base === null) return { ok: false };
+      await store.update('settings', (cur) => MAK.withDefaults(Object.assign({}, MAK.withDefaults(cur), { degree: base })));
+      await store.remove(['degree']); // read the degree again
+      return { ok: true };
+    }
+  },
+  // The exams of an exam calendar (a PDF file on www2.unavarra.es): its rows. The file is read again
+  // after 1 day. It needs the optional permission for www2.unavarra.es.
+  examRows: {
+    content: true,
+    run: async (msg) => {
+      const url = MAK.examPdfUrl(msg.url);
+      if (!url) return { error: 'exams.url' };
+      const { exams } = await store.get('exams');
+      const kept = exams && exams[url];
+      if (kept && Date.now() - kept.at < MAK.EXAMS_MS) return { rows: kept.rows };
+      if (!(await hasExamPermission())) return { error: 'exams.permission' };
+      try {
+        const r = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+        if (!r.ok) return { error: 'exams.http', status: r.status };
+        const data = await r.arrayBuffer();
+        if (data.byteLength > 5000000) return { error: 'exams.size' };
+        const rows = MAK.parseExamRows(await MAK.pdfTextLines(data)).slice(0, 500);
+        await store.update('exams', (cur) => {
+          const next = Object.fromEntries(Object.entries(cur || {}).filter(([k, v]) => k !== url && v && Date.now() - v.at < MAK.EXAMS_MS).slice(-7));
+          next[url] = { at: Date.now(), rows };
+          return next;
+        });
+        return { rows };
+      } catch {
+        return { error: 'exams.network' };
+      }
+    }
+  },
+  // The page of the extension that asks for the permission of the exam calendars.
+  openExamPermission: {
+    content: true,
+    run: async () => {
+      await ext.tabs.create({ url: ext.runtime.getURL('tools.html?perm=exams') });
+      return { ok: true };
     }
   },
   // Store the guide of a site (read in a page). null: the site has no guide (do not ask again soon).

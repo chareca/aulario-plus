@@ -47,7 +47,20 @@ routes['/ficha-asignaturaDOA/'] = { __file: GUIDE.window.GUIDE_HTML, type: 'text
 routes['/portal/tool/' + F.MATH + '-tool-7'] = { __file: '<html><body><iframe src="https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&amp;codPlan=240&amp;codAsig=240998&amp;anio=2026"></iframe></body></html>', type: 'text/html; charset=UTF-8' };
 routes['/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=240998&anio=2026'] = { __file: GUIDE.window.GUIDE_HTML
   .replace('<td>Examen teórico-práctico</td><td>60%</td><td>Sí, en el examen de recuperación</td><td>5 sobre 10</td>', '<td>Trabajo en grupo en el que se aplican los conocimientos adquiridos para construir un compilador</td><td>60</td><td>Recuperable mediante una prueba de laboratorio en la que el alumno corregirá los defectos que el profesor le señale</td><td>Nota mínima para que pondere en la calificación: 4,5 sobre 10</td>')
-  .replace('<td>30 %</td><td>No</td><td>No</td>', '<td>30</td><td>NO</td><td>N/A</td>'), type: 'text/html; charset=utf-8' };
+  .replace('<td>30 %</td><td>No</td><td>No</td>', '<td>30</td><td>NO</td><td>N/A</td>').replace('Código: 240999', 'Código: 240998'), type: 'text/html; charset=utf-8' };
+
+// The shortcuts of "Mi sitio": the list of degrees, the page "Evaluación" of the degree of the guides
+// (Computer Science) and its exam calendar (a small PDF with the two subjects of the guides).
+const DEGREE = { window: {} };
+require('node:vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'browser', 'fixtures-degree.js'), 'utf8'), DEGREE);
+routes['/sites/grados/home.html'] = { __file: DEGREE.window.DEGREE_LIST_HTML.replace('</ul>', '<li><a href="/sites/grados/informatica-y-telecomunicacion/computer-science.html">Grado en Computer Science</a></li></ul>'), type: 'text/html; charset=utf-8' };
+routes['/sites/grados/informatica-y-telecomunicacion/computer-science/evaluacion.html'] = { __file: DEGREE.window.EVALUATION_INF_HTML, type: 'text/html; charset=utf-8' };
+{
+  const rows = 'BT [(240998)-1027(MATEM\\301TICAS I)-13989(17/12/2026)-568(08:00)-18230(19/01/2027)-1126(08:00)]TJ ET\nBT [(240999)-1027(COMPUTER SCIENCE)-13989(11/01/2027)-568(16:00)-18230(22/01/2027)-1126(12:00)]TJ ET';
+  const body = require('node:zlib').deflateSync(Buffer.from(rows, 'latin1'));
+  const pdf = Buffer.concat([Buffer.from(`%PDF-1.6\n1 0 obj\r<</Length ${body.length}/Filter/FlateDecode>>stream\r\n`, 'latin1'), body, Buffer.from('\r\nendstream\rendobj\r%%EOF', 'latin1')]);
+  routes['/gesadj/CyD1/ETSIIT/Examenes/Grados/Otono/999_otono.pdf'] = { __bytes: pdf.toString('base64'), type: 'application/pdf' };
+}
 
 // The files of the Resources list of site.html (the mail window and the download links).
 routes[`/access/content/group/${F.CS}/Pr%C3%A1ctica%202.zip`] = { __file: 'Synthetic content of Práctica 2.zip\n', type: 'application/zip' };
@@ -101,6 +114,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
     const body = key in ROUTES ? ROUTES[key] : ROUTES[u.pathname];
     if (body === undefined) return new Response('{"error":"not found"}', { status: 404, headers: { 'content-type': 'application/json' } });
     if (body && body.__file) return new Response(body.__file, { status: 200, headers: { 'content-type': body.type } });
+    if (body && body.__bytes) return new Response(Uint8Array.from(atob(body.__bytes), (c) => c.charCodeAt(0)), { status: 200, headers: { 'content-type': body.type } });
     return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
   };
   const id = 'harness';
@@ -172,7 +186,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/guide.js', 'lib/mail-ui.js', 'content-banner.js', 'content-guide.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/guide.js', 'lib/degree.js', 'lib/mail-ui.js', 'content-banner.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>

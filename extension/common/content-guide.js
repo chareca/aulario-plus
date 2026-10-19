@@ -9,6 +9,7 @@
   const ext = globalThis.browser ?? globalThis.chrome;
   const HOST_ID = 'mak-guide-host';
   const BANNER_ID = 'mak-news-host'; // content-banner.js
+  const SHORTCUTS_ID = 'mak-shortcuts-host'; // content-shortcuts.js
   const where = MAK.parsePortalPath(location.pathname);
   const onRoot = /^\/portal\/?$/.test(location.pathname);
   const mySite = onRoot || !!(where && where.siteId && where.siteId.startsWith('~'));
@@ -197,9 +198,9 @@
       try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, content.hidden ? '1' : '0'); } catch {}
     });
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `📘 ${title}` }), toggle), content));
-    // Below the banner of new items, if there is one; else at the top of the content.
-    const banner = document.getElementById(BANNER_ID);
-    if (banner) banner.after(host);
+    // Below the shortcuts (content-shortcuts.js) or the banner of new items; else at the top of the content.
+    const above = document.getElementById(SHORTCUTS_ID) || document.getElementById(BANNER_ID);
+    if (above) above.after(host);
     else MAK.insertAtTop(host);
   }
 
