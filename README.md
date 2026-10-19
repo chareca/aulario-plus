@@ -216,3 +216,7 @@ Then serve `tests/harness/out/` with a local web server, for example `python3 -m
 ```bash
 git config core.hooksPath .githooks
 ```
+
+## License
+
+The code is open source under the [MIT License](LICENSE).
