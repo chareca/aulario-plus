@@ -100,8 +100,8 @@ function scheduleRender() {
 document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() => { if (!userIsInPanel()) renderCurrent(); }, 0); });
 
 // ---- Search --------------------------------------------------------------------
-// While the search box has text, the results replace the panel. The index is made again only
-// when the stored data changes.
+// While the search box has text, the results replace the panel (a fuzzy finder, lib/search.js). The
+// index is made again only when the stored data changes.
 
 const SEARCH_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl+K';
 let searchIndex = null;
@@ -139,11 +139,13 @@ function renderSearch() {
       h('h2', { class: 'group', text: t(`search.type.${type}`) }),
       l.map((x) => {
         const n = i++;
+        const site = x.type === 'site' ? [] : MAK.marked(x.site, x.siteHl);
+        const more = resultMeta(x);
         return h(
           'a',
           { class: `result${n === ui.searchSel ? ' sel' : ''}`, href: x.url, data: { n } },
-          h('span', { class: 'title', text: x.title }),
-          h('span', { class: 'meta', text: [x.type === 'site' ? null : x.site, resultMeta(x)].filter(Boolean).join(' · ') })
+          h('span', { class: 'title' }, MAK.marked(x.title, x.hl)),
+          h('span', { class: 'meta' }, site, site.length && more ? ' · ' : null, more)
         );
       })
     ])
@@ -155,10 +157,16 @@ function renderSearch() {
 function setupSearch() {
   const box = $('search');
   box.addEventListener('input', () => setQuery(box.value));
+  // Up and down: the arrows, and on macOS also Ctrl+P and Ctrl+N. The end of the list goes to the start.
+  const MAC = SEARCH_KEY === '⌘K';
   box.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    const ctrl = MAC && e.ctrlKey && !e.metaKey && !e.altKey;
+    const key = e.key.toLowerCase();
+    const step = e.key === 'ArrowDown' || (ctrl && key === 'n') ? 1 : e.key === 'ArrowUp' || (ctrl && key === 'p') ? -1 : 0;
+    if (step && ui.query.trim()) {
       e.preventDefault();
-      ui.searchSel += e.key === 'ArrowDown' ? 1 : -1;
+      const n = ui.searchList.length;
+      if (n) ui.searchSel = (ui.searchSel + step + n) % n;
       renderSearch();
     } else if (e.key === 'Enter') {
       const x = ui.searchList[ui.searchSel];

@@ -54,6 +54,7 @@ ul.checks li.skip .mark { color: var(--muted); }
 .result.sel { box-shadow: inset 2px 0 0 var(--accent); }
 .result .title { display: block; font-weight: 600; overflow-wrap: anywhere; }
 .result .meta { display: block; }
+.result mark { background: none; color: var(--accent); font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
 
 /* Tabs */
 nav.tabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 6px; }

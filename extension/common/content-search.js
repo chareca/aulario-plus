@@ -1,6 +1,7 @@
-// Aulario Plus: the search palette in MiAulario. Ctrl+K (⌘K on macOS) opens it.
-// The background script searches the stored data. The palette is in a closed shadow root.
-// The shortcut does not operate in a text field or in an editor: there, Ctrl+K adds a link.
+// Aulario Plus: the search palette in MiAulario. Ctrl+K (⌘K on macOS) opens it, and closes it.
+// The background script searches the stored data (a fuzzy finder, lib/search.js). The palette is in
+// a closed shadow root. Without a query it shows the sites. The shortcut does not operate in a text
+// field or in an editor: there, Ctrl+K adds a link.
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
@@ -26,7 +27,12 @@
     .dark a.item.sel { background: #2a3a37; box-shadow: inset 3px 0 0 #4fd1a5; }
     .title { display: block; font-weight: 600; overflow-wrap: anywhere; }
     .meta { display: block; font-size: 12px; color: #5f6b73; }
+    mark { background: none; color: #0b6b5f; font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px;
+      text-decoration-color: rgba(16, 82, 78, 0.35); text-underline-offset: 2px; }
+    .dark mark { color: #6fe0b8; text-decoration-color: rgba(111, 224, 184, 0.4); }
     .empty { padding: 14px; color: #5f6b73; }
+    .tip { padding: 8px 8px 0; font-size: 12px; color: #5f6b73; }
+    .dark .tip { color: #9aa6ad; }
     .foot { font-size: 11px; color: #5f6b73; padding: 6px 12px; border-top: 1px solid #e3e7ea; }
     .dark .foot { border-top-color: #2e4440; }
   `;
@@ -75,10 +81,11 @@
     let results = [];
     let sel = 0;
     let ask = 0;
+    let mouse = null; // the last position of the mouse
 
     function draw() {
-      if (!input.value.trim()) return MAK.fill(list, h('div', { class: 'empty', text: MAK.t('palette.hint') }));
-      if (!results.length) return MAK.fill(list, h('div', { class: 'empty', text: MAK.t('search.none', { q: input.value.trim() }) }));
+      const empty = !input.value.trim();
+      if (!results.length) return MAK.fill(list, h('div', { class: 'empty', text: empty ? MAK.t('palette.hint') : MAK.t('search.none', { q: input.value.trim() }) }));
       const order = [...new Set(results.map((x) => x.type))]; // the groups in the order of their best result
       const shown = order.flatMap((type) => results.filter((x) => x.type === type));
       results = shown;
@@ -86,28 +93,53 @@
       let i = 0;
       MAK.fill(
         list,
+        empty ? h('div', { class: 'tip', text: MAK.t('palette.hint') }) : null,
         order.map((type) => [
           h('h3', { text: MAK.t(`search.type.${type}`) }),
           shown
             .filter((x) => x.type === type)
             .map((x) => {
               const n = i++;
-              const meta = [x.type === 'site' ? null : x.site, DATE_TYPES.has(x.type) && x.time ? MAK.formatDate(x.time) : x.type === 'tool' || x.type === 'grade' ? null : x.meta];
+              const more = DATE_TYPES.has(x.type) && x.time ? MAK.formatDate(x.time) : x.type === 'tool' || x.type === 'grade' ? null : x.meta;
+              const site = x.type === 'site' ? [] : MAK.marked(x.site, x.siteHl);
               return h(
                 'a',
                 {
                   class: `item${n === sel ? ' sel' : ''}`,
                   attrs: { role: 'option', 'aria-selected': String(n === sel), href: MAK.safeHttpUrl(x.url) || '#' },
-                  on: { click: (e) => { e.preventDefault(); go(x.url, e.ctrlKey || e.metaKey); } }
+                  on: {
+                    click: (e) => { e.preventDefault(); go(x.url, e.ctrlKey || e.metaKey); },
+                    // The mouse selects only when it moves. The browser also sends "mousemove" when the
+                    // list scrolls under the mouse, at the same position: that does not select.
+                    mousemove: (e) => {
+                      const at = `${e.clientX},${e.clientY}`;
+                      const moved = mouse !== null && mouse !== at;
+                      mouse = at;
+                      if (moved && sel !== n) select(n, false);
+                    }
+                  }
                 },
-                h('span', { class: 'title', text: x.title }),
-                h('span', { class: 'meta', text: meta.filter(Boolean).join(' · ') })
+                h('span', { class: 'title' }, MAK.marked(x.title, x.hl)),
+                h('span', { class: 'meta' }, site, site.length && more ? ' · ' : null, more)
               );
             })
         ])
       );
       const s = list.querySelector('.sel');
       if (s) s.scrollIntoView({ block: 'nearest' });
+    }
+
+    // Select a result. From the last result, "down" goes to the first, and "up" from the first goes
+    // to the last.
+    function select(n, scroll) {
+      if (!results.length) return;
+      sel = (n + results.length) % results.length;
+      list.querySelectorAll('a.item').forEach((a, i) => {
+        a.classList.toggle('sel', i === sel);
+        a.setAttribute('aria-selected', String(i === sel));
+      });
+      const s = list.querySelector('.sel');
+      if (s && scroll) s.scrollIntoView({ block: 'nearest' });
     }
 
     async function search() {
@@ -124,16 +156,22 @@
       clearTimeout(timer);
       timer = setTimeout(search, 80);
     });
-    // The keys stay in the palette: the page does not get them.
+    // The keys stay in the palette: the page does not get them. Up and down: the arrows, and on macOS
+    // also Ctrl+P and Ctrl+N (as in fzf and in the terminal; on Windows and Linux, Chrome does not
+    // give Ctrl+N to the page). Page Up and Page Down: 5 results.
     panel.addEventListener('keydown', (e) => {
       e.stopPropagation();
-      if (e.key === 'Escape') {
+      const ctrl = MAC && e.ctrlKey && !e.metaKey && !e.altKey;
+      const key = e.key.toLowerCase();
+      const step = e.key === 'ArrowDown' || (ctrl && key === 'n') ? 1 : e.key === 'ArrowUp' || (ctrl && key === 'p') ? -1 : e.key === 'PageDown' ? 5 : e.key === 'PageUp' ? -5 : 0;
+      if (e.key === 'Escape' || (key === 'k' && (MAC ? e.metaKey : e.ctrlKey))) {
         e.preventDefault();
         close();
-      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      } else if (step) {
         e.preventDefault();
-        sel += e.key === 'ArrowDown' ? 1 : -1;
-        draw();
+        const n = sel + step;
+        // Page Up and Page Down stop at the ends.
+        select(Math.abs(step) > 1 ? Math.max(0, Math.min(n, results.length - 1)) : n, true);
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (results[sel]) go(results[sel].url, e.ctrlKey || e.metaKey);
@@ -144,6 +182,7 @@
     document.documentElement.append(host);
     draw();
     input.focus();
+    search(); // the sites
   }
 
   document.addEventListener(

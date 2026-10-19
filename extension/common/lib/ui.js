@@ -31,6 +31,22 @@
     return el;
   };
 
+  // A text with some parts in <mark> (the parts of a search result that match the query).
+  // ranges: [[start, end], …] in order, without overlaps.
+  MAK.marked = function (text, ranges) {
+    const s = String(text || '');
+    const out = [];
+    let at = 0;
+    for (const [start, end] of ranges || []) {
+      if (start < at || end <= start || end > s.length) continue;
+      if (start > at) out.push(s.slice(at, start));
+      out.push(MAK.h('mark', { text: s.slice(start, end) }));
+      at = end;
+    }
+    if (at < s.length) out.push(s.slice(at));
+    return out;
+  };
+
   // The look of the buttons that the extension adds to the pages of MiAulario: the color of the
   // extension (teal, the same as "Download all (ZIP)"), so the user sees which buttons are of the
   // extension. ".mak-btn": a button with text. ".mak-icon": a button with one symbol (✎, ✉), a little

@@ -685,7 +685,6 @@ const handlers = {
     content: true,
     run: async (msg) => {
       const query = typeof msg.query === 'string' ? msg.query.slice(0, 100) : '';
-      if (!query.trim()) return { results: [] };
       if (!searchCache) {
         const d = await ext.storage.local.get(null);
         searchCache = MAK.buildSearchIndex(d, MAK.withDefaults(d.settings));
