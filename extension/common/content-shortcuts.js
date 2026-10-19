@@ -30,7 +30,8 @@
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .head strong { flex: 1; min-width: 200px; font-size: 15px; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    .tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 10px; margin-top: 8px; align-items: start; }
+    /* The tiles have the same height: the exams on the left, the actions in a column on the right. */
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 10px; margin-top: 8px; align-items: stretch; }
     @media (max-width: 760px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
     .tile { border: 1px solid #d6e3e0; border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
     .dark .tile { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
@@ -41,7 +42,7 @@
     .period b { font-weight: 600; }
     .period.other { color: #5f6b73; font-size: 12px; } .dark .period.other { color: #9aa6ad; }
     /* One small card for each subject, in columns: the name and the countdown, then the two dates. */
-    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px; }
     .exams li { min-width: 0; padding: 5px 8px; border-radius: 6px; border-left: 3px solid #10524e; background: rgba(16, 82, 78, 0.06); }
     .dark .exams li { border-left-color: #4fd1a5; background: rgba(79, 209, 165, 0.08); }
     .exams .top { display: flex; gap: 6px; align-items: flex-start; }
@@ -58,12 +59,12 @@
     .dark h5 { color: #9aa6ad; }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .note { font-size: 13px; margin: 6px 0; }
-    .side { display: grid; gap: 10px; min-width: 0; }
+    .side { display: grid; grid-auto-rows: 1fr; gap: 10px; min-width: 0; }
     /* A tile with one action: the text, then a large button in the center. */
-    .tile.action { text-align: center; }
+    .tile.action { text-align: center; display: flex; flex-direction: column; }
     .tile.action .note { margin: 0 0 10px; }
     a.big { display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: 100%; max-width: 280px;
-      margin: 6px auto 0; padding: 10px 14px; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; }
+      margin: auto auto 0; padding: 10px 14px; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; }
     a.big .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
     a.big:hover .mak-arrow, a.big:focus-visible .mak-arrow { transform: translate(1px, -2px); }
     @media (prefers-reduced-motion: reduce) { a.big .mak-arrow { transition: none; } }
