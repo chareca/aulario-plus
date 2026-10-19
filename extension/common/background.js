@@ -29,22 +29,15 @@ const PING_MIN_SECONDS = 3 * 60;
 const PING_MAX_SECONDS = 10 * 60;
 const PERSIST_DAYS = 30;
 
-// The cookies of the session, with the same flags that the server sets.
-const COOKIE_SPECS = {
-  'miaulario.unavarra.es': {
-    url: 'https://miaulario.unavarra.es/',
-    names: {
-      SAKAISESSIONID: { path: '/', secure: true, httpOnly: true, sameSite: 'no_restriction' },
-      SERVERID: { path: '/', secure: false, httpOnly: false, sameSite: 'lax' }
-    }
-  },
-  'sso.unavarra.es': {
-    url: 'https://sso.unavarra.es/',
-    names: {
-      idpsession: { path: '/', secure: true, httpOnly: true, sameSite: 'no_restriction', domain: 'sso.unavarra.es' }
-    }
-  }
+// The session cookies of each host. The extension copies their attributes (domain, path, flags)
+// from the cookie that the server sets.
+const COOKIE_HOSTS = {
+  'miaulario.unavarra.es': ['SAKAISESSIONID', 'SERVERID'],
+  'sso.unavarra.es': ['idpsession']
 };
+const SESSION_HOST = 'miaulario.unavarra.es';
+// Wait this time without a change of a cookie before the extension writes it again.
+const SETTLE_MS = 1500;
 
 async function getState() {
   const d = await ext.storage.local.get(['paused', 'autoLogin']);
@@ -74,71 +67,110 @@ async function ping() {
 }
 
 // ---- Persistent cookies ------------------------------------------------------
+//
+// The server sets the session cookies without an expiration date. The extension writes each one
+// again, with the same attributes and an expiration date. At login, MiAulario changes
+// SAKAISESSIONID more than one time in a short period. If a write replaces the new (logged-in)
+// session with an older value, the page shows "not logged in" after a correct login. So:
+// 1. The extension waits until the cookie does not change for SETTLE_MS.
+// 2. It reads the cookie that the browser has now, and writes this cookie (not the cookie of the
+//    event) with its own domain, path and flags. Thus the write replaces this cookie.
+// 3. It removes the other copies of the cookie for the same host (another path, or a host-only
+//    cookie and a domain cookie). The browser sends all the copies, and Sakai reads only one.
+// 4. If the server set a new value during the write, the write replaced it. Then the extension
+//    writes the new value.
 
-function specFor(cookie) {
-  const spec = COOKIE_SPECS[cookie.domain.replace(/^\./, '')];
-  const conf = spec && spec.names[cookie.name];
-  return conf ? { url: spec.url, conf } : null;
+const cookieWatch = new Map(); // "store|host|name" -> { seq, cookie, timer, written: { value, seq } }
+let cookieSeq = 0;
+let cookieQueue = Promise.resolve();
+// One cookie job at a time, in the order of the events.
+const queueCookie = (job) => (cookieQueue = cookieQueue.then(job).catch(() => {}));
+
+const cookieHost = (c) => String(c.domain || '').replace(/^\./, '');
+const isSessionCookie = (c) => (COOKIE_HOSTS[cookieHost(c)] || []).includes(c.name);
+const watchKey = (storeId, host, name) => `${storeId || ''}|${host}|${name}`;
+const sameCookie = (a, b) => a.domain === b.domain && (a.path || '/') === (b.path || '/') && !!a.hostOnly === !!b.hostOnly;
+
+// The details for cookies.set: the same cookie (domain, path, flags) with this value and expiration.
+function cookieDetails(c, host, value, expirationDate) {
+  const d = { url: `https://${host}${c.path || '/'}`, name: c.name, value, path: c.path || '/', secure: !!c.secure, httpOnly: !!c.httpOnly, expirationDate };
+  if (c.sameSite) d.sameSite = c.sameSite;
+  if (!c.hostOnly) d.domain = c.domain;
+  if (c.storeId) d.storeId = c.storeId;
+  if (c.partitionKey) d.partitionKey = c.partitionKey;
+  if (c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain; // Firefox with first-party isolation
+  return d;
 }
 
-// The cookie of an event can be old: at login, MiAulario changes the session cookie a few
-// milliseconds after the previous change. Write only the value that the browser has now, else an
-// old (logged-out) session can replace the new session.
-async function persist(cookie) {
-  const match = specFor(cookie);
-  if (!match || cookie.expirationDate) return; // The cookie is persistent already, or it is not a session cookie.
-  const { url, conf } = match;
-  let now = null;
+// All the copies of a cookie for a host: the host-only cookie and the domain cookie, all paths.
+async function cookieCopies(host, name, storeId) {
   try {
-    now = await ext.cookies.get(cookie.storeId ? { url, name: cookie.name, storeId: cookie.storeId } : { url, name: cookie.name });
-  } catch {}
-  if (!now || now.value !== cookie.value || now.expirationDate) return;
-  const details = {
-    url,
-    name: cookie.name,
-    value: cookie.value,
-    path: conf.path,
-    secure: conf.secure,
-    httpOnly: conf.httpOnly,
-    sameSite: conf.sameSite,
-    expirationDate: Math.floor(Date.now() / 1000) + PERSIST_DAYS * 86400
-  };
-  if (conf.domain) details.domain = conf.domain;
-  if (cookie.storeId) details.storeId = cookie.storeId;
-  try { await ext.cookies.set(details); } catch {}
-}
-
-async function clearPersisted() {
-  for (const spec of Object.values(COOKIE_SPECS)) {
-    for (const name of Object.keys(spec.names)) {
-      try { await ext.cookies.remove({ url: spec.url, name }); } catch {}
-    }
+    const list = await ext.cookies.getAll(storeId ? { domain: host, name, storeId } : { domain: host, name });
+    return (list || []).filter((c) => cookieHost(c) === host);
+  } catch {
+    return [];
   }
 }
 
-// One change at a time, in the order of the events.
-let cookieQueue = Promise.resolve();
+// Remove exactly one copy: write the same cookie with an expiration date in the past.
+async function dropCookie(c, host) {
+  try { await ext.cookies.set(cookieDetails(c, host, '', 1)); } catch {}
+}
+
+async function settleCookie(host, name, storeId, round = 0) {
+  const key = watchKey(storeId, host, name);
+  const watch = cookieWatch.get(key);
+  if (watch) clearTimeout(watch.timer);
+  if ((await getState()).paused) return;
+  const seq = cookieSeq;
+  const copies = await cookieCopies(host, name, storeId);
+  // The cookie of the server is the copy without an expiration date.
+  let target = copies.find((c) => !c.expirationDate);
+  if (!target && watch && watch.written && watch.seq > watch.written.seq && watch.cookie.value !== watch.written.value) {
+    target = watch.cookie; // the last write replaced a newer value of the server
+  }
+  if (!target) return;
+  for (const c of copies) if (!sameCookie(c, target)) await dropCookie(c, host);
+  try {
+    await ext.cookies.set(cookieDetails(target, host, target.value, Math.floor(Date.now() / 1000) + PERSIST_DAYS * 86400));
+  } catch {}
+  const now = cookieWatch.get(key) || { seq: 0 };
+  now.written = { value: target.value, seq };
+  cookieWatch.set(key, now);
+  // The server changed the cookie during the write: do the work again at once.
+  if (now.seq > seq && round < 3) await settleCookie(host, name, storeId, round + 1);
+}
+
 ext.cookies.onChanged.addListener(({ cookie, removed }) => {
-  if (removed || !specFor(cookie)) return;
-  cookieQueue = cookieQueue
-    .then(async () => {
-      const { paused } = await getState();
-      if (!paused) await persist(cookie);
-    })
-    .catch(() => {});
+  // A persistent cookie is a write of the extension, or a cookie that is persistent already.
+  if (removed || !isSessionCookie(cookie) || cookie.expirationDate) return;
+  const host = cookieHost(cookie);
+  const key = watchKey(cookie.storeId, host, cookie.name);
+  const watch = cookieWatch.get(key) || {};
+  clearTimeout(watch.timer);
+  Object.assign(watch, { seq: ++cookieSeq, cookie });
+  watch.timer = setTimeout(() => queueCookie(() => settleCookie(host, cookie.name, cookie.storeId)), SETTLE_MS);
+  cookieWatch.set(key, watch);
 });
+
+// Remove all the copies of the cookies of a host (for all the names if "names" is not given).
+function dropSessionCookies(hosts, names) {
+  return queueCookie(async () => {
+    for (const host of hosts) {
+      for (const name of names || COOKIE_HOSTS[host]) {
+        for (const [key, w] of cookieWatch) if (key.endsWith(`|${host}|${name}`)) { clearTimeout(w.timer); cookieWatch.delete(key); }
+        for (const c of await cookieCopies(host, name)) await dropCookie(c, host);
+      }
+    }
+  });
+}
+
+const clearPersisted = () => dropSessionCookies(Object.keys(COOKIE_HOSTS));
 
 // At install or at browser start, change the cookies that exist into persistent cookies.
 async function persistExisting() {
-  const { paused } = await getState();
-  if (paused) return;
-  for (const spec of Object.values(COOKIE_SPECS)) {
-    for (const name of Object.keys(spec.names)) {
-      try {
-        const c = await ext.cookies.get({ url: spec.url, name });
-        if (c) await persist(c);
-      } catch {}
-    }
+  for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
+    for (const name of names) await queueCookie(() => settleCookie(host, name));
   }
 }
 
@@ -349,6 +381,16 @@ const handlers = {
   setAutoLogin: {
     run: async (msg) => {
       await store.set({ autoLogin: !!msg.value });
+      return { ok: true };
+    }
+  },
+  // A login did not give a session (content.js). An old copy of the session cookie can cause this.
+  // Remove all the copies of SAKAISESSIONID and SERVERID: the next login makes them again. The SSO
+  // session (idpsession) stays, so the login does not ask for the password.
+  repairSession: {
+    content: true,
+    run: async () => {
+      await dropSessionCookies([SESSION_HOST]);
       return { ok: true };
     }
   },

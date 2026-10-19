@@ -123,7 +123,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
       get: async (name) => alarms.get(name),
       onAlarm: on(listeners.alarm)
     },
-    cookies: { onChanged: on([]), get: async () => null, set: async () => {}, remove: async () => {} },
+    cookies: { onChanged: on([]), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },
     action: {
       setBadgeText: async ({ text }) => { window.__badge.text = text; },
       setBadgeBackgroundColor: async ({ color }) => { window.__badge.color = color; },

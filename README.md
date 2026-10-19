@@ -23,8 +23,9 @@ The interface is in Spanish. You can change it to English in the settings.
 ### Session
 
 - **Keep-alive ping:** At a random interval of 3 to 10 minutes, the extension sends a request to `/direct/session/current.json`. Sakai records this request as activity, and the 60-minute inactivity timer goes back to zero. The extension also operates when no MiAulario tab is open.
-- **Persistent cookies:** The extension changes the session cookies (`SAKAISESSIONID`, `SERVERID`, `idpsession`) into persistent cookies. Then the session stays after you close the browser and open it again.
+- **Persistent cookies:** The extension changes the session cookies (`SAKAISESSIONID`, `SERVERID`, `idpsession`) into persistent cookies. Then the session stays after you close the browser and open it again. At login, MiAulario changes the session cookie more than one time. The extension waits until the cookie does not change for 1.5 seconds, then it writes the cookie that the browser has, with the same domain, path and flags. It removes old copies of the cookie, because the browser sends all the copies and Sakai reads only one.
 - **Login page:** If you open MiAulario and the session is not active, the extension opens the SSO login page. If the SSO session is active, you come back logged in. If not, enter your user name and password.
+- **Login repair:** If a login of the last 2 minutes did not give a session (the page shows "Identificarse" after a correct login), the extension removes the MiAulario session cookies (`SAKAISESSIONID`, `SERVERID`) and opens the login again. The SSO session stays, so the password is not necessary. The repair occurs one time in 10 minutes at most.
 - **Manual logout:** If you click **Log out**, the extension pauses. It removes the persistent cookies and the course data. The extension starts again when you log in.
 
 ### Popup

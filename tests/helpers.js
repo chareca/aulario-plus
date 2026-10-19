@@ -116,7 +116,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       clear: async (name) => alarms.delete(name),
       onAlarm: on(listeners.alarm)
     },
-    cookies: { onChanged: on(listeners.cookies), get: async () => null, set: async () => {}, remove: async () => {} },
+    cookies: { onChanged: on(listeners.cookies), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },
     action: {
       setBadgeText: async ({ text }) => { badge.text = text; },
       setBadgeBackgroundColor: async ({ color }) => { badge.color = color; },

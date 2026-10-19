@@ -3,6 +3,8 @@
 // - If you open MiAulario and the Sakai session is not active, the script sends you to
 //   the SAML login. If the SSO session is active, you come back logged in. If not, the
 //   login form of sso.unavarra.es opens. The password manager of the browser can fill it.
+// - If a login of the last 2 minutes did not give a session, the script asks the background
+//   script to remove the session cookies, and opens the login one more time (once in 10 minutes).
 // - If you click "Log out", the script tells the background script to pause.
 // - If you open the Announcements tool of a site, the script tells the background script.
 //   The extension marks these announcements as read, also in the bell of MiAulario.
@@ -17,15 +19,28 @@
   const pageFetch = globalThis.content && typeof globalThis.content.fetch === 'function' ? globalThis.content.fetch.bind(globalThis.content) : fetch;
   const SAML_LOGIN = '/sakai-login-tool/container/saml/login';
   const LOGOUT_RE = /\/portal\/logout|\/sakai-login-tool\/container\/saml\/logout/i;
+  const LOGIN_RE = /\/portal\/x?login\b|\/portal\/site\/login-|\/sakai-login-tool\/container\/saml\/login/i;
   const THROTTLE_MS = 2 * 60 * 1000;
-  const THROTTLE_KEY = 'aulario-plus-last-relogin';
+  const THROTTLE_KEY = 'aulario-plus-last-relogin'; // the last login (of the extension or of the user)
+  const REPAIR_MS = 10 * 60 * 1000;
+  const REPAIR_KEY = 'aulario-plus-last-repair';
+  const since = (key) => {
+    let t = 0;
+    try { t = Number(sessionStorage.getItem(key) || 0); } catch {}
+    return Date.now() - t;
+  };
+  const mark = (key) => {
+    try { sessionStorage.setItem(key, String(Date.now())); } catch {}
+  };
 
   const send = (msg) => MAK.safeCall(() => ext.runtime.sendMessage(msg), null);
 
   // Manual logout: the background script pauses and removes the persistent cookies.
+  // A click on a login link: record the time of the login.
   document.addEventListener('click', (e) => {
     const a = e.target instanceof Element && e.target.closest('a[href]');
     if (a && LOGOUT_RE.test(a.href)) send({ type: 'logout' });
+    else if (a && LOGIN_RE.test(a.href)) mark(THROTTLE_KEY);
   }, true);
 
   // Do not change the login pages or the logout pages.
@@ -34,7 +49,7 @@
   // Return true if the script sends the user to the login page.
   async function reloginIfNeeded() {
     const status = await send({ type: 'getStatus' });
-    if (!status || status.paused || !status.autoLogin) return false;
+    if (!status) return false;
     let loggedIn;
     try {
       // "auto=true": this request only reads the session. Sakai does not record it as activity.
@@ -44,11 +59,19 @@
       return false;
     }
     if (loggedIn) return false;
-    // Prevent a loop if the SSO sends you back to the portal without a session.
-    let last = 0;
-    try { last = Number(sessionStorage.getItem(THROTTLE_KEY) || 0); } catch {}
-    if (Date.now() - last < THROTTLE_MS) return false;
-    try { sessionStorage.setItem(THROTTLE_KEY, String(Date.now())); } catch {}
+    if (since(THROTTLE_KEY) < THROTTLE_MS) {
+      // A login of the last 2 minutes did not give a session: the SSO sent you back without one.
+      // An old copy of the session cookie can cause this. Remove the session cookies and log in
+      // again, only once in 10 minutes (no loop).
+      if (since(REPAIR_KEY) < REPAIR_MS) return false;
+      mark(REPAIR_KEY);
+      mark(THROTTLE_KEY);
+      await send({ type: 'repairSession' });
+      location.assign(SAML_LOGIN);
+      return true;
+    }
+    if (status.paused || !status.autoLogin) return false;
+    mark(THROTTLE_KEY);
     location.assign(SAML_LOGIN);
     return true;
   }
