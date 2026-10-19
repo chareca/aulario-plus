@@ -8,7 +8,7 @@
   const HOME = `<!doctype html><html><head><title>Mensajes</title></head><body>
 <form id="msgForum" name="msgForum" method="post" action="${TOOL}/privateMsg/pvtMsgHpView" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="msgForum" value="msgForum">
-<div class="navIntraTool"><a href="#" id="msgForum:composeMessage" onclick="mojarra.jsfcljs(document.getElementById('msgForum'),{'msgForum:composeMessage':'msgForum:composeMessage'},'');return false">Redactar mensaje</a> <a href="#">Nueva carpeta</a></div>
+<div class="navIntraTool"><a href="#" id="msgForum:composeMessage" onclick="mojarra.jsfcljs(document.getElementById('msgForum'),{'msgForum:composeMessage':'msgForum:composeMessage'},'');return false">Redactar mensaje</a> <a href="#">Nueva carpeta</a> <a href="#" id="msgForum:settings" onclick="mojarra.jsfcljs(document.getElementById('msgForum'),{'msgForum:settings':'msgForum:settings'},'');return false">Configuración</a></div>
 <table><tr><td><a href="#">Recibido</a></td></tr><tr><td><a href="#">Enviado</a></td></tr></table>
 <input type="hidden" name="msgForum:mainOrHp" id="msgForum:mainOrHp" value="pvtMsgHpView">
 <input type="hidden" name="javax.faces.ViewState" id="j_id_jsp_178404212_0:javax.faces.ViewState:0" value="STATE-HOME">
@@ -63,7 +63,27 @@ ${attached.length ? `<ul class="attachList">${attached.map((a) => `<li>${a}</li>
 <button type="button" id="cancelButton" name="cancelButton" onclick="document.getElementById('attachForm').action='${PICKER}?sakai_action=doCancel'; submitform('attachForm');">Cancelar</button>
 </body></html>`;
 
+  // The settings page of the Messages tool (Sakai 23: jsp/privateMsg/pvtMsgSettings.jsp), as a
+  // student sees it: the forward of the messages and its address (open only with "Sí").
+  const SETTINGS = ({ mode = 'default', email = '', error = '' } = {}) => `<!doctype html><html><head><title>Configuración</title></head><body>
+<form id="pvtMsgSettings" name="pvtMsgSettings" method="post" action="${TOOL}/privateMsg/pvtMsgSettings" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="pvtMsgSettings" value="pvtMsgSettings">
+<ul class="navIntraTool actionToolbar" role="menu"><li><span id="messagesMainMenuLink"><a href="#" id="pvtMsgSettings:j_id_jsp_1_3">Mensajes</a></span></li><li><span id="messagesSettingsMenuLink"><a href="#" id="pvtMsgSettings:settings">Configuración</a></span></li></ul>
+<h1>Configuración</h1>
+${error ? `<ul id="pvtMsgSettings:errorMessages" class="alertMessage"><li>${error}</li></ul>` : ''}
+<h3>Configuración personal</h3>
+<label>Reenviar mensajes automáticamente:</label>
+<table id="pvtMsgSettings:fwd_msg" class="checkbox"><tr><td><input type="radio" name="pvtMsgSettings:fwd_msg" id="pvtMsgSettings:fwd_msg:0" value="yes" onchange="this.form.submit();"${mode === 'yes' ? ' checked="checked"' : ''}><label for="pvtMsgSettings:fwd_msg:0"> Sí</label></td></tr>
+<tr><td><input type="radio" name="pvtMsgSettings:fwd_msg" id="pvtMsgSettings:fwd_msg:1" value="no" onchange="this.form.submit();"${mode === 'no' ? ' checked="checked"' : ''}><label for="pvtMsgSettings:fwd_msg:1"> No</label></td></tr>
+<tr><td><input type="radio" name="pvtMsgSettings:fwd_msg" id="pvtMsgSettings:fwd_msg:2" value="default" onchange="this.form.submit();"${mode === 'default' ? ' checked="checked"' : ''}><label for="pvtMsgSettings:fwd_msg:2"> Por defecto</label></td></tr></table>
+<label for="pvtMsgSettings:fwd_email">Dirección de correo electrónico de reenvío:</label>
+<input id="pvtMsgSettings:fwd_email" type="text" name="pvtMsgSettings:fwd_email" value="${email}"${mode === 'yes' ? '' : ' disabled="disabled"'}>
+<input type="submit" name="pvtMsgSettings:j_id_jsp_2_20" value="Guardar configuración" accesskey="s" class="active">
+<input type="submit" name="pvtMsgSettings:j_id_jsp_2_21" value="Cancelar" accesskey="x">
+<input type="hidden" name="javax.faces.ViewState" id="j_id_jsp_2_0:javax.faces.ViewState:0" value="STATE-SETTINGS">
+</form></body></html>`;
+
   const LOGIN = '<!doctype html><html><head><title>Inicio de sesión</title></head><body><form action="/sakai-login-tool/container"><input name="eid"></form></body></html>';
 
-  window.PM_FIXTURES = { TOOL, PICKER, HOME, COMPOSE, PICKER_PAGE, LOGIN };
+  window.PM_FIXTURES = { TOOL, PICKER, HOME, COMPOSE, PICKER_PAGE, SETTINGS, LOGIN };
 })();

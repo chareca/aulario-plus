@@ -2,6 +2,8 @@
 // Messages tool of Sakai (sakai.messages). MiAulario has no API to send a message, so the engine
 // uses the forms of the tool, the same as a person:
 //   inbox -> "Compose" -> fields + "Add attachments" -> attach each file -> "Continue" -> "Send".
+// It also changes the forward of the messages of a site to an email address of the user:
+//   inbox -> "Settings" -> "Forward messages automatically: Yes" -> address -> "Save settings".
 // The files come from the Resources tool of the site: the server attaches a copy, nothing is
 // downloaded. The forms are JSF pages. MiAulario can change them, so:
 // - The readers (pmSnapshot) turn each page into plain data. Only they use the DOM.
@@ -23,17 +25,23 @@
   MAK.PM_LABELS = {
     attach: /^(añadir adjuntos|add attachments|eranskinak gehitu|gehitu eranskinak)$/i,
     send: /^(enviar|send|bidali)$/i,
-    cancel: /^(cancelar|cancel|utzi|ezeztatu)$/i
+    cancel: /^(cancelar|cancel|utzi|ezeztatu)$/i,
+    save: /^(guardar configuración|guardar|save settings|save|gorde|ezarpenak gorde)$/i
   };
 
   const oneLine = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+  // An email address for the forward (Sakai checks it again).
+  MAK.isEmail = (v) => typeof v === 'string' && v.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(v);
 
   // ---- Readers (DOM) ---------------------------------------------------------------
 
-  function controls(form) {
+  // The controls of a form. withDisabled: also the disabled controls, with "disabled" (the browser
+  // does not send them).
+  function controls(form, withDisabled) {
     return [...form.querySelectorAll('input, select, textarea, button')]
-      .filter((e) => e.name && !e.disabled)
+      .filter((e) => e.name && (withDisabled || !e.disabled))
       .map((e) => ({
+        disabled: !!e.disabled,
         name: e.name,
         tag: e.tagName.toLowerCase(),
         type: (e.type || '').toLowerCase(),
@@ -44,15 +52,17 @@
       }));
   }
 
-  // One page of the tool -> { kind: 'home' | 'compose' | 'picker' | 'other', ... }.
+  // One page of the tool -> { kind: 'home' | 'compose' | 'picker' | 'settings' | 'other', ... }.
   MAK.pmSnapshot = function (doc, url) {
     const home = doc.getElementById('msgForum');
     const compose = doc.getElementById('compose');
+    const settings = doc.getElementById('pvtMsgSettings');
+    const errorOf = (form) => [...form.querySelectorAll('.alertMessage, .sak-banner-error, .messageError, .alert-danger')].map((e) => oneLine(e.textContent)).filter(Boolean).join(' ');
+    if (settings) return { kind: 'settings', url, action: settings.getAttribute('action'), controls: controls(settings, true), error: errorOf(settings) };
     const item = doc.getElementById('doattachitem');
     const attach = doc.getElementById('attachForm');
     if (compose) {
-      const error = [...doc.querySelectorAll('.alertMessage, .sak-banner-error, .messageError, .alert-danger')].map((e) => oneLine(e.textContent)).filter(Boolean).join(' ');
-      return { kind: 'compose', url, action: compose.getAttribute('action'), controls: controls(compose), text: oneLine(compose.textContent), error };
+      return { kind: 'compose', url, action: compose.getAttribute('action'), controls: controls(compose), text: oneLine(compose.textContent), error: errorOf(compose) };
     }
     if (item && attach) {
       const continueBtn = doc.querySelector('[name=attachButton], #attachButton');
@@ -72,7 +82,7 @@
       };
     }
     if (home && doc.getElementById('msgForum:composeMessage')) {
-      return { kind: 'home', url, action: home.getAttribute('action'), controls: controls(home), composeLink: 'msgForum:composeMessage' };
+      return { kind: 'home', url, action: home.getAttribute('action'), controls: controls(home), composeLink: 'msgForum:composeMessage', settingsLink: doc.getElementById('msgForum:settings') ? 'msgForum:settings' : null };
     }
     return { kind: 'other', url, title: oneLine(doc.title) };
   };
@@ -158,6 +168,37 @@
       .map((p) => `<p>${links(p).replace(/\n/g, '<br>')}</p>`)
       .join('');
   };
+
+  // The settings page: the forward of the messages ("yes", "no" or "default"), the address and
+  // the button "Save settings". Error if a part is missing.
+  MAK.FORWARD_MODES = ['yes', 'no', 'default'];
+  MAK.pmSettings = function (snap) {
+    if (!snap || snap.kind !== 'settings') throw new PmError('pm.noSettings', snap && snap.kind);
+    const radios = snap.controls.filter(ends('fwd_msg')).filter((c) => c.type === 'radio');
+    const email = snap.controls.find(ends('fwd_email')) || null;
+    const save = snap.controls.find((c) => c.type === 'submit' && MAK.PM_LABELS.save.test(c.label)) || null;
+    if (!radios.length || !MAK.FORWARD_MODES.every((m) => radios.some((r) => r.value === m)) || !email) throw new PmError('pm.noForwardFields');
+    if (!save) throw new PmError('pm.noButtons', 'save');
+    const checked = radios.find((r) => r.checked);
+    return { snap, mode: checked ? checked.value : 'default', email: email.value || '', emailEnabled: !email.disabled, fields: { mode: radios[0].name, email }, buttons: { save } };
+  };
+
+  // The body of the settings form: the values of the page, with this forward and address. Without a
+  // button: the same as the change of the option (the page sends itself).
+  function settingsBody(settings, { mode, email }, button) {
+    const out = new URLSearchParams();
+    for (const c of settings.snap.controls) {
+      if (c.type === 'submit' || c.type === 'button' || c.type === 'file') continue;
+      if (c.name === settings.fields.mode) { if (c.value === mode) out.append(c.name, c.value); continue; }
+      if (c === settings.fields.email) { if (!c.disabled && mode === 'yes') out.append(c.name, email || ''); continue; }
+      if (c.disabled) continue;
+      if (c.options) c.options.filter((o) => o.selected).forEach((o) => out.append(c.name, o.value));
+      else if (c.type === 'checkbox' || c.type === 'radio') { if (c.checked) out.append(c.name, c.value || 'on'); }
+      else out.append(c.name, c.value);
+    }
+    if (button) out.append(button.name, button.value || button.label);
+    return out;
+  }
 
   function checkData(data, needSubject = true) {
     if (!data || !Array.isArray(data.to) || !data.to.length) throw new PmError('pm.noRecipient');
@@ -251,7 +292,37 @@
       return { compose, recipients, picker, closed };
     }
 
-    return { open, prepare, send, cancel, inspect };
+    // The settings page of the internal mail of a site: { mode, email, ... } (MAK.pmSettings).
+    async function settings(placement) {
+      const home = await load(`${MAK.BASE}/portal/tool/${encodeURIComponent(placement)}/privateMsg/pvtMsgHpView`);
+      if (home.kind !== 'home') throw new PmError('pm.noHome', home.kind);
+      if (!home.settingsLink) throw new PmError('pm.noSettings', 'link');
+      const body = new URLSearchParams();
+      for (const c of home.controls) if (c.type === 'hidden') body.append(c.name, c.value);
+      body.set(home.settingsLink, home.settingsLink);
+      return MAK.pmSettings(await post(home.action, body));
+    }
+
+    // Forward the messages of a site to an address ("yes"), or stop it ("default": the option of
+    // the site; "no"). The same steps as a person: the address field opens only after the option
+    // "Yes" is saved in the page, so first the option, then the address and "Save settings". Then
+    // the page is read again to make sure that MiAulario keeps the new value.
+    async function setForward(placement, { mode, email }) {
+      if (!MAK.FORWARD_MODES.includes(mode)) throw new PmError('pm.forwardMode', String(mode));
+      if (mode === 'yes' && !MAK.isEmail(email)) throw new PmError('pm.forwardEmail');
+      let page = await settings(placement);
+      if (mode === 'yes' && (page.mode !== 'yes' || !page.emailEnabled)) {
+        page = MAK.pmSettings(await post(page.snap.action, settingsBody(page, { mode: 'yes' })));
+        if (page.mode !== 'yes' || !page.emailEnabled) throw new PmError('pm.forwardNotSaved', 'option');
+      }
+      const after = await post(page.snap.action, settingsBody(page, { mode, email }, page.buttons.save));
+      if (after.kind === 'settings') throw new PmError('pm.forwardRefused', after.error || '');
+      const check = await settings(placement);
+      if (check.mode !== mode || (mode === 'yes' && check.email.toLowerCase() !== email.toLowerCase())) throw new PmError('pm.forwardNotSaved', check.mode);
+      return { mode: check.mode, email: check.email };
+    }
+
+    return { open, prepare, send, cancel, inspect, settings, setForward };
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

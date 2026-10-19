@@ -74,3 +74,87 @@
     assert.deepEqual(log.map((u) => u.replace(F.TOOL, '')), ['/privateMsg/pvtMsgHpView', '/privateMsg/pvtMsgHpView', '/compose', '/sakai.filepicker.helper', '/sakai.filepicker.helper?sakai_action=doAddattachments', '/compose']);
   });
 })();
+
+// The forward of the messages of a site to an email address (Settings of the Messages tool).
+(function () {
+  'use strict';
+  const F = window.PM_FIXTURES;
+  const snap = (html, url = 'x') => MAK.pmSnapshot(parse(html), url);
+
+  test('pm settings: the inbox has the link "Settings"; the page gives the option, the address and "Save"', () => {
+    assert.equal(snap(F.HOME).settingsLink, 'msgForum:settings');
+    const s = MAK.pmSettings(snap(F.SETTINGS()));
+    assert.deepEqual([s.mode, s.email, s.emailEnabled, s.fields.mode, s.fields.email.name, s.buttons.save.label], ['default', '', false, 'pvtMsgSettings:fwd_msg', 'pvtMsgSettings:fwd_email', 'Guardar configuración']);
+    const on = MAK.pmSettings(snap(F.SETTINGS({ mode: 'yes', email: 'yo@example.org' })));
+    assert.deepEqual([on.mode, on.email, on.emailEnabled], ['yes', 'yo@example.org', true]);
+    assert.equal(snap(F.SETTINGS({ error: 'Introduzca una dirección válida' })).error, 'Introduzca una dirección válida');
+    assert.ok(Object.prototype.hasOwnProperty.call(MAK, 'pmSettings'));
+    try { MAK.pmSettings(snap(F.HOME)); assert.ok(false); } catch (e) { assert.equal(e.code, 'pm.noSettings'); }
+  });
+
+  // A fake server with the rules of the JSF page: the address is read only if the saved option is
+  // "yes"; a change of the option without a button saves only the option; "Save" checks the address.
+  function server(start = { mode: 'default', email: '' }) {
+    const state = Object.assign({}, start);
+    const log = [];
+    const load = async (url, init = {}) => {
+      const body = init.body ? [...init.body.entries()] : [];
+      const v = (n) => (body.find(([k]) => k === n) || [])[1];
+      log.push({ url, body });
+      let html = F.LOGIN;
+      if (url.endsWith('/privateMsg/pvtMsgHpView') && !init.method) html = F.HOME;
+      else if (url.endsWith('/privateMsg/pvtMsgHpView') && v('msgForum:settings')) html = F.SETTINGS(state);
+      else if (url.endsWith('/privateMsg/pvtMsgSettings')) {
+        const mode = v('pvtMsgSettings:fwd_msg') || state.mode;
+        const email = state.mode === 'yes' ? v('pvtMsgSettings:fwd_email') : undefined; // disabled: not read
+        if (!v('pvtMsgSettings:j_id_jsp_2_20')) {
+          state.mode = mode;
+          if (mode === 'yes') state.email = ''; // Sakai empties the address when the option becomes "yes"
+          html = F.SETTINGS(state);
+        } else if (mode === 'yes' && !MAK.isEmail(email || '')) {
+          html = F.SETTINGS(Object.assign({}, state, { error: 'Introduzca una dirección de correo electrónico válida' }));
+        } else {
+          state.mode = mode;
+          state.email = mode === 'yes' ? email : '';
+          html = F.HOME;
+        }
+      }
+      return MAK.pmSnapshot(parse(html), url);
+    };
+    return { load, state, log };
+  }
+
+  test('pm settings: forward a site to an address: the option, then the address and "Save", then a check', async () => {
+    const s = server();
+    const pm = MAK.createPm({ load: s.load });
+    const r = await pm.setForward('P 1', { mode: 'yes', email: 'yo@example.org' });
+    assert.deepEqual(r, { mode: 'yes', email: 'yo@example.org' });
+    assert.deepEqual(s.state, { mode: 'yes', email: 'yo@example.org' });
+    const posts = s.log.filter((x) => x.url.endsWith('pvtMsgSettings'));
+    assert.equal(posts.length, 2, 'the option, then the address with "Save"');
+    assert.ok(!posts[0].body.some(([k]) => k === 'pvtMsgSettings:j_id_jsp_2_20'), 'no button: the change of the option');
+    assert.ok(posts[1].body.some(([k, v]) => k === 'pvtMsgSettings:fwd_email' && v === 'yo@example.org'));
+    assert.ok(posts.every((x) => x.body.some(([k, v]) => k === 'javax.faces.ViewState' && v === 'STATE-SETTINGS')));
+  });
+
+  test('pm settings: a new address when the forward is on: one post; stop the forward: "default"', async () => {
+    const s = server({ mode: 'yes', email: 'old@example.org' });
+    const pm = MAK.createPm({ load: s.load });
+    await pm.setForward('P', { mode: 'yes', email: 'new@example.org' });
+    assert.equal(s.log.filter((x) => x.url.endsWith('pvtMsgSettings')).length, 1);
+    assert.equal(s.state.email, 'new@example.org');
+    const off = await pm.setForward('P', { mode: 'default' });
+    assert.deepEqual(off, { mode: 'default', email: '' });
+  });
+
+  test('pm settings: a refused address and a bad address give an error with a code', async () => {
+    const pm = MAK.createPm({ load: server().load });
+    await assert.rejects(pm.setForward('P', { mode: 'yes', email: 'no-valid' }), 'pm.forwardEmail');
+    const strict = server();
+    const refuse = async (url, init) => {
+      const r = await strict.load(url, init);
+      return r.kind === 'home' && init && init.body && [...init.body.keys()].includes('pvtMsgSettings:j_id_jsp_2_20') ? MAK.pmSnapshot(parse(F.SETTINGS({ mode: 'yes', error: 'No permitido' })), url) : r;
+    };
+    await assert.rejects(MAK.createPm({ load: refuse }).setForward('P', { mode: 'yes', email: 'yo@example.org' }), 'pm.forwardRefused');
+  });
+})();
