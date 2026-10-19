@@ -211,6 +211,111 @@
     return out.sort((a, b) => next(a) - next(b) || (a.final || 0) - (b.final || 0));
   };
 
+  // ---- Wuolah: the community of the degree (notes and exams that the students share) --------
+  // The addresses of Wuolah do not come from the names (for example "grado-biotecnologia-2"), so a
+  // table gives the community of each degree of the UPNA (wuolah.com/university/universidad-publica-
+  // de-navarra/grado-universitario-es, 2026-10-19). The extension sends no request to Wuolah.
+  MAK.WUOLAH_ORIGIN = 'https://wuolah.com';
+  MAK.WUOLAH_UPNA = `${MAK.WUOLAH_ORIGIN}/university/universidad-publica-de-navarra/grado-universitario-es`;
+  const AGRO = 'upna-escuela-tecnica-superior-ingenieria-agronomic';
+  const ETSIIIT = 'upna-escuela-tecnica-superior-ingenieria-industria';
+  const ECO = 'upna-facultad-ciencias-economicas-empresariales';
+  const HUM = 'upna-facultad-ciencias-humanas-sociales-educacion';
+  const LAW = 'upna-facultad-ciencias-juridicas';
+  const COMMUNITIES = {
+    agro: [`${AGRO}/grado-ingenieria-agroalimentaria-medio-rural`, 'Ingeniería Agroalimentaria'],
+    food: [`${AGRO}/grado-innovacion-procesos-productos-alimentarios`, 'Innovación de Procesos y Productos Alimentarios'],
+    biotec: [`${AGRO}/grado-biotecnologia-2`, 'Biotecnología'],
+    science: [`${AGRO}/grado-ciencias`, 'Ciencias'],
+    data: [`${AGRO}/grado-ciencia-datos-2`, 'Ciencia de Datos'],
+    electric: [`${ETSIIIT}/grado-ingenieria-electrica-electronica`, 'Ingeniería Eléctrica y Electrónica'],
+    telecom: [`${ETSIIIT}/grado-ingenieria-tecnologias-telecomunicacion`, 'Telecomunicación'],
+    industrial: [`${ETSIIIT}/grado-ingenieria-tecnologias-industriales`, 'Tecnologías Industriales'],
+    mechanical: [`${ETSIIIT}/grado-ingenieria-mecanica`, 'Ingeniería Mecánica'],
+    computer: [`${ETSIIIT}/grado-ingenieria-informatica`, 'Ingeniería Informática'],
+    design: ['upna-escuela-tecnica-superior-ingenieros-industria/grado-ingenieria-diseno-mecanico', 'Diseño Mecánico'],
+    nursing: ['upna-facultad-ciencias-salud/grado-enfermeria', 'Enfermería'],
+    ade: [`${ECO}/grado-administracion-direccion-empresas`, 'ADE'],
+    economy: [`${ECO}/grado-economia`, 'Economía'],
+    infant: [`${HUM}/grado-maestroa-educacion-infantil`, 'Educación Infantil'],
+    primary: [`${HUM}/grado-maestroa-educacion-primaria`, 'Educación Primaria'],
+    sociology: [`${HUM}/grado-sociologia-aplicada`, 'Sociología Aplicada'],
+    social: [`${HUM}/grado-trabajo-social`, 'Trabajo Social'],
+    law: [`${LAW}/grado-derecho`, 'Derecho'],
+    labour: [`${LAW}/grado-relaciones-laborales-recursos-humanos`, 'Relaciones Laborales'],
+  };
+  // The degree of the UPNA ("area/degree" of its address) -> its communities. A double degree has
+  // two; an international program has the community of its degree. The other degrees have none.
+  MAK.WUOLAH = {
+    'agroalimentacion/ingenieria-agroalimentaria-rural': ['agro'],
+    'agroalimentacion/innovacion-procesos-alimentarios': ['food'],
+    'agroalimentacion/doble-agroalimentaria-innovacion': ['agro', 'food'],
+    'ciencias/biotecnologia': ['biotec'],
+    'ciencias/ciencia-de-datos': ['data'],
+    'ciencias/ciencias': ['science'],
+    'ciencias/doble-ciencia-datos-ade': ['data', 'ade'],
+    'ciencias/doble-ciencia-datos-biotec': ['data', 'biotec'],
+    'economia-y-empresa/administracion-empresas': ['ade'],
+    'economia-y-empresa/economia': ['economy'],
+    'economia-y-empresa/internacional-ade': ['ade'],
+    'economia-y-empresa/doble-ade-derecho': ['ade', 'law'],
+    'economia-y-empresa/internacional-doble-ade-economia': ['ade', 'economy'],
+    'economia-y-empresa/doble-internacional-ade-derecho': ['ade', 'law'],
+    'educacion/maestro-educacion-infantil': ['infant'],
+    'educacion/maestro-educacion-primaria': ['primary'],
+    'educacion/internacional-maestro-infantil': ['infant'],
+    'educacion/internacional-maestro-primaria': ['primary'],
+    'educacion/doble-maestro-infantil-primaria': ['infant', 'primary'],
+    'educacion/internacional-infantil-primaria': ['infant', 'primary'],
+    'humanas-y-sociales/sociologia-aplicada': ['sociology'],
+    'humanas-y-sociales/trabajo-social': ['social'],
+    'industriales/ingenieria-electrica-electronica': ['electric'],
+    'industriales/ingenieria-mecanica': ['mechanical'],
+    'industriales/disenio-mecanico': ['design'],
+    'industriales/tecnologias-industriales': ['industrial'],
+    'industriales/internacional-industriales': ['industrial'],
+    'informatica-y-telecomunicacion/ingenieria-informatica': ['computer'],
+    'informatica-y-telecomunicacion/internacional-informatica': ['computer'],
+    'informatica-y-telecomunicacion/ingenieria-telecomunicacion': ['telecom'],
+    'informatica-y-telecomunicacion/internacional-telecomunicacion': ['telecom'],
+    'informatica-y-telecomunicacion/doble-biomedica-telecomunicacion': ['telecom'],
+    'juridicas/derecho': ['law'],
+    'juridicas/laborales-recursos-humanos': ['labour'],
+    'salud/enfermeria': ['nursing']
+  };
+
+  // The links to Wuolah for a degree: [{ url, name, year }], at the year of the user ("?course=4").
+  // A degree without a community: the page of the degrees of the UPNA in Wuolah ({ url, name: '' }).
+  MAK.wuolahLinks = function (base, year) {
+    const key = MAK.isDegreeBase(base) ? base.slice(`${ORIGIN}/sites/grados/`.length) : '';
+    const ids = Object.prototype.hasOwnProperty.call(MAK.WUOLAH, key) ? MAK.WUOLAH[key] : null;
+    if (!ids) return [{ url: MAK.WUOLAH_UPNA, name: '', year: null }];
+    const y = Number.isInteger(year) && year >= 1 && year <= 6 ? year : null;
+    return ids.map((id) => ({ url: `${MAK.WUOLAH_ORIGIN}/${COMMUNITIES[id][0]}${y ? `?course=${y}` : ''}`, name: COMMUNITIES[id][1], year: y }));
+  };
+
+  // The year of the user: the year ("Curso") of most of the guides, the higher one if two are the
+  // same; else from the subject codes (plan code, then the semester: 240702 -> semester 7 -> year 4).
+  // No data: null.
+  MAK.studyYear = function (guides) {
+    const most = (list) => {
+      const count = new Map();
+      for (const y of list) count.set(y, (count.get(y) || 0) + 1);
+      return [...count].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] || null;
+    };
+    const list = (guides || []).filter(Boolean);
+    const byCourse = list.map((g) => Number(g.course)).filter((y) => Number.isInteger(y) && y >= 1 && y <= 6);
+    if (byCourse.length) return most(byCourse);
+    const byCode = list.map((g) => {
+      let plan = '';
+      try { plan = new URL(g.url).searchParams.get('codPlan') || ''; } catch {}
+      const code = String(g.code || '');
+      const semester = plan && code.startsWith(plan) && code.length === plan.length + 3 ? Number(code[plan.length]) : 0;
+      return semester >= 1 && semester <= 8 ? Math.ceil(semester / 2) : 0;
+    }).filter(Boolean);
+    return byCode.length ? most(byCode) : null;
+  };
+
   // The stored form of the degree (it comes from a message): known fields with limits.
   MAK.cleanDegree = function (d) {
     if (!d || typeof d !== 'object' || !MAK.isDegreeBase(d.base)) return null;

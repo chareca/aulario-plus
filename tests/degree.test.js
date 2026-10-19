@@ -130,3 +130,28 @@ test('the semester of a date, and the stored form of the degree', () => {
   });
   assert.equal(MAK.cleanDegree({ base: 'https://evil.example/x' }), null);
 });
+
+test('Wuolah: the community of the degree at the year of the user; two for a double degree', () => {
+  const B = 'https://www.unavarra.es/sites/grados/';
+  assert.deepEqual(MAK.wuolahLinks(`${B}informatica-y-telecomunicacion/ingenieria-informatica`, 4), [
+    { url: 'https://wuolah.com/upna-escuela-tecnica-superior-ingenieria-industria/grado-ingenieria-informatica?course=4', name: 'Ingeniería Informática', year: 4 }
+  ]);
+  assert.deepEqual(MAK.wuolahLinks(`${B}economia-y-empresa/doble-ade-derecho`, 2).map((w) => w.url), [
+    'https://wuolah.com/upna-facultad-ciencias-economicas-empresariales/grado-administracion-direccion-empresas?course=2',
+    'https://wuolah.com/upna-facultad-ciencias-juridicas/grado-derecho?course=2'
+  ]);
+  assert.equal(MAK.wuolahLinks(`${B}informatica-y-telecomunicacion/internacional-informatica`, 1)[0].name, 'Ingeniería Informática', 'an international program: its degree');
+  assert.equal(MAK.wuolahLinks(`${B}ciencias/biotecnologia`, null)[0].url, 'https://wuolah.com/upna-escuela-tecnica-superior-ingenieria-agronomic/grado-biotecnologia-2', 'no year: all the years');
+  assert.deepEqual(MAK.wuolahLinks(`${B}salud/medicina`, 3), [{ url: 'https://wuolah.com/university/universidad-publica-de-navarra/grado-universitario-es', name: '', year: null }], 'no community: the degrees of the UPNA');
+  assert.deepEqual(MAK.wuolahLinks('https://evil.example/x', 2).map((w) => w.name), ['']);
+  for (const ids of Object.values(MAK.WUOLAH)) assert.ok(ids.length >= 1 && ids.length <= 2);
+});
+
+test('the year of the user: the year of most guides; else from the subject codes; else null', () => {
+  const g = (code, course) => ({ url: `https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=${code}&anio=2026`, code, course });
+  assert.equal(MAK.studyYear([g('240504', ''), g('240701', '4'), g('240702', '4'), g('240301', '2')]), 4, 'the optional subject has no year');
+  assert.equal(MAK.studyYear([g('240301', '2'), g('240702', '4')]), 4, 'the same count: the higher year');
+  assert.equal(MAK.studyYear([g('240504', ''), g('240301', ''), g('240302', '')]), 2, 'no year in the guides: the semester in the code (2403xx: year 2)');
+  assert.equal(MAK.studyYear([{ code: '12', course: '' }, null]), null);
+  assert.equal(MAK.studyYear([]), null);
+});

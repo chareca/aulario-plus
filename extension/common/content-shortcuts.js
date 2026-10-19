@@ -276,12 +276,19 @@
       return;
     }
     const pdfLinks = (degree.pdfs || []).map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
+    // The community of the degree in Wuolah, at the year of the user (two for a double degree).
+    const wuolah = MAK.wuolahLinks(degree.base, MAK.studyYear(guides.map((g) => g.guide)));
+    const wuolahLinks = wuolah.map((w) => {
+      const year = w.year ? ` (${t('short.year', { n: w.year })})` : '';
+      const text = !w.name ? t('short.wuolahUpna') : wuolah.length > 1 ? t('short.wuolahOf', { name: w.name }) + year : t('short.wuolah') + year;
+      return MAK.link(w.url, text, { title: t('short.wuolahNote') });
+    });
     MAK.fill(examTile,
       h('h4', null, `📅 ${t('short.exams')}`, degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : periodsOf(degree, now),
       h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') })),
-      h('h5', { text: t('short.calendars') }),
-      h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
+      h('h5', { text: t('short.links') }),
+      h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation')), wuolahLinks),
       degreeLine(degree, data, settings, degree.list));
     const mine = examTile.querySelector('.mine');
     const part = await examPart(degree, guides, data.sites, now).catch(() => null);

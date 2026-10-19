@@ -53,8 +53,8 @@ routes['/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=240998&anio=
 // (Computer Science) and its exam calendar (a small PDF with the two subjects of the guides).
 const DEGREE = { window: {} };
 require('node:vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'browser', 'fixtures-degree.js'), 'utf8'), DEGREE);
-routes['/sites/grados/home.html'] = { __file: DEGREE.window.DEGREE_LIST_HTML.replace('</ul>', '<li><a href="/sites/grados/informatica-y-telecomunicacion/computer-science.html">Grado en Computer Science</a></li></ul>'), type: 'text/html; charset=utf-8' };
-routes['/sites/grados/informatica-y-telecomunicacion/computer-science/evaluacion.html'] = { __file: DEGREE.window.EVALUATION_INF_HTML, type: 'text/html; charset=utf-8' };
+routes['/sites/grados/home.html'] = { __file: DEGREE.window.DEGREE_LIST_HTML.replace('>Grado en Ingeniería Informática<', '>Grado en Computer Science<'), type: 'text/html; charset=utf-8' };
+routes['/sites/grados/informatica-y-telecomunicacion/ingenieria-informatica/evaluacion.html'] = { __file: DEGREE.window.EVALUATION_INF_HTML, type: 'text/html; charset=utf-8' };
 {
   const rows = 'BT [(240998)-1027(MATEM\\301TICAS I)-13989(17/12/2026)-568(08:00)-18230(19/01/2027)-1126(08:00)]TJ ET\nBT [(240999)-1027(COMPUTER SCIENCE)-13989(11/01/2027)-568(16:00)-18230(22/01/2027)-1126(12:00)]TJ ET';
   const body = require('node:zlib').deflateSync(Buffer.from(rows, 'latin1'));

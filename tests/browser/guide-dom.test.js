@@ -10,6 +10,7 @@
     assert.equal(g.name, 'COMPUTER SCIENCE');
     assert.equal(g.credits, '6');
     assert.equal(g.period, '1º S');
+    assert.equal(g.course, '2');
     assert.equal(g.degree, 'Graduado o Graduada en Computer Science por la Universidad Pública de Navarra');
     assert.equal(MAK.degreeName(g.degree), 'Computer Science');
     assert.deepEqual(g.teachers.map((t) => [t.name, t.resp, !!t.tutorias]), [['GARCÍA LÓPEZ, ANA', true, true], ['PÉREZ ARANA, JUAN', false, true]]);

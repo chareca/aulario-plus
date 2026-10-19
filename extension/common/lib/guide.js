@@ -109,6 +109,8 @@
       credits: pick(/^cr[eé]ditos|^credits|^kredituak/),
       type: pick(/^tipo|^type|^mota/),
       period: pick(/^periodo|^period|^aldia/),
+      // The year of the subject (1 to 6). Empty for an optional subject.
+      course: (/^[1-6]$/.exec(pick(/^curso|^course|^maila/)) || [''])[0],
       department: pick(/^departamento|^department|^saila/),
       // The degree: the caption of the table, "Graduado o Graduada en ... por la Universidad Pública de Navarra".
       degree: cut([...doc.querySelectorAll('caption')].map(text).find((t) => /graduad[oa]|grado|m[aá]ster|degree/i.test(t)) || '', 200),
@@ -145,7 +147,7 @@
     const ev = g.evaluation && typeof g.evaluation === 'object' ? g.evaluation : {};
     return {
       url: MAK.guideUrl(g.url),
-      code: str(g.code, 40), name: str(g.name, 200), credits: str(g.credits, 20), type: str(g.type, 60), period: str(g.period, 60), department: str(g.department, 200), degree: str(g.degree, 200),
+      code: str(g.code, 40), name: str(g.name, 200), credits: str(g.credits, 20), type: str(g.type, 60), period: str(g.period, 60), course: /^[1-6]$/.test(g.course) ? g.course : '', department: str(g.department, 200), degree: str(g.degree, 200),
       teachers: (Array.isArray(g.teachers) ? g.teachers : []).slice(0, 20).map((t) => ({ name: str(t && t.name, 120), resp: !!(t && t.resp), tutorias: t && typeof t.tutorias === 'string' && t.tutorias.startsWith(`${MAK.GUIDE_ORIGIN}/`) ? t.tutorias.slice(0, 300) : null })).filter((t) => t.name),
       evaluation: {
         rows: (Array.isArray(ev.rows) ? ev.rows : []).slice(0, 30).map((r) => ({
