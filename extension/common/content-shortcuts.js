@@ -101,7 +101,7 @@
     });
     const title = t('short.title');
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `⚡ ${title}` }), toggle), content));
-    // In the block "Mostrar información de Mi Sitio", first. Else above the course guides, below the
+    // In the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), first. Else above the course guides, below the
     // banner of new items, or at the top of the content.
     const slot = MAK.mySiteSlot();
     const guide = document.getElementById(GUIDE_ID);

@@ -198,7 +198,7 @@
       try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, content.hidden ? '1' : '0'); } catch {}
     });
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `📘 ${title}` }), toggle), content));
-    // "Mi sitio": in the block "Mostrar información de Mi Sitio", after the shortcuts. Else below the
+    // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
     // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
     const slot = mySite ? MAK.mySiteSlot() : null;
     const shortcuts = document.getElementById(SHORTCUTS_ID);

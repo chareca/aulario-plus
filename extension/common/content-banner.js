@@ -49,21 +49,25 @@
   }
   MAK.insertAtTop = insertAtTop;
 
-  // "Mi sitio": the block "Mostrar información de Mi Sitio" (the tool sakai.iframe.myworkspace, with
-  // the text "Bienvenido a MiSitio"). The boxes of the extension go in its body, and its own content
-  // hides. No block: null (the boxes go at the top of the page).
+  // "Mi sitio": a block "Aulario Plus" with the same structure as the blocks of MiAulario (thus the
+  // same style and theme), just above the block "Mostrar información de Mi Sitio" (the tool
+  // sakai.iframe.myworkspace). That block does not change: the user can edit its text. The boxes of
+  // the extension go in the body of the new block. No such block: above the first block of the page.
+  // Result: the body of the new block, or null (no block on the page).
   MAK.mySiteSlot = function () {
+    const made = document.getElementById('mak-mysite-body');
+    if (made) return made;
     const titled = (c) => /informaci[oó]n de mi ?sitio|my ?workspace information/i.test(((c.querySelector('.Mrphs-toolTitleNav__title') || {}).textContent) || '');
-    const block = document.querySelector('.Mrphs-sakai-iframe-myworkspace') || [...document.querySelectorAll('.Mrphs-container')].find(titled);
-    const body = block && block.querySelector('.Mrphs-toolBody');
-    if (!body) return null;
-    if (!body.dataset.makSlot) {
-      body.dataset.makSlot = '1';
-      // The width with the CSSOM: a "style" attribute can be blocked by the CSP of the page.
-      for (const el of [...body.children]) if (!/^mak-/.test(el.id)) el.style.display = 'none';
-      body.style.height = 'auto';
-      body.style.overflow = 'visible';
-    }
+    const main = document.querySelector('main#content') || document.querySelector('main') || document;
+    const welcome = main.querySelector('.Mrphs-sakai-iframe-myworkspace') || [...main.querySelectorAll('.Mrphs-container')].find(titled);
+    const anchor = welcome || main.querySelector('.Mrphs-container');
+    if (!anchor) return null;
+    const h = MAK.h;
+    const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-mysite-body' } });
+    anchor.before(h('div', { class: 'Mrphs-container Mrphs-aulario-plus', attrs: { id: 'mak-mysite-block' } },
+      h('nav', { class: 'Mrphs-toolTitleNav Mrphs-container--toolTitleNav align-items-center', attrs: { 'aria-label': 'Aulario Plus' } },
+        h('h2', { class: 'Mrphs-toolTitleNav__title' }, h('span', { class: 'Mrphs-toolTitleNav__text', text: 'Aulario Plus' }))),
+      body));
     return body;
   };
 
