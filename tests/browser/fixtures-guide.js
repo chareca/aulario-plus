@@ -5,6 +5,7 @@
   root.GUIDE_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>Universidad Pública de Navarra</title></head><body>
 <h2>Universidad Pública de Navarra</h2>
 <table>
+  <caption class="seccion_2">Graduado o Graduada en Computer Science por la Universidad Pública de Navarra</caption>
   <tr><td>Código: 240999</td><td>Asignatura: COMPUTER SCIENCE</td></tr>
   <tr><td>Créditos: 6</td><td>Tipo: Obligatoria</td><td>Curso: 2</td><td>Periodo: 1º S</td></tr>
   <tr><td>Departamento: Estadística, Informática y Matemáticas</td></tr>

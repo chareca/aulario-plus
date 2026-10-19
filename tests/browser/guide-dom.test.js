@@ -10,6 +10,8 @@
     assert.equal(g.name, 'COMPUTER SCIENCE');
     assert.equal(g.credits, '6');
     assert.equal(g.period, '1º S');
+    assert.equal(g.degree, 'Graduado o Graduada en Computer Science por la Universidad Pública de Navarra');
+    assert.equal(MAK.degreeName(g.degree), 'Computer Science');
     assert.deepEqual(g.teachers.map((t) => [t.name, t.resp, !!t.tutorias]), [['GARCÍA LÓPEZ, ANA', true, true], ['PÉREZ ARANA, JUAN', false, true]]);
     assert.ok(g.teachers[0].tutorias.startsWith('https://www.unavarra.es/pdi?uid=1001'));
     assert.deepEqual(g.evaluation.rows.map((r) => [r.activity, r.weight, r.minimum]), [['Examen teórico-práctico', 60, '5 sobre 10'], ['Prácticas', 30, 'No'], ['Lab report 1', 10, 'No']]);
