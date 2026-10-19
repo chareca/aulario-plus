@@ -2,15 +2,20 @@ name: Publish to the stores
 
 # A published release of GitHub (tag vX.Y.Z) sends the same version to the Chrome Web Store
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
-# A store without its secrets is skipped.
+# A store without its secrets is skipped. To examine the keys without an upload, run the
+# workflow by hand with "check".
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: The tag of the release (for example v1.6.1)
-        required: true
+        description: The tag of the release (for example v1.6.2). Not necessary with "check".
+        required: false
+      check:
+        description: Only examine the keys of the stores (no build, no upload)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -23,7 +28,51 @@ env:
   TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
 jobs:
+  check:
+    if: ${{ inputs.check }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Examine the keys of the Chrome Web Store
+        env:
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+        run: scripts/cws.sh check
+
+      - name: Examine the keys of Firefox Add-ons
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+        run: |
+          if [ -z "$AMO_API_KEY" ] || [ -z "$AMO_API_SECRET" ]; then
+            echo "::notice::No secrets of Firefox Add-ons."
+            exit 0
+          fi
+          # A request with a JWT (HS256), as web-ext does. The answer is not shown: it has the profile.
+          node -e '
+            const crypto = require("node:crypto");
+            const part = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = part({ alg: "HS256", typ: "JWT" });
+            const body = part({ iss: process.env.AMO_API_KEY, jti: crypto.randomUUID(), iat: now, exp: now + 60 });
+            const sign = crypto.createHmac("sha256", process.env.AMO_API_SECRET).update(head + "." + body).digest("base64url");
+            fetch("https://addons.mozilla.org/api/v5/accounts/profile/", { headers: { Authorization: `JWT ${head}.${body}.${sign}` } })
+              .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                console.log("::notice::The keys of Firefox Add-ons work.");
+              })
+              .catch((e) => {
+                console.log(`::error::The keys of Firefox Add-ons do not work (${e.message}).`);
+                process.exitCode = 1;
+              });
+          '
+
   build:
+    if: ${{ !inputs.check }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +112,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -75,48 +128,7 @@ jobs:
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
           CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
-        run: |
-          set -euo pipefail
-          if [ -z "$CWS_CLIENT_ID" ] || [ -z "$CWS_CLIENT_SECRET" ] || [ -z "$CWS_REFRESH_TOKEN" ] || [ -z "$CWS_PUBLISHER_ID" ] || [ -z "$CWS_EXTENSION_ID" ]; then
-            echo "::notice::No secrets of the Chrome Web Store: this version is not sent to the Chrome Web Store."
-            exit 0
-          fi
-          zip="dist/aulario-plus-chromium-$TAG.zip"
-          test -f "$zip"
-
-          token=$(curl -sS --fail-with-body https://oauth2.googleapis.com/token \
-            --data-urlencode "client_id=$CWS_CLIENT_ID" \
-            --data-urlencode "client_secret=$CWS_CLIENT_SECRET" \
-            --data-urlencode "refresh_token=$CWS_REFRESH_TOKEN" \
-            --data-urlencode "grant_type=refresh_token" | jq -r '.access_token // empty')
-          if [ -z "$token" ]; then
-            echo "::error::No access token from Google: examine the secrets CWS_CLIENT_ID, CWS_CLIENT_SECRET and CWS_REFRESH_TOKEN."
-            exit 1
-          fi
-          echo "::add-mask::$token"
-          item="publishers/$CWS_PUBLISHER_ID/items/$CWS_EXTENSION_ID"
-
-          upload=$(curl -sS --fail-with-body -X POST -H "Authorization: Bearer $token" -T "$zip" \
-            "https://chromewebstore.googleapis.com/upload/v2/$item:upload")
-          echo "$upload"
-          state=$(jq -r '.uploadState // empty' <<<"$upload")
-          for _ in $(seq 1 30); do
-            [ "$state" = "IN_PROGRESS" ] || break
-            sleep 10
-            status=$(curl -sS --fail-with-body -H "Authorization: Bearer $token" \
-              "https://chromewebstore.googleapis.com/v2/$item:fetchStatus")
-            state=$(jq -r '.lastAsyncUploadState // empty' <<<"$status")
-          done
-          if [ "$state" != "SUCCEEDED" ]; then
-            echo "::error::The upload to the Chrome Web Store did not succeed (state: ${state:-unknown})."
-            exit 1
-          fi
-
-          publish=$(curl -sS --fail-with-body -X POST -H "Authorization: Bearer $token" \
-            -H "Content-Type: application/json" -d '{"publishType":"DEFAULT_PUBLISH"}' \
-            "https://chromewebstore.googleapis.com/v2/$item:publish")
-          echo "$publish"
-          echo "::notice::$TAG is in the review of the Chrome Web Store (state: $(jq -r '.state // "unknown"' <<<"$publish"))."
+        run: scripts/cws.sh publish "dist/aulario-plus-chromium-$TAG.zip"
 
   firefox:
     needs: build
