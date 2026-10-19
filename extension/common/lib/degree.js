@@ -66,6 +66,59 @@
     return list.find((d) => /^grado /i.test(d.name) && plain(d) === n) || list.find((d) => norm(d.name).includes(n)) || null;
   };
 
+  // The degree of each plan code ("codPlan" of the course guides): the links of the course guides on
+  // the pages "Plan de estudios" of all the degrees of the UPNA (2026-10-19). A plan code that is not
+  // here: the degree comes from the name in the guide, or the user selects it.
+  const PLANS = {
+    'agroalimentacion/ingenieria-agroalimentaria-rural': ['509', '501'],
+    'agroalimentacion/innovacion-procesos-alimentarios': ['502'],
+    'agroalimentacion/doble-agroalimentaria-innovacion': ['510', '503'],
+    'ciencias/biotecnologia': ['506'],
+    'ciencias/ciencia-de-datos': ['505'],
+    'ciencias/ciencias': ['504'],
+    'ciencias/doble-ciencia-datos-ade': ['507'],
+    'ciencias/doble-ciencia-datos-biotec': ['508'],
+    'economia-y-empresa/administracion-empresas': ['172'],
+    'economia-y-empresa/economia': ['171'],
+    'economia-y-empresa/internacional-ade': ['174'],
+    'economia-y-empresa/doble-ade-derecho': ['175'],
+    'economia-y-empresa/internacional-doble-ade-economia': ['176', '178'],
+    'economia-y-empresa/doble-internacional-ade-derecho': ['177'],
+    'educacion/maestro-educacion-infantil': ['301'],
+    'educacion/maestro-educacion-primaria': ['302'],
+    'educacion/internacional-maestro-infantil': ['311'],
+    'educacion/internacional-maestro-primaria': ['312'],
+    'educacion/doble-maestro-infantil-primaria': ['306'],
+    'educacion/internacional-infantil-primaria': ['316'],
+    'humanas-y-sociales/historia-y-patrimonio': ['305'],
+    'humanas-y-sociales/sociologia-aplicada': ['307', '303'],
+    'humanas-y-sociales/trabajo-social': ['304'],
+    'industriales/ingenieria-electrica-electronica': ['244'],
+    'industriales/ingenieria-mecanica': ['248'],
+    'industriales/disenio-mecanico': ['251'],
+    'industriales/tecnologias-industriales': ['242'],
+    'industriales/internacional-industriales': ['252'],
+    'industriales/grado-dual-ingenieria-termica': ['249'],
+    'informatica-y-telecomunicacion/ingenieria-biomedica': ['246'],
+    'informatica-y-telecomunicacion/ingenieria-informatica': ['240'],
+    'informatica-y-telecomunicacion/ingenieria-telecomunicacion': ['243'],
+    'informatica-y-telecomunicacion/internacional-telecomunicacion': ['253'],
+    'informatica-y-telecomunicacion/internacional-informatica': ['250'],
+    'informatica-y-telecomunicacion/doble-biomedica-telecomunicacion': ['247'],
+    'juridicas/derecho': ['351'],
+    'juridicas/laborales-recursos-humanos': ['352'],
+    'salud/enfermeria': ['401'],
+    'salud/fisioterapia': ['452'],
+    'salud/medicina': ['405', '403'],
+    'salud/psicologia': ['402'],
+    'salud/actividad-fisica-y-deporte': ['404'],
+    'salud/doble-fisioterapia-cafyd': ['453']
+  };
+  MAK.PLAN_DEGREES = {};
+  for (const [key, plans] of Object.entries(PLANS)) for (const plan of plans) MAK.PLAN_DEGREES[plan] = key;
+  // The base address of the degree of a plan code, or null.
+  MAK.degreeOfPlan = (plan) => (Object.prototype.hasOwnProperty.call(MAK.PLAN_DEGREES, plan) ? `${ORIGIN}/sites/grados/${MAK.PLAN_DEGREES[plan]}` : null);
+
   // The plan code of most of the guides (codPlan in the address of a guide), or ''.
   MAK.degreePlan = function (guides) {
     const count = new Map();
@@ -158,10 +211,17 @@
   const hasDateTime = (s) => new RegExp(DATE_TIME).test(s);
 
   // The rows of an exam calendar (the lines of lib/pdftext.js): [{ code, name, final, recovery }].
-  // A row starts with the subject code (6 digits). A PDF can cut the name of a row in parts: the
-  // parts of the name join without a space, the dates with a space.
+  // A row starts with the subject code (6 digits). A PDF can cut a row in short parts (in the name,
+  // or in a date: "28/05/" + "2027 08:00"): the parts join without a space, and a row ends at its
+  // second date. Only a calendar with one row for each subject gives rows: if fewer than 80 % of the
+  // codes give a row (a calendar as a grid of days, where the dates are not on the line of the
+  // subject), the result is [] (no wrong dates).
+  const MAX_PARTS = 8;
+  const MAX_PART = 60;
+  const pairsIn = (s) => [...s.matchAll(new RegExp(DATE_TIME, 'g'))].length;
   MAK.parseExamRows = function (lines) {
     const rows = [];
+    let codes = 0;
     let cur = null;
     const close = () => {
       if (!cur) return;
@@ -185,17 +245,29 @@
       const m = /^(\d{6})(?:\s+(.*))?$/.exec(line);
       if (m) {
         close();
-        cur = { code: m[1], text: m[2] || '' };
+        codes++;
+        cur = { code: m[1], text: m[2] || '', parts: 0 };
+        if (pairsIn(cur.text) >= 2) close();
         continue;
       }
       if (!cur) continue;
-      if (/^\d{2}\/\d{2}\/\d{4}/.test(line)) cur.text += ` ${line}`;
-      else if (hasDateTime(cur.text)) close(); // the row has its dates: this line is another thing
-      else cur.text += line;
+      const dated = hasDateTime(cur.text);
+      if (dated && !/\d/.test(line)) {
+        close(); // the row has its date; this line is another thing
+        continue;
+      }
+      if (cur.parts >= MAX_PARTS || line.length > MAX_PART) {
+        if (dated) close();
+        else cur = null;
+        continue;
+      }
+      cur.text += (new RegExp(`^${DATE_TIME}`).test(line) ? ' ' : '') + line;
+      cur.parts++;
+      if (pairsIn(cur.text) >= 2) close();
       if (rows.length >= 500) break;
     }
     close();
-    return rows;
+    return codes && rows.length >= 0.8 * codes ? rows : [];
   };
 
   // The exams of the subjects of the user: the rows with the code of a guide, the next first.

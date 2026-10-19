@@ -42,7 +42,7 @@
     .period b { font-weight: 600; }
     .period.other { color: #5f6b73; font-size: 12px; } .dark .period.other { color: #9aa6ad; }
     /* One small card for each subject, in columns: the name and the countdown, then the two dates. */
-    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px; }
+    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; }
     .exams li { min-width: 0; padding: 5px 8px; border-radius: 6px; border-left: 3px solid #10524e; background: rgba(16, 82, 78, 0.06); }
     .dark .exams li { border-left-color: #4fd1a5; background: rgba(79, 209, 165, 0.08); }
     .exams .top { display: flex; gap: 6px; align-items: flex-start; }
@@ -139,7 +139,9 @@
     const kept = data.degree;
     if (kept && Date.now() - kept.at < MAK.DEGREE_MS && (chosen ? kept.base === chosen : !plan || kept.plan === plan)) return kept;
     const list = await degreeList(data);
-    let base = chosen;
+    // The degree: the one that the user selected, else the degree of the plan code of the guides,
+    // else the degree with the name of the guides.
+    let base = chosen || MAK.degreeOfPlan(plan);
     let name = '';
     if (!base) {
       const match = MAK.matchDegree(await nameOfGuides(guides, plan), list);
@@ -267,12 +269,9 @@
   // The notes of the degree in Wuolah, at the year of the user (two buttons for a double degree).
   // links: MAK.wuolahLinks, or null while the degree is not known.
   function wuolahTile(tile, links) {
-    const label = (w) => {
-      if (!w.name) return t('short.wuolahUpna');
-      const year = w.year ? t('short.wuolahYear', { n: w.year }) : '';
-      if (links.length > 1) return [t('short.wuolahOf', { name: w.name }), year].filter(Boolean).join(' · ');
-      return year ? `Wuolah · ${year}` : t('short.wuolah');
-    };
+    // "Wuolah"; for a double degree, "Wuolah · ADE" and "Wuolah · Derecho". The address has the year,
+    // but Wuolah can show another year when the user is logged in, so the text does not show it.
+    const label = (w) => (w.name && links.length > 1 ? t('short.wuolahOf', { name: w.name }) : 'Wuolah');
     MAK.fill(tile,
       h('h4', { text: `📚 ${t('short.notes')}` }),
       h('p', { class: 'note meta', text: t('short.wuolahNote') }),

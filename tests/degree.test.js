@@ -162,3 +162,30 @@ test('the year of the user: only the guides of the last academic year count', ()
   assert.equal(MAK.studyYear([...old, g('240702', '4', 2026), g('240703', '4', 2026)]), 4);
   assert.equal(MAK.studyYear([...old.map((x) => Object.assign({}, x, { course: '' })), g('240702', '', 2026)]), 4, 'also with the codes');
 });
+
+test('exam rows: a date cut in two lines, and the end of the name on the line of the dates', () => {
+  const at = (d, t) => { const [D, M, Y] = d.split('/').map(Number); const [h, m] = t.split(':').map(Number); return new Date(Y, M - 1, D, h, m).getTime(); };
+  const rows = MAK.parseExamRows([
+    '240206 MATEMÁTICAS II 28/05/', '2027 08:00 10/06/2027 08:00',
+    '240506 SISTEMAS INTELIGENTES. APLIC', 'ACIONES 28/05/2027 16:00 15/06/2027 12:00',
+    'DE 17/05/2027 08:00 07/06/2027 16:00' // a part without its code: not a row
+  ]);
+  assert.deepEqual(rows.map((r) => [r.code, r.name, r.final, r.recovery]), [
+    ['240206', 'MATEMÁTICAS II', at('28/05/2027', '08:00'), at('10/06/2027', '08:00')],
+    ['240506', 'SISTEMAS INTELIGENTES. APLICACIONES', at('28/05/2027', '16:00'), at('15/06/2027', '12:00')]
+  ]);
+});
+
+test('exam rows: fewer than 80 % of the codes with a row: no rows (a grid gives wrong dates)', () => {
+  const lines = ['351103 HISTORIA DEL DERECHO', '---', '351303 HECHO RELIGIOSO Y DERECHO', '---', '14/10/2026 10:00 20/10/2026 10:00', '351505 DERECHO PROCESAL PENAL', '351706 DERECHO PENAL ECONÓMICO', '351881 DERECHO DEL CONSUMO'];
+  assert.deepEqual(MAK.parseExamRows(lines), []);
+});
+
+test('the degree of a plan code: every plan of the table, once', () => {
+  assert.equal(MAK.degreeOfPlan('240'), 'https://www.unavarra.es/sites/grados/informatica-y-telecomunicacion/ingenieria-informatica');
+  assert.equal(MAK.degreeOfPlan('247'), 'https://www.unavarra.es/sites/grados/informatica-y-telecomunicacion/doble-biomedica-telecomunicacion');
+  assert.equal(MAK.degreeOfPlan('999'), null);
+  assert.equal(MAK.degreeOfPlan('constructor'), null);
+  for (const key of Object.values(MAK.PLAN_DEGREES)) assert.ok(MAK.isDegreeBase(`https://www.unavarra.es/sites/grados/${key}`), key);
+  for (const key of Object.keys(MAK.WUOLAH)) assert.ok(Object.values(MAK.PLAN_DEGREES).includes(key), `the Wuolah degree ${key} has a plan`);
+});
