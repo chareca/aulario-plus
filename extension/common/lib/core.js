@@ -27,9 +27,11 @@
     return d.getTime();
   };
 
+  // A date of MiAulario in milliseconds. A number below 1e11 is in seconds: some answers give an
+  // Instant as seconds (1792413197.123), and no date of MiAulario is before 1973.
   MAK.toMs = function (value) {
     if (value === null || value === undefined || value === '') return null;
-    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'number') return !Number.isFinite(value) ? null : Math.abs(value) < 1e11 ? Math.round(value * 1000) : value;
     if (typeof value === 'object') {
       if (typeof value.epochSecond === 'number') return value.epochSecond * 1000 + Math.floor((value.nano || 0) / 1e6);
       if (typeof value.time === 'number') return value.time;

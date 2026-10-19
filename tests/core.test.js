@@ -6,6 +6,8 @@ const MAK = loadLib('core');
 
 test('toMs reads all the date formats of Sakai', () => {
   assert.equal(MAK.toMs(1760608800000), 1760608800000);
+  assert.equal(MAK.toMs(1792413197.123), 1792413197123, 'an Instant in seconds (the bell of MiAulario)');
+  assert.equal(MAK.toMs(1792413197), 1792413197000);
   assert.equal(MAK.toMs({ epochSecond: 1760608800, nano: 500000000 }), 1760608800500);
   assert.equal(MAK.toMs({ time: 1760608800000 }), 1760608800000);
   assert.equal(MAK.toMs('20261016100000123'), Date.UTC(2026, 9, 16, 10, 0, 0, 123));
