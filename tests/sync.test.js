@@ -99,6 +99,31 @@ test('an HTML answer from one endpoint keeps the old data and marks it stale', a
   assert.ok(s.area.data.meta.stale.announcements);
 });
 
+test('a network error on the session marks it stale until the next complete sync', async () => {
+  const s = setup();
+  const session = s.routes['/direct/session/current.json'];
+  s.routes['/direct/session/current.json'] = () => { throw new TypeError('Failed to fetch'); };
+  const r = await s.sync.run({ force: true });
+  assert.ok(r.errors.includes('session'));
+  assert.ok(s.area.data.meta.stale.session);
+  s.routes['/direct/session/current.json'] = session;
+  s.clock.t += MAK.HOUR;
+  assert.deepEqual((await s.sync.run({ force: true })).errors, []);
+  assert.deepEqual(s.area.data.meta.stale, {});
+});
+
+test('the stale entry of a site goes when the site is hidden everywhere', async () => {
+  const s = setup();
+  s.routes[`/direct/forums/site/${F.CS}.json`] = fakeFetch.raw(response('<html></html>', { type: 'text/html' }));
+  await s.sync.run({ force: true });
+  assert.ok(s.area.data.meta.stale[`forums:${F.CS}`]);
+  s.area.data.settings = { hiddenSites: [F.CS], hiddenMode: 'everywhere' };
+  s.clock.t += MAK.HOUR;
+  await s.sync.run({ force: true });
+  assert.equal(s.area.data.meta.stale[`forums:${F.CS}`], undefined);
+  assert.deepEqual(s.area.data.meta.stale, {});
+});
+
 test('a server error stops the sync and waits longer each time', async () => {
   const s = setup();
   s.routes['/direct/assignment/my.json'] = fakeFetch.raw(response({}, { status: 503 }));

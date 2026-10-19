@@ -278,6 +278,15 @@
           });
         }
 
+        // The sync is complete: an old error outside the steps is gone. The steps of a site that is
+        // hidden or removed do not run again, so its errors go too.
+        delete meta.stale.session;
+        const visibleIds = new Set(visible.map((s) => s.id));
+        for (const name of Object.keys(meta.stale)) {
+          const m = /^(?:pages|forums|resources):(.*)$/.exec(name);
+          if (m && !visibleIds.has(m[1])) delete meta.stale[name];
+        }
+
         meta.lastSync = t;
         if (full) meta.lastFullSync = t;
         meta.backoffStep = 0;
