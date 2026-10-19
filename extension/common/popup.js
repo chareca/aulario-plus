@@ -952,6 +952,61 @@ function linksSection() {
   );
 }
 
+// The template of the message to a teacher (the button ✉ of the sites in MiAulario, lib/teachers.js).
+// It is saved while the user writes. The default text of the language is saved as an empty body,
+// so that it follows a change of the language.
+function teacherSection() {
+  const s = settings();
+  const def = MAK.defaultTeacherTemplate();
+  const subject = h('input', { attrs: { type: 'text', maxlength: '200', value: s.teacherSubject, placeholder: t('teach.subjectExample', { course: MAK.templateField('course') }) } });
+  const body = h('textarea', { attrs: { rows: '7', maxlength: '3000', spellcheck: 'true' } });
+  body.value = s.teacherBody || def;
+  const status = h('p', { class: 'small meta', attrs: { role: 'status' } });
+  let timer = null;
+  let last = body; // the field that gets a field name on a click
+  const save = () => {
+    clearTimeout(timer);
+    timer = null;
+    const text = body.value.replace(/\r\n?/g, '\n');
+    send({ type: 'setSettings', patch: { teacherSubject: subject.value, teacherBody: text.trim() === def.trim() ? '' : text } }).then(() => { status.textContent = t('teach.saved'); });
+  };
+  const saveLater = () => {
+    status.textContent = '';
+    clearTimeout(timer);
+    timer = setTimeout(save, 500);
+  };
+  for (const f of [subject, body]) {
+    f.addEventListener('input', saveLater);
+    f.addEventListener('focus', () => { last = f; });
+    f.addEventListener('blur', () => { if (timer) save(); });
+  }
+  const insert = (text) => {
+    const at = last.selectionStart ?? last.value.length;
+    last.setRangeText(text, at, last.selectionEnd ?? at, 'end');
+    last.focus();
+    saveLater();
+  };
+  // mousedown: the field keeps the focus and the cursor.
+  const fields = MAK.TEMPLATE_FIELDS.map((k) => h('button', {
+    attrs: { type: 'button', title: t(`teach.field.${k}`) },
+    text: MAK.templateField(k),
+    on: { mousedown: (e) => e.preventDefault(), click: () => insert(MAK.templateField(k)) }
+  }));
+  const reset = h('button', { class: 'btn', text: t('teach.reset'), attrs: { type: 'button' }, on: { click: () => { subject.value = ''; body.value = def; save(); } } });
+  return h(
+    'div',
+    { class: 'section template', attrs: { id: 'teacher-template' } },
+    h('h2', { text: t('teach.section') }),
+    h('p', { class: 'small', text: t('teach.sectionHelp') }),
+    h('label', null, h('span', { class: 'small', text: t('teach.subject') }), subject),
+    h('label', null, h('span', { class: 'small', text: t('teach.body') }), body),
+    h('div', { class: 'chips' }, fields),
+    h('p', { class: 'small meta', text: t('teach.fieldsHelp') }),
+    h('div', { class: 'row' }, reset),
+    status
+  );
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -1006,6 +1061,7 @@ function renderSettings(el) {
       h('h2', { text: t('search.section') }),
       checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
     ),
+    teacherSection(),
     linksSection(),
     forwardGuide(),
     h(

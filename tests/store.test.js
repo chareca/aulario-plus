@@ -81,3 +81,15 @@ test('the settings of the download links: off by default, and only correct value
   }
   assert.equal(MAK.withDefaults({ links: [] }).links.enabled, false);
 });
+
+test('the template of the message to a teacher: empty by default, text only, limited', () => {
+  const d = MAK.withDefaults({});
+  assert.equal(d.teacherSubject, '');
+  assert.equal(d.teacherBody, '');
+  const s = MAK.withDefaults({ teacherSubject: '  Consulta\n sobre\u202e {asignatura}  ', teacherBody: 'Hola {profesor},  \r\n\r\n\tUna\u0000 línea\u200b\n\n\n' });
+  assert.equal(s.teacherSubject, 'Consulta sobre {asignatura}', 'one line, no invisible characters');
+  assert.equal(s.teacherBody, 'Hola {profesor},\n\n Una  línea', 'the line breaks stay; no control characters; no spaces at the end');
+  assert.equal(MAK.withDefaults({ teacherSubject: 'x'.repeat(500), teacherBody: 'y'.repeat(5000) }).teacherSubject.length, 200);
+  assert.equal(MAK.withDefaults({ teacherBody: 'y'.repeat(5000) }).teacherBody.length, 3000);
+  assert.equal(MAK.withDefaults({ teacherBody: 42 }).teacherBody, '');
+});

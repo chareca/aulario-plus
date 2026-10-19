@@ -70,15 +70,36 @@ test('properName and personParts: names in capital letters become proper names; 
   assert.deepEqual(MAK.personParts('Coordinación'), { first: 'Coordinación', last: '', eid: null });
 });
 
-test('teacherMessage: "Hola <first name>," an empty line, "Saludos," and the first name of the user', () => {
+test('teacherMail without a template: "Hola <first name>," an empty line, "Saludos," and the first name of the user', () => {
   MAK.setLang('es');
-  assert.equal(
-    MAK.teacherMessage('ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)', 'Chareca , Nicolas (chareca.165075)'),
-    '<p>Hola Miguel Angel,</p><p>&nbsp;</p><p>Saludos,<br>Nicolas.</p>'
+  const mail = (teacher, me) => MAK.teacherMail({ teacher, me, course: 'Análisis de Datos', settings: {} });
+  assert.deepEqual(
+    mail('ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)', 'Chareca , Nicolas (chareca.165075)'),
+    { subject: '', body: '<p>Hola Miguel Angel,</p><p>&nbsp;</p><p>Saludos,<br>Nicolas.</p>' }
   );
-  assert.equal(MAK.teacherMessage('PEREZ, <B>JUAN</B> (juan.perez)', null), '<p>Hola &lt;b&gt;juan&lt;/b&gt;,</p><p>&nbsp;</p><p>Saludos,</p>', 'no HTML from a name; no name of the user: only "Saludos,"');
+  assert.equal(mail('PEREZ, <B>JUAN</B> (juan.perez)', null).body, '<p>Hola &lt;b&gt;juan&lt;/b&gt;,</p><p>&nbsp;</p><p>Saludos,</p>', 'no HTML from a name; no name of the user: only "Saludos,"');
   MAK.setLang('en');
-  assert.match(MAK.teacherMessage('ZUBIRI, MIREN (mz)', 'X, Y (y)'), /^<p>Hello Miren,<\/p>.*Regards,<br>Y\.<\/p>$/);
+  assert.match(mail('ZUBIRI, MIREN (mz)', 'X, Y (y)').body, /^<p>Hello Miren,<\/p>.*Regards,<br>Y\.<\/p>$/);
+  MAK.setLang('es');
+});
+
+test('teacherMail with the template of the user: the fields in both languages, paragraphs and lines', () => {
+  MAK.setLang('es');
+  const settings = {
+    teacherSubject: 'Consulta sobre {asignatura} – {nombre_completo}',
+    teacherBody: '\nEstimado/a {profesor_completo}:\n\nLe escribo por {course}.\nUna duda <b>breve</b>.\n\n\n\nUn saludo,\n{name} {unknown}\n\n'
+  };
+  assert.deepEqual(MAK.teacherMail({ teacher: 'ALDAZ ZARAGUETA, MIGUEL ANGEL (maldaz)', me: 'Chareca , Nicolas (chareca.1)', course: 'Análisis de Datos', settings }), {
+    subject: 'Consulta sobre Análisis de Datos – Nicolas Chareca',
+    body: '<p>Estimado/a Miguel Angel Aldaz Zaragueta:</p><p>Le escribo por Análisis de Datos.<br>Una duda &lt;b&gt;breve&lt;/b&gt;.</p><p>&nbsp;</p><p>&nbsp;</p><p>Un saludo,<br>Nicolas {unknown}</p>'
+  }, 'a blank line ends a paragraph, each other blank line is an empty paragraph; an unknown field stays');
+  const noName = MAK.teacherMail({ teacher: 'ZUBIRI, MIREN (mz)', me: null, course: '', settings: { teacherSubject: '{asignatura}', teacherBody: 'Hola {PROFESOR},\n{nombre}.\nDe {nombre}: hola' } });
+  assert.deepEqual(noName, { subject: '', body: '<p>Hola Miren,<br>De : hola</p>' }, 'a line with an empty field and no other letters goes away');
+  assert.deepEqual(MAK.TEMPLATE_FIELDS.map(MAK.templateField), ['{profesor}', '{profesor_completo}', '{nombre}', '{nombre_completo}', '{asignatura}']);
+  assert.equal(MAK.defaultTeacherTemplate(), 'Hola {profesor},\n\n\nSaludos,\n{nombre}.');
+  MAK.setLang('en');
+  assert.equal(MAK.templateField('teacher'), '{teacher}');
+  assert.equal(MAK.defaultTeacherTemplate(), 'Hello {teacher},\n\n\nRegards,\n{name}.');
   MAK.setLang('es');
 });
 

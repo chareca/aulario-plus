@@ -42,14 +42,80 @@
     return { first: MAK.properName(first), last: MAK.properName(last), eid: eidOf(label) };
   };
 
-  // The text of a new message to a teacher (HTML of the editor of MiAulario): a greeting with the
-  // first name of the teacher, an empty line for the user, and the first name of the user.
-  MAK.teacherMessage = function (teacherLabel, myLabel) {
+  // The fields of the template of a message to a teacher (Settings), with their names in Spanish
+  // and in English. The names of both languages work in a template.
+  const FIELDS = {
+    teacher: ['profesor', 'teacher'],
+    teacherFull: ['profesor_completo', 'teacher_full'],
+    me: ['nombre', 'name'],
+    meFull: ['nombre_completo', 'full_name'],
+    course: ['asignatura', 'course']
+  };
+  const FIELD_OF = new Map(Object.entries(FIELDS).flatMap(([key, names]) => names.map((n) => [n, key])));
+  MAK.TEMPLATE_FIELDS = Object.keys(FIELDS);
+  // The name of a field in the language of the extension, for example "{profesor}".
+  MAK.templateField = (key) => `{${FIELDS[key][MAK.getLang() === 'en' ? 1 : 0]}}`;
+  // The template of the language: "Hola {profesor}," two empty lines, "Saludos," and "{nombre}.".
+  MAK.defaultTeacherTemplate = () => MAK.t('teach.template', { teacher: MAK.templateField('teacher'), name: MAK.templateField('me') });
+
+  // Put the values in the fields of a template: the lines of the result. A line with an empty field
+  // and no other letters goes away (for example "{nombre}." when MiAulario does not give the name).
+  function fillTemplate(text, values) {
+    return String(text || '').split('\n').flatMap((line) => {
+      let empty = false;
+      const out = line.replace(/\{(\w+)\}/g, (m, name) => {
+        const key = FIELD_OF.get(name.toLowerCase());
+        if (!key) return m;
+        if (!values[key]) empty = true;
+        return values[key] || '';
+      });
+      return empty && !/[\p{L}\p{N}]/u.test(out) ? [] : [out];
+    });
+  }
+
+  // Lines of text to the HTML of the editor of MiAulario. The lines of a paragraph go with <br>. An
+  // empty line ends the paragraph; each other empty line is an empty paragraph (space to write).
+  function editorHtml(lines) {
     const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const t = MAK.personParts(teacherLabel);
-    const me = myLabel ? MAK.personParts(myLabel) : null;
-    const myName = me ? me.first || me.last : '';
-    return `<p>${esc(MAK.t('teach.hello', { name: t.first || t.last }))}</p><p>&nbsp;</p><p>${esc(MAK.t('teach.regards'))}${myName ? `<br>${esc(myName)}.` : ''}</p>`;
+    const out = [];
+    let para = [];
+    let blanks = 0;
+    for (const line of lines) {
+      if (!line.trim()) {
+        blanks++;
+        continue;
+      }
+      if (para.length && blanks) {
+        out.push(`<p>${para.join('<br>')}</p>`, ...Array(blanks - 1).fill('<p>&nbsp;</p>'));
+        para = [];
+      }
+      blanks = 0;
+      para.push(esc(line.trim()));
+    }
+    if (para.length) out.push(`<p>${para.join('<br>')}</p>`);
+    return out.join('');
+  }
+
+  // A new message to a teacher: { subject, body (HTML of the editor of MiAulario) }. The texts come
+  // from the template of the user (settings.teacherSubject, settings.teacherBody); an empty body is
+  // the text of the language: "Hola <first name>," an empty line, "Saludos," and the first name of
+  // the user. course: the name of the site.
+  MAK.teacherMail = function ({ teacher, me, course, settings }) {
+    const s = settings || {};
+    const t = MAK.personParts(teacher);
+    const m = me ? MAK.personParts(me) : null;
+    const full = (p) => [p.first, p.last].filter(Boolean).join(' ');
+    const values = {
+      teacher: t.first || t.last,
+      teacherFull: full(t),
+      me: m ? m.first || m.last : '',
+      meFull: m ? full(m) : '',
+      course: course || ''
+    };
+    return {
+      subject: fillTemplate(s.teacherSubject, values).join(' ').replace(/\s+/g, ' ').trim().slice(0, 200),
+      body: editorHtml(fillTemplate(s.teacherBody || MAK.defaultTeacherTemplate(), values))
+    };
   };
 
   // The groups of teachers. recipients: MAK.pmRecipients(compose, myEid); members: parseMemberships()

@@ -202,9 +202,10 @@
       busy = true;
       for (const b of buttons) b.disabled = true;
       say(MAK.t('teach.preparing', { name: person.name }));
-      // The text: "Hola <first name>," an empty line, "Saludos," and the first name of the user.
-      const body = MAK.teacherMessage(person.label, me && me.label);
-      const data = { to: [{ value: person.value, label: person.label }], subject: '', body, emailCopy: true, files: [] };
+      // The text: the template of the user (Settings), or "Hola <first name>," an empty line, "Saludos,"
+      // and the first name of the user.
+      const { subject, body } = MAK.teacherMail({ teacher: person.label, me: me && me.label, course: nameOf(siteId), settings });
+      const data = { to: [{ value: person.value, label: person.label }], subject, body, emailCopy: true, files: [] };
       try {
         try {
           await pm.prepare(compose, data, { open: true });

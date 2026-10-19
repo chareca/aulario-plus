@@ -222,3 +222,11 @@ footer.privacy { border-top: 1px solid var(--line); padding: 4px 10px; text-alig
 footer.privacy button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 10.5px; cursor: pointer; }
 footer.privacy button:hover { text-decoration: underline; }
 .section p.small { margin: 0 0 6px; color: var(--muted); font-size: 12px; }
+
+/* Template of the message to a teacher */
+.template label { display: block; margin: 6px 0; }
+.template label > span { display: block; margin-bottom: 3px; }
+.template input, .template textarea { box-sizing: border-box; width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+.template textarea { min-height: 120px; resize: vertical; line-height: 1.4; }
+.template .chips { margin: 2px 0 4px; }
+.template .chips button { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

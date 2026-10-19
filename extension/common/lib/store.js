@@ -19,7 +19,10 @@
       // Download links without a MiAulario login (Send). The user must enable them.
       links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 },
       degree: '', // the degree that the user selected (its base address), or '': the degree of the guides
-      forwardEmail: '' // the last address for the forward of the internal mail (content-forward.js)
+      forwardEmail: '', // the last address for the forward of the internal mail (content-forward.js)
+      // The template of a message to a teacher (lib/teachers.js); an empty body is the default text.
+      teacherSubject: '',
+      teacherBody: ''
     };
   };
 
@@ -58,6 +61,18 @@
       .trim()
       .slice(0, 40)
       .trim();
+  };
+
+  // A text of the user (the template of a message to a teacher): no control or invisible characters,
+  // line breaks only if `lines`, at most `max` characters.
+  MAK.cleanText = function (v, max, lines) {
+    if (typeof v !== 'string') return '';
+    const text = v
+      .replace(/\r\n?/g, '\n')
+      .replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, ' ')
+      .slice(0, max);
+    if (!lines) return text.replace(/\s+/g, ' ').trim();
+    return text.replace(/ +$/gm, '').replace(/\s+$/, '');
   };
 
   const MAX_NICKNAMES = 200;
@@ -104,7 +119,9 @@
       nicknames: cleanNicknames(s.nicknames),
       links: cleanLinks(s.links, d.links),
       degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : '',
-      forwardEmail: typeof s.forwardEmail === 'string' && s.forwardEmail.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s.forwardEmail) ? s.forwardEmail : ''
+      forwardEmail: typeof s.forwardEmail === 'string' && s.forwardEmail.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s.forwardEmail) ? s.forwardEmail : '',
+      teacherSubject: MAK.cleanText(s.teacherSubject, 200, false),
+      teacherBody: MAK.cleanText(s.teacherBody, 3000, true)
     };
   };
 
