@@ -76,6 +76,7 @@ The "Correo interno" of MiAulario is the Messages tool of each site. It sends on
   - **Send now:** the extension sends it. A message to you needs one confirmation.
   - **Share:** the share menu of the system with the files (only if your browser has it). The files stay in memory.
 - **Receive in a different email:** The internal mail cannot send to an address outside MiAulario. The subject of the messages to you starts with `[Aulario Plus]`, so a forward filter in your UPNA email can send them to your other address. The settings show the steps for Gmail and Outlook.
+- **Forward the internal mail to your email:** On the inbox and the Settings page of the internal mail of a site, a box has your address and the buttons "Forward this subject" and "Forward all". The extension sets the option "Forward messages automatically: Yes" and the address in the Settings page of each site, the same steps as a person, and then reads the page again to make sure that MiAulario saved it. "Stop the forward" (this subject or all) sets the option to "Default" again. The extension does this only after a click: the Messages tool keeps its state in the session. The address stays in the settings of the extension, to fill the field the next time.
 
 ### Download links without a login
 

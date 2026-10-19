@@ -75,3 +75,11 @@ test('saveDegree and setDegree: the stored degree, and the degree that the user 
   assert.deepEqual(await send({ type: 'setDegree', base: '' }), { ok: true });
   assert.equal((await bg.ext.storage.local.get('settings')).settings.degree, '');
 });
+
+test('setForwardEmail: only a correct address stays in the settings', async () => {
+  const { bg, send } = setup();
+  assert.deepEqual(await send({ type: 'setForwardEmail', email: 'yo@example.org' }), { ok: true });
+  assert.equal((await bg.ext.storage.local.get('settings')).settings.forwardEmail, 'yo@example.org');
+  assert.deepEqual(await send({ type: 'setForwardEmail', email: 'no <valid>' }), { ok: false });
+  assert.equal((await bg.ext.storage.local.get('settings')).settings.forwardEmail, '');
+});

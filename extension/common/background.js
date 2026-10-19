@@ -614,6 +614,15 @@ const handlers = {
       return { ok: true };
     }
   },
+  // The address for the forward of the internal mail (content-forward.js): only to fill the field
+  // the next time. MiAulario keeps the forward itself.
+  setForwardEmail: {
+    content: true,
+    run: async (msg) => {
+      const next = await store.update('settings', (cur) => MAK.withDefaults(Object.assign({}, MAK.withDefaults(cur), { forwardEmail: msg.email })));
+      return { ok: next.forwardEmail === msg.email };
+    }
+  },
   // The degree that the user selected in "Mi sitio" ("" = the degree of the guides).
   setDegree: {
     content: true,

@@ -60,6 +60,7 @@
         "content-names.js",
         "content-search.js",
         "content-mail.js",
+        "content-forward.js",
         "content.js"
       ],
       "run_at": "document_idle"

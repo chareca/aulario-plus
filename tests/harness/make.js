@@ -186,7 +186,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/guide.js', 'lib/degree.js', 'lib/mail-ui.js', 'content-banner.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/guide.js', 'lib/degree.js', 'lib/mail-ui.js', 'content-banner.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
@@ -215,6 +215,7 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   </tbody></table></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
+<script>if (new URLSearchParams(location.search).has('messages')) document.querySelector('.row').innerHTML = '<form id="msgForum"><p>Correo interno (simulado): Recibido, Enviado.</p></form>'; // the inbox of the internal mail</script>
 <script>history.replaceState(null, '', (new URLSearchParams(location.search).has('mine') ? '/portal' : '/portal/site/${F.CS}') + location.search); // the path of a site (or "Mi sitio" with ?mine), as in MiAulario</script>
 ${siteTags}
 <script>
@@ -227,7 +228,14 @@ ${siteTags}
       open: async (placement) => { __pmLog.push(['open', placement]); return compose(); },
       prepare: async (c, data) => { __pmLog.push(['prepare', data]); return c; },
       send: async (c, data) => { __pmLog.push(['send', data.to]); return true; },
-      cancel: async () => true
+      cancel: async () => true,
+      // The forward of each site, in memory ("?fail=<placement>": an error for that site).
+      setForward: async (placement, { mode, email }) => {
+        await new Promise((r) => setTimeout(r, 150));
+        __pmLog.push(['forward', placement, mode, email || '']);
+        if (new URLSearchParams(location.search).get('fail') === placement) throw new MAK.PmError('pm.noSettings', 'link');
+        return { mode, email: mode === 'yes' ? email : '' };
+      }
     };
   };
   window.showBanner = async function (siteId, compact) {

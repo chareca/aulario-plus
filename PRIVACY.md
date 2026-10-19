@@ -14,7 +14,7 @@ Aulario Plus is a browser extension for MiAulario, the virtual campus of the Uni
 
 | Data | Where it is | Who gets it |
 |---|---|---|
-| Your settings (names of sites, hidden sites, language, targets of the grade calculator, the settings of the download links) | The storage of the extension in your browser | Nobody |
+| Your settings (names of sites, hidden sites, language, targets of the grade calculator, the settings of the download links, the address for the forward of the internal mail) | The storage of the extension in your browser | Nobody |
 | A copy of your course data: sites, pages of the sites, deliveries, announcements, notifications, calendar events, forums, grades, resources, and what you read | The storage of the extension in your browser | Nobody. The extension removes it when you log out of MiAulario or when a different user logs in |
 | The course guides of your sites (assessment, teachers) | The storage of the extension, for 7 days | Nobody |
 | Your degree (from the guides), its exam periods and the exam dates of the calendar (public data) | The storage of the extension, for 7 days (1 day for an exam calendar) | Nobody. The extension removes it when you log out |
@@ -22,7 +22,7 @@ Aulario Plus is a browser extension for MiAulario, the virtual campus of the Uni
 
 ## Requests
 
-- **MiAulario (`miaulario.unavarra.es`):** the extension reads your course data, sends a request every 3 to 10 minutes to keep your session active, and, when you use these functions, sends messages by the internal mail of MiAulario and opens its pages. These are the same requests as when you use MiAulario.
+- **MiAulario (`miaulario.unavarra.es`):** the extension reads your course data, sends a request every 3 to 10 minutes to keep your session active, and, when you use these functions, sends messages by the internal mail of MiAulario, changes the forward of the internal mail of your sites to the address that you write (only when you click the buttons), and opens its pages. These are the same requests as when you use MiAulario.
 - **UPNA login page (`sso.unavarra.es`):** the extension does not send requests to this page. It only makes its cookie last longer.
 - **Public course guides (`www.unavarra.es/ficha-asignaturaDOA/`):** the extension reads the public guide of each of your sites. The request has only the code of the subject, not your data.
 - **Public pages of the degrees (`www.unavarra.es/sites/grados/`):** the extension reads the list of degrees and the page "Evaluación" of your degree, for the shortcuts of "Mi sitio". The requests do not contain your data.
@@ -67,7 +67,7 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 | Datos | Dónde están | Quién los recibe |
 |---|---|---|
-| Tus ajustes (nombres de materias, materias ocultas, idioma, objetivos de la calculadora, ajustes de los enlaces de descarga) | El almacenamiento de la extensión en tu navegador | Nadie |
+| Tus ajustes (nombres de materias, materias ocultas, idioma, objetivos de la calculadora, ajustes de los enlaces de descarga, la dirección de reenvío del Correo interno) | El almacenamiento de la extensión en tu navegador | Nadie |
 | Una copia de tus datos de las asignaturas: sitios, páginas, entregas, anuncios, notificaciones, eventos del calendario, foros, notas, recursos y lo que has leído | El almacenamiento de la extensión en tu navegador | Nadie. La extensión la borra al cerrar sesión en MiAulario o si entra otro usuario |
 | Las guías docentes de tus materias (evaluación, profesorado) | El almacenamiento de la extensión, durante 7 días | Nadie |
 | Tu carrera (de las guías), sus periodos de exámenes y las fechas del calendario de exámenes (datos públicos) | El almacenamiento de la extensión, durante 7 días (1 día para un calendario de exámenes) | Nadie. La extensión los borra al cerrar sesión |
@@ -75,7 +75,7 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 ## Peticiones
 
-- **MiAulario (`miaulario.unavarra.es`):** la extensión lee tus datos de las asignaturas, envía una petición cada 3 a 10 minutos para mantener la sesión activa y, cuando usas esas funciones, envía mensajes por el Correo interno y abre sus páginas. Son las mismas peticiones que cuando usas MiAulario.
+- **MiAulario (`miaulario.unavarra.es`):** la extensión lee tus datos de las asignaturas, envía una petición cada 3 a 10 minutos para mantener la sesión activa y, cuando usas esas funciones, envía mensajes por el Correo interno, cambia el reenvío del Correo interno de tus materias a la dirección que escribas (solo cuando pulsas los botones) y abre sus páginas. Son las mismas peticiones que cuando usas MiAulario.
 - **Página de inicio de sesión de la UPNA (`sso.unavarra.es`):** la extensión no le hace peticiones. Solo alarga la duración de su cookie.
 - **Guías docentes públicas (`www.unavarra.es/ficha-asignaturaDOA/`):** la extensión lee la guía pública de cada materia. La petición solo lleva el código de la asignatura, no tus datos.
 - **Páginas públicas de las carreras (`www.unavarra.es/sites/grados/`):** la extensión lee la lista de carreras y la página «Evaluación» de tu carrera, para los accesos directos de Mi sitio. Las peticiones no llevan tus datos.

@@ -18,7 +18,8 @@
       nicknames: {}, // a name from the user for each site
       // Download links without a MiAulario login (Send). The user must enable them.
       links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 },
-      degree: '' // the degree that the user selected (its base address), or '': the degree of the guides
+      degree: '', // the degree that the user selected (its base address), or '': the degree of the guides
+      forwardEmail: '' // the last address for the forward of the internal mail (content-forward.js)
     };
   };
 
@@ -102,7 +103,8 @@
       shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
       nicknames: cleanNicknames(s.nicknames),
       links: cleanLinks(s.links, d.links),
-      degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : ''
+      degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : '',
+      forwardEmail: typeof s.forwardEmail === 'string' && s.forwardEmail.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s.forwardEmail) ? s.forwardEmail : ''
     };
   };
 
