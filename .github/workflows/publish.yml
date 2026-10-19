@@ -2,7 +2,7 @@ name: Publish to the stores
 
 # A published release of GitHub (tag vX.Y.Z) sends the same version to the Chrome Web Store
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
-# A store without its secrets is skipped: see store/PUBLISHING.md.
+# A store without its secrets is skipped.
 on:
   release:
     types: [published]

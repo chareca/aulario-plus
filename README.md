@@ -163,10 +163,6 @@ The extension asks for these permissions: `alarms` (the ping), `cookies` (the pe
 
 Firefox removes a temporary add-on when you close the browser. To keep the add-on, sign it as "unlisted" on addons.mozilla.org. This service is free.
 
-## Publish in the stores
-
-The workflow `.github/workflows/publish.yml` sends each release of GitHub to the Chrome Web Store and to Firefox Add-ons. Refer to [store/PUBLISHING.md](store/PUBLISHING.md) for the accounts, the first version, the API keys and the secrets.
-
 ## Build from the source code
 
 Python 3 and `zip` are necessary.
@@ -215,12 +211,3 @@ Then serve `tests/harness/out/` with a local web server, for example `python3 -m
 
 - The commit messages follow Conventional Commits: `<type>(<optional scope>): <description>`.
 - The texts of the code and of the documents follow ASD-STE100 (Simplified Technical English).
-- The git hooks in `.githooks/` check the commit messages. To use them, run this command one time after you clone the repository:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-## Technical details
-
-Refer to [RESEARCH.md](RESEARCH.md). This file shows how the MiAulario session, the cookies, the APIs and the timeout operate.
