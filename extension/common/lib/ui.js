@@ -48,10 +48,11 @@
   MAK.extButtonClass = (kind) => `mak-${kind}${MAK.isDarkPage() ? ' dark' : ''}`;
 
   // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
-  // character such as ✉ does not give. name: 'pencil' or 'mail'.
+  // character such as ✉ does not give. name: 'pencil', 'mail' or 'chevron' (an arrow down).
   const ICONS = {
     pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
-    mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]]
+    mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
+    chevron: [['path', { d: 'M6 9l6 6 6-6' }]]
   };
   MAK.icon = function (name) {
     const ns = 'http://www.w3.org/2000/svg';
