@@ -98,7 +98,8 @@ function make(NOW) {
     assignment('asg-submitted', PHYS, 'Essay', { submissions: [submission({ submitted: true, canSubmit: false, status: 'Enviado' })] }),
     assignment('asg-late', CS, 'Lab report 2', { dueTime: epoch(NOW - 2 * H), closeTime: epoch(NOW + D) }),
     assignment('asg-closed', MATH, 'Problem set 1', { status: 'CLOSED', dueTime: epoch(NOW - 3 * D), closeTime: epoch(NOW - D), submissions: [submission({ canSubmit: false })] }),
-    assignment('asg-paper', COORD, 'Signed form (on paper)', { submissionType: 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION', dueTime: epoch(NOW + 10 * D), closeTime: epoch(NOW + 10 * D) }),
+    // Sakai makes a submission for each student of a task on paper: "submitted", not by the student.
+    assignment('asg-paper', COORD, 'Signed form (on paper)', { submissionType: 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION', dueTime: epoch(NOW + 10 * D), closeTime: epoch(NOW + 10 * D), submissions: [submission({ submitted: true, userSubmission: false, canSubmit: false })] }),
     assignment('asg-returned', MATH, 'Problem set 3', { submissions: [submission({ submitted: true, returned: true, graded: true, canSubmit: true })] }),
     assignment('asg-draft', CS, 'Final project', { dueTime: epoch(NOW + 12 * D), closeTime: epoch(NOW + 12 * D), submissions: [submission({ draft: true })] }),
     assignment('asg-new', PHYS, 'Lab safety quiz', { timeCreated: epoch(NOW - 2 * H), openTime: epoch(NOW - 2 * H), dueTime: epoch(NOW + 6 * D), closeTime: epoch(NOW + 6 * D) })

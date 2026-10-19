@@ -29,6 +29,24 @@ test('a draft is not a submission', () => {
   assert.equal(MAK.deliveryState(trimmed.find((a) => a.id === 'asg-draft'), F.NOW), 'pending');
 });
 
+test('only a submission of the student counts: not the submissions that Sakai makes for the grades', () => {
+  const due = F.epoch(F.NOW + 3 * F.D);
+  const past = F.epoch(F.NOW - F.D);
+  const asg = (o, sub) => MAK.trimAssignment(Object.assign({ id: 'x', context: F.CS, title: 'Tarea 1', status: 'OPEN', submissionType: 'TEXT_ONLY_ASSIGNMENT_SUBMISSION', dueTime: due, closeTime: due, submissions: sub ? [sub] : [] }, o));
+  const state = (o, sub) => MAK.deliveryState(asg(o, sub), F.NOW);
+  // A task without an online submission: Sakai makes a submission for each student ("submitted").
+  const paper = { submitted: true, userSubmission: false, draft: false, canSubmit: false };
+  assert.equal(state({ submissionType: 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION' }, paper), 'pending', 'a new task on paper is pending');
+  assert.equal(state({ submissionType: 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION', dueTime: past, closeTime: past }, paper), 'closed');
+  // A grade without a submission (for example a 0 for the students without a submission).
+  assert.equal(state({ dueTime: past, closeTime: past, status: 'CLOSED' }, { submitted: true, graded: true, userSubmission: false, canSubmit: false }), 'closed');
+  assert.equal(state({}, { submitted: true, userSubmission: false, canSubmit: true }), 'pending', 'the student can still submit');
+  // A submission of the student; an old submission without the field "userSubmission".
+  assert.equal(state({}, { submitted: true, userSubmission: true, canSubmit: false }), 'submitted');
+  assert.equal(state({}, { submitted: true, canSubmit: false }), 'submitted');
+  assert.equal(state({}, null), 'pending', 'no submission');
+});
+
 test('the state changes with the time', () => {
   const a = trimmed.find((x) => x.id === 'asg-red');
   assert.equal(MAK.deliveryState(a, F.NOW), 'pending');

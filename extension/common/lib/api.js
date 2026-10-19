@@ -95,11 +95,17 @@
   // ---- Trim the API data -----------------------------------------------------
   // Keep only the fields that the extension uses, with safe types and safe URLs.
 
+  // Sakai also makes submissions that the student did not make: "submitted" without
+  // "userSubmission". It makes one for each student of a task without an online submission (to give
+  // the grades), and one for a grade without a submission. Only a submission of the student counts
+  // as "submitted". Without the field "userSubmission" (an old submission), "submitted" counts.
+  const byStudent = (s) => s && s.userSubmission !== false;
+
   function summarizeSubmissions(subs) {
     const list = Array.isArray(subs) ? subs : [];
     const mine = list.find((s) => s && s.userSubmission) || list[0] || {};
     return {
-      submitted: list.some((s) => s && s.submitted && !s.draft),
+      submitted: list.some((s) => byStudent(s) && s.submitted && !s.draft),
       draft: list.some((s) => s && s.draft),
       returned: list.some((s) => s && s.returned),
       graded: list.some((s) => s && s.graded),
