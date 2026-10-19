@@ -211,3 +211,8 @@ Then serve `tests/harness/out/` with a local web server, for example `python3 -m
 
 - The commit messages follow Conventional Commits: `<type>(<optional scope>): <description>`.
 - The texts of the code and of the documents follow ASD-STE100 (Simplified Technical English).
+- The git hooks in `.githooks/` check the commit messages. To use them, run this command one time after you clone the repository:
+
+```bash
+git config core.hooksPath .githooks
+```

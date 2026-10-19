@@ -8,6 +8,3 @@ tests/live/.profile/
 # Files of the developer: they stay on the computer, not in the repository.
 store/
 RESEARCH.md
-.githooks/
-.github/workflows/commit-messages.yml
-scripts/check_commits.sh
