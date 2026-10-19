@@ -91,6 +91,14 @@ test('cleanGuide: only the known fields, with limits; bad links and weights go',
   assert.equal(MAK.cleanGuide('x'), null);
 });
 
+test('the link "Subir" (back to the top) is not a note, also in a guide that is stored already', () => {
+  const g = MAK.cleanGuide({ url: URL_OK, evaluation: { rows: [], notes: ['Regla 1.', 'Subir', ' subir ', 'Volver arriba'] } });
+  assert.deepEqual(g.evaluation.notes, ['Regla 1.']);
+  const stored = { evaluation: { rows: [], notes: ['Regla 1.', 'Subir', 'Regla 2: subir la nota con la recuperación.'] } };
+  assert.deepEqual(MAK.guideNotes(stored), ['Regla 1.', 'Regla 2: subir la nota con la recuperación.'], 'only a line that is only the link');
+  assert.deepEqual(MAK.guideNotes(null), []);
+});
+
 test('loadGuide: the stored guide while it is recent; else read again and store', async () => {
   const tool = { placement: 'P 1' };
   const calls = [];

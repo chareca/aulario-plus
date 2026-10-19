@@ -14,7 +14,7 @@
     assert.ok(g.teachers[0].tutorias.startsWith('https://www.unavarra.es/pdi?uid=1001'));
     assert.deepEqual(g.evaluation.rows.map((r) => [r.activity, r.weight, r.minimum]), [['Examen teórico-práctico', 60, '5 sobre 10'], ['Prácticas', 30, 'No'], ['Lab report 1', 10, 'No']]);
     assert.equal(g.evaluation.rows[0].recoverable, 'Sí, en el examen de recuperación');
-    assert.deepEqual(g.evaluation.notes, ['La evaluación es continua.', 'Si no obtienes un 5 en el examen, no se promedia con el resto.'], 'the text of the section, not the methodology table');
+    assert.deepEqual(g.evaluation.notes, ['La evaluación es continua.', 'Si no obtienes un 5 en el examen, no se promedia con el resto.'], 'the text of the section, not the methodology table, not the link "Subir"');
     assert.deepEqual(MAK.cleanGuide(g), g, 'the stored form is the same');
   });
 

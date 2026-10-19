@@ -24,6 +24,7 @@
   <tr><td>R4</td><td>Lab report 1</td><td>10%</td><td>No</td><td>No</td></tr>
 </table>
 <p>Si no obtienes un 5 en el examen, no se promedia con el resto.</p>
+<p><a href="#top">Subir</a></p>
 <h3>Temario</h3>
 <p>Tema 1. Introducción.</p>
 </body></html>`;

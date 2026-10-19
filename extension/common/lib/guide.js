@@ -40,6 +40,16 @@
   };
 
   const text = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+  // The link back to the top of the page ("Subir") is not a rule of the assessment.
+  const BACK_TO_TOP = /^(subir|volver arriba|ir arriba|arriba|igo|gora|back to top|top)$/i;
+  // The text of an element without its links inside the page (href="#...").
+  const ownText = (el) => {
+    const copy = el.cloneNode(true);
+    for (const a of copy.querySelectorAll('a[href^="#"]')) a.remove();
+    return text(copy);
+  };
+  // The notes of a guide without the "Subir" lines (also the guides that are stored already).
+  MAK.guideNotes = (g) => ((g && g.evaluation && g.evaluation.notes) || []).filter((n) => !BACK_TO_TOP.test(String(n).trim()));
   const cut = (s, n) => String(s || '').slice(0, n);
   const absolute = (href) => {
     try {
@@ -87,7 +97,10 @@
     for (let e = h && h.nextElementSibling; e && !/^H[1-4]$/.test(e.tagName); e = e.nextElementSibling) {
       const table = e.tagName === 'TABLE' ? e : e.querySelector('table');
       if (table && !evaluation.rows.length) evaluation.rows = readAssessment(table);
-      else if (!table && text(e) && evaluation.notes.length < 12) evaluation.notes.push(cut(text(e), 800));
+      else if (!table && evaluation.notes.length < 12) {
+        const note = ownText(e);
+        if (note && !BACK_TO_TOP.test(note)) evaluation.notes.push(cut(note, 800));
+      }
     }
     return {
       url: MAK.guideUrl(url),
@@ -137,7 +150,7 @@
           activity: str(r && r.activity, 200), weight: r && typeof r.weight === 'number' && r.weight >= 0 && r.weight <= 100 ? r.weight : null,
           weightText: str(r && r.weightText, 40), recoverable: str(r && r.recoverable, 200), minimum: str(r && r.minimum, 200), attendance: str(r && r.attendance, 200)
         })).filter((r) => r.activity),
-        notes: (Array.isArray(ev.notes) ? ev.notes : []).slice(0, 12).map((n) => str(n, 800)).filter(Boolean)
+        notes: (Array.isArray(ev.notes) ? ev.notes : []).slice(0, 12).map((n) => str(n, 800)).filter((n) => n && !BACK_TO_TOP.test(n.trim()))
       }
     };
   };
