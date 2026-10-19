@@ -96,9 +96,11 @@
   // Keep only the fields that the extension uses, with safe types and safe URLs.
 
   // Sakai also makes submissions that the student did not make: "submitted" without
-  // "userSubmission". It makes one for each student of a task without an online submission (to give
-  // the grades), and one for a grade without a submission. Only a submission of the student counts
-  // as "submitted". Without the field "userSubmission" (an old submission), "submitted" counts.
+  // "userSubmission". It makes one when the student accepts the honor pledge ("Cláusula de veracidad
+  // aceptada": the task is open, nothing is sent), one for each student of a task without an online
+  // submission (to give the grades), and one for a grade without a submission. Only a submission of
+  // the student counts as "submitted". Without the field "userSubmission" (an old submission),
+  // "submitted" counts.
   const byStudent = (s) => s && s.userSubmission !== false;
 
   function summarizeSubmissions(subs) {

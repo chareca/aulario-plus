@@ -34,6 +34,9 @@ test('only a submission of the student counts: not the submissions that Sakai ma
   const past = F.epoch(F.NOW - F.D);
   const asg = (o, sub) => MAK.trimAssignment(Object.assign({ id: 'x', context: F.CS, title: 'Tarea 1', status: 'OPEN', submissionType: 'TEXT_ONLY_ASSIGNMENT_SUBMISSION', dueTime: due, closeTime: due, submissions: sub ? [sub] : [] }, o));
   const state = (o, sub) => MAK.deliveryState(asg(o, sub), F.NOW);
+  // The honor pledge: the student opens the task and accepts it. Sakai makes a submission
+  // ("submitted", not by the student). Nothing is sent: the task is pending.
+  assert.equal(state({ submissionType: 'ATTACHMENT_ONLY_ASSIGNMENT_SUBMISSION' }, { submitted: true, userSubmission: false, draft: false, canSubmit: true }), 'pending', 'honor pledge accepted');
   // A task without an online submission: Sakai makes a submission for each student ("submitted").
   const paper = { submitted: true, userSubmission: false, draft: false, canSubmit: false };
   assert.equal(state({ submissionType: 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION' }, paper), 'pending', 'a new task on paper is pending');
