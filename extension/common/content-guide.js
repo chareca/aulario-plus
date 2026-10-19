@@ -22,6 +22,7 @@
 
   const CSS = `
     :host { all: initial; display: block; margin: 0 0 12px; }
+    [hidden] { display: none !important; } /* "Ocultar" and the arrow: the rules with "display" must not show it */
     .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
       border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
     .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }

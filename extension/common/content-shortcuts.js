@@ -24,6 +24,7 @@
 
   const CSS = `
     :host { all: initial; display: block; margin: 0 0 12px; }
+    [hidden] { display: none !important; } /* "Ocultar": the rules with "display" must not show it */
     .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
       border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
     .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
@@ -31,7 +32,7 @@
     .head strong { flex: 1; min-width: 200px; font-size: 15px; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     /* The exams on the full width; below them, the row of the actions. */
-    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; }
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; container-type: inline-size; }
     .tile { border: 1px solid #d6e3e0; border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
     .dark .tile { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
     .tile h4 { margin: 0 0 6px; font-size: 15px; }
@@ -59,7 +60,9 @@
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .note { font-size: 13px; margin: 6px 0; }
     /* The action tiles in one row below the exams: the same height, the buttons at the bottom. */
-    .side { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; min-width: 0; align-items: stretch; }
+    .side { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; align-items: stretch; }
+    /* The width of the box, not of the screen: in "Mi sitio" the box can be in a narrow column. */
+    @container (max-width: 600px) { .side { grid-template-columns: minmax(0, 1fr); } }
     /* A tile with one action: the text, then a large button in the center. */
     .tile.action { text-align: center; display: flex; flex-direction: column; }
     .tile.action .note { margin: 0 0 10px; }
