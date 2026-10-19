@@ -296,6 +296,7 @@
 
   // The year of the user: the year ("Curso") of most of the guides, the higher one if two are the
   // same; else from the subject codes (plan code, then the semester: 240702 -> semester 7 -> year 4).
+  // Only the guides of the last academic year ("anio"): the sites of old subjects have older guides.
   // No data: null.
   MAK.studyYear = function (guides) {
     const most = (list) => {
@@ -303,12 +304,16 @@
       for (const y of list) count.set(y, (count.get(y) || 0) + 1);
       return [...count].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] || null;
     };
-    const list = (guides || []).filter(Boolean);
+    const param = (g, k) => {
+      try { return new URL(g.url).searchParams.get(k) || ''; } catch { return ''; }
+    };
+    const all = (guides || []).filter(Boolean);
+    const last = Math.max(0, ...all.map((g) => Number(param(g, 'anio')) || 0));
+    const list = last ? all.filter((g) => Number(param(g, 'anio')) === last) : all;
     const byCourse = list.map((g) => Number(g.course)).filter((y) => Number.isInteger(y) && y >= 1 && y <= 6);
     if (byCourse.length) return most(byCourse);
     const byCode = list.map((g) => {
-      let plan = '';
-      try { plan = new URL(g.url).searchParams.get('codPlan') || ''; } catch {}
+      const plan = param(g, 'codPlan');
       const code = String(g.code || '');
       const semester = plan && code.startsWith(plan) && code.length === plan.length + 3 ? Number(code[plan.length]) : 0;
       return semester >= 1 && semester <= 8 ? Math.ceil(semester / 2) : 0;

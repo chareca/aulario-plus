@@ -58,7 +58,15 @@
     .dark h5 { color: #9aa6ad; }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .note { font-size: 13px; margin: 6px 0; }
-    .record .mak-link { font-size: 15px; font-weight: 600; }
+    .side { display: grid; gap: 10px; min-width: 0; }
+    /* A tile with one action: the text, then a large button in the center. */
+    .tile.action { text-align: center; }
+    .tile.action .note { margin: 0 0 10px; }
+    a.big { display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: 100%; max-width: 280px;
+      margin: 6px auto 0; padding: 10px 14px; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; }
+    a.big .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
+    a.big:hover .mak-arrow, a.big:focus-visible .mak-arrow { transform: translate(1px, -2px); }
+    @media (prefers-reduced-motion: reduce) { a.big .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font: inherit; font-size: 13px; max-width: 100%; }
     button.plain { font: inherit; font-size: 12px; background: none; border: 0; padding: 0; cursor: pointer; color: #1a5fb4; }
@@ -241,11 +249,34 @@
     return sel;
   }
 
+  // A large button that opens a page in a new tab (MAK.h adds target="_blank").
+  function bigButton(url, text, title) {
+    const arrow = MAK.icon('arrow');
+    arrow.setAttribute('class', 'mak-arrow');
+    return h('a', { class: `${MAK.extButtonClass('btn')} big`, href: url, title: title || undefined }, h('span', { text }), arrow);
+  }
+
   function recordTile() {
-    return h('section', { class: 'tile record' },
+    return h('section', { class: 'tile action' },
       h('h4', { text: `🎓 ${t('short.record')}` }),
-      MAK.link(MAK.EXPEDIENTE_URL, t('short.recordLink')),
-      h('p', { class: 'note meta', text: t('short.recordHelp') }));
+      h('p', { class: 'note meta', text: t('short.recordHelp') }),
+      bigButton(MAK.EXPEDIENTE_URL, t('short.recordLink')));
+  }
+
+  // The notes of the degree in Wuolah, at the year of the user (two buttons for a double degree).
+  // links: MAK.wuolahLinks, or null while the degree is not known.
+  function wuolahTile(tile, links) {
+    const label = (w) => {
+      if (!w.name) return t('short.wuolahUpna');
+      const year = w.year ? t('short.wuolahYear', { n: w.year }) : '';
+      if (links.length > 1) return [t('short.wuolahOf', { name: w.name }), year].filter(Boolean).join(' · ');
+      return year ? `Wuolah · ${year}` : t('short.wuolah');
+    };
+    MAK.fill(tile,
+      h('h4', { text: `📚 ${t('short.notes')}` }),
+      h('p', { class: 'note meta', text: t('short.wuolahNote') }),
+      links ? links.map((w) => bigButton(w.url, label(w))) : h('p', { class: 'meta', text: t('short.loading') }));
+    return tile;
   }
 
   // ---- Run -----------------------------------------------------------------------------
@@ -260,35 +291,33 @@
     const data = (await MAK.safeCall(() => ext.storage.local.get(['guides', 'sites', 'settings', 'degree', 'degreeList']), null)) || {};
     const settings = MAK.withDefaults(data.settings);
     MAK.setLang(settings.lang);
-    const guides = Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url);
+    // The guides of the sites that the user did not hide (the old subjects are often hidden).
+    const hidden = MAK.hiddenEverywhere(settings);
+    const guides = Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId));
     const now = Date.now();
     const examTile = h('section', { class: 'tile' }, h('h4', { text: `📅 ${t('short.exams')}` }), h('p', { class: 'meta', text: t('short.loading') }));
-    MAK.fill(box(), examTile, recordTile());
+    const notesTile = wuolahTile(h('section', { class: 'tile action' }), null);
+    MAK.fill(box(), examTile, h('div', { class: 'side' }, recordTile(), notesTile));
     noGuides = !guides.length && !settings.degree;
     if (noGuides) {
       examTile.remove();
+      wuolahTile(notesTile, MAK.wuolahLinks('', null));
       return;
     }
     const degree = await findDegree(data, guides.map((g) => g.guide), settings).catch(() => null);
+    wuolahTile(notesTile, MAK.wuolahLinks(degree && degree.base, MAK.studyYear(guides.map((g) => g.guide))));
     if (!degree || !degree.base) {
       const list = (degree && degree.list) || [];
       MAK.fill(examTile, h('h4', { text: `📅 ${t('short.exams')}` }), list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
       return;
     }
     const pdfLinks = (degree.pdfs || []).map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
-    // The community of the degree in Wuolah, at the year of the user (two for a double degree).
-    const wuolah = MAK.wuolahLinks(degree.base, MAK.studyYear(guides.map((g) => g.guide)));
-    const wuolahLinks = wuolah.map((w) => {
-      const year = w.year ? ` (${t('short.year', { n: w.year })})` : '';
-      const text = !w.name ? t('short.wuolahUpna') : wuolah.length > 1 ? t('short.wuolahOf', { name: w.name }) + year : t('short.wuolah') + year;
-      return MAK.link(w.url, text, { title: t('short.wuolahNote') });
-    });
     MAK.fill(examTile,
       h('h4', null, `📅 ${t('short.exams')}`, degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : periodsOf(degree, now),
       h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') })),
       h('h5', { text: t('short.links') }),
-      h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation')), wuolahLinks),
+      h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
       degreeLine(degree, data, settings, degree.list));
     const mine = examTile.querySelector('.mine');
     const part = await examPart(degree, guides, data.sites, now).catch(() => null);

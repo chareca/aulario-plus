@@ -155,3 +155,10 @@ test('the year of the user: the year of most guides; else from the subject codes
   assert.equal(MAK.studyYear([{ code: '12', course: '' }, null]), null);
   assert.equal(MAK.studyYear([]), null);
 });
+
+test('the year of the user: only the guides of the last academic year count', () => {
+  const g = (code, course, anio) => ({ url: `https://www.unavarra.es/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=${code}&anio=${anio}`, code, course });
+  const old = ['240101', '240103', '240106', '240107'].map((c) => g(c, '1', 2023)); // the sites of the first year, still in the list
+  assert.equal(MAK.studyYear([...old, g('240702', '4', 2026), g('240703', '4', 2026)]), 4);
+  assert.equal(MAK.studyYear([...old.map((x) => Object.assign({}, x, { course: '' })), g('240702', '', 2026)]), 4, 'also with the codes');
+});
