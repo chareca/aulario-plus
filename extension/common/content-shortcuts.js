@@ -30,9 +30,8 @@
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .head strong { flex: 1; min-width: 200px; font-size: 15px; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    /* The tiles have the same height: the exams on the left, the actions in a column on the right. */
-    .tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 10px; margin-top: 8px; align-items: stretch; }
-    @media (max-width: 760px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+    /* The exams on the full width; below them, the row of the actions. */
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; }
     .tile { border: 1px solid #d6e3e0; border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
     .dark .tile { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
     .tile h4 { margin: 0 0 6px; font-size: 15px; }
@@ -59,7 +58,8 @@
     .dark h5 { color: #9aa6ad; }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
     .note { font-size: 13px; margin: 6px 0; }
-    .side { display: grid; grid-auto-rows: 1fr; gap: 10px; min-width: 0; }
+    /* The action tiles in one row below the exams: the same height, the buttons at the bottom. */
+    .side { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; min-width: 0; align-items: stretch; }
     /* A tile with one action: the text, then a large button in the center. */
     .tile.action { text-align: center; display: flex; flex-direction: column; }
     .tile.action .note { margin: 0 0 10px; }
