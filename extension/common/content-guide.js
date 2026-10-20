@@ -199,10 +199,9 @@
     });
     const name = h('strong', { text: `📘 ${title}`, on: { click: () => toggle.click() } });
     shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
-    // In the block "Aulario Plus" (MAK.mySiteSlot in "Mi sitio", MAK.siteSlot in a site), after the
-    // shortcuts and the box of new items. Without the block: below the shortcuts (content-shortcuts.js)
-    // or the banner of new items, or at the top of the content.
-    const slot = mySite ? MAK.mySiteSlot() : MAK.siteSlot();
+    // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
+    // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
+    const slot = mySite ? MAK.mySiteSlot() : null;
     const shortcuts = document.getElementById(SHORTCUTS_ID);
     const above = shortcuts || document.getElementById(BANNER_ID);
     if (shortcuts && slot && slot.contains(shortcuts)) shortcuts.after(host);

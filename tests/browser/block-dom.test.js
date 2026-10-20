@@ -1,5 +1,5 @@
-// The block "Aulario Plus" (content-banner.js): in "Mi sitio", at the top of the first column; in a
-// site, at the top of the content. Its own head, and an arrow that folds it.
+// The block "Aulario Plus" of "Mi sitio" (content-banner.js): at the top of the first column, with
+// its own head and an arrow that folds it. The arrow of the boxes.
 (function () {
   'use strict';
 
@@ -8,10 +8,7 @@
       const el = document.getElementById(id);
       if (el) el.remove();
     }
-    try {
-      localStorage.removeItem('mak-mysite-closed');
-      localStorage.removeItem('mak-site-closed');
-    } catch {}
+    try { localStorage.removeItem('mak-mysite-closed'); } catch {}
   };
 
   // A page "Mi sitio": "Mensaje del día" and "Mostrar información de Mi Sitio" in the first column,
@@ -22,16 +19,6 @@
     main.id = 'mak-test-main';
     const tool = (cls, title) => `<div class="Mrphs-container ${cls}"><nav class="Mrphs-toolTitleNav"><h2 class="Mrphs-toolTitleNav__title">${title}</h2></nav><div class="Mrphs-toolBody">${title}</div></div>`;
     main.innerHTML = `<div class="col1">${tool('Mrphs-sakai-motd', 'Mensaje del día')}${tool('Mrphs-sakai-iframe-myworkspace', 'Mostrar información de Mi Sitio')}</div><div class="col2">${tool('Mrphs-sakai-summary-calendar', 'Calendario')}</div>`;
-    document.body.append(main);
-    return main;
-  }
-
-  // A page of a site: the breadcrumb and a tool.
-  function sitePage() {
-    reset();
-    const main = document.createElement('main');
-    main.id = 'mak-test-main';
-    main.innerHTML = '<div class="portal-header-breadcrumb">Análisis de Datos › Inicio</div><div class="Mrphs-container"><nav class="Mrphs-toolTitleNav"><h2 class="Mrphs-toolTitleNav__title">Inicio</h2></nav></div>';
     document.body.append(main);
     return main;
   }
@@ -78,26 +65,6 @@
     document.querySelector('#mak-block button.mak-fold').click();
     assert.equal(again.hidden, false, 'the arrow unfolds it');
     assert.equal(localStorage.getItem('mak-mysite-closed'), '0');
-    reset();
-  });
-
-  test('a site: the same block at the top of the content, only with a box in it; folded apart from "Mi sitio"', async () => {
-    const main = sitePage();
-    const body = MAK.siteSlot();
-    const block = document.getElementById('mak-block');
-    assert.equal(block.previousElementSibling, main.querySelector('.portal-header-breadcrumb'), 'below the breadcrumb');
-    assert.ok(block.classList.contains('mak-site'));
-    assert.equal(block.hidden, true, 'empty: not shown');
-    const box = document.createElement('div');
-    body.append(box);
-    await new Promise((r) => setTimeout(r, 0));
-    assert.equal(block.hidden, false, 'with a box');
-    block.querySelector('button.mak-fold').click();
-    assert.equal(localStorage.getItem('mak-site-closed'), '1');
-    assert.equal(localStorage.getItem('mak-mysite-closed'), null, 'not the state of "Mi sitio"');
-    box.remove();
-    await new Promise((r) => setTimeout(r, 0));
-    assert.equal(block.hidden, true, 'the last box goes away: the block too');
     reset();
   });
 
