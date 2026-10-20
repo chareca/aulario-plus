@@ -7,6 +7,8 @@ const MAX_INACTIVE_MIN = 60;
 const $ = (id) => document.getElementById(id);
 const send = (msg) => Promise.resolve(ext.runtime.sendMessage(msg)).catch(() => null);
 const WIDE = new URLSearchParams(location.search).get('view') === 'tab';
+// After opening another tab: the popup closes, the tab of the extension (WIDE) stays.
+const closePopup = () => { if (!WIDE) window.close(); };
 
 let S = {}; // copy of storage.local
 let status = null; // keep-alive status from the background
@@ -61,7 +63,12 @@ function selectTab(name) {
 function renderCurrent() {
   lastRender = Date.now();
   pendingRender = false;
-  panels[current].render($(`tab-${current}`));
+  // The open lists stay open: the same title (without its count, which a sync can change).
+  const panel = $(`tab-${current}`);
+  const key = (summary) => summary.textContent.replace(/\s*\(\d+\)\s*$/, '');
+  const open = new Set([...panel.querySelectorAll('details[open] > summary')].map(key));
+  panels[current].render(panel);
+  if (open.size) for (const summary of panel.querySelectorAll('details > summary')) if (open.has(key(summary))) summary.parentElement.open = true;
   updateTabCounts();
   if (ui.query) renderSearch();
   tick();
@@ -210,7 +217,6 @@ function renderHeader() {
   else if (meta.lastSync) sub = t('sub.lastSync', { ago: MAK.ago(meta.lastSync, now) }) + (meta.stale && Object.keys(meta.stale).length ? t('sub.stale') : '');
   else sub = t('sub.noData');
   $('subline').textContent = sub;
-  renderWhatsNew();
 }
 
 // ---- Shared parts ------------------------------------------------------------
@@ -1029,7 +1035,7 @@ function dueOffsetsField(s) {
 function helpSection() {
   const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '';
   const browser = MAK.browserName(navigator.userAgent, !!navigator.brave);
-  const open = (url) => () => { ext.tabs.create({ url }); window.close(); };
+  const open = (url) => () => { ext.tabs.create({ url }); closePopup(); };
   const btn = (text, url) => h('button', { class: 'btn', text, attrs: { type: 'button' }, on: { click: open(url) } });
   return h('div', { class: 'section', attrs: { id: 'help' } },
     h('h2', { text: t('help.section') }),
@@ -1057,7 +1063,7 @@ function renderWhatsNew() {
     h('button', { class: 'btn primary', text: t('whatsnew.see'), attrs: { type: 'button' }, on: { click: () => {
       send({ type: 'dismissWhatsNew' });
       ext.tabs.create({ url: ext.runtime.getURL('tools.html?news') });
-      window.close();
+      closePopup();
     } } }),
     h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: () => send({ type: 'dismissWhatsNew' }) } }));
 }
@@ -1186,7 +1192,7 @@ function renderSettings(el) {
       { class: 'section' },
       h('h2', { text: t('diag.title') }),
       h('p', { class: 'small', text: t('diag.help') }),
-      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('diag.open'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?check=1') }); window.close(); } } }))
+      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('diag.open'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?check=1') }); closePopup(); } } }))
     ),
     h(
       'div',
@@ -1319,10 +1325,12 @@ async function init() {
     // A new ping or a pause changes the time of the next alarm.
     if ('last' in changes || 'paused' in changes) refreshStatus();
     if ('settings' in changes || 'sakaiMode' in changes) applyTheme();
+    if ('whatsNew' in changes) renderWhatsNew();
     if ('settings' in changes && settings().lang !== MAK.getLang()) {
       // A new language: draw everything again now, also if a field has the focus.
       applyLanguage();
       renderHeader();
+      renderWhatsNew();
       renderCurrent();
       return;
     }
@@ -1333,7 +1341,7 @@ async function init() {
   setupSearch();
   $('privacyLink').addEventListener('click', () => {
     ext.tabs.create({ url: MAK.PRIVACY_URL });
-    window.close();
+    closePopup();
   });
   $('close').addEventListener('click', () => window.close());
   $('openTab').addEventListener('click', () => {
@@ -1350,6 +1358,7 @@ async function init() {
   const asked = new URLSearchParams(location.search).get('tab');
   if (asked && panels[asked]) tab = asked;
   renderHeader();
+  renderWhatsNew(); // not in renderHeader (every second): its buttons would change under the mouse
   selectTab(tab);
   checkPermissions();
   refreshStatus();
