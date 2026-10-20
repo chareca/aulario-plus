@@ -118,6 +118,7 @@ test('logout removes the reminders and their alarms', async () => {
   assert.ok(bg.ext._notes.has('due:asg-red') && bg.ext._alarms.has('due:asg-red'));
   await bg.send({ type: 'logout' }, { id: bg.ext.runtime.id, url: 'https://miaulario.unavarra.es/portal', tab: { id: 1 }, frameId: 0 });
   assert.equal(bg.ext._notes.has('due:asg-red'), false);
+  await settle(); // the alarms go with the deliveries
   assert.equal([...bg.ext._alarms.keys()].filter((k) => k.startsWith('due:')).length, 0);
 });
 

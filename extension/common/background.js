@@ -320,10 +320,10 @@ async function notifyNewGrades(changed) {
   }
 }
 
-// At logout: the notifications of the user (grades, reminders) and the alarms of the reminders.
+// At logout: the notifications of the user (grades, reminders). The alarms of the reminders go with the
+// deliveries (checkDueSoon, when clearData removes them).
 async function clearUserNotes() {
   try {
-    if (ext.alarms) for (const a of await ext.alarms.getAll()) if (a.name.startsWith(DUE_NOTE)) await ext.alarms.clear(a.name);
     if (!ext.notifications) return;
     const all = await ext.notifications.getAll();
     for (const id of Object.keys(all || {})) if (isGradeNote(id) || id.startsWith(DUE_NOTE)) await ext.notifications.clear(id);
@@ -476,11 +476,13 @@ const handlers = {
   logout: {
     content: true,
     run: async () => {
-      await store.set({ paused: true });
+      await store.update('paused', (p) => (p === 'user' ? p : true)); // "Pausar" stays until "Reanudar"
       await clearPersisted();
-      // The sync that is running ends first, so that it does not write the data again (a new one stops: paused).
+      // The course data stays only while the user is logged in. It goes now; then the sync that is
+      // running ends (a new one stops: paused) and what it wrote goes too. Now first: if the browser
+      // stops the service worker during the wait, no data stays.
+      await sync.clearData();
       await sync.run().catch(() => {});
-      // The course data stays only while the user is logged in.
       await sync.clearData();
       await clearUserNotes();
       return { ok: true };

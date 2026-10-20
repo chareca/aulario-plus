@@ -28,6 +28,10 @@ test('"Pausar" stays until "Reanudar": a ping does not continue it, not even wit
   assert.equal(await bg.send({ type: 'pingNow' }), null);
   assert.equal(bg.ext.storage.local.data.paused, 'user');
   assert.equal(log.length, 0, 'no request');
+  // A logout and a new login do not end it either.
+  await bg.send({ type: 'logout' }, CONTENT({ url: 'https://miaulario.unavarra.es/portal' }));
+  assert.equal(bg.ext.storage.local.data.paused, 'user');
+  assert.equal(await bg.send({ type: 'pingNow' }), null);
   await bg.send({ type: 'resume' });
   assert.equal(bg.ext.storage.local.data.paused, false);
 });
