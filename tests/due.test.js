@@ -142,3 +142,17 @@ test('dueReminders: 24 h and 1 h before by default; one reminder now for the pas
   assert.equal(MAK.leftText(3 * 24 * H), '3 días');
   assert.equal(MAK.leftText(60000), '1 minuto');
 });
+
+test('the corrections: in the deliveries, and a time when they appear (0 on the first fetch, again when they change)', () => {
+  const MAKs = require('./helpers').loadLib('core', 'store', 'api', 'sync');
+  const f = { grade: '8', comment: 'ok', files: [] };
+  const item = (feedback) => ({ id: 'a', sub: { feedback } });
+  assert.equal(MAKs.trackFeedback([item(f)], [], 100, true)[0].feedbackAt, 0, 'first fetch');
+  const prev = [Object.assign(item(f), { feedbackAt: 50 })];
+  assert.equal(MAKs.trackFeedback([item(f)], prev, 100, false)[0].feedbackAt, 50, 'the same correction');
+  assert.equal(MAKs.trackFeedback([item({ grade: '9', comment: 'ok', files: [] })], prev, 100, false)[0].feedbackAt, 100, 'a new grade');
+  assert.equal(MAKs.trackFeedback([item(f)], [item(null)], 100, false)[0].feedbackAt, 100, 'returned now');
+  assert.equal(MAKs.trackFeedback([item(null)], prev, 100, false)[0].feedbackAt, undefined);
+  const due = MAK.buildDue({ assignments: [{ id: 'x', siteId: F.CS, title: 'T', sub: { submitted: true, feedback: f } }], sites: F.SITES, pages: {}, hidden: new Set(), now: F.NOW });
+  assert.deepEqual(due.groups.submitted[0].feedback, f);
+});

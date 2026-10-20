@@ -172,3 +172,16 @@ test('background: the visit message records the visit, gets fresh data and answe
   assert.equal(await bg.send({ type: 'visit', siteId: '~user' }, CONTENT), null);
   assert.equal(await bg.send({ type: 'visit', siteId: 'unknown' }, CONTENT), null);
 });
+
+test('newSince: the deliveries returned with a correction after the visit, by name only', () => {
+  const assignments = [
+    { id: 'a', siteId: 'S', title: 'Entrega 1', feedbackAt: 200, sub: { feedback: { grade: '8', comment: '', files: [] } } },
+    { id: 'b', siteId: 'S', title: 'Entrega 0', feedbackAt: 50, sub: { feedback: { grade: '6', comment: '', files: [] } } },
+    { id: 'c', siteId: 'T', title: 'Otra', feedbackAt: 300 }
+  ];
+  const n = MAK.newSince({ siteId: 'S', since: 100, assignments, pages: {}, now: 400 });
+  assert.deepEqual(n.feedback.map((x) => x.title), ['Entrega 1']);
+  assert.ok(!JSON.stringify(n.feedback).includes('"8"'), 'no grade in the news');
+  assert.equal(n.total, 1);
+  MAK.setLang && MAK.setLang('es');
+});

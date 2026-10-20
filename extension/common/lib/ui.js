@@ -255,6 +255,7 @@
     if (news.announcements.length) parts.push(MAK.t('news.announcements', { n: news.announcements.length }));
     if (news.deliveries.length) parts.push(MAK.t('news.deliveries', { n: news.deliveries.length }));
     if (news.dateChanges && news.dateChanges.length) parts.push(MAK.t('news.dateChanges', { n: news.dateChanges.length }));
+    if (news.feedback && news.feedback.length) parts.push(MAK.t('news.feedback', { n: news.feedback.length }));
     if (news.grades && news.grades.length) parts.push(MAK.t('news.grades', { n: news.grades.length }));
     const posts = news.forums.reduce((n, f) => n + f.delta, 0);
     if (posts) parts.push(MAK.t('news.forumPosts', { n: posts }));

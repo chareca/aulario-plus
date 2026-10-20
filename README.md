@@ -19,7 +19,7 @@
 ## Qué hace
 
 - **Sesión siempre activa:** MiAulario no te echa.
-- **Todo en un clic:** entregas, anuncios, mensajes, calendario y notas de todas tus materias, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
+- **Todo en un clic:** entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus materias, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
 - **Ctrl+K / ⌘K:** encuentra cualquier materia, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno.
 - **Guías docentes:** cómo se evalúa cada materia, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.

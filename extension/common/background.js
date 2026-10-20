@@ -510,6 +510,13 @@ const handlers = {
       return next;
     }
   },
+  // The popup: the notice of the changes of the new version is closed.
+  dismissWhatsNew: {
+    run: async () => {
+      await store.remove('whatsNew');
+      return { ok: true };
+    }
+  },
   markAnnRead: { run: (msg) => markAnnouncementsRead(validIds(msg.ids)) },
   // Mark all the announcements as read, or all the announcements of one site.
   markAllAnnRead: {
@@ -887,4 +894,14 @@ async function boot() {
 }
 
 ext.runtime.onInstalled.addListener(boot);
+// The welcome page after the install; after an update, the notice of the changes in the popup
+// (popup.js, MAK.CHANGES of lib/help.js).
+ext.runtime.onInstalled.addListener((details) => {
+  const reason = details && details.reason;
+  if (reason === 'install') Promise.resolve(ext.tabs.create({ url: ext.runtime.getURL('tools.html?welcome') })).catch(() => {});
+  else if (reason === 'update' && ext.runtime.getManifest) {
+    const version = ext.runtime.getManifest().version;
+    if (details.previousVersion !== version) store.set({ whatsNew: version }).catch(() => {});
+  }
+});
 ext.runtime.onStartup.addListener(boot);

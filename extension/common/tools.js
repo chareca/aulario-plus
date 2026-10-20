@@ -272,6 +272,68 @@ async function runExamPermission() {
   } catch {}
 }
 
+// ---- Welcome and changes ----------------------------------------------------------------
+
+// tools.html?welcome: after the install. What the extension does, the first steps, why it asks for
+// each permission, the privacy, and the links of help.
+function helpLinks() {
+  const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '';
+  const browser = MAK.browserName(navigator.userAgent, !!navigator.brave);
+  const lang = MAK.getLang();
+  const a = (text, href) => MAK.h('a', { class: 'btn', text, href });
+  return MAK.h('div', { class: 'row help-links' },
+    a(`🐞 ${t('help.bug')}`, MAK.issueUrl({ kind: 'bug', version, browser, lang })),
+    a(`💡 ${t('help.idea')}`, MAK.issueUrl({ kind: 'idea', version, browser, lang })),
+    a(`☕ ${t('help.coffee')}`, MAK.COFFEE_URL),
+    a(`</> ${t('help.code')}`, MAK.REPO_URL));
+}
+
+function runWelcome() {
+  const h = MAK.h;
+  const box = $('welcome');
+  box.hidden = false;
+  $('title').textContent = t('welcome.title');
+  document.title = t('welcome.title');
+  const list = (keys, tag = 'ul') => h(tag, null, keys.map((k) => h('li', { text: t(k) })));
+  const perms = [
+    ['welcome.permMia', 'welcome.permMiaWhy'],
+    ['welcome.permSso', 'welcome.permSsoWhy'],
+    ['welcome.permWeb', 'welcome.permWebWhy'],
+    ['welcome.permNotes', 'welcome.permNotesWhy'],
+    ['welcome.permExams', 'welcome.permExamsWhy'],
+    ['welcome.permSend', 'welcome.permSendWhy']
+  ];
+  MAK.fill(box,
+    h('p', { text: t('welcome.intro') }),
+    h('h2', { text: t('welcome.start') }),
+    list(['welcome.step1', 'welcome.step2', 'welcome.step3', 'welcome.step4'], 'ol'),
+    h('div', { class: 'row' }, h('a', { class: 'btn primary', text: t('welcome.open'), href: `${MAK.BASE}/portal` })),
+    h('h2', { text: t('welcome.does') }),
+    list(['welcome.f1', 'welcome.f2', 'welcome.f3', 'welcome.f4', 'welcome.f5', 'welcome.f6']),
+    h('h2', { text: t('welcome.perms') }),
+    h('dl', { class: 'perm' }, perms.map(([k, why]) => [h('dt', { text: t(k) }), h('dd', { text: t(why) })])),
+    h('h2', { text: t('privacy.title') }),
+    h('p', null, t('welcome.privacy'), ' ', h('a', { text: t('welcome.privacyLink'), href: MAK.PRIVACY_URL })),
+    h('p', { class: 'meta', text: t('welcome.notOfficial') }),
+    h('h2', { text: t('help.section') }),
+    helpLinks());
+}
+
+// tools.html?news: the changes of the versions (MAK.CHANGES), the newest first.
+function runNews() {
+  const h = MAK.h;
+  const box = $('welcome');
+  box.hidden = false;
+  $('title').textContent = t('whatsnew.title');
+  document.title = t('whatsnew.title');
+  const lang = MAK.getLang();
+  MAK.fill(box,
+    MAK.CHANGES.map((c) => [h('h2', { text: t('whatsnew.version', { version: c.version }) }), h('ul', null, (c[lang] || c.es).map((x) => h('li', { text: x })))]),
+    h('p', null, h('a', { text: t('whatsnew.all'), href: `${MAK.REPO_URL}/releases` })),
+    h('h2', { text: t('help.section') }),
+    helpLinks());
+}
+
 async function init() {
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
@@ -292,6 +354,10 @@ async function init() {
     await runIcs(store);
   } else if (params.has('check')) {
     runChecks(params.has('auto'));
+  } else if (params.has('welcome')) {
+    runWelcome();
+  } else if (params.has('news')) {
+    runNews();
   } else if (params.get('perm') === 'exams') {
     await runExamPermission();
   }

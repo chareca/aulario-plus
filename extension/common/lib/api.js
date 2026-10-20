@@ -106,10 +106,24 @@
   // "submitted" counts.
   const byStudent = (s) => s && s.userSubmission !== false;
 
+  // The correction of the submission of the student, only when the teacher returned it (before,
+  // MiAulario sends the grade too, but the student must not see it yet): the grade, the comment and
+  // the files of the correction. Never the private notes of the teacher. Null without a correction.
+  function feedbackOf(s) {
+    if (!s || s.returned !== true) return null;
+    const files = (Array.isArray(s.feedbackAttachments) ? s.feedbackAttachments : [])
+      .map((a) => ({ name: String((a && a.name) || 'archivo').slice(0, 200), url: MAK.safeSiteUrl(a && a.url) }))
+      .filter((f) => f.url)
+      .slice(0, 10);
+    const f = { grade: String(s.grade === null || s.grade === undefined ? '' : s.grade).trim().slice(0, 40), comment: MAK.htmlToText(s.feedbackComment).slice(0, 2000), files };
+    return f.grade || f.comment || f.files.length ? f : null;
+  }
+
   function summarizeSubmissions(subs) {
     const list = Array.isArray(subs) ? subs : [];
     const mine = list.find((s) => s && s.userSubmission) || list[0] || {};
     return {
+      feedback: feedbackOf(mine),
       submitted: list.some((s) => byStudent(s) && s.submitted && !s.draft),
       draft: list.some((s) => s && s.draft),
       returned: list.some((s) => s && s.returned),

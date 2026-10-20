@@ -32,6 +32,21 @@
     });
   }
 
+  // Keep "feedbackAt": the time when the extension saw the correction of a delivery (its grade, its
+  // comment or its files), for "new since the last visit". A changed correction gets the time again.
+  // The first fetch (baseline) gives 0.
+  const feedbackKey = (f) => (f ? JSON.stringify([f.grade, f.comment, f.files.map((x) => x.url)]) : '');
+  MAK.trackFeedback = function (items, previous, now, baseline) {
+    const old = new Map((previous || []).map((x) => [x.id, x]));
+    return items.map((x) => {
+      const f = x.sub && x.sub.feedback;
+      if (!f) return x;
+      const p = old.get(x.id);
+      const same = p && p.sub && feedbackKey(p.sub.feedback) === feedbackKey(f);
+      return Object.assign(x, { feedbackAt: same ? p.feedbackAt || 0 : baseline ? 0 : now });
+    });
+  };
+
   // Keep "dueChange" for a delivery with a new due date: { from: the first date, at: the time when
   // the extension saw the last change }. A date that goes back to "from" removes the change.
   // The first fetch (baseline) records no change.
@@ -190,7 +205,7 @@
         // 3. Deliveries.
         await step('assignments', async () => {
           const list = (await api.assignments()).filter((a) => a && !a.draft).map(MAK.trimAssignment);
-          await store.update('assignments', (prev) => MAK.trackDueChanges(withSeen(list, prev, (x) => x.id, t, !meta.baselined.asg), prev, t, !meta.baselined.asg));
+          await store.update('assignments', (prev) => MAK.trackFeedback(MAK.trackDueChanges(withSeen(list, prev, (x) => x.id, t, !meta.baselined.asg), prev, t, !meta.baselined.asg), prev, t, !meta.baselined.asg));
           meta.baselined.asg = true;
         });
 

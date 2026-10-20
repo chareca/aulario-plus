@@ -58,7 +58,8 @@
         offline,
         urgency: offline ? null : state === 'late' ? 'overdue' : state === 'pending' && left !== null ? MAK.urgency(left) : null,
         url: MAK.deliveryUrl(a, pages),
-        dueChange: a.dueChange || null
+        dueChange: a.dueChange || null,
+        feedback: (a.sub && a.sub.feedback) || null
       };
       groups[state].push(item);
       if (!offline && (state === 'late' || (state === 'pending' && left !== null && left <= 3 * DAY))) {

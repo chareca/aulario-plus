@@ -57,6 +57,9 @@
     .dark .exams .when { color: #9aa6ad; }
     .exams .when b { font-weight: 600; color: #1d2327; } .dark .exams .when b { color: #e8ecee; }
     .exams .when.past { opacity: 0.55; text-decoration: line-through; }
+    .exams .calc-need { font-size: 12px; font-weight: 600; color: #10524e; margin-top: 2px; } .dark .exams .calc-need { color: #7fe0bf; }
+    .exams .calc-need.low { color: #c5221f; } .dark .exams .calc-need.low { color: #f28b82; }
+    .exams .calc-need.ok { color: #137333; } .dark .exams .calc-need.ok { color: #81c995; }
     h5 { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: #5f6b73; text-transform: uppercase; letter-spacing: 0.04em; }
     .dark h5 { color: #9aa6ad; }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -182,7 +185,24 @@
   };
   const countdown = (days) => (days < 0 ? t('short.done') : days === 0 ? t('short.today') : days === 1 ? t('short.tomorrow') : t('short.inDays', { n: days }));
 
-  function examList(mine, sites, now) {
+  // The calculator of the guide (content-calc.js) for the exam of a subject: the grade that the user
+  // needs in it, with the grades and weights that the user wrote. Null without grades of the user or
+  // without an exam in the guide. { text, cls }.
+  const fmtGrade = (n) => (Math.round(n * 100) / 100).toLocaleString(MAK.locale(), { maximumFractionDigits: 2 });
+  function examNeed(siteId, guides, settings) {
+    const g = guides.find((x) => x.siteId === siteId);
+    const grades = settings.guideGrades[siteId];
+    if (!g || !g.guide.evaluation || !grades || !Object.keys(grades).length) return null;
+    const c = MAK.guideCalc(g.guide.evaluation.rows, grades, settings.guideWeights[siteId]);
+    if (!c.total) return null;
+    if (c.complete) return { text: t('short.calcFinal', { n: fmtGrade(c.final) }), cls: c.passed ? 'ok' : 'low' };
+    const exam = c.rows.find((r) => r.weight > 0 && r.grade === null && MAK.activityKind(r.activity) === 'exam');
+    if (!exam) return null;
+    if (!c.reachable) return { text: t('short.calcNo'), cls: 'low' };
+    return { text: t('short.calcNeed', { n: fmtGrade(Math.min(10, exam.plan)) }), cls: exam.plan > 7 ? 'low' : '' };
+  }
+
+  function examList(mine, sites, now, need) {
     const siteName = (id) => {
       const s = (sites || []).find((x) => x.id === id);
       return s ? MAK.publicSiteName(s) : '';
@@ -199,7 +219,8 @@
       return h('li', { class: days >= 0 && days <= 2 ? 'now' : days >= 0 && days <= 7 ? 'soon' : '' },
         h('div', { class: 'top' }, h('span', { class: 'name', text: name, title: name }), h('span', { class: 'count', text: countdown(days) })),
         line(t('short.final'), r.final, r.finalRoom),
-        line(t('short.rec'), r.recovery, r.recoveryRoom));
+        line(t('short.rec'), r.recovery, r.recoveryRoom),
+        ((n) => (n ? h('div', { class: `calc-need ${n.cls}`, title: t('short.calcHelp') }, '🧮 ', n.text) : null))(need ? need(r.siteId) : null));
     }));
   }
 
@@ -230,7 +251,7 @@
   }
 
   // The parts of the two semesters: the periods and the dates of the user (MAK.semesterSections).
-  function examSections(degree, ex, sites, now) {
+  function examSections(degree, ex, sites, now, need) {
     const parts = {};
     for (const season of ['autumn', 'spring']) {
       const period = (degree.periods || []).find((p) => p.season === season);
@@ -238,7 +259,7 @@
       if (!period && !mine.length) continue;
       parts[season] = {
         count: mine.length || null,
-        body: [period ? periodLine(period) : null, mine.length ? [h('h5', { text: t('short.myExams') }), examList(mine, sites, now)] : null]
+        body: [period ? periodLine(period) : null, mine.length ? [h('h5', { text: t('short.myExams') }), examList(mine, sites, now, need)] : null]
       };
     }
     return MAK.semesterSections({ key: 'exams', now, parts, title: (s) => t(`short.semester.${s}`) });
@@ -352,7 +373,7 @@
       h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
       degreeLine(degree, data, settings, degree.list));
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
-    const sections = examSections(degree, ex, data.sites, now);
+    const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings));
     if (sections || ex.note) MAK.fill(place, sections, ex.note);
     else place.remove();
   }

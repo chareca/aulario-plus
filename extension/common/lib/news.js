@@ -62,7 +62,7 @@
   // The items of one site that are newer than "since".
   // forumBase: {topicId: total} at the reference time, or null (then no forum news).
   MAK.newSince = function ({ siteId, since, resources, announcements, assignments, forums, forumBase, grades, pages, now }) {
-    const out = { files: [], announcements: [], deliveries: [], dateChanges: [], forums: [], grades: [], total: 0 };
+    const out = { files: [], announcements: [], deliveries: [], dateChanges: [], feedback: [], forums: [], grades: [], total: 0 };
     const ref = since || 0;
 
     for (const r of (resources && resources.items) || []) {
@@ -94,6 +94,12 @@
       out.dateChanges.push({ id: a.id, title: a.title, url: MAK.deliveryUrl(a, pages), from: a.dueChange.from, to: a.due, time: a.dueChange.at });
     }
 
+    // Deliveries that the teacher returned with a correction after the visit (the name only).
+    for (const a of assignments || []) {
+      if (a.siteId !== siteId || !a.feedbackAt || a.feedbackAt <= ref) continue;
+      out.feedback.push({ id: a.id, title: a.title, url: MAK.deliveryUrl(a, pages), time: a.feedbackAt });
+    }
+
     if (forumBase) {
       const forumUrl = MAK.toolUrl(pages, siteId, 'sakai.forums');
       for (const tp of (forums && forums.topics) || []) {
@@ -114,8 +120,9 @@
     out.announcements.sort(byTime);
     out.deliveries.sort(byTime);
     out.dateChanges.sort(byTime);
+    out.feedback.sort(byTime);
     out.grades.sort(byTime);
-    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.dateChanges.length + out.grades.length + out.forums.reduce((n, f) => n + f.delta, 0);
+    out.total = out.files.length + out.announcements.length + out.deliveries.length + out.dateChanges.length + out.feedback.length + out.grades.length + out.forums.reduce((n, f) => n + f.delta, 0);
     return out;
   };
 

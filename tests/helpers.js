@@ -103,6 +103,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
     runtime: {
       id,
       getURL: (p = '') => `chrome-extension://${id}/${p}`,
+      getManifest: () => ({ version: '9.9.9' }),
       onMessage: on(listeners.message),
       onInstalled: on(listeners.installed),
       onStartup: on(listeners.startup)

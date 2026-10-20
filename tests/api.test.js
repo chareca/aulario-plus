@@ -74,3 +74,15 @@ test('trimPages keeps the home page and the page of the course guide', () => {
   const other = MAK.trimPages([{ id: 'p', title: 'Zoom', url: 'https://miaulario.unavarra.es/portal/site/S/page/p', tools: [{ id: 't', toolId: 'sakai.iframe', title: 'Zoom' }] }], 0);
   assert.equal(other.guide, null);
 });
+
+test('trimAssignment: the correction only when the teacher returned the task; never the private notes', () => {
+  const base = { id: 'a1', context: 'S', title: 'Entrega 1', submissionType: 'TEXT_ONLY_ASSIGNMENT_SUBMISSION' };
+  const sub = (o) => Object.assign({ submitted: true, userSubmission: true, grade: '8,50', feedbackComment: '<p>Bien, pero <b>revisa</b> el punto 2.</p>', privateNotes: 'secreto del profesor',
+    feedbackAttachments: [{ name: 'correccion.pdf', url: 'https://miaulario.unavarra.es/access/content/attachment/S/c.pdf' }, { name: 'x', url: 'https://evil.example/x' }] }, o);
+  const returned = MAK.trimAssignment(Object.assign({}, base, { submissions: [sub({ returned: true })] }));
+  assert.deepEqual(returned.sub.feedback, { grade: '8,50', comment: 'Bien, pero revisa el punto 2.', files: [{ name: 'correccion.pdf', url: 'https://miaulario.unavarra.es/access/content/attachment/S/c.pdf' }] });
+  assert.ok(!JSON.stringify(returned).includes('secreto'), 'no private notes');
+  const notYet = MAK.trimAssignment(Object.assign({}, base, { submissions: [sub({ returned: false, graded: true })] }));
+  assert.equal(notYet.sub.feedback, null, 'graded but not returned: the student must not see it yet');
+  assert.equal(MAK.trimAssignment(Object.assign({}, base, { submissions: [sub({ returned: true, grade: '', feedbackComment: '', feedbackAttachments: [] })] })).sub.feedback, null, 'nothing to show');
+});

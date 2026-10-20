@@ -209,6 +209,7 @@ function renderHeader() {
   else if (meta.lastSync) sub = t('sub.lastSync', { ago: MAK.ago(meta.lastSync, now) }) + (meta.stale && Object.keys(meta.stale).length ? t('sub.stale') : '');
   else sub = t('sub.noData');
   $('subline').textContent = sub;
+  renderWhatsNew();
 }
 
 // ---- Shared parts ------------------------------------------------------------
@@ -247,11 +248,21 @@ function openIcs() {
 
 const DATE_CHANGE_DAYS = 7; // the mark "Date changed" stays for 7 days
 
+// The correction of a returned delivery: the comment of the teacher and the files.
+function feedbackDetails(f) {
+  if (!f.comment && !f.files.length) return null;
+  return h('details', { class: 'feedback' },
+    h('summary', { text: t('due.feedback') }),
+    f.comment ? h('p', { class: 'small fb-comment', text: f.comment }) : null,
+    f.files.length ? h('ul', { class: 'small' }, f.files.map((x) => h('li', null, MAK.link(x.url, x.name)))) : null);
+}
+
 function deliveryRow(x, now) {
   const cls = ['item', `s-${x.state}`];
   if (x.urgency) cls.push(`u-${x.urgency}`);
   let side;
-  if (x.state === 'submitted') side = h('span', { class: 'tag ok', text: t('due.tagSubmitted') });
+  if (x.feedback) side = h('span', { class: 'tag ok', text: x.feedback.grade ? t('due.tagGraded', { grade: x.feedback.grade }) : t('due.tagReturned') });
+  else if (x.state === 'submitted') side = h('span', { class: 'tag ok', text: t('due.tagSubmitted') });
   else if (x.state === 'closed') side = h('span', { class: 'tag', text: t('due.tagClosed') });
   else if (x.offline) side = h('span', { class: 'tag', text: t('due.tagOffline') });
   else side = h('span', { class: 'countdown', data: { due: x.due || '' }, text: MAK.countdownText(x.due, now) });
@@ -268,7 +279,8 @@ function deliveryRow(x, now) {
         { class: 'meta' },
         `${x.siteTitle} · ${x.due ? MAK.formatDate(x.due) : t('due.noDate')}`,
         x.dueChange && now - x.dueChange.at < DATE_CHANGE_DAYS * MAK.DAY ? [' ', h('span', { class: 'tag info', text: t('due.tagMoved'), title: t('due.movedFrom', { date: MAK.formatDate(x.dueChange.from) }) })] : null
-      )
+      ),
+      x.feedback ? feedbackDetails(x.feedback) : null
     ),
     h('div', { class: 'side' }, side)
   );
@@ -516,6 +528,7 @@ function newsCard(x) {
       newsGroup('news.groupAnnouncements', x.announcements, (a) => h('li', null, MAK.link(a.url, a.title), ' ', h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
       newsGroup('news.groupDeliveries', x.deliveries, (d) => h('li', null, MAK.link(d.url, d.title), d.due ? [' ', h('span', { class: 'meta', text: t('news.due', { date: MAK.formatDate(d.due) }) })] : null)),
       newsGroup('news.groupDates', x.dateChanges || [], (d) => h('li', null, MAK.link(d.url, d.title), ' ', h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
+      newsGroup('news.groupFeedback', x.feedback || [], (d) => h('li', null, MAK.link(d.url, d.title))),
       newsGroup('news.groupForums', x.forums, (f) => h('li', null, MAK.link(f.url, f.title), ' ', h('span', { class: 'meta', text: t('news.forumDelta', { n: f.delta }) })))
     ),
     h('div', { class: 'row' }, h('button', { class: 'link-btn', text: t('news.markSeen'), on: { click: () => send({ type: 'markSiteSeen', siteId: x.siteId }) } }))
@@ -1032,6 +1045,44 @@ function dueOffsetsField(s) {
   return h('div', { class: 'indent' }, rows, add);
 }
 
+// Help and support: the welcome page, the changes, a problem or an idea on GitHub (with the version
+// and the browser), and a coffee.
+function helpSection() {
+  const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '';
+  const browser = MAK.browserName(navigator.userAgent, !!navigator.brave);
+  const open = (url) => () => { ext.tabs.create({ url }); window.close(); };
+  const btn = (text, url) => h('button', { class: 'btn', text, attrs: { type: 'button' }, on: { click: open(url) } });
+  return h('div', { class: 'section', attrs: { id: 'help' } },
+    h('h2', { text: t('help.section') }),
+    h('p', { class: 'small', text: t('help.text') }),
+    h('div', { class: 'help-links' },
+      btn(t('help.welcome'), ext.runtime.getURL('tools.html?welcome')),
+      btn(t('help.news'), ext.runtime.getURL('tools.html?news')),
+      btn(`🐞 ${t('help.bug')}`, MAK.issueUrl({ kind: 'bug', version, browser, lang: settings().lang })),
+      btn(`💡 ${t('help.idea')}`, MAK.issueUrl({ kind: 'idea', version, browser, lang: settings().lang })),
+      btn(`☕ ${t('help.coffee')}`, MAK.COFFEE_URL)),
+    h('p', { class: 'small meta', text: t('help.coffeeText') }));
+}
+
+// After an update to a version with changes (MAK.CHANGES): a notice with a link to the changes.
+function renderWhatsNew() {
+  const el = $('whatsnew');
+  const version = S.whatsNew;
+  if (!version || !MAK.changesOf(version)) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  fill(el,
+    h('span', { text: t('whatsnew.updated', { version }) }),
+    h('button', { class: 'btn primary', text: t('whatsnew.see'), attrs: { type: 'button' }, on: { click: () => {
+      send({ type: 'dismissWhatsNew' });
+      ext.tabs.create({ url: ext.runtime.getURL('tools.html?news') });
+      window.close();
+    } } }),
+    h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: () => send({ type: 'dismissWhatsNew' }) } }));
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -1091,6 +1142,7 @@ function renderSettings(el) {
     teacherSection(),
     linksSection(),
     forwardGuide(),
+    helpSection(),
     h(
       'div',
       { class: 'section' },
