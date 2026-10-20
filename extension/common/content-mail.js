@@ -52,13 +52,15 @@
     } catch {
       return null;
     }
-    // The files go to the memory of the page, never to Downloads.
+    // The files go to the memory of the page, never to Downloads. stop(): the window closed.
+    const stopper = new AbortController();
     return {
+      stop: () => stopper.abort(),
       files: (async () => {
         let total = 0;
         const out = [];
         for (const f of files) {
-          const r = await fetch(f.url, { credentials: 'include' });
+          const r = await fetch(f.url, { credentials: 'include', signal: stopper.signal });
           if (!r.ok) throw new Error(String(r.status));
           if (total + Number(r.headers.get('content-length') || 0) > MAX_SHARE_BYTES) throw Object.assign(new Error('tooBig'), { code: 'tooBig' });
           const blob = await r.blob();
@@ -79,7 +81,9 @@
     const into = h('div');
     const backdrop = h('div', { class: 'backdrop' }, into);
     let view = null;
+    const share = shareFiles(files);
     const close = () => {
+      if (share) share.stop(); // the files for "Share" are not needed any more
       host.remove();
       open = null;
     };
@@ -100,7 +104,7 @@
       pm: MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) }),
       myEid: async () => (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid,
       openTool: () => MAK.safeCall(() => ext.runtime.sendMessage({ type: 'openMailTool', siteId }), null),
-      share: shareFiles(files),
+      share,
       links: linkSettings && linkSettings.enabled
         ? { mode: linkSettings.mode, downloads: linkSettings.downloads, seconds: linkSettings.seconds, make: () => makeLink(files) }
         : null,

@@ -209,7 +209,8 @@
     for (const f of folders) {
       const seg = MAK.resourceSegments(f.url, siteId);
       if (!seg || !seg.length) continue;
-      const parent = folderOf(seg);
+      // In the folder of its parent, also when that one has a new name ("practicas (2)").
+      const parent = dirNames.get(seg.slice(0, -1).join('/')) || folderOf(seg);
       const name = unique(parent, seg[seg.length - 1]);
       const path = `${parent}/${name}`;
       dirNames.set(seg.join('/'), path);

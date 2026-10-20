@@ -6,7 +6,6 @@
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
   const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  const DATE_TYPES = new Set(['delivery', 'event', 'announcement']);
   const h = MAK.h;
 
   // The look comes from the theme (lib/themes.js, MAK.themedStyle).
@@ -89,22 +88,19 @@
     function draw() {
       const empty = !input.value.trim();
       if (!results.length) return MAK.fill(list, h('div', { class: 'empty', text: empty ? MAK.t('palette.hint') : MAK.t('search.none', { q: input.value.trim() }) }));
-      const order = [...new Set(results.map((x) => x.type))]; // the groups in the order of their best result
-      const shown = order.flatMap((type) => results.filter((x) => x.type === type));
+      const groups = MAK.searchGroups(results);
+      const shown = groups.flatMap(([, l]) => l);
       results = shown;
       sel = Math.max(0, Math.min(sel, shown.length - 1));
       let i = 0;
       MAK.fill(
         list,
         empty ? h('div', { class: 'tip', text: MAK.t('palette.hint') }) : null,
-        order.map((type) => [
+        groups.map(([type, group]) => [
           h('h3', { text: MAK.t(`search.type.${type}`) }),
-          shown
-            .filter((x) => x.type === type)
+          group
             .map((x) => {
               const n = i++;
-              const more = DATE_TYPES.has(x.type) && x.time ? MAK.formatDate(x.time) : x.type === 'tool' || x.type === 'grade' ? null : x.meta;
-              const site = x.type === 'site' ? [] : MAK.marked(x.site, x.siteHl);
               return h(
                 'a',
                 {
@@ -123,7 +119,7 @@
                   }
                 },
                 h('span', { class: 'title' }, MAK.marked(x.title, x.hl)),
-                h('span', { class: 'meta' }, site, site.length && more ? ' · ' : null, more)
+                h('span', { class: 'meta' }, MAK.searchMeta(x))
               );
             })
         ])

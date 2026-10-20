@@ -152,6 +152,18 @@ test('buildSiteZip: folders, files, links, empty folders and errors', async () =
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('buildSiteZip: a folder in a folder with a new name ("practicas (2)") stays in it', async () => {
+  const base = `https://miaulario.unavarra.es/access/content/group/${F.CS}`;
+  const folder = (p) => ({ url: `${base}/${p}/`, title: p.split('/').pop(), type: 'collection', size: 0, modified: F.NOW, folder: true, link: null, copyright: false });
+  const items = [folder('Practicas'), folder('practicas'), folder('practicas/sub'),
+    { url: `${base}/practicas/sub/a.pdf`, title: 'a.pdf', type: 'application/pdf', size: 1, modified: F.NOW, folder: false, link: null, copyright: false }];
+  const r = await MAK.buildSiteZip({ items, siteId: F.CS, siteTitle: 'CS', fetchFile: async (url) => ({ ok: true, status: 200, url, type: 'application/pdf', data: bytes('x') }), t: MAK.t, now: F.NOW });
+  const dir = tmp();
+  const z = pythonRead(writeZip(dir, r.parts));
+  assert.ok(z.names.includes('CS/practicas (2)/sub/a.pdf'), z.names.join(' | '));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('buildSiteZip: a redirect out of the content area is an error; cancel stops the job', async () => {
   const items = [MAK.trimResource({ url: `https://miaulario.unavarra.es/access/content/group/${F.CS}/a.pdf`, title: 'a.pdf', type: 'application/pdf', size: 1, modifiedDate: F.sakaiDate(F.NOW) }, F.CS)];
   const r = await MAK.buildSiteZip({ items, siteId: F.CS, siteTitle: 'CS', fetchFile: async () => ({ ok: true, status: 200, url: 'https://miaulario.unavarra.es/portal/login', type: 'application/pdf', data: bytes('x') }), t: MAK.t });

@@ -1337,7 +1337,7 @@
         .exams li:nth-child(odd) { transform: rotate(-0.6deg); }
         .exams li:nth-child(even) { transform: rotate(0.5deg); }
         .exams .name { font-family: var(--ap-font-head); font-size: 1.25em; line-height: 1.1; }
-        .count.hot, .count.ok, .countdown.u-hot, .tag.ok { border: 2px solid var(--ap-count-hot-edge); }
+        .count.hot, .count.ok, .u-red .countdown, .u-overdue .countdown, .tag.ok { border: 2px solid var(--ap-count-hot-edge); }
         .count.ok, .tag.ok { border-color: var(--ap-count-ok-edge); }
         /* The links: blue pen */
         .mak-link .t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }

@@ -22,7 +22,7 @@ const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
 const settings = () => MAK.withDefaults(S.settings);
 // The style of the text links (lib/ui.js), with the colors of the popup.
-document.head.append(h('style', { text: MAK.LINK_CSS }));
+document.head.append(h('style', { text: MAK.LINK_CSS + MAK.LOGO_CSS }));
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
 // The sites with the names to show (short names or names from the user). Made again only when
 // the sites or the settings change.
@@ -121,12 +121,6 @@ function setQuery(value) {
   renderSearch();
 }
 
-function resultMeta(x) {
-  if (x.type === 'delivery' || x.type === 'event' || x.type === 'announcement') return x.time ? MAK.formatDate(x.time) : '';
-  if (x.type === 'file' || x.type === 'forum' || x.type === 'lesson' || x.type === 'site') return x.meta;
-  return '';
-}
-
 function renderSearch() {
   const el = $('search-results');
   const q = ui.query.trim();
@@ -134,8 +128,7 @@ function renderSearch() {
   if (!q) return;
   if (!searchIndex) searchIndex = MAK.buildSearchIndex(S, settings());
   const list = MAK.searchIndex(searchIndex, q, 30);
-  // The groups in the order of their best result.
-  const groups = [...new Set(list.map((x) => x.type))].map((type) => [type, list.filter((x) => x.type === type)]);
+  const groups = MAK.searchGroups(list);
   ui.searchList = groups.flatMap(([, l]) => l);
   ui.searchSel = Math.max(0, Math.min(ui.searchSel, ui.searchList.length - 1));
   if (!ui.searchList.length) return fill(el, emptyBox(t('search.none', { q })));
@@ -146,13 +139,11 @@ function renderSearch() {
       h('h2', { class: 'group', text: t(`search.type.${type}`) }),
       l.map((x) => {
         const n = i++;
-        const site = x.type === 'site' ? [] : MAK.marked(x.site, x.siteHl);
-        const more = resultMeta(x);
         return h(
           'a',
           { class: `result${n === ui.searchSel ? ' sel' : ''}`, href: x.url, data: { n } },
           h('span', { class: 'title' }, MAK.marked(x.title, x.hl)),
-          h('span', { class: 'meta' }, site, site.length && more ? ' · ' : null, more)
+          h('span', { class: 'meta' }, MAK.searchMeta(x))
         );
       })
     ])

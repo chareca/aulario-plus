@@ -360,6 +360,24 @@
     return ms ? format('short').format(ms) : '';
   };
 
+  // "1 día", "3 horas", "5 minutos".
+  MAK.durationText = function (seconds) {
+    if (seconds >= 86400 && seconds % 86400 === 0) return MAK.t('dur.days', { n: seconds / 86400 });
+    if (seconds >= 3600 && seconds % 3600 === 0) return MAK.t('dur.hours', { n: seconds / 3600 });
+    return MAK.t('dur.minutes', { n: Math.round(seconds / 60) });
+  };
+
+  // The results of a search (lib/search.js) in groups, in the order of their best result: [[type, results]].
+  // The popup and the search palette in MiAulario (content-search.js).
+  MAK.searchGroups = (results) => [...new Set(results.map((x) => x.type))].map((type) => [type, results.filter((x) => x.type === type)]);
+  // The second line of a result: its site (not for a site), then a date (a delivery, an event, an
+  // announcement) or its meta (none for a tool or a grade). The children of an element (MAK.h).
+  MAK.searchMeta = function (x) {
+    const more = /^(delivery|event|announcement)$/.test(x.type) && x.time ? MAK.formatDate(x.time) : x.type === 'tool' || x.type === 'grade' ? null : x.meta;
+    const site = x.type === 'site' ? [] : MAK.marked(x.site, x.siteHl);
+    return [site, site.length && more ? ' · ' : null, more];
+  };
+
   // "20 oct → 25 oct": a delivery with a new due date.
   MAK.dateMove = function (from, to) {
     return MAK.t('news.dateMove', { from: MAK.formatDate(from), to: to ? MAK.formatDate(to) : MAK.t('due.noDate') });

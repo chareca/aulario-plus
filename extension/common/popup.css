@@ -11,17 +11,13 @@ body {
 }
 body.wide { width: auto; max-width: 760px; height: 100vh; margin: 0 auto; }
 a { color: inherit; }
-:root { --mak-link: var(--ap-link); --mak-link-dark: var(--ap-link); }
 button { font: inherit; color: inherit; }
-h1, h2, h3, .head-font { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing); }
+h1, h2, h3 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing); }
 mark { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
 
 /* Header: the name of the extension, the state of the session, two buttons */
 header.top { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line); }
-.mak-logo { width: 26px; height: 26px; flex: none; }
-.mak-logo .lg-bg { fill: var(--ap-logo-bg); }
-.mak-logo .lg-ring { stroke: var(--ap-logo-ring); }
-.mak-logo .lg-dot { fill: var(--ap-logo-dot); }
+.mak-logo { width: 26px; height: 26px; flex: none; } /* its colors: MAK.LOGO_CSS (popup.js) */
 .head-text { flex: 1; min-width: 0; }
 header.top h1 { display: inline-block; margin: 0; font-size: calc(17px * var(--ap-head-zoom)); line-height: 1.15; padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
 .status-line { font-size: 12px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

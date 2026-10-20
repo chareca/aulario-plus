@@ -20,13 +20,6 @@
     return { subject: subject.trim(), body };
   };
 
-  // "1 día", "3 horas", "5 minutos".
-  MAK.durationText = function (seconds) {
-    if (seconds >= 86400 && seconds % 86400 === 0) return MAK.t('dur.days', { n: seconds / 86400 });
-    if (seconds >= 3600 && seconds % 3600 === 0) return MAK.t('dur.hours', { n: seconds / 3600 });
-    return MAK.t('dur.minutes', { n: Math.round(seconds / 60) });
-  };
-
   // The text of a download link for the message: the link, the password and the limits.
   MAK.linkText = function (r) {
     const date = new Date(r.expires).toLocaleString(MAK.locale(), { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
