@@ -193,10 +193,33 @@
     return { periods: periods.filter((p) => p.finals || p.recovery).slice(0, 4), pdfs };
   };
 
-  // The semester of a date: autumn from August to January (the recovery exams are in January).
+  // The semester of a date: the first ("autumn") from August to 24 January (no classes from 14
+  // December, but the exams of the first semester), the second ("spring") from 25 January (the
+  // start of its classes) to July.
+  MAK.SPRING_START_DAY = 25; // of January
   MAK.currentSeason = (now) => {
-    const m = new Date(now).getMonth();
-    return m >= 7 || m === 0 ? 'autumn' : 'spring';
+    const d = new Date(now);
+    const m = d.getMonth();
+    if (m === 0) return d.getDate() >= MAK.SPRING_START_DAY ? 'spring' : 'autumn';
+    return m >= 7 ? 'autumn' : 'spring';
+  };
+
+  // The semester of a subject: the period of its guide ("1º S", "2º S", "1er semestre"), else the
+  // semester digit of its code (240703: the 7th semester, a first one), else null. A subject of the
+  // whole year ("Anual") is in both: null.
+  MAK.periodSeason = function (period) {
+    const s = MAK.normalizeText(period);
+    if (/anual|annual|urteko/.test(s)) return null;
+    if (/(^|\D)1\s*(o|º|°|er|st)?\s*(s\b|sem|cuat)|primer|first|lehen/.test(s)) return 'autumn';
+    if (/(^|\D)2\s*(o|º|°|nd)?\s*(s\b|sem|cuat)|segundo|second|bigarren/.test(s)) return 'spring';
+    return null;
+  };
+  MAK.guideSeason = function (guide) {
+    const p = MAK.periodSeason(guide && guide.period);
+    if (p || /anual|annual|urteko/i.test((guide && guide.period) || '')) return p;
+    const code = String((guide && guide.code) || '');
+    const n = /^\d{6}$/.test(code) ? Number(code[3]) : 0;
+    return n >= 1 && n <= 8 ? (n % 2 ? 'autumn' : 'spring') : null;
   };
 
   // "11/01/2027 08:00" -> the time (local).

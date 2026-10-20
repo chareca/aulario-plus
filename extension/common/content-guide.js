@@ -29,6 +29,7 @@
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .head strong { flex: 1; min-width: 200px; cursor: pointer; }
     ${MAK.FOLD_CSS}
+    ${MAK.SEMESTERS_CSS}
     a { color: #1a5fb4; } .dark a { color: #8ab4f8; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     .content { max-width: 1400px; }
@@ -249,12 +250,20 @@
     const hidden = MAK.hiddenEverywhere(settings);
     const list = sites.filter((s) => !hidden.has(s.id) && data.pages && data.pages[s.id] && data.pages[s.id].guide);
     if (!list.length) return;
-    const parts = [];
+    // A part for each semester (MAK.semesterSections): the semester of the guide; a subject of the
+    // whole year, or without a semester, is in the semester of the date. From 25 January the
+    // subjects of the first semester are gone.
+    const now = Date.now();
+    const current = MAK.currentSeason(now);
+    const cards = { autumn: [], spring: [] };
     for (const s of list) {
       const guide = await guideOf(s.id, data).catch(() => null);
-      if (guide) parts.push(guideCard(s, guide));
+      if (guide) cards[MAK.guideSeason(guide) || current].push(guideCard(s, guide));
     }
-    if (parts.length) show(MAK.t('guide.allTitle'), h('div', { class: 'grid' }, parts));
+    const parts = {};
+    for (const season of ['autumn', 'spring']) if (cards[season].length) parts[season] = { count: cards[season].length, body: h('div', { class: 'grid' }, cards[season]) };
+    const sections = MAK.semesterSections({ key: 'guides', now, parts, title: (season) => MAK.t(`short.semester.${season}`) });
+    if (sections) show(MAK.t('guide.allTitle'), sections);
   }
 
   // The sync can store the pages of the sites after the page loads (the first sync after an update):

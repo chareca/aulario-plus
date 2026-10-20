@@ -31,6 +31,7 @@
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .head strong { flex: 1; min-width: 200px; font-size: 15px; cursor: pointer; }
     ${MAK.FOLD_CSS}
+    ${MAK.SEMESTERS_CSS}
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     /* The exams on the full width; below them, the row of the actions. */
     .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; container-type: inline-size; }
@@ -168,15 +169,10 @@
 
   const seasonName = (s) => t(`short.season.${s}`);
 
-  function periodsOf(degree, now) {
-    if (!degree.periods || !degree.periods.length) return null;
-    const current = MAK.currentSeason(now);
-    const sorted = [...degree.periods].sort((a, b) => Number(b.season === current) - Number(a.season === current));
-    return h('div', { class: 'periods' }, sorted.map((p, i) =>
-      h('div', { class: `period${i ? ' other' : ''}` },
-        h('b', { text: seasonName(p.season) }),
-        p.finals ? [' · ', `${t('short.finals')}: ${p.finals}`] : null,
-        p.recovery ? [' · ', `${t('short.recovery')}: ${p.recovery}`] : null)));
+  // The periods of the exams of a semester: "Finales: … · Recuperación: …".
+  function periodLine(p) {
+    const parts = [p.finals ? `${t('short.finals')}: ${p.finals}` : null, p.recovery ? `${t('short.recovery')}: ${p.recovery}` : null].filter(Boolean);
+    return parts.length ? h('div', { class: 'period', text: parts.join(' · ') }) : null;
   }
 
   // The days to a date (0 = today), and "hoy", "mañana", "en 12 días", "pasado".
@@ -207,29 +203,45 @@
     }));
   }
 
-  // The dates of the subjects of the user, from the exam calendars of the degree.
-  async function examPart(degree, guides, sites, now) {
-    const pdfs = degree.pdfs || [];
-    if (!pdfs.length) return null;
+  // The dates of the subjects of the user, from the exam calendars of the degree: { mine (each
+  // with its semester: the one of its calendar), note (a message instead of the dates) }.
+  async function examData(degree, guides, now, show) {
+    const pdfs = (degree.pdfs || []).filter((p) => !p.season || show(p.season));
+    if (!pdfs.length) return { mine: [], note: null };
     const rows = [];
     let permission = false;
     let failed = 0;
     for (const p of pdfs) {
       const r = await send({ type: 'examRows', url: p.url });
-      if (r && Array.isArray(r.rows)) rows.push(...r.rows);
+      if (r && Array.isArray(r.rows)) rows.push(...r.rows.map((x) => Object.assign({}, x, { season: p.season || null })));
       else if (r && r.error === 'exams.permission') permission = true;
       else failed++;
     }
     if (permission) {
       const ask = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: `📅 ${t('short.showDates')}` });
       ask.addEventListener('click', () => send({ type: 'openExamPermission' }));
-      return h('div', null, h('p', { class: 'note meta', text: t('short.permHelp') }), ask);
+      return { mine: [], note: h('div', null, h('p', { class: 'note meta', text: t('short.permHelp') }), ask) };
     }
-    if (!rows.length) return h('p', { class: 'note meta', text: t(failed ? 'short.readError' : 'short.noRows') });
+    if (!rows.length) return { mine: [], note: h('p', { class: 'note meta', text: t(failed ? 'short.readError' : 'short.noRows') }) };
+    const season = new Map(guides.map((g) => [g.guide.code, MAK.guideSeason(g.guide)]));
     const subjects = guides.map((g) => ({ code: g.guide.code, siteId: g.siteId }));
-    const mine = MAK.myExams(rows, subjects, now);
-    if (!mine.length) return h('p', { class: 'note meta', text: t('short.noneMine') });
-    return [h('h5', { text: t('short.myExams') }), examList(mine, sites, now)];
+    const mine = MAK.myExams(rows, subjects, now).map((r) => Object.assign(r, { season: r.season || season.get(r.code) || MAK.currentSeason(now) }));
+    return { mine: mine.filter((r) => show(r.season)), note: mine.length ? null : h('p', { class: 'note meta', text: t('short.noneMine') }) };
+  }
+
+  // The parts of the two semesters: the periods and the dates of the user (MAK.semesterSections).
+  function examSections(degree, ex, sites, now) {
+    const parts = {};
+    for (const season of ['autumn', 'spring']) {
+      const period = (degree.periods || []).find((p) => p.season === season);
+      const mine = ex.mine.filter((r) => r.season === season);
+      if (!period && !mine.length) continue;
+      parts[season] = {
+        count: mine.length || null,
+        body: [period ? periodLine(period) : null, mine.length ? [h('h5', { text: t('short.myExams') }), examList(mine, sites, now)] : null]
+      };
+    }
+    return MAK.semesterSections({ key: 'exams', now, parts, title: (s) => t(`short.semester.${s}`) });
   }
 
   // "Tu carrera: … · Cambiar": a list of all the degrees to select another one.
@@ -327,18 +339,22 @@
       MAK.fill(examTile, h('h4', { text: `📅 ${t('short.exams')}` }), list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
       return;
     }
-    const pdfLinks = (degree.pdfs || []).map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
+    // From 25 January the first semester is gone (its exams are past).
+    const show = (season) => MAK.currentSeason(now) !== 'spring' || season !== 'autumn';
+    const pdfLinks = (degree.pdfs || []).filter((p) => !p.season || show(p.season))
+      .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
+    const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
     MAK.fill(examTile,
       h('h4', null, `📅 ${t('short.exams')}`, degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
-      degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : periodsOf(degree, now),
-      h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') })),
+      degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
+      place,
       h('h5', { text: t('short.links') }),
       h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
       degreeLine(degree, data, settings, degree.list));
-    const mine = examTile.querySelector('.mine');
-    const part = await examPart(degree, guides, data.sites, now).catch(() => null);
-    if (part) MAK.fill(mine, part);
-    else mine.remove();
+    const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
+    const sections = examSections(degree, ex, data.sites, now);
+    if (sections || ex.note) MAK.fill(place, sections, ex.note);
+    else place.remove();
   }
   function run() {
     running = (running || Promise.resolve()).then(draw, draw);

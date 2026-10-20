@@ -117,7 +117,10 @@ test('the addresses: degree pages of www.unavarra.es, PDF files of www2.unavarra
 test('the semester of a date, and the stored form of the degree', () => {
   assert.equal(MAK.currentSeason(new Date(2026, 9, 19).getTime()), 'autumn');
   assert.equal(MAK.currentSeason(new Date(2027, 0, 20).getTime()), 'autumn', 'January: the recovery exams of autumn');
+  assert.equal(MAK.currentSeason(new Date(2027, 0, 24, 23, 59).getTime()), 'autumn', 'to 24 January');
+  assert.equal(MAK.currentSeason(new Date(2027, 0, 25, 0, 0).getTime()), 'spring', 'the classes of spring start on 25 January');
   assert.equal(MAK.currentSeason(new Date(2027, 2, 1).getTime()), 'spring');
+  assert.equal(MAK.currentSeason(new Date(2027, 6, 31).getTime()), 'spring');
   assert.equal(MAK.currentSeason(new Date(2027, 7, 1).getTime()), 'autumn');
   const d = MAK.cleanDegree({
     base: 'https://www.unavarra.es/sites/grados/juridicas/derecho', name: 'Grado en Derecho', plan: '351', extra: 1,
@@ -188,4 +191,15 @@ test('the degree of a plan code: every plan of the table, once', () => {
   assert.equal(MAK.degreeOfPlan('constructor'), null);
   for (const key of Object.values(MAK.PLAN_DEGREES)) assert.ok(MAK.isDegreeBase(`https://www.unavarra.es/sites/grados/${key}`), key);
   for (const key of Object.keys(MAK.WUOLAH)) assert.ok(Object.values(MAK.PLAN_DEGREES).includes(key), `the Wuolah degree ${key} has a plan`);
+});
+
+test('the semester of a subject: the period of its guide, else the digit of its code', () => {
+  for (const [period, season] of [['1º S', 'autumn'], ['2º S', 'spring'], ['1er semestre', 'autumn'], ['Segundo semestre', 'spring'], ['Primer cuatrimestre', 'autumn'], ['2nd semester', 'spring'], ['Anual', null], ['', null]]) {
+    assert.equal(MAK.periodSeason(period), season, period);
+  }
+  assert.equal(MAK.guideSeason({ period: '2º S', code: '240703' }), 'spring', 'the period first');
+  assert.equal(MAK.guideSeason({ period: '', code: '240703' }), 'autumn', 'the 7th semester');
+  assert.equal(MAK.guideSeason({ period: '', code: '240802' }), 'spring', 'the 8th semester');
+  assert.equal(MAK.guideSeason({ period: 'Anual', code: '240703' }), null, 'the whole year');
+  assert.equal(MAK.guideSeason({ code: 'X1' }), null);
 });

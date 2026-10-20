@@ -102,6 +102,57 @@
     return svg;
   };
 
+  // ---- The two semesters ("Mi sitio": the final exams and the course guides) --------------
+  // A part for each semester, with an arrow that folds it. The semester of the date is open; the
+  // other one is folded and below it (its state stays when the page opens again). Both open: two
+  // columns, with enough space. From 25 January (MAK.currentSeason) the first semester is gone.
+  // Put MAK.SEMESTERS_CSS and MAK.FOLD_CSS in the styles of the shadow root.
+  MAK.SEMESTERS_CSS = `
+    .sems-wrap { container-type: inline-size; }
+    .sems { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-items: start; }
+    @container (min-width: 560px) { .sems.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    .sem { min-width: 0; border: 1px solid #d6e3e0; border-radius: 8px; padding: 6px 10px; }
+    .dark .sem { border-color: #2e4440; }
+    .sem-head { display: flex; align-items: center; gap: 8px; }
+    .sem-head .sem-title { flex: 1; min-width: 0; font-weight: 600; cursor: pointer; }
+    .sem-head .sem-title .meta { font-weight: 400; }
+    .sem-body { margin-top: 4px; }
+    .sem.closed .sem-body { display: none; }
+    .sem .mak-fold { width: 26px; height: 26px; }
+  `;
+  // key: the name of the part ("exams", "guides"). parts: { autumn, spring }, each { count, body }
+  // (null: no part). Result: the element, or null without a part.
+  MAK.semesterSections = function ({ key, now, parts, title }) {
+    const current = MAK.currentSeason(now);
+    const order = current === 'spring' ? ['spring'] : ['autumn', 'spring'];
+    const list = order.filter((s) => parts[s]);
+    if (!list.length) return null;
+    const sems = MAK.h('div', { class: 'sems' });
+    const layout = () => sems.classList.toggle('two', sems.querySelectorAll('.sem.open').length > 1);
+    for (const season of list) {
+      const store = `mak-sem:${key}:${season}`;
+      let open = season === current;
+      try {
+        const v = localStorage.getItem(store);
+        if (v !== null && season !== current) open = v === '1';
+      } catch {}
+      const body = MAK.h('div', { class: 'sem-body' }, parts[season].body);
+      const sem = MAK.h('section', { class: `sem ${open ? 'open' : 'closed'}` });
+      const label = title(season);
+      const fold = MAK.foldButton(open, { open: MAK.t('fold.open', { name: label }), close: MAK.t('fold.close', { name: label }) }, (o) => {
+        sem.classList.toggle('open', o);
+        sem.classList.toggle('closed', !o);
+        try { localStorage.setItem(store, o ? '1' : '0'); } catch {}
+        layout();
+      });
+      const count = typeof parts[season].count === 'number' ? MAK.h('span', { class: 'meta', text: ` · ${parts[season].count}` }) : null;
+      sem.append(MAK.h('div', { class: 'sem-head' }, MAK.h('span', { class: 'sem-title', on: { click: () => fold.click() } }, label, count), fold), body);
+      sems.append(sem);
+    }
+    layout();
+    return MAK.h('div', { class: 'sems-wrap' }, sems);
+  };
+
   // The arrow that folds a box of the extension (the block "Aulario Plus" of "Mi sitio" and the boxes in
   // it): only the arrow, down when the box is open and to the right when it is folded. Put
   // MAK.FOLD_CSS in the styles of the shadow root.
