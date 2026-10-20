@@ -110,6 +110,17 @@ test('a delivery that is not submitted and due in 40 minutes: one notification; 
   assert.match(bg.ext._tabs.at(-1).url, /assignmentReference=%2Fassignment%2Fa%2F.*asg-red/);
 });
 
+test('logout removes the reminders and their alarms', async () => {
+  const { bg, routes, data } = await baseline({});
+  dueRoutes(data, routes, 5 * 3600000);
+  await bg.send({ type: 'syncNow' });
+  await settle();
+  assert.ok(bg.ext._notes.has('due:asg-red') && bg.ext._alarms.has('due:asg-red'));
+  await bg.send({ type: 'logout' }, { id: bg.ext.runtime.id, url: 'https://miaulario.unavarra.es/portal', tab: { id: 1 }, frameId: 0 });
+  assert.equal(bg.ext._notes.has('due:asg-red'), false);
+  assert.equal([...bg.ext._alarms.keys()].filter((k) => k.startsWith('due:')).length, 0);
+});
+
 test('due in 5 hours: the reminder of 24 hours now, and an alarm for the one of 1 hour; no alarm when submitted or off', async () => {
   const { bg, routes, data } = await baseline({});
   dueRoutes(data, routes, 5 * 3600000);

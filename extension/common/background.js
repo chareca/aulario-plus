@@ -320,11 +320,13 @@ async function notifyNewGrades(changed) {
   }
 }
 
-async function clearGradeNotes() {
-  if (!ext.notifications) return;
+// At logout: the notifications of the user (grades, reminders) and the alarms of the reminders.
+async function clearUserNotes() {
   try {
+    if (ext.alarms) for (const a of await ext.alarms.getAll()) if (a.name.startsWith(DUE_NOTE)) await ext.alarms.clear(a.name);
+    if (!ext.notifications) return;
     const all = await ext.notifications.getAll();
-    for (const id of Object.keys(all || {})) if (isGradeNote(id)) await ext.notifications.clear(id);
+    for (const id of Object.keys(all || {})) if (isGradeNote(id) || id.startsWith(DUE_NOTE)) await ext.notifications.clear(id);
   } catch {}
 }
 
@@ -480,7 +482,7 @@ const handlers = {
       await sync.run().catch(() => {});
       // The course data stays only while the user is logged in.
       await sync.clearData();
-      await clearGradeNotes();
+      await clearUserNotes();
       return { ok: true };
     }
   },
@@ -489,7 +491,8 @@ const handlers = {
     run: async () => {
       await sync.touch();
       const { meta } = await store.get('meta');
-      if (!meta || !meta.lastSync || Date.now() - meta.lastSync > SYNC_FRESH_MS) {
+      // A last sync in the future: the clock went back. Sync.
+      if (!meta || !meta.lastSync || Date.now() - meta.lastSync > SYNC_FRESH_MS || meta.lastSync > Date.now()) {
         sync.run({ force: true }).catch(() => {});
       }
       return { ok: true };
@@ -832,23 +835,20 @@ const handlers = {
     }
   },
   // A content script takes the "mark viewed" requests that failed, and sends them from the page.
+  // The list stays until a page says that MiAulario took each one: a page that closes in the middle
+  // loses none (a "viewed" sent two times does nothing more).
   takePendingMarkViewed: {
     content: true,
-    run: async () => {
-      let taken = [];
-      await store.update('pendingMarkViewed', (list) => {
-        taken = list || [];
-        return [];
-      });
-      return taken;
-    }
+    run: async () => (await store.get('pendingMarkViewed')).pendingMarkViewed || []
   },
   pendingMarkViewedDone: {
     content: true,
     run: async (msg) => {
       if (typeof msg.siteId !== 'string' || typeof msg.toolId !== 'string') return { ok: false };
-      if (msg.ok) await markNotificationsViewed(msg.siteId, msg.toolId);
-      else await queuePending(msg.siteId, msg.toolId);
+      if (msg.ok) {
+        await store.update('pendingMarkViewed', (list) => (list || []).filter((x) => x.siteId !== msg.siteId || x.toolId !== msg.toolId));
+        await markNotificationsViewed(msg.siteId, msg.toolId);
+      } else await queuePending(msg.siteId, msg.toolId);
       return { ok: true };
     }
   }

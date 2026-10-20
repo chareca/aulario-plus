@@ -233,6 +233,23 @@ test('the background syncs after the ping alarm and removes the data on logout',
   assert.ok(bg.ext.storage.local.data.meta.installedAt);
 });
 
+test('the requests that wait for a sync go in one sync after it, with all their sites', async () => {
+  const s = setup();
+  const first = s.sync.run({ force: true });
+  const waiting = [F.CS, F.PHYS, F.COORD].map((id) => s.sync.run({ siteIds: [id] }));
+  await Promise.all([first, ...waiting]);
+  const sessions = s.log.filter((x) => x.key.startsWith('/direct/session/current.json')).length;
+  assert.equal(sessions, 2, 'the first sync and one more, not one for each site');
+  assert.equal(new Set(await Promise.all(waiting)).size, 1, 'the same sync');
+});
+
+test('a clock that went back: the sync is due, and an old wait is not one', async () => {
+  const s = setup({ local: { meta: { lastSync: F.NOW + 2 * MAK.HOUR, lastFullSync: F.NOW, backoffUntil: F.NOW + 5 * MAK.HOUR } } });
+  const r = await s.sync.run();
+  assert.notEqual(r.skipped, 'not-due');
+  assert.notEqual(r.skipped, 'backoff');
+});
+
 test('a logout during a sync: the sync ends first, then the data goes; nothing comes back', async () => {
   const base = fakeFetch(F.routes());
   let release;

@@ -87,7 +87,8 @@
     function isDue(meta) {
       const t = now();
       const idle = meta.lastUse ? t - meta.lastUse > IDLE_AFTER_MS : false;
-      return t - (meta.lastSync || 0) >= (idle ? IDLE_ROUTINE_MS : ROUTINE_MS);
+      const age = t - (meta.lastSync || 0);
+      return age < 0 || age >= (idle ? IDLE_ROUTINE_MS : ROUTINE_MS); // < 0: the clock went back
     }
 
     async function takeLock() {
@@ -116,13 +117,26 @@
       });
     }
 
-    // One sync at a time. A request for specific sites, or a forced request, waits for the
-    // current sync and then runs. Other requests get the result of the current sync.
+    // One sync at a time. A request for specific sites, or a forced request, waits for the current sync;
+    // all the requests that wait go in one sync after it (all their sites; forced or full if one is).
+    // Other requests get the result of the current sync.
+    let queued = null;
     async function run(options) {
       const o = options || {};
       if (running) {
-        if (o.force || (o.siteIds && o.siteIds.length)) return running.then(() => run(o));
-        return running;
+        if (!(o.force || (o.siteIds && o.siteIds.length))) return running;
+        if (!queued) {
+          const q = { force: false, full: false, siteIds: new Set() };
+          q.done = running.then(() => {}, () => {}).then(() => {
+            if (queued === q) queued = null;
+            return run({ force: q.force, full: q.full, siteIds: [...q.siteIds] });
+          });
+          queued = q;
+        }
+        queued.force = queued.force || !!o.force;
+        queued.full = queued.full || !!o.full;
+        for (const id of o.siteIds || []) queued.siteIds.add(id);
+        return queued.done;
       }
       running = runOnce(o).finally(() => { running = null; });
       return running;
@@ -135,7 +149,8 @@
       if (!settings.syncEnabled) return { skipped: 'disabled' };
       let meta = Object.assign({}, st.meta);
       // After a server error, wait. Also a manual refresh waits, so that it does not add load.
-      if (meta.backoffUntil && now() < meta.backoffUntil) return { skipped: 'backoff' };
+      // A wait of more than 1 hour (the longest): the clock went back; no wait.
+      if (meta.backoffUntil && now() < meta.backoffUntil && meta.backoffUntil - now() <= HOUR) return { skipped: 'backoff' };
       if (!o.force && !(o.siteIds && o.siteIds.length) && !isDue(meta)) return { skipped: 'not-due' };
       if (!(await takeLock())) return { skipped: 'locked' };
 

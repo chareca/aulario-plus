@@ -108,8 +108,9 @@ test('a failed POST is kept, and a MiAulario page sends it later', async () => {
   assert.deepEqual(data.pendingMarkViewed, [{ siteId: F.CS, toolId: 'sakai.announcements' }]);
   const taken = await bg.send({ type: 'takePendingMarkViewed' }, CONTENT);
   assert.deepEqual(taken, [{ siteId: F.CS, toolId: 'sakai.announcements' }]);
-  assert.deepEqual(data.pendingMarkViewed, []);
+  assert.equal(data.pendingMarkViewed.length, 1, 'it stays until it is done (a page that closes loses none)');
   await bg.send({ type: 'pendingMarkViewedDone', siteId: F.CS, toolId: 'sakai.announcements', ok: true }, CONTENT);
+  assert.deepEqual(data.pendingMarkViewed, []);
   assert.equal(data.notifications.find((n) => n.id === 101).viewed, true);
   await bg.send({ type: 'pendingMarkViewedDone', siteId: F.CS, toolId: 'sakai.announcements', ok: false }, CONTENT);
   assert.equal(data.pendingMarkViewed.length, 1, 'a failure goes back to the list');
