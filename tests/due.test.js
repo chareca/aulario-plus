@@ -114,21 +114,31 @@ test('setSettings accepts only known keys and correct values', async () => {
   assert.equal(await bg.send({ type: 'setSettings', patch: { syncEnabled: true } }, { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/' }), null, 'a content script cannot change the settings');
 });
 
-test('dueReminders: now within 1 hour (once for each due date), later the time of the reminder; not submitted, late, on paper or hidden', () => {
+test('dueReminders: 24 h and 1 h before by default; one reminder now for the past times; the next time for the alarm', () => {
   const H = 3600000;
   const now = F.NOW;
   const a = (id, inMs, o) => Object.assign({ id, siteId: F.CS, title: id, type: 'TEXT_ONLY_ASSIGNMENT_SUBMISSION', status: 'OPEN', due: now + inMs, close: now + inMs, sub: { submitted: false, canSubmit: true } }, o);
   const list = [
     a('soon', 30 * 60000),
-    a('later', 5 * H),
+    a('today', 5 * H),
+    a('later', 3 * 24 * H),
     a('done', 30 * 60000, { sub: { submitted: true } }),
     a('paper', 30 * 60000, { type: MAK.OFFLINE_TYPE }),
     a('late', -H, { close: now + H }),
     a('hidden', 30 * 60000, { siteId: 'H' })
   ];
-  const r = MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: {} });
-  assert.deepEqual(r.now.map((x) => x.id), ['soon']);
-  assert.deepEqual(r.later, [{ id: 'later', when: now + 4 * H }]);
-  assert.deepEqual(MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: { soon: now + 30 * 60000 } }).now, [], 'already shown');
-  assert.deepEqual(MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: { soon: now } }).now.map((x) => x.id), ['soon'], 'a new due date');
+  const run = (notified, offsets) => MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: notified || {}, offsets });
+  let r = run();
+  assert.deepEqual(r.now.map((x) => [x.a.id, x.sent]), [['soon', [1440, 60]], ['today', [1440]]], 'one reminder; both past times are sent');
+  assert.deepEqual(r.later, [{ id: 'today', when: now + 4 * H }, { id: 'later', when: now + 2 * 24 * H }]);
+  r = run({ soon: { due: now + 30 * 60000, sent: [1440, 60] }, today: { due: now + 5 * H, sent: [1440] } });
+  assert.deepEqual(r.now, [], 'already sent');
+  assert.deepEqual(run({ soon: now + 30 * 60000 }).now.map((x) => x.a.id), ['soon', 'today'], 'the form before 1.6.4: the reminder of 1 hour was sent, not the one of 24 hours');
+  assert.deepEqual(run({ soon: { due: now, sent: [1440, 60] } }).now[0].a.id, 'soon', 'a new due date');
+  assert.deepEqual(run({}, [10080]).now.map((x) => x.a.id), ['soon', 'today', 'later'], 'one week before');
+  MAK.setLang('es');
+  assert.equal(MAK.leftText(45 * 60000), '45 minutos');
+  assert.equal(MAK.leftText(23 * H + 50 * 60000), '24 horas');
+  assert.equal(MAK.leftText(3 * 24 * H), '3 días');
+  assert.equal(MAK.leftText(60000), '1 minuto');
 });

@@ -98,4 +98,8 @@ test('the grades of the calculator of the guides: numbers 0 to 10 only', () => {
   assert.deepEqual(MAK.withDefaults({}).guideGrades, {});
   const s = MAK.withDefaults({ guideGrades: { S1: { Examen: 6.5, Malo: 11, Texto: '7' }, S2: 'x', S3: {} } });
   assert.deepEqual(s.guideGrades, { S1: { Examen: 6.5 } });
+  assert.deepEqual(MAK.withDefaults({ guideWeights: { S1: { Examen: 55, Malo: 150 } } }).guideWeights, { S1: { Examen: 55 } }, 'weights 0 to 100');
+  assert.deepEqual(MAK.withDefaults({}).dueOffsets, [1440, 60], 'reminders: 24 h and 1 h');
+  assert.deepEqual(MAK.withDefaults({ dueOffsets: [60, 10080, 60, 7, 1440, 180] }).dueOffsets, [10080, 1440, 180], 'known times, once, the earliest first, at most 3');
+  assert.deepEqual(MAK.withDefaults({ dueOffsets: [] }).dueOffsets, [1440, 60]);
 });

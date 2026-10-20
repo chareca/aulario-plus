@@ -279,12 +279,16 @@
           });
         }
 
-        // 9. Lessons ("Contenidos", for the search): all sites with the tool, on a full sync. A site
-        // whose Lessons give an error of the server has no parts (some sites give it each time).
-        if (full) {
+        // 9. Lessons ("Contenidos", for the search): the sites with the tool, on a full sync, and
+        // a site without them or with old ones (the first sync after an update). A site whose
+        // Lessons give an error of the server has no parts (some sites give it each time).
+        {
           const empty = (e) => { if (e && e.status >= 500) return null; throw e; };
+          const { lessons: stored } = await store.get('lessons');
           for (const s of visible) {
             if (!pages[s.id] || !pages[s.id].tools['sakai.lessonbuildertool']) continue;
+            const old = stored && stored[s.id];
+            if (!full && old && t - old.at < FULL_MS) continue;
             await step(`lessons:${s.id}`, async () => {
               const items = [];
               for (const l of ((await api.lessons(s.id).catch(empty)) || []).slice(0, MAX_LESSONS_PER_SITE)) {

@@ -1015,6 +1015,23 @@ function teacherSection() {
   );
 }
 
+// The times of the reminders before a delivery: 1 to 3, 24 hours and 1 hour by default.
+function dueOffsetsField(s) {
+  const list = s.dueOffsets.slice();
+  const save = (next) => send({ type: 'setSettings', patch: { dueOffsets: next } });
+  const rows = list.map((m, i) => h('label', { class: 'field-row' },
+    h('span', { class: 'small', text: t('set.dueOffset', { n: i + 1 }) }),
+    h('span', { class: 'due-offset' },
+      h('select', { attrs: { disabled: !s.notifyDue }, on: { change: (e) => save(list.map((x, j) => (j === i ? Number(e.target.value) : x))) } },
+        MAK.DUE_OFFSET_CHOICES.slice().reverse().map((c) => h('option', { attrs: { value: String(c), selected: c === m, disabled: c !== m && list.includes(c) }, text: t('set.dueBefore', { time: MAK.durationText(c * 60) }) }))),
+      list.length > 1 ? h('button', { class: 'btn small-btn', text: '✕', attrs: { type: 'button', disabled: !s.notifyDue, title: t('set.dueRemove', { n: i + 1 }), 'aria-label': t('set.dueRemove', { n: i + 1 }) }, on: { click: () => save(list.filter((_, j) => j !== i)) } }) : null)));
+  const free = MAK.DUE_OFFSET_CHOICES.filter((c) => !list.includes(c));
+  const add = list.length < 3 && free.length
+    ? h('div', { class: 'row' }, h('button', { class: 'btn', text: t('set.dueAdd'), attrs: { type: 'button', disabled: !s.notifyDue }, on: { click: () => save(list.concat(free.includes(180) ? 180 : free[0])) } }))
+    : null;
+  return h('div', { class: 'indent' }, rows, add);
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -1050,7 +1067,8 @@ function renderSettings(el) {
       h('h2', { text: t('set.courseData') }),
       checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } })),
       checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } })),
-      checkbox(t('set.notifyDue'), t('set.notifyDueHelp'), s.notifyDue, (v) => send({ type: 'setSettings', patch: { notifyDue: v } }))
+      checkbox(t('set.notifyDue'), t('set.notifyDueHelp'), s.notifyDue, (v) => send({ type: 'setSettings', patch: { notifyDue: v } })),
+      dueOffsetsField(s)
     ),
     h(
       'div',

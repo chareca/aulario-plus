@@ -51,6 +51,7 @@
         "lib/ui.js",
         "lib/pm.js",
         "lib/teachers.js",
+        "lib/grades.js",
         "lib/guide.js",
         "lib/degree.js",
         "lib/mail-ui.js",

@@ -231,3 +231,6 @@ footer.privacy button:hover { text-decoration: underline; }
 .template textarea { min-height: 120px; resize: vertical; line-height: 1.4; }
 .template .chips { margin: 2px 0 4px; }
 .template .chips button { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.due-offset { display: flex; gap: 6px; align-items: center; }
+.field-row .due-offset select { flex: 1 1 auto; width: auto; min-width: 0; }
+.due-offset .small-btn { flex: none; width: auto; padding: 2px 8px; }

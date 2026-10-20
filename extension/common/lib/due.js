@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
-  const { HOUR, DAY } = MAK;
+  const { MINUTE, HOUR, DAY } = MAK;
 
   MAK.OFFLINE_TYPE = 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION';
 
@@ -104,23 +104,40 @@
     return weeks;
   };
 
-  // The reminder "1 hour left" (the setting notifyDue): the deliveries that are not submitted, online,
-  // with a due time in the future. now: the deliveries with 1 hour or less (and no reminder yet);
-  // later: [{ id, when }], the time of the reminder of the others. notified: { id: due } of the
-  // reminders that were shown; a new due date gives a new reminder.
-  MAK.DUE_REMINDER_MS = HOUR;
-  MAK.dueReminders = function ({ assignments, hidden, now, notified }) {
+  // The reminders before a delivery (the settings notifyDue and dueOffsets): for the deliveries that
+  // are not submitted, online, with a due time in the future. offsets: the minutes before the due
+  // time (24 h and 1 h by default, at most 3). notified: { id: { due, sent: [minutes] } }; a new
+  // due date gives new reminders. Result:
+  // - now: [{ a, sent }], a reminder now (one, also if more times are past: the extension was off);
+  //   sent: all the past times, to remember
+  // - later: [{ id, when }], the next time of a reminder of each delivery
+  MAK.DUE_OFFSET_CHOICES = [15, 30, 60, 120, 180, 360, 720, 1440, 2880, 4320, 10080];
+  MAK.DEFAULT_DUE_OFFSETS = [1440, 60];
+  MAK.dueReminders = function ({ assignments, hidden, now, notified, offsets }) {
     const hide = hidden || new Set();
     const shown = notified || {};
+    const list = offsets && offsets.length ? offsets : MAK.DEFAULT_DUE_OFFSETS;
     const out = { now: [], later: [] };
     for (const a of assignments || []) {
       if (hide.has(a.siteId) || !a.due || a.due <= now || a.type === MAK.OFFLINE_TYPE) continue;
       if (MAK.deliveryState(a, now) !== 'pending') continue;
-      const at = a.due - MAK.DUE_REMINDER_MS;
-      if (at > now) out.later.push({ id: a.id, when: at });
-      else if (shown[a.id] !== a.due) out.now.push(a);
+      const before = shown[a.id];
+      // Before version 1.6.4: the due date only (the reminder of 1 hour was sent).
+      const sent = before === a.due ? [60] : before && before.due === a.due && Array.isArray(before.sent) ? before.sent : [];
+      const past = list.filter((m) => a.due - m * MINUTE <= now);
+      if (past.some((m) => !sent.includes(m))) out.now.push({ a, sent: [...new Set(sent.concat(past))] });
+      const next = list.map((m) => a.due - m * MINUTE).filter((at) => at > now);
+      if (next.length) out.later.push({ id: a.id, when: Math.min(...next) });
     }
     return out;
+  };
+
+  // The time to the due time for a reminder: "45 minutos", "23 horas", "2 días".
+  MAK.leftText = function (ms) {
+    const min = Math.max(1, Math.round(ms / MINUTE));
+    if (min < 60) return MAK.t('dur.minutes', { n: min });
+    if (ms < 48 * HOUR) return MAK.t('dur.hours', { n: Math.round(ms / HOUR) });
+    return MAK.t('dur.days', { n: Math.round(ms / DAY) });
   };
 
   // Text for the time that remains, for example "quedan 2d 04h 12m" or "vencida hace 3h 05m".

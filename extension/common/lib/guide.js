@@ -288,29 +288,45 @@
     return n >= 0 && n <= 10 ? n : null;
   };
 
-  // The calculator: the activities of the guide with a weight, and the grades of the user
-  // ({ activity name: 0..10 }). The final grade is the mean of the grades with the weights (over
-  // the total of the weights). Result:
-  // - rows: [{ activity, weight, minimum (0..10 or null), grade (or null), plan (the grade for an
-  //   empty activity: "need" or its minimum, the larger), below (a grade under its minimum) }]
+  // A weight that the user writes (0..100 %), or null.
+  MAK.parseWeight = function (v) {
+    const s = String(v === null || v === undefined ? '' : v).trim().replace(',', '.').replace(/\s*%$/, '');
+    if (!/^\d{1,3}(\.\d{1,2})?$/.test(s)) return null;
+    const n = Number(s);
+    return n <= 100 ? n : null;
+  };
+
+  // The calculator: the activities of the guide, the grades of the user ({ activity name: 0..10 })
+  // and the weights of the user ({ activity name: 0..100 }; else the weight of the guide). Only the
+  // activities with a weight count. The final grade is the mean of the grades with the weights
+  // (over the total of the weights). Result:
+  // - rows: [{ activity, weight, guideWeight, minimum (0..10 or null), grade (or null), plan (the
+  //   grade for an empty activity: "need" or its minimum, the larger), below (a grade under its
+  //   minimum) }], all the activities of the guide
   // - complete: all the activities have a grade; final: the final grade then
   // - need: the same grade in all the empty activities that gives 5, with their minimums (0 if the
   //   grades already give 5); reachable: need <= 10; projected: the final grade with the plan
   // - passed: complete, final >= 5 and no grade under its minimum
-  MAK.guideCalc = function (rows, grades) {
+  MAK.guideCalc = function (rows, grades, weights) {
     const g = grades || {};
-    const acts = (rows || []).filter((r) => r && r.weight > 0).map((r) => ({
-      activity: r.activity,
-      weight: r.weight,
-      minimum: MAK.guideMinimum(r.minimum),
-      grade: typeof g[r.activity] === 'number' ? g[r.activity] : null
-    }));
+    const w = weights || {};
+    const all = (rows || []).filter((r) => r && r.activity).map((r) => {
+      const guideWeight = r.weight > 0 ? r.weight : 0;
+      return {
+        activity: r.activity,
+        guideWeight,
+        weight: typeof w[r.activity] === 'number' ? w[r.activity] : guideWeight,
+        minimum: MAK.guideMinimum(r.minimum),
+        grade: typeof g[r.activity] === 'number' ? g[r.activity] : null
+      };
+    });
+    const acts = all.filter((a) => a.weight > 0);
     const total = acts.reduce((n, a) => n + a.weight, 0);
-    const out = { rows: acts, total, complete: false, final: null, need: null, reachable: true, projected: null, passed: false };
+    const out = { rows: all, total, complete: false, final: null, need: null, reachable: true, projected: null, passed: false };
     if (!total) return out;
     const part = (a, grade) => (a.weight / total) * grade;
     const points = acts.reduce((n, a) => n + (a.grade === null ? 0 : part(a, a.grade)), 0);
-    for (const a of acts) a.below = a.grade !== null && a.minimum !== null && a.grade < a.minimum;
+    for (const a of all) a.below = a.weight > 0 && a.grade !== null && a.minimum !== null && a.grade < a.minimum;
     const empty = acts.filter((a) => a.grade === null);
     if (!empty.length) {
       out.complete = true;
@@ -335,6 +351,20 @@
     out.need = need;
     out.reachable = need <= 10 + 1e-9;
     out.projected = points + empty.reduce((n, a) => n + part(a, Math.min(10, a.plan)), 0);
+    return out;
+  };
+
+  // The grades of the gradebook of MiAulario for the activities of the guide (MAK.guideBook): for each
+  // activity with graded items, their grade over 10. { activity name: 0..10 }.
+  MAK.guideBookGrades = function (rows, book) {
+    const out = {};
+    const gb = book && MAK.guideBook({ evaluation: { rows: rows || [] } }, book);
+    for (const c of (gb && gb.categories) || []) {
+      if (!c.matched) continue;
+      const graded = c.items.filter((i) => i.score !== null && i.max > 0);
+      const max = graded.reduce((n, i) => n + i.max, 0);
+      if (max > 0) out[c.name] = Math.round((graded.reduce((n, i) => n + i.score, 0) / max) * 1000) / 100;
+    }
     return out;
   };
 

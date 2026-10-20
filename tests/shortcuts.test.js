@@ -90,6 +90,10 @@ test('setGuideGrades: the grades of the calculator of a known site; an empty obj
   assert.deepEqual(await send({ type: 'setGuideGrades', siteId: 'S1', grades: { Examen: 6, Malo: 20 } }), { ok: true });
   assert.deepEqual((await bg.ext.storage.local.get('settings')).settings.guideGrades, { S1: { Examen: 6 } });
   assert.deepEqual(await send({ type: 'setGuideGrades', siteId: 'other', grades: { Examen: 6 } }), { ok: false }, 'unknown site');
+  await send({ type: 'setGuideGrades', siteId: 'S1', grades: { Examen: 6 }, weights: { Examen: 70 } });
+  assert.deepEqual((await bg.ext.storage.local.get('settings')).settings.guideWeights, { S1: { Examen: 70 } });
   await send({ type: 'setGuideGrades', siteId: 'S1', grades: {} });
-  assert.deepEqual((await bg.ext.storage.local.get('settings')).settings.guideGrades, {});
+  const s = (await bg.ext.storage.local.get('settings')).settings;
+  assert.deepEqual(s.guideGrades, {});
+  assert.deepEqual(s.guideWeights, { S1: { Examen: 70 } }, 'no weights in the message: the weights stay');
 });

@@ -21,6 +21,7 @@
       border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
     .dark .win { color: #e8ecee; background: #1e2a28; }
     header { display: flex; align-items: center; gap: 8px; }
+    [hidden] { display: none !important; }
     h2 { flex: 1; margin: 0; font-size: 16px; }
     button.x { font: inherit; font-size: 18px; line-height: 1; background: none; border: 0; padding: 2px 6px; cursor: pointer; color: inherit; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
@@ -29,7 +30,7 @@
     th { text-align: left; font-size: 12px; font-weight: 600; color: #5f6b73; padding: 4px; } .dark th { color: #9aa6ad; }
     td { padding: 6px 4px; border-top: 1px solid #e1e8e6; vertical-align: middle; }
     .dark td { border-color: #2e4440; }
-    td.w { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; width: 3.5em; }
+    td.w { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; width: 5.4em; }
     td.g { width: 5.5em; }
     td.s { font-size: 12px; width: 9.5em; }
     .tag { font-size: 11px; color: #5f6b73; } .dark .tag { color: #9aa6ad; }
@@ -37,6 +38,10 @@
       background: #fff; color: inherit; text-align: right; font-variant-numeric: tabular-nums; }
     .dark input { background: #15201e; border-color: #3a524d; }
     input.bad { border-color: #c5221f; outline: 1px solid #c5221f; }
+    input.weight { width: 3.6em; }
+    input.weight.changed { border-color: #b8742a; } .dark input.weight.changed { border-color: #e0a253; }
+    input.book { color: #1a5fb4; } .dark input.book { color: #8ab4f8; }
+    .book-status { margin: 8px 0 0; }
     .need { color: #10524e; font-weight: 600; } .dark .need { color: #4fd1a5; }
     .low { color: #c5221f; } .dark .low { color: #f28b82; }
     .ok { color: #137333; } .dark .ok { color: #81c995; }
@@ -50,14 +55,33 @@
   `;
 
   let open = null;
+  // Firefox: content.fetch sends the request as the page. Chromium: fetch does this.
+  const pageFetch = globalThis.content && typeof globalThis.content.fetch === 'function' ? globalThis.content.fetch.bind(globalThis.content) : fetch;
+
+  // The grades of the gradebook of the site for the activities of the guide, or null. This page is
+  // activity in MiAulario (as a visit of the user), so it is read only when the user opens the window.
+  async function bookGrades(placement, rows) {
+    if (!placement) return null;
+    try {
+      const r = await pageFetch(`/portal/tool/${encodeURIComponent(placement)}`, { credentials: 'include', cache: 'no-store' });
+      if (!r.ok) return null;
+      const data = MAK.extractGradebookRows(new DOMParser().parseFromString(await r.text(), 'text/html'));
+      return data.found ? MAK.guideBookGrades(rows, MAK.buildGradebook(data)) : null;
+    } catch {
+      return null;
+    }
+  }
 
   // site: { id, name }. rows: the rows of the assessment of the guide.
   MAK.openGuideCalc = async function ({ site, rows }) {
     if (open) return;
-    const raw = (await MAK.safeCall(() => ext.storage.local.get('settings'), null)) || {};
+    const raw = (await MAK.safeCall(() => ext.storage.local.get(['settings', 'pages']), null)) || {};
     const settings = MAK.withDefaults(raw.settings);
     MAK.setLang(settings.lang);
-    const grades = Object.assign({}, settings.guideGrades[site.id]);
+    const grades = Object.assign({}, settings.guideGrades[site.id]); // what the user wrote
+    const weights = Object.assign({}, settings.guideWeights[site.id]);
+    let book = {}; // the grades of the gradebook, for the activities without a grade of the user
+    const tool = raw.pages && raw.pages[site.id] && raw.pages[site.id].tools && raw.pages[site.id].tools['sakai.gradebookng'];
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
@@ -70,42 +94,73 @@
     let timer = null;
     const save = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => send({ type: 'setGuideGrades', siteId: site.id, grades }), 300);
+      timer = setTimeout(() => send({ type: 'setGuideGrades', siteId: site.id, grades, weights }), 300);
     };
+    // The grades for the calculation: the ones of the user, else the ones of the gradebook.
+    const current = () => Object.assign({}, book, grades);
 
-    const base = MAK.guideCalc(rows, {});
-    const lines = base.rows.map((r) => {
+    const lines = MAK.guideCalc(rows, {}, {}).rows.map((r) => {
       const input = h('input', { attrs: { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '–', 'aria-label': t('gcalc.gradeOf', { activity: r.activity }) } });
-      if (typeof grades[r.activity] === 'number') input.value = fmt(grades[r.activity]);
+      const weight = h('input', { class: 'weight', attrs: { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '0', 'aria-label': t('gcalc.weightOf', { activity: r.activity }) } });
+      const from = h('div', { class: 'tag', hidden: true, text: t('gcalc.fromBook') });
       const state = h('td', { class: 's' });
+      const line = { activity: r.activity, guideWeight: r.guideWeight, input, weight, from, state };
       input.addEventListener('input', () => {
         const v = input.value.trim();
         const n = MAK.parseGrade(v);
         input.classList.toggle('bad', !!v && n === null);
+        input.classList.remove('book');
+        from.hidden = true;
         if (n === null) delete grades[r.activity];
         else grades[r.activity] = n;
         draw();
         save();
       });
-      return {
-        activity: r.activity,
-        input,
-        state,
-        tr: h('tr', null,
-          h('td', null, r.activity, r.minimum !== null ? h('div', { class: 'tag', text: t('gcalc.minimum', { n: fmt(r.minimum) }) }) : null),
-          h('td', { class: 'w', text: `${fmt(r.weight)} %` }),
-          h('td', { class: 'g' }, input),
-          state)
-      };
+      weight.addEventListener('input', () => {
+        const v = weight.value.trim();
+        const n = v === '' ? 0 : MAK.parseWeight(v);
+        weight.classList.toggle('bad', n === null);
+        if (n === null) return;
+        if (n === r.guideWeight) delete weights[r.activity];
+        else weights[r.activity] = n;
+        draw();
+        save();
+      });
+      line.tr = h('tr', null,
+        h('td', null, r.activity, r.minimum !== null ? h('div', { class: 'tag', text: t('gcalc.minimum', { n: fmt(r.minimum) }) }) : null),
+        h('td', { class: 'w' }, weight, ' %'),
+        h('td', { class: 'g' }, input, from),
+        state);
+      return line;
     });
+    // The inputs from the values: the grades of the user, else the ones of the gradebook.
+    const fill = () => {
+      for (const l of lines) {
+        const own = typeof grades[l.activity] === 'number';
+        const fromBook = !own && typeof book[l.activity] === 'number';
+        if (document.activeElement !== host || !l.input.matches(':focus')) l.input.value = own ? fmt(grades[l.activity]) : fromBook ? fmt(book[l.activity]) : '';
+        l.input.classList.toggle('book', fromBook);
+        l.input.classList.remove('bad');
+        l.from.hidden = !fromBook;
+        const w = typeof weights[l.activity] === 'number' ? weights[l.activity] : l.guideWeight;
+        l.weight.value = w ? fmt(w) : '';
+        l.weight.classList.toggle('changed', typeof weights[l.activity] === 'number');
+        l.weight.classList.remove('bad');
+      }
+    };
 
     const summary = h('div', { class: 'sum', attrs: { role: 'status', 'aria-live': 'polite' } });
+    const status = h('p', { class: 'meta book-status' });
     function draw() {
-      const c = MAK.guideCalc(rows, grades);
+      const c = MAK.guideCalc(rows, current(), weights);
       c.rows.forEach((r, i) => {
         const cell = lines[i].state;
         cell.className = 's';
-        if (r.grade !== null) {
+        cell.textContent = '';
+        if (!(r.weight > 0)) {
+          cell.textContent = t('gcalc.noWeight');
+          cell.classList.add('tag');
+        } else if (r.grade !== null) {
           cell.textContent = r.below ? t('gcalc.belowMin') : '';
           cell.classList.toggle('low', r.below);
         } else if (!c.reachable) {
@@ -116,10 +171,12 @@
           cell.classList.add('need');
         }
       });
-      const filled = c.rows.filter((r) => r.grade !== null).length;
+      const filled = c.rows.filter((r) => r.weight > 0 && r.grade !== null).length;
       const below = c.rows.filter((r) => r.below).map((r) => r.activity);
       const parts = [];
-      if (c.complete) {
+      if (!c.total) {
+        parts.push(h('p', { text: t('gcalc.noWeights') }));
+      } else if (c.complete) {
         parts.push(h('p', { class: 'big' }, t('gcalc.final', { n: fmt(c.final) }), ' · ', h('span', { class: c.passed ? 'ok' : 'low', text: t(c.passed ? 'gcalc.passed' : 'gcalc.failed') })));
       } else if (!filled) {
         parts.push(h('p', { text: t('gcalc.start') }));
@@ -133,16 +190,21 @@
         parts.push(h('p', { text: t('gcalc.projected', { n: fmt(c.projected) }) }));
       }
       if (below.length) parts.push(h('p', { class: 'low', text: t('gcalc.belowList', { list: below.join(', ') }) }));
-      if (Math.abs(c.total - 100) > 0.01) parts.push(h('p', { class: 'meta', text: t('gcalc.total', { n: fmt(c.total) }) }));
+      if (c.total && Math.abs(c.total - 100) > 0.01) parts.push(h('p', { class: 'meta', text: t('gcalc.total', { n: fmt(c.total) }) }));
       MAK.fill(summary, parts);
     }
 
+    // "Actualizar": the weights of the guide again.
+    const reset = h('button', { class: 'plain', text: t('gcalc.resetWeights'), attrs: { type: 'button', title: t('gcalc.resetWeightsHelp') }, on: { click: () => {
+      for (const k of Object.keys(weights)) delete weights[k];
+      fill();
+      draw();
+      save();
+    } } });
+    // "Limpiar todo": the grades of the user go away (the grades of the gradebook stay).
     const clear = h('button', { class: 'plain', text: t('gcalc.clear'), attrs: { type: 'button' }, on: { click: () => {
       for (const k of Object.keys(grades)) delete grades[k];
-      for (const l of lines) {
-        l.input.value = '';
-        l.input.classList.remove('bad');
-      }
+      fill();
       draw();
       save();
       if (lines[0]) lines[0].input.focus();
@@ -150,13 +212,14 @@
 
     const title = `🧮 ${t('gcalc.title', { site: site.name })}`;
     const win = h('div', { class: 'win', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': title } },
-      h('header', null, h('h2', { text: title }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: close } })),
+      h('header', null, h('h2', { text: title }), lines.length ? reset : null, h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: close } })),
       h('p', { class: 'help meta', text: t('gcalc.help') }),
       lines.length
         ? h('table', null,
           h('thead', null, h('tr', null, h('th', { text: t('guide.activity') }), h('th', { class: 'w', text: t('guide.weight') }), h('th', { text: t('gcalc.grade') }), h('th'))),
           h('tbody', null, lines.map((l) => l.tr)))
         : h('p', { text: t('gcalc.noWeights') }),
+      lines.length ? status : null,
       lines.length ? summary : null,
       lines.length ? h('div', { class: 'row' }, clear) : null);
     const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, win);
@@ -169,8 +232,22 @@
     shadow.append(style, backdrop);
     document.documentElement.append(host);
     open = host;
+    fill();
     draw();
     const first = lines.find((l) => !l.input.value) || lines[0];
     if (first) first.input.focus();
+
+    // The grades of the gradebook, after the window opens.
+    if (tool && tool.placement && lines.length) {
+      status.textContent = t('gcalc.bookLoading');
+      const got = await bookGrades(tool.placement, rows);
+      if (!host.isConnected) return;
+      book = got || {};
+      const n = Object.keys(book).length;
+      status.textContent = got === null ? t('gcalc.bookError') : n ? t('gcalc.bookFound', { n }) : t('gcalc.bookNone');
+      for (const l of lines) if (l.input === shadow.activeElement) l.input.blur();
+      fill();
+      draw();
+    }
   };
 })();

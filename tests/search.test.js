@@ -195,8 +195,14 @@ test('the sync reads the Contenidos of the sites with Lessons (an error 500 give
   routes['/direct/lessons/lesson/77.json'] = SSI_TREE;
   routes[`/direct/lessons/site/${F.PHYS}.json`] = fakeFetch.raw({ ok: false, status: 500, headers: { get: () => 'text/html' } });
   const area = memoryArea();
-  const sync = MAK.createSync({ api: MAK.createApi({ fetch: fakeFetch(routes) }), store: MAK.createStore(area), now: () => F.NOW, pauseMs: 0 });
-  const r = await sync.run({ force: true, full: true });
+  const clock = { t: F.NOW };
+  const sync = MAK.createSync({ api: MAK.createApi({ fetch: fakeFetch(routes) }), store: MAK.createStore(area), now: () => clock.t, pauseMs: 0 });
+  await sync.run({ force: true });
+  // The first sync after an update (not full, no Contenidos stored yet) reads them too.
+  delete area.data.lessons;
+  clock.t += 20 * MAK.MINUTE;
+  const r = await sync.run({ force: true });
+  assert.equal(r.full, false);
   assert.ok(!r.backoff, 'no backoff for the error 500');
   assert.equal(area.data.lessons[F.CS].items.length, 9);
   assert.deepEqual(area.data.lessons[F.PHYS].items, [], 'error 500: no parts');

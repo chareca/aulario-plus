@@ -345,10 +345,11 @@ if (ext.notifications) ext.notifications.onClicked.addListener((id) => {
   openDueNote(id).catch(() => {});
 });
 
-// ---- A reminder 1 hour before a delivery that is not submitted ----------------------
-// One alarm for each delivery, at its due time minus 1 hour (MAK.dueReminders). The alarm, the end
-// of a sync and a change of the settings check the deliveries again: a delivery that the user
-// submitted gives no reminder. The notification shows the delivery and the site; a click opens it.
+// ---- Reminders before a delivery that is not submitted ------------------------------
+// 24 hours and 1 hour before by default (settings: notifyDue, dueOffsets; MAK.dueReminders). One
+// alarm for each delivery, at the time of its next reminder. The alarm, the end of a sync and a
+// change of the settings check the deliveries again: a delivery that the user submitted gives no
+// reminder. The notification shows the time left, the delivery and the site; a click opens it.
 
 const DUE_NOTE = 'due:'; // the notification and the alarm: "due:<assignment id>"
 
@@ -357,7 +358,7 @@ async function checkDueReminders() {
   const s = MAK.withDefaults(d.settings);
   const now = Date.now();
   const r = s.notifyDue && ext.notifications
-    ? MAK.dueReminders({ assignments: d.assignments, hidden: MAK.hiddenEverywhere(s), now, notified: d.dueNotified })
+    ? MAK.dueReminders({ assignments: d.assignments, hidden: MAK.hiddenEverywhere(s), now, notified: d.dueNotified, offsets: s.dueOffsets })
     : { now: [], later: [] };
   const want = new Map(r.later.map((x) => [DUE_NOTE + x.id, x.when]));
   for (const a of (await ext.alarms.getAll()) || []) {
@@ -368,9 +369,8 @@ async function checkDueReminders() {
   MAK.setLang(s.lang);
   const names = new Map(MAK.namedSites(d.sites, s).map((x) => [x.id, x.title]));
   const iconUrl = ext.runtime.getURL('icons/icon128.png');
-  for (const a of r.now) {
-    const left = Math.max(1, Math.round((a.due - now) / MAK.MINUTE));
-    const title = left >= 55 ? MAK.t('note.dueHour') : MAK.t('note.due', { n: left });
+  for (const { a } of r.now) {
+    const title = MAK.t('note.dueIn', { left: MAK.leftText(a.due - now) });
     const message = [a.title, names.get(a.siteId)].filter(Boolean).join('\n');
     try {
       await ext.notifications.create(DUE_NOTE + a.id, { type: 'basic', iconUrl, title, message });
@@ -381,7 +381,7 @@ async function checkDueReminders() {
   await store.update('dueNotified', (cur) => {
     const out = {};
     for (const [k, v] of Object.entries(cur || {})) if (ids.has(k)) out[k] = v;
-    for (const a of r.now) out[a.id] = a.due;
+    for (const { a, sent } of r.now) out[a.id] = { due: a.due, sent };
     return out;
   });
 }
@@ -753,19 +753,24 @@ const handlers = {
   },
   // A name from the user for a site (the pencil in the popup or in MiAulario). An empty name,
   // or the automatic name, removes the name from the user.
-  // The grades of the calculator of a guide (content-calc.js): all the grades of one site; an empty
-  // object removes them.
+  // The calculator of a guide (content-calc.js): all the grades of one site, and the weights that
+  // the user changed (if the message has them). An empty object removes them.
   setGuideGrades: {
     content: true,
     run: async (msg) => {
       if (!(await knownSite(msg.siteId))) return { ok: false };
-      const grades = msg.grades && typeof msg.grades === 'object' && !Array.isArray(msg.grades) ? msg.grades : {};
+      const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+      const put = (map, value) => {
+        const all = Object.assign({}, map);
+        delete all[msg.siteId];
+        if (Object.keys(value).length) all[msg.siteId] = value;
+        return all;
+      };
       await store.update('settings', (cur) => {
         const s = MAK.withDefaults(cur);
-        const all = Object.assign({}, s.guideGrades);
-        delete all[msg.siteId];
-        if (Object.keys(grades).length) all[msg.siteId] = grades;
-        return MAK.withDefaults(Object.assign({}, s, { guideGrades: all }));
+        const next = { guideGrades: put(s.guideGrades, obj(msg.grades)) };
+        if (msg.weights !== undefined) next.guideWeights = put(s.guideWeights, obj(msg.weights));
+        return MAK.withDefaults(Object.assign({}, s, next));
       });
       return { ok: true };
     }

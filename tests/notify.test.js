@@ -7,13 +7,14 @@ const F = require('./fixtures/miaulario');
 const GRADES = '/api/users/me/grades';
 const graded = (ids, score = '9') => ({ grades: F.GRADES.map((g) => (ids.includes(g.id) ? Object.assign({}, g, { score, notGradedYet: false }) : g)) });
 
-// A background with the first sync done (the baseline: no notifications).
-async function baseline(local) {
+// A background with the first sync done (the baseline: no notifications). The reminders before
+// the deliveries are off, except for their own tests (local: {}).
+async function baseline(local = { settings: { notifyDue: false } }) {
   const data = F.make(Date.now());
   const routes = data.routes();
   const bg = loadBackground({ fetch: fakeFetch(routes), local });
   await bg.send({ type: 'syncNow' });
-  assert.equal(bg.ext._notes.size, 0, 'no notification for the grades of the first sync');
+  assert.equal([...bg.ext._notes.keys()].filter((k) => k.startsWith('grade')).length, 0, 'no notification for the grades of the first sync');
   return { bg, routes, data };
 }
 
@@ -87,14 +88,14 @@ function dueRoutes(data, routes, inMs, submitted) {
 }
 const settle = () => new Promise((r) => setTimeout(r, 450));
 
-test('1 hour before a delivery that is not submitted: one notification; a click opens the delivery', async () => {
-  const { bg, routes, data } = await baseline();
+test('a delivery that is not submitted and due in 40 minutes: one notification; a click opens the delivery', async () => {
+  const { bg, routes, data } = await baseline({});
   dueRoutes(data, routes, 40 * 60000);
   await bg.send({ type: 'syncNow' });
   await settle();
   const note = bg.ext._notes.get('due:asg-red');
   assert.ok(note, [...bg.ext._notes.keys()].join());
-  assert.match(note.title, /^⏰ Quedan (39|40) min para entregar$/);
+  assert.match(note.title, /^⏰ Vence en (39|40) minutos$/);
   assert.equal(note.message, `Lab report 3\n${data.SITES.find((s) => s.id === F.CS).title}`);
   assert.ok(!bg.ext._notes.has('due:asg-late'), 'not a late delivery');
   assert.ok(!bg.ext._notes.has('due:asg-paper'), 'not a delivery on paper');
@@ -109,17 +110,23 @@ test('1 hour before a delivery that is not submitted: one notification; a click 
   assert.match(bg.ext._tabs.at(-1).url, /assignmentReference=%2Fassignment%2Fa%2F.*asg-red/);
 });
 
-test('the reminder of a later delivery is an alarm at the due time minus 1 hour; no alarm when submitted or off', async () => {
-  const { bg, routes, data } = await baseline();
+test('due in 5 hours: the reminder of 24 hours now, and an alarm for the one of 1 hour; no alarm when submitted or off', async () => {
+  const { bg, routes, data } = await baseline({});
   dueRoutes(data, routes, 5 * 3600000);
   await bg.send({ type: 'syncNow' });
   await settle();
+  assert.equal(bg.ext._notes.get('due:asg-red').title, '⏰ Vence en 5 horas');
   const alarm = bg.ext._alarms.get('due:asg-red');
   assert.ok(alarm, [...bg.ext._alarms.keys()].join());
-  const due = (await bg.ext.storage.local.get('assignments')).assignments.find((a) => a.id === 'asg-red').due;
-  assert.equal(alarm.scheduledTime, due - 3600000);
-  assert.ok(bg.ext._alarms.has('due:asg-orange'), 'all the pending deliveries');
-  assert.equal(bg.ext._notes.size, 0, 'no notification yet');
+  const all = (await bg.ext.storage.local.get('assignments')).assignments;
+  const due = all.find((a) => a.id === 'asg-red').due;
+  assert.equal(alarm.scheduledTime, due - 3600000, 'the next reminder: 1 hour before');
+  const orange = all.find((a) => a.id === 'asg-orange').due;
+  assert.equal(bg.ext._alarms.get('due:asg-orange').scheduledTime, orange - 24 * 3600000, 'due in 2 days: 24 hours before');
+  // Three reminders: also one week before.
+  await bg.send({ type: 'setSettings', patch: { dueOffsets: [10080, 1440, 60] } });
+  await settle();
+  assert.ok(bg.ext._notes.has('due:asg-orange'), 'one week before: now');
   // The user submits it: no alarm.
   dueRoutes(data, routes, 5 * 3600000, true);
   await bg.send({ type: 'syncNow' });

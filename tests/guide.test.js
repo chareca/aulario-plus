@@ -156,15 +156,15 @@ test('parseGrade: 0 to 10, with a comma or a point', () => {
 
 test('guideCalc: the grade that you need in the rest, with the minimums, and the final grade', () => {
   let c = MAK.guideCalc(SSI_ROWS, {});
-  assert.equal(c.rows.length, 3, 'only the activities with a weight');
+  assert.equal(c.rows.length, 4, 'all the activities (one without a weight)');
   assert.equal(c.total, 100);
   assert.equal(c.need, 5, 'nothing yet: 5 in all');
-  assert.deepEqual(c.rows.map((r) => r.minimum), [5, 4, null]);
+  assert.deepEqual(c.rows.map((r) => r.minimum), [5, 4, null, null]);
 
   c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6 });
   // 6 * 0.4 = 2.4; the rest (60 %) needs 2.6 / 0.6 = 4.33; Prácticas has the minimum 4 (below).
   assert.equal(r2(c.need), 4.33);
-  assert.deepEqual(c.rows.map((r) => r.plan === undefined ? null : r2(r.plan)), [null, 4.33, 4.33]);
+  assert.deepEqual(c.rows.map((r) => r.plan === undefined ? null : r2(r.plan)), [null, 4.33, 4.33, null]);
   assert.equal(r2(c.projected), 5);
   assert.equal(c.complete, false);
 
@@ -177,7 +177,7 @@ test('guideCalc: the grade that you need in the rest, with the minimums, and the
   c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 1, Prácticas: 1 });
   assert.equal(c.reachable, false, '0.8 + 0.2 * 10 = 2.8 < 5');
   assert.equal(r2(c.projected), 2.8);
-  assert.deepEqual(c.rows.map((r) => r.below), [true, true, false]);
+  assert.deepEqual(c.rows.map((r) => r.below), [true, true, false, false]);
 
   c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6, Prácticas: 7, Trabajo: 3 });
   assert.equal(c.complete, true);
@@ -188,4 +188,28 @@ test('guideCalc: the grade that you need in the rest, with the minimums, and the
   assert.equal(c.passed, false, 'the exam is below its minimum');
   assert.equal(MAK.guideCalc([{ activity: 'A', weight: 30 }, { activity: 'B', weight: 30 }], { A: 10 }).need, 0, 'the weights make 60 %: 10 in A gives 5');
   assert.equal(MAK.guideCalc([], {}).total, 0);
+});
+
+test('guideCalc with the weights of the user; parseWeight', () => {
+  assert.equal(MAK.parseWeight('35,5'), 35.5);
+  assert.equal(MAK.parseWeight('40 %'), 40);
+  for (const bad of ['101', '-5', 'x', '']) assert.equal(MAK.parseWeight(bad), null, bad);
+  // The exam 50 %, the practices 50 %, the work 0 % (it does not count), the attendance 0 %.
+  const c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6, Prácticas: 8, Trabajo: 1 }, { 'Examen de teoría': 50, Prácticas: 50, Trabajo: 0 });
+  assert.deepEqual(c.rows.map((r) => [r.weight, r.guideWeight]), [[50, 40], [50, 40], [0, 20], [0, 0]]);
+  assert.equal(c.total, 100);
+  assert.equal(c.complete, true, 'the work has no weight: not necessary');
+  assert.equal(r2(c.final), 7);
+  assert.equal(MAK.guideCalc(SSI_ROWS, {}, { Asistencia: 10 }).total, 110, 'a weight for an activity without a weight in the guide');
+});
+
+test('guideBookGrades: the grades of the gradebook for the activities of the guide, over 10', () => {
+  const book = { weighted: false, unused: [], courseGradeText: '', categories: [{ name: '', weight: null, items: [
+    { key: 'a', name: 'Examen de teoría', score: 7, max: 10 },
+    { key: 'b', name: 'Práctica 1', score: 18, max: 20 },
+    { key: 'c', name: 'Práctica 2', score: 6, max: 10 },
+    { key: 'd', name: 'Trabajo', score: null, max: 10 }
+  ] }] };
+  assert.deepEqual(MAK.guideBookGrades(SSI_ROWS, book), { 'Examen de teoría': 7, Prácticas: 8 }, '(18 + 6) / (20 + 10); no grade for the work yet');
+  assert.deepEqual(MAK.guideBookGrades(SSI_ROWS, null), {});
 });
