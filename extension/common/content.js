@@ -18,7 +18,8 @@
   // Firefox: content.fetch sends the request as the page. Chromium: fetch does this.
   const pageFetch = globalThis.content && typeof globalThis.content.fetch === 'function' ? globalThis.content.fetch.bind(globalThis.content) : fetch;
   const SAML_LOGIN = '/sakai-login-tool/container/saml/login';
-  const LOGOUT_RE = /\/portal\/logout|\/sakai-login-tool\/container\/saml\/logout/i;
+  // The paths of the logout links of MiAulario (a link of another site with the same path is not one).
+  const LOGOUT_RE = /^\/(portal\/logout|sakai-login-tool\/container\/saml\/logout)/i;
   const LOGIN_RE = /\/portal\/x?login\b|\/portal\/site\/login-|\/sakai-login-tool\/container\/saml\/login/i;
   const THROTTLE_MS = 2 * 60 * 1000;
   const THROTTLE_KEY = 'aulario-plus-last-relogin'; // the last login (of the extension or of the user)
@@ -39,7 +40,7 @@
   // A click on a login link: record the time of the login.
   document.addEventListener('click', (e) => {
     const a = e.target instanceof Element && e.target.closest('a[href]');
-    if (a && LOGOUT_RE.test(a.href)) send({ type: 'logout' });
+    if (a && a.origin === MAK.BASE && LOGOUT_RE.test(a.pathname)) send({ type: 'logout' });
     else if (a && LOGIN_RE.test(a.href)) mark(THROTTLE_KEY);
   }, true);
 

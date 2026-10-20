@@ -19,7 +19,17 @@ test('a content script can send only the messages that it is permitted to send',
   assert.equal(await bg.send({ type: 'pause' }, CONTENT()), null);
   assert.equal(bg.ext.storage.local.data.paused, undefined);
   assert.deepEqual(await bg.send({ type: 'pause' }), { ok: true });
-  assert.equal(bg.ext.storage.local.data.paused, true);
+  assert.equal(bg.ext.storage.local.data.paused, 'user');
+});
+
+test('"Pausar" stays until "Reanudar": a ping does not continue it, not even with a session', async () => {
+  const log = [];
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' } });
+  assert.equal(await bg.send({ type: 'pingNow' }), null);
+  assert.equal(bg.ext.storage.local.data.paused, 'user');
+  assert.equal(log.length, 0, 'no request');
+  await bg.send({ type: 'resume' });
+  assert.equal(bg.ext.storage.local.data.paused, false);
 });
 
 test('messages from other origins, other frames, other extensions or with an unknown type are rejected', async () => {

@@ -61,13 +61,16 @@ async function getState() {
 
 // The keep-alive request: without "auto=true", so Sakai records it as activity.
 async function ping() {
-  const { paused } = await getState();
+  const { paused } = await ext.storage.local.get('paused');
+  // "Pausar" in the popup ('user'): only "Reanudar" continues.
+  if (paused === 'user') return null;
   if (paused) {
     // The extension is paused after a manual logout. Only read the session (with "auto=true",
-    // it does not reset the timer). If the user logged in again, continue.
+    // it does not reset the timer). If the user logged in again, continue, as "Reanudar" does.
     const session = await courseApi.session().catch(() => null);
     if (!session || !session.userId) return null;
     await store.set({ paused: false });
+    await persistExisting();
   }
   const last = { time: Date.now(), ok: false, status: 0, loggedIn: null };
   try {
@@ -441,7 +444,7 @@ const handlers = {
   pingNow: { run: () => ping() },
   pause: {
     run: async () => {
-      await store.set({ paused: true });
+      await store.set({ paused: 'user' }); // not true (a logout): a new login does not continue it
       return { ok: true };
     }
   },
@@ -473,6 +476,8 @@ const handlers = {
     run: async () => {
       await store.set({ paused: true });
       await clearPersisted();
+      // The sync that is running ends first, so that it does not write the data again (a new one stops: paused).
+      await sync.run().catch(() => {});
       // The course data stays only while the user is logged in.
       await sync.clearData();
       await clearGradeNotes();

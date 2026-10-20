@@ -232,3 +232,21 @@ test('the background syncs after the ping alarm and removes the data on logout',
   assert.equal(bg.ext.storage.local.data.paused, true);
   assert.ok(bg.ext.storage.local.data.meta.installedAt);
 });
+
+test('a logout during a sync: the sync ends first, then the data goes; nothing comes back', async () => {
+  const base = fakeFetch(F.routes());
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const bg = loadBackground({ fetch: async (url, init) => { await gate; return base(url, init); } });
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const syncing = bg.send({ type: 'syncNow' });
+  await wait(5);
+  const out = bg.send({ type: 'logout' }, { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/portal' });
+  await wait(5);
+  release(); // MiAulario answers the requests of the sync after the logout
+  await Promise.all([syncing, out]);
+  const d = bg.ext.storage.local.data;
+  assert.equal(d.sites, undefined);
+  assert.equal(d.grades, undefined);
+  assert.equal(d.meta.lastSync, undefined, 'only installedAt');
+});

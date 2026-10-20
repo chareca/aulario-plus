@@ -119,6 +119,19 @@ test('a persistent cookie, another cookie or a pause: no change', async () => {
   assert.equal(sets, 0, 'paused after a logout');
 });
 
+test('the end of the pause of a logout (a new login): the session cookies are persistent again', async () => {
+  const { fakeFetch } = require('./helpers');
+  const F = require('./fixtures/miaulario');
+  const bg = loadBackground({ web: fastTimers, fetch: fakeFetch(F.routes()), local: { paused: true } });
+  const { server, named } = withJar(bg);
+  server('SAKAISESSIONID', 'NEW');
+  await wait(30);
+  assert.equal(named('SAKAISESSIONID')[0].expirationDate, undefined, 'paused: a session cookie');
+  assert.ok(await bg.send({ type: 'pingNow' }));
+  await wait(40);
+  assert.ok(named('SAKAISESSIONID')[0].expirationDate > Date.now() / 1000 + 86400, 'persistent');
+});
+
 test('repairSession removes all the copies of the Sakai session and SERVERID, and keeps the SSO session', async () => {
   const bg = loadBackground({ web: fastTimers });
   const { put, named } = withJar(bg);
