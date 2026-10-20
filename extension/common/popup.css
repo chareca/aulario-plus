@@ -28,7 +28,7 @@ header.top h1 { display: inline-block; margin: 0; font-size: calc(17px * var(--a
 .status-line.bad { color: var(--ap-red); opacity: 1; font-weight: 700; }
 .status-line.warn { color: var(--ap-orange); opacity: 1; }
 header.top .status-line.bad, header.top .status-line.warn { color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
-.icon-btn { flex: none; width: 30px; height: 30px; cursor: pointer; font-size: 15px; line-height: 1;
+.icon-btn { flex: none; width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); cursor: pointer; font-size: 15px; line-height: 1;
   background: var(--ap-head-btn-bg); color: var(--ap-head-btn-fg); border: var(--ap-bw-sm) solid var(--ap-head-btn-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
 .icon-btn:hover, .icon-btn:focus-visible { filter: brightness(0.95); }
 .icon-btn.spin { animation: spin 0.9s linear infinite; }
@@ -45,7 +45,7 @@ ul.checks li.skip .mark { color: var(--ap-muted); }
 
 /* Fields */
 select, input[type="search"], input[type="text"], textarea {
-  font: inherit; color: var(--ap-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
+  font: inherit; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
   border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); padding: 5px 8px; min-width: 0;
 }
 select { padding: 4px 6px; }
@@ -233,7 +233,7 @@ body.tools { width: auto; height: auto; min-height: 100vh; }
 .card .head .site-name a { flex: none; }
 .pencil { background: none; border: 0; padding: 0 3px; color: var(--ap-muted); cursor: pointer; font-size: 13px; line-height: 1; }
 .pencil:hover, .pencil:focus-visible { color: var(--ap-fg); }
-.name-input { flex: 1; min-width: 0; font: inherit; font-weight: 700; color: var(--ap-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-fg); border-radius: var(--ap-input-radius); padding: 2px 6px; }
+.name-input { flex: 1; min-width: 0; font: inherit; font-weight: 700; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-fg); border-radius: var(--ap-input-radius); padding: 2px 6px; }
 .site-row .name .link-btn { margin-top: 2px; }
 
 /* Grade calculator */

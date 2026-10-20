@@ -86,8 +86,8 @@ test('the variables of a theme: the values of BASE where the theme has none, the
   const dark = MAK.themeValues('cromo', true);
   assert.equal(Object.keys(light).length, MAK.THEME_VARS.length);
   assert.equal(light.fg, '#000000');
-  assert.equal(dark.fg, '#f2f2f2');
-  assert.equal(dark['count-radius'], '3px', 'a light value that the dark mode does not change');
+  assert.equal(dark.fg, '#eef2f8');
+  assert.equal(dark['head-bg'], light['head-bg'], 'a light value that the dark mode does not change (the title bar)');
   assert.equal(light['item-gap'], '0px', 'a value of BASE');
   const vars = MAK.themeVars('bloques', false);
   assert.match(vars, /--ap-head-bg: #ffd400;/);

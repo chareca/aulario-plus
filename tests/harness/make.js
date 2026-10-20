@@ -193,6 +193,8 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <style>
   body { margin: 0; font: 15px/1.5 Georgia, serif; background: #fff; color: #222; }
   html.sakaiUserTheme-dark body { background: #121212; color: #ddd; }
+  /* As the dark theme of MiAulario: a background color with !important on the blocks. */
+  html.sakaiUserTheme-dark .Mrphs-container, html.sakaiUserTheme-dark .Mrphs-toolBody { background-color: #202124 !important; }
   main { padding: 16px 24px; }
   .portal-header-breadcrumb { padding: 6px 0 12px; font: 13px sans-serif; color: #666; }
   .row { border: 1px dashed #aaa; padding: 24px; }

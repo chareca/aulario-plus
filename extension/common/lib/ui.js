@@ -243,15 +243,15 @@
     .head .title { flex: 0 1 auto; margin-right: auto; cursor: pointer; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight);
       font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing); font-size: calc(17px * var(--ap-head-zoom)); line-height: 1.2;
       padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
-    .box > .head .mak-fold { color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
-    :host(.in-block) .box > .head .mak-fold { color: var(--ap-btn-fg); background: var(--ap-btn-bg); border-color: var(--ap-btn-edge); }
+    .box > .head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
+    :host(.in-block) .box > .head .mak-fold { width: 30px; height: 30px; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border-color: var(--ap-btn-edge); }
     h4, h5 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing); }
     .meta { color: var(--ap-muted); font-size: 0.86em; }
     a { color: var(--ap-link); }
     mark { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
     button.plain { font: inherit; font-size: 0.9em; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ap-link); }
     button.plain:hover, button.plain:focus-visible { text-decoration: underline; text-underline-offset: 2px; }
-    select, input { font: inherit; color: var(--ap-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
+    select, input { font: inherit; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
       border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); padding: 4px 8px; }
     .count { display: inline-block; flex: none; white-space: nowrap; line-height: 1.2; font-variant-numeric: tabular-nums;
       font-family: var(--ap-count-font); font-size: calc(var(--ap-count-size) * 0.9); font-weight: var(--ap-count-weight); font-style: var(--ap-count-style);
@@ -289,7 +289,7 @@
     table { width: 100%; border-collapse: collapse; font-size: 0.93em; }
     th { text-align: left; font-size: 0.86em; font-weight: 700; color: var(--ap-muted); padding: 4px; }
     td { padding: 6px 4px; border-top: 1px solid var(--ap-line); vertical-align: middle; }
-    input, textarea, select { font: inherit; color: var(--ap-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
+    input, textarea, select { font: inherit; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
       border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); padding: 5px 8px; }
     input[type=checkbox], input[type=radio] { box-shadow: none; accent-color: var(--ap-fg); }
     button.plain, button.btn { font: inherit; font-size: 0.93em; cursor: pointer; padding: 4px 12px; color: var(--ap-btn-fg); background: var(--ap-btn-bg);

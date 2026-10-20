@@ -56,6 +56,7 @@
       'head-btn-bg': 'var(--ap-btn-bg)', // the buttons in a head (the arrow, the close button)
       'head-btn-fg': 'var(--ap-btn-fg)',
       'head-btn-edge': 'var(--ap-btn-edge)',
+      'head-btn-size': '30px',
       'title-deco': 'none', // an image under the titles (a background at the bottom)
       'title-pad': '0px', // the space under the titles for that image
       // Buttons: "btn" the normal ones, "primary" the main action
@@ -108,6 +109,7 @@
       'count-ok-edge': 'var(--ap-count-edge)',
       // Fields
       'input-bg': 'var(--ap-surface)',
+      'input-fg': 'var(--ap-fg)',
       'input-edge': 'var(--ap-edge)',
       'input-radius': 'var(--ap-radius-sm)',
       'input-shadow': 'none',
@@ -154,6 +156,9 @@
   const SCRIBBLE = (color) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'%3E%3Cpath d='M2 6 C 40 2, 70 9, 110 5 S 170 3, 198 6' stroke='${encodeURIComponent(color)}' stroke-width='2.4' fill='none' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")`;
   const GRID = (c) => `linear-gradient(${c} 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, ${c} 1px, transparent 1px) 0 0 / 22px 22px`;
   const HATCH = (deg, c) => `repeating-linear-gradient(${deg}deg, ${c} 0 1.5px, transparent 1.5px 6px)`;
+
+  // The green arrow of the links of Cromo (a drawing of our own, in the style of 2002).
+  const XP_ARROW = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86d863"/><stop offset="1" stop-color="#2a8a0e"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="4" fill="url(#a)" stroke="#1d6a08"/><path d="M6.5 12h10M12.5 7.5L17 12l-4.5 4.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   MAK.THEMES = [
     // ---- 1 · Bloques: Neo-Brutalism + Bento Grid ----------------------------------------------
@@ -588,18 +593,19 @@
         mail: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4e0f7"/></linearGradient></defs><rect x="2.5" y="5.5" width="19" height="13" rx="1.5" fill="url(#g)" stroke="#2c5bc0"/><path d="M3.2 6.6L12 13l8.8-6.4" fill="none" stroke="#2c5bc0" stroke-width="1.3"/><path d="M3.5 17.6l6.4-5.6M20.5 17.6l-6.4-5.6" fill="none" stroke="#8eaae0"/></svg>`,
         pencil: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.3 15.2L15.9 4.6l3.5 3.5L8.8 18.7z" fill="#f6c445" stroke="#7a5a10"/><path d="M15.9 4.6l1.5-1.5a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2l-1.5 1.5z" fill="#ef8aa0" stroke="#7a3040"/><path d="M5.3 15.2L4 20l4.8-1.3z" fill="#f3dab2" stroke="#7a5a10" stroke-linejoin="round"/><path d="M4 20l.7-2.4 1.7 1.7z" fill="#333333"/><path d="M7 15.8l9.3-9.3" stroke="#fde18f"/></svg>`,
         calc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f6f6"/><stop offset="1" stop-color="#c4c4c4"/></linearGradient></defs><rect x="4.5" y="2.5" width="15" height="19" rx="1.5" fill="url(#b)" stroke="#4d4d4d"/><rect x="6.5" y="4.5" width="11" height="4" fill="#d6ebcf" stroke="#64845a" stroke-width=".8"/><g fill="#2c5bc0"><rect x="6.5" y="10.5" width="3" height="2.3"/><rect x="10.5" y="10.5" width="3" height="2.3"/><rect x="6.5" y="13.9" width="3" height="2.3"/><rect x="10.5" y="13.9" width="3" height="2.3"/><rect x="6.5" y="17.2" width="3" height="2.3"/><rect x="10.5" y="17.2" width="3" height="2.3"/></g><rect x="14.5" y="10.5" width="3" height="9" fill="#d64529"/></svg>`,
-        arrow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86d863"/><stop offset="1" stop-color="#2a8a0e"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="4" fill="url(#a)" stroke="#1d6a08"/><path d="M6.5 12h10M12.5 7.5L17 12l-4.5 4.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        arrow: XP_ARROW
       },
       light: {
         font: 'Tahoma, "Segoe UI", Verdana, "DejaVu Sans", sans-serif',
         'font-head': '"Trebuchet MS", Tahoma, "Segoe UI", sans-serif',
         'font-num': 'Tahoma, "Segoe UI", Verdana, sans-serif',
-        zoom: '0.95',
+        zoom: '0.85',
         'head-weight': '700',
+        'head-zoom': '0.8',
         page: '#ece9d8',
         surface: '#ffffff',
         solid: '#ffffff',
-        surface2: '#ece9d8',
+        surface2: '#eef3fc',
         'win-bg': '#ece9d8',
         fg: '#000000',
         muted: '#555555',
@@ -617,46 +623,44 @@
         grey: '#555555', 'grey-bg': '#ece9d8',
         'mark-bg': '#316ac5',
         'mark-fg': '#ffffff',
+        // The title bar of the windows
         'head-bg': 'linear-gradient(180deg, #0997ff 0%, #0053ee 8%, #0050ee 40%, #0066ff 88%, #0066ff 93%, #005bff 95%, #003dd7 96%, #003dd7 100%)',
         'head-fg': '#ffffff',
         'head-line': '0 solid transparent',
         'head-btn-bg': 'radial-gradient(circle at 90% 90%, #0054e3 0%, #2263d5 55%, #4479e4 70%, #a3bbec 90%, #ffffff 100%)',
         'head-btn-fg': '#ffffff',
         'head-btn-edge': '#ffffff',
+        'head-btn-size': '22px',
+        // The buttons
         'btn-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
         'btn-fg': '#000000',
         'btn-edge': '#003c74',
         'primary-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
         'primary-fg': '#000000',
         'primary-edge': '#003c74',
-        radius: '3px',
+        // A window: a thick blue frame, rounded at the top
+        radius: '8px 8px 0 0',
         'radius-sm': '3px',
         'radius-box': '3px',
+        bw: '3px',
+        'bw-sm': '1px',
         'shadow-pop': '2px 4px 14px rgba(0, 0, 0, 0.4)',
         backdrop: 'rgba(0, 0, 0, 0.25)',
         'item-sep': '1px solid #ece9d8',
-        'count-bg': 'linear-gradient(180deg, #0c59b9 0%, #139ee9 6%, #18b5f2 10%, #139beb 14%, #1290e8 19%, #0d8dea 63%, #0d9ff1 81%, #0f9eed 88%, #119be9 91%, #1392e2 94%, #137ed7 97%, #095bc9 100%)',
-        'count-fg': '#ffffff',
-        'count-edge': '#0b3d91',
-        'count-radius': '3px',
-        'count-size': '0.92em',
-        'count-weight': '400',
-        'count-pad': '2px 7px',
-        'count-glow': '1px 1px 0 rgba(0, 0, 0, 0.35)',
-        'count-soon-bg': '#ffffe1',
-        'count-soon-fg': '#000000',
-        'count-hot-bg': 'linear-gradient(180deg, #f39a7d 0%, #e0451e 45%, #c33a14 100%)',
-        'count-hot-fg': '#ffffff',
-        'count-hot-edge': '#8a2208',
-        'count-ok-bg': 'linear-gradient(180deg, #5cbc3a 0%, #3c8d0d 50%, #2e7d0b 100%)',
-        'count-ok-fg': '#ffffff',
-        'count-ok-edge': '#1d5a06',
+        'item-pad': '6px 2px',
+        // The countdowns: text, as in a list of the desktop
+        'count-weight': '700',
+        'count-radius': '0',
+        'count-soon-fg': '#b85400',
+        'count-hot-fg': '#c00000',
+        'count-ok-fg': '#2b7a0b',
         'input-bg': '#ffffff',
+        'input-fg': '#000000',
         'input-edge': '#7f9db9',
         'input-radius': '0',
-        'logo-bg': '#245edb',
-        'logo-ring': '#ffffff',
-        'logo-dot': '#f7c33a',
+        'logo-bg': '#ffffff',
+        'logo-ring': '#2f71e6',
+        'logo-dot': '#3c8d0d',
         'k-exam': '#245edb', 'k-exam-fg': '#ffffff',
         'k-practice': '#3c8d0d', 'k-practice-fg': '#ffffff',
         'k-work': '#f7c33a', 'k-work-fg': '#000000',
@@ -664,87 +668,93 @@
         'k-presentation': '#7a5ac4', 'k-presentation-fg': '#ffffff',
         'k-other': '#a0a0a0', 'k-other-fg': '#000000'
       },
+      // The same windows, title bars, buttons and fields; only the backgrounds are dark.
       dark: {
-        page: '#1e1e1e',
-        surface: '#2b2b2b',
-        solid: '#2b2b2b',
-        surface2: '#383838',
-        'win-bg': '#252525',
-        fg: '#f2f2f2',
-        muted: '#b8b8b8',
-        line: '#4a4a4a',
-        edge: '#0d0d0d',
-        accent: '#f7801e',
-        'accent-fg': '#000000',
-        'accent-soft': '#3d2c1c',
-        link: '#ffa24f',
-        red: '#ff8a70', 'red-bg': '#4a2018',
-        orange: '#ffa24f', 'orange-bg': '#45301a',
+        page: '#1d2433',
+        surface: '#151b27',
+        solid: '#151b27',
+        surface2: '#24304a',
+        'win-bg': '#232c3f',
+        fg: '#eef2f8',
+        muted: '#b6bfd0',
+        line: '#3e4a63',
+        'accent-soft': '#1f2d4d',
+        link: '#8fb4ff',
+        red: '#ff8a7a', 'red-bg': '#4a2018',
+        orange: '#ffb366', 'orange-bg': '#45301a',
         yellow: '#ffd76a', 'yellow-bg': '#423816',
-        green: '#93d870', 'green-bg': '#20381a',
-        blue: '#8db6ff', 'blue-bg': '#1d2c48',
-        grey: '#b8b8b8', 'grey-bg': '#383838',
-        'mark-bg': '#f7801e',
-        'mark-fg': '#000000',
-        'head-bg': 'linear-gradient(180deg, #727272 0%, #343434 8%, #1d1d1d 40%, #2c2c2c 88%, #101010 100%)',
-        'head-btn-bg': 'linear-gradient(180deg, #5c5c5c 0%, #262626 100%)',
-        'head-btn-edge': '#8c8c8c',
-        'btn-bg': 'linear-gradient(180deg, #4e4e4e 0%, #343434 86%, #262626 100%)',
-        'btn-fg': '#f2f2f2',
-        'btn-edge': '#000000',
-        'primary-bg': 'linear-gradient(180deg, #4e4e4e 0%, #343434 86%, #262626 100%)',
-        'primary-fg': '#f2f2f2',
-        'primary-edge': '#000000',
+        green: '#8bd36a', 'green-bg': '#20381a',
+        blue: '#8fb4ff', 'blue-bg': '#1f2d4d',
+        grey: '#b6bfd0', 'grey-bg': '#24304a',
         'shadow-pop': '2px 4px 14px rgba(0, 0, 0, 0.7)',
         backdrop: 'rgba(0, 0, 0, 0.55)',
-        'item-sep': '1px solid #383838',
-        'count-bg': 'linear-gradient(180deg, #4a4a4a 0%, #1c1c1c 100%)',
-        'count-fg': '#ffa24f',
-        'count-edge': '#000000',
-        'count-soon-bg': '#423816',
-        'count-soon-fg': '#ffd76a',
-        'input-bg': '#1a1a1a',
-        'input-edge': '#6a6a6a',
-        'logo-bg': '#f7801e',
-        'logo-ring': '#111111',
-        'logo-dot': '#ffffff'
+        'item-sep': '1px solid #2a3550',
+        'count-soon-fg': '#ffb366',
+        'count-hot-fg': '#ff8a7a',
+        'count-ok-fg': '#8bd36a'
       },
       css: `
-        header.top h1, .box > .head .title, .win > header h2, .mail > header h2 { text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); }
+        /* Title bars: Trebuchet, with a dark blue shadow */
+        header.top h1, .box > .head .title, .win > header h2, .mail > header h2 { text-shadow: 1px 1px 0 #0f1089; }
         /* The popup: the content in a white panel, with the border of the lists */
-        main { border: 1px solid var(--ap-input-edge); border-radius: 0; box-shadow: none; }
-        /* Buttons: an orange light on hover, a blue edge on the main button */
-        .btn:hover, .chips button:hover, .week:hover, button.plain:hover, .mak-btn:hover, .mak-icon:hover, .action:hover, .theme-card:hover {
+        main { border: 1px solid #7f9db9; border-radius: 0; }
+        /* Buttons of 23 px; an orange light on hover; the default button with a blue edge */
+        .btn, .mak-btn, .win button.plain, .win button.btn, .mail button:not(.x), .chips button { min-height: 23px; padding: 2px 12px; font-weight: 400; }
+        .btn:hover, .chips button:hover, .week:hover, button.plain:hover, button.btn:hover, .mak-btn:hover, .mak-icon:hover, .icon-btn:hover {
           filter: none; box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a; }
-        .btn.primary, .mak-btn, .action { box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4; }
-        .countdown, .count, .tag { border: 1px solid var(--ap-count-edge); }
-        .tag { border-color: var(--ap-line); }
-        .tag.ok { border-color: var(--ap-count-ok-edge); }
+        .btn.primary, .mak-btn { box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4; }
         /* The tabs of a window of properties */
         nav.tabs { gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid #919b9c; }
-        nav.tabs button { flex: none; padding: 3px 8px; margin-bottom: -1px; color: var(--ap-fg); font-size: 11.5px; border: 1px solid #919b9c; border-bottom: 0;
-          border-radius: 3px 3px 0 0; background: var(--ap-btn-bg); }
-        nav.tabs button[aria-selected="true"] { background: var(--ap-surface); font-weight: 400; border-top: 3px solid #e68b2c; padding-top: 1px; }
+        nav.tabs button { flex: none; padding: 3px 8px; margin-bottom: -1px; color: #000000; font-size: 11px; border: 1px solid #919b9c; border-bottom: 0;
+          border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #ffffff 0%, #fafaf9 26%, #f0f0ea 95%, #ecebe6 100%); }
+        nav.tabs button[aria-selected="true"] { color: var(--ap-fg); background: var(--ap-surface); border-top: 3px solid #e68b2c; padding-top: 1px; font-weight: 400; }
+        /* The week strip: buttons, with the dark text of the buttons also in the dark mode */
+        .week .n { color: #000000; }
+        .week .label { color: #444444; }
+        .week .track { background: #d6d0c5; }
+        /* The close button of a window: the red square */
+        .win > header button.x, .mail > header button.x, .box > .head button.close { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
+          border: 1px solid #ffffff; border-radius: 3px; background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
         /* The selection of the lists */
-        a.item.sel, .result.sel { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
+        a.item.sel, .result.sel { background: #316ac5; color: #ffffff; }
         a.item.sel .meta, .result.sel .meta { color: inherit; opacity: 0.85; }
         a.item.sel mark, .result.sel mark { background: none; color: inherit; text-decoration: underline; }
-        /* Windows: rounded at the top, with the thick frame */
-        .win, .mail, .panel, .pop { border-width: 3px; border-radius: 8px 8px 0 0; }
-        /* The parts of the block: the heads of the panels of tasks, with a round button */
-        :host(.in-block) .box > .head { margin: 0 0 10px; padding: 5px 10px; background: linear-gradient(90deg, var(--ap-surface), var(--ap-accent-soft));
-          color: var(--ap-link); border-radius: 5px 5px 0 0; text-shadow: none; }
-        :host(.in-block) .box > .head .mak-fold, .sem .mak-fold { width: 22px; height: 22px; border-radius: 50%; color: var(--ap-link);
-          background: linear-gradient(180deg, var(--ap-surface), var(--ap-accent-soft)); border: 1px solid var(--ap-input-edge); box-shadow: none; }
-        /* Group boxes */
-        .sem, .guide-card, .tile { border: 1px solid var(--ap-line); border-radius: 3px; }
-        .sem-head .sem-title { color: var(--ap-link); }
-        .exams li { background: var(--ap-surface); }
-        .next-exam { background: var(--ap-accent-soft); border: 1px solid var(--ap-line); }
-        .next-exam .day { padding: 6px 12px; border-radius: 3px; border: 1px solid var(--ap-count-edge); background: var(--ap-count-bg); color: var(--ap-count-fg);
-          text-shadow: var(--ap-count-glow); font-family: var(--ap-font); font-style: normal; font-size: 28px; }
-        .bar.weights { height: 18px; padding: 1px; gap: 1px; border: 1px solid #686868; border-radius: 3px; background: var(--ap-surface); }
-        .bar.weights span { border-radius: 2px; font-size: 10.5px; }
+        /* Group boxes: the title on the border */
+        .tile, .guide-card { border: 1px solid #d0d0bf; border-radius: 3px; }
+        .tile h4, .guide-card h4 { font-family: var(--ap-font); font-size: 11px; font-weight: 700; text-shadow: none; }
+        .tile h4 { font-size: 13px; color: var(--ap-link); }
+        .sem { position: relative; margin-top: 12px; padding: 12px 10px 8px; border: 1px solid #d0d0bf; border-radius: 3px; }
+        .sem-head { position: absolute; top: -11px; left: 8px; right: 8px; }
+        .sem-head .sem-title { flex: none; padding: 0 4px; background: var(--ap-win-bg); color: var(--ap-link); font-family: var(--ap-font); font-size: 11px; font-weight: 400; }
+        .tile .sem-head .sem-title { background: var(--ap-surface); }
+        .sem-head .mak-fold { margin-left: auto; }
+        .exams li { border-radius: 3px; background: var(--ap-surface); }
+        /* The panels of tasks: the head (white to blue, a round button), the body in light blue */
+        :host(.in-block) .box > .head { margin: 0; padding: 5px 8px 5px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%); color: #215dc6;
+          border-radius: 5px 5px 0 0; }
+        :host(.in-block) .box > .head .title { font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
+        :host(.in-block) .box > .head + * { padding: 10px; background: var(--ap-accent-soft); border: 1px solid #ffffff; border-top: 0; }
+        :host(.in-block) .box > .head .mak-fold, .sem .mak-fold { width: 20px; height: 20px; border-radius: 50%; color: #215dc6; border: 1px solid #ffffff;
+          background: linear-gradient(180deg, #ffffff 0%, #c6d3f7 100%); box-shadow: 0 0 0 1px #8aa4d8; }
+        .mak-fold svg { width: 14px; height: 14px; }
+        /* The actions: the links of a panel of tasks, the green arrow first */
+        .actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; background: var(--ap-accent-soft);
+          border: 1px solid #ffffff; border-radius: 3px; }
+        .actions .action { min-height: 0; padding: 0; gap: 6px; flex-direction: row-reverse; background: none; border: 0; box-shadow: none; color: var(--ap-link);
+          font-weight: 400; }
+        .actions .action:hover, .actions .action:focus-visible { filter: none; box-shadow: none; text-decoration: underline; }
+        .actions .action .mak-arrow, .actions button.action::after { width: 16px; height: 16px; }
+        .actions button.action::after { content: ""; flex: none; background: url("data:image/svg+xml,${encodeURIComponent(XP_ARROW)}") center / contain no-repeat; }
+        /* The links: the green arrow first */
+        .mak-link { display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 4px; }
+        .mak-link .mak-arrow { margin-left: 0; width: 14px; height: 14px; }
+        /* The weights: a progress bar */
+        .bar.weights { height: 16px; padding: 1px; gap: 1px; border: 1px solid #686868; border-radius: 3px; background: #ffffff; }
+        .bar.weights span { border-radius: 2px; font-size: 10px; }
+        /* The next exam: the days in large, in the blue of the titles */
+        .next-exam { background: var(--ap-accent-soft); border: 1px solid #ffffff; border-radius: 3px; }
+        .next-exam .day { font-size: 34px; color: var(--ap-link); text-shadow: none; }
+        .next-exam .count { font-size: 1.15em; }
       `
     },
 

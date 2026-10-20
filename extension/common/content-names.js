@@ -35,7 +35,7 @@
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     .pop[hidden] { display: none; }
     label { display: block; font-size: 0.86em; color: var(--ap-muted); margin-bottom: 4px; overflow-wrap: anywhere; }
-    input { width: 100%; font: inherit; padding: 5px 8px; color: inherit; background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
+    input { width: 100%; font: inherit; padding: 5px 8px; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
       border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); }
     .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
     button { font: inherit; font-size: 0.93em; cursor: pointer; padding: 4px 10px; color: var(--ap-btn-fg); background: var(--ap-btn-bg);

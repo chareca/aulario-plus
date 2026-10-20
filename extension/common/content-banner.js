@@ -48,11 +48,12 @@
   // MAK.themedStyle puts the variables of the theme on #mak-block.
   const scoped = (css) => css.replace(/\.mak-(fold|logo)/g, '#mak-block .mak-$1');
   const BLOCK_CSS = () => `
-    #mak-block { box-sizing: border-box; margin: 0 0 18px; padding: 0; color: var(--ap-fg); background: var(--ap-win-bg);
+    /* !important: the themes of MiAulario give the blocks a background color with !important. */
+    #mak-block { box-sizing: border-box; margin: 0 0 18px; padding: 0; color: var(--ap-fg); background: var(--ap-win-bg) !important;
       border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow);
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     #mak-block[hidden], #mak-block > #mak-block-body[hidden] { display: none !important; }
-    #mak-block > #mak-block-body { padding: 8px 14px 10px; }
+    #mak-block > #mak-block-body { padding: 8px 14px 10px; background: transparent !important; }
     #mak-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
       font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); background: var(--ap-head-bg); color: var(--ap-head-fg);
       border: 0; border-bottom: var(--ap-head-line); border-top-left-radius: calc(var(--ap-radius) - var(--ap-bw)); border-top-right-radius: calc(var(--ap-radius) - var(--ap-bw)); }
@@ -63,7 +64,7 @@
       font-size: calc(19px * var(--ap-head-zoom)); line-height: 1.15; text-transform: none; }
     ${scoped(MAK.FOLD_CSS)}
     ${scoped(MAK.LOGO_CSS)}
-    #mak-block .mak-head .mak-fold { color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
+    #mak-block .mak-head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
   `;
   const BLOCK_CLOSED = 'mak-mysite-closed';
 
