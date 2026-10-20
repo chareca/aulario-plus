@@ -287,6 +287,11 @@ test('the payload of a link: the login page, the copyright page and errors of Mi
   await assert.rejects(run(async () => fileResponse('https://sso.unavarra.es/login', '<html>', 'text/html')), { code: 'send.file' });
   await assert.rejects(run(async (url) => fileResponse(url, '<html>copyright', 'text/html; charset=utf-8')), { code: 'send.fileHtml', message: /a\.pdf/ });
   await assert.rejects(run(async () => { throw new Error('offline'); }), { code: 'send.file' });
+  // A file too big for a link: the size of the answer stops it before its bytes are read.
+  const big = fileResponse(MAK.linkFiles([{ itemId: '/group/S1/a.pdf' }], 'S1')[0].url, 'x');
+  big.headers = new Headers({ 'content-type': 'video/mp4', 'content-length': String(MAK.LINK_MAX_BYTES + 1) });
+  big.arrayBuffer = () => { throw new Error('read the bytes'); };
+  await assert.rejects(run(async () => big), { code: 'send.tooBig' });
   const html = MAK.linkFiles([{ itemId: '/group/S1/page.html' }], 'S1');
   assert.equal((await MAK.linkPayload({ files: html, fetchFile: async (url) => fileResponse(url, '<p>x', 'text/html') })).name, 'page.html');
 });

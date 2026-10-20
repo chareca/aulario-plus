@@ -60,6 +60,7 @@
         for (const f of files) {
           const r = await fetch(f.url, { credentials: 'include' });
           if (!r.ok) throw new Error(String(r.status));
+          if (total + Number(r.headers.get('content-length') || 0) > MAX_SHARE_BYTES) throw Object.assign(new Error('tooBig'), { code: 'tooBig' });
           const blob = await r.blob();
           total += blob.size;
           if (total > MAX_SHARE_BYTES) throw Object.assign(new Error('tooBig'), { code: 'tooBig' });

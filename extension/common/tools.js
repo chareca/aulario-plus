@@ -28,7 +28,8 @@ function saveFile(parts, type, name) {
 async function fetchFile(url, signal) {
   const r = await fetch(url, { credentials: 'include', cache: 'no-store', signal });
   const type = r.headers.get('content-type') || '';
-  const data = r.ok && !/text\/html/i.test(type) ? new Uint8Array(await r.arrayBuffer()) : null;
+  // Also an HTML page: buildSiteZip rejects the login page and the copyright page, and keeps an HTML file.
+  const data = r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
   return { ok: r.ok, status: r.status, url: r.url || url, type, data };
 }
 

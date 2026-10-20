@@ -281,6 +281,8 @@
       if (!r.ok || !finalPath.startsWith('/access/content/')) throw new SendError('send.file', f.name);
       // An HTML page for a file that is not HTML: the login page or the copyright page.
       if (/text\/html/i.test(type) && !/\.html?$/i.test(f.name)) throw new SendError('send.fileHtml', f.name);
+      // The size of the answer first: a file of 900 MB does not go to the memory to be too big.
+      if (total + Number((r.headers && r.headers.get('content-length')) || 0) > MAK.LINK_MAX_BYTES) throw new SendError('send.tooBig');
       const data = new Uint8Array(await r.arrayBuffer());
       total += data.length;
       if (total > MAK.LINK_MAX_BYTES) throw new SendError('send.tooBig');
