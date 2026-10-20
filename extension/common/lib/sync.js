@@ -20,6 +20,7 @@
   const LOCK_MS = 3 * MINUTE;
   const ANNOUNCEMENT_DAYS = 60;
   const MAX_FORUMS_PER_SITE = 10;
+  const MAX_LESSONS_PER_SITE = 10;
 
   // Keep "seen" from the previous data. New items get "now", or 0 for the first fetch.
   function withSeen(items, previous, keyOf, now, baseline) {
@@ -276,6 +277,25 @@
             await store.update(key, (prev) => ({ at: t, items: withSeen(items, prev && prev.items, (x) => x.url, t, !meta.baselined[key]) }));
             meta.baselined[key] = true;
           });
+        }
+
+        // 9. Lessons ("Contenidos", for the search): all sites with the tool, on a full sync. A site
+        // whose Lessons give an error of the server has no parts (some sites give it each time).
+        if (full) {
+          const empty = (e) => { if (e && e.status >= 500) return null; throw e; };
+          for (const s of visible) {
+            if (!pages[s.id] || !pages[s.id].tools['sakai.lessonbuildertool']) continue;
+            await step(`lessons:${s.id}`, async () => {
+              const items = [];
+              for (const l of ((await api.lessons(s.id).catch(empty)) || []).slice(0, MAX_LESSONS_PER_SITE)) {
+                if (!l || l.hidden || (MAK.toMs(l.releaseDate) || 0) > t) continue;
+                const tree = await api.lesson(l.id).catch(empty);
+                items.push(...MAK.trimLessonTree(tree, l.lessonTitle));
+                if (pauseMs) await sleep(pauseMs);
+              }
+              await store.update('lessons', (cur) => Object.assign({}, cur, { [s.id]: { at: t, items: items.slice(0, 300) } }));
+            });
+          }
         }
 
         // The sync is complete: an old error outside the steps is gone. The steps of a site that is

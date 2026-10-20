@@ -65,11 +65,12 @@
 
   // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
   // character such as ✉ does not give. name: 'pencil', 'mail', 'chevron' (an arrow down) or 'arrow'
-  // (up and to the right: a link).
+  // (up and to the right: a link), 'calc' (a calculator).
   const ICONS = {
     pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
     mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
     chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
+    calc: [['rect', { x: 5, y: 3, width: 14, height: 18, rx: 2 }], ['path', { d: 'M8 7h8' }], ['path', { d: 'M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01M8.5 18h.01M12 18h.01M15.5 18h.01' }]],
     arrow: [['path', { d: 'M7 17L17 7' }], ['path', { d: 'M8 7h9v9' }]]
   };
   MAK.icon = function (name) {

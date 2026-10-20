@@ -55,6 +55,7 @@
         "lib/degree.js",
         "lib/mail-ui.js",
         "content-banner.js",
+        "content-calc.js",
         "content-guide.js",
         "content-shortcuts.js",
         "content-names.js",

@@ -8,6 +8,7 @@
     return {
       syncEnabled: true,
       notifyGrades: true, // a system notification for a new grade
+      notifyDue: true, // a system notification 1 hour before a delivery that is not submitted
       badge: { enabled: true, deliveries: true, announcements: true, messages: true, forums: false, grades: true },
       hiddenSites: [],
       hiddenMode: 'everywhere', // 'everywhere' or 'sidebar'
@@ -19,6 +20,7 @@
       // Download links without a MiAulario login (Send). The user must enable them.
       links: { enabled: false, server: MAK.SEND_DEFAULT_SERVER, mode: 'password', downloads: 1, seconds: 86400 },
       degree: '', // the degree that the user selected (its base address), or '': the degree of the guides
+      guideGrades: {}, // the grades of the calculator of each site: { siteId: { activity: 0..10 } }
       forwardEmail: '', // the last address for the forward of the internal mail (content-forward.js)
       // The template of a message to a teacher (lib/teachers.js); an empty body is the default text.
       teacherSubject: '',
@@ -75,6 +77,21 @@
     return text.replace(/ +$/gm, '').replace(/\s+$/, '');
   };
 
+  // The grades of the calculator: at most 200 sites and 30 activities, grades 0..10.
+  function cleanGuideGrades(v) {
+    const out = {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+    for (const [site, grades] of Object.entries(v).slice(0, 200)) {
+      if (site.length >= 300 || !grades || typeof grades !== 'object' || Array.isArray(grades)) continue;
+      const g = {};
+      for (const [k, n] of Object.entries(grades).slice(0, 30)) {
+        if (k && k.length <= 200 && typeof n === 'number' && n >= 0 && n <= 10) g[k] = n;
+      }
+      if (Object.keys(g).length) out[site] = g;
+    }
+    return out;
+  }
+
   const MAX_NICKNAMES = 200;
   function cleanNicknames(n) {
     const out = {};
@@ -109,6 +126,7 @@
     return {
       syncEnabled: 'syncEnabled' in s ? !!s.syncEnabled : d.syncEnabled,
       notifyGrades: 'notifyGrades' in s ? !!s.notifyGrades : d.notifyGrades,
+      notifyDue: 'notifyDue' in s ? !!s.notifyDue : d.notifyDue,
       badge,
       hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
@@ -118,6 +136,7 @@
       shortNames: 'shortNames' in s ? !!s.shortNames : d.shortNames,
       nicknames: cleanNicknames(s.nicknames),
       links: cleanLinks(s.links, d.links),
+      guideGrades: cleanGuideGrades(s.guideGrades),
       degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : '',
       forwardEmail: typeof s.forwardEmail === 'string' && s.forwardEmail.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s.forwardEmail) ? s.forwardEmail : '',
       teacherSubject: MAK.cleanText(s.teacherSubject, 200, false),
@@ -147,7 +166,7 @@
   // when the user logs out or when a different user logs in.
   MAK.DATA_KEYS = [
     'sites', 'pages', 'assignments', 'announcements', 'notifications', 'synoptic', 'forums',
-    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'last', 'log' // "log": v1.1 data
+    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'dueNotified', 'lessons', 'last', 'log' // "log": v1.1 data
   ];
   MAK.RESOURCE_PREFIX = 'res:';
 

@@ -113,3 +113,22 @@ test('setSettings accepts only known keys and correct values', async () => {
   assert.equal((await bg.send({ type: 'setSettings', patch: { lang: 'de' } })).lang, 'es', 'unknown language: the default language');
   assert.equal(await bg.send({ type: 'setSettings', patch: { syncEnabled: true } }, { id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/' }), null, 'a content script cannot change the settings');
 });
+
+test('dueReminders: now within 1 hour (once for each due date), later the time of the reminder; not submitted, late, on paper or hidden', () => {
+  const H = 3600000;
+  const now = F.NOW;
+  const a = (id, inMs, o) => Object.assign({ id, siteId: F.CS, title: id, type: 'TEXT_ONLY_ASSIGNMENT_SUBMISSION', status: 'OPEN', due: now + inMs, close: now + inMs, sub: { submitted: false, canSubmit: true } }, o);
+  const list = [
+    a('soon', 30 * 60000),
+    a('later', 5 * H),
+    a('done', 30 * 60000, { sub: { submitted: true } }),
+    a('paper', 30 * 60000, { type: MAK.OFFLINE_TYPE }),
+    a('late', -H, { close: now + H }),
+    a('hidden', 30 * 60000, { siteId: 'H' })
+  ];
+  const r = MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: {} });
+  assert.deepEqual(r.now.map((x) => x.id), ['soon']);
+  assert.deepEqual(r.later, [{ id: 'later', when: now + 4 * H }]);
+  assert.deepEqual(MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: { soon: now + 30 * 60000 } }).now, [], 'already shown');
+  assert.deepEqual(MAK.dueReminders({ assignments: list, hidden: new Set(['H']), now, notified: { soon: now } }).now.map((x) => x.id), ['soon'], 'a new due date');
+});

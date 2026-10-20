@@ -135,3 +135,57 @@ test('weightsByKind: the weights of the same kind together, in the order of the 
   ];
   assert.deepEqual(MAK.weightsByKind(rows).map((p) => [p.kind, p.weight, p.names.length]), [['work', 30, 2], ['exam', 60, 1], ['participation', 10, 1]]);
 });
+
+// ---- The calculator of a guide ----------------------------------------------------
+
+// The guide of SSI: two activities with a minimum.
+const SSI_ROWS = [
+  { activity: 'Examen de teoría', weight: 40, minimum: '5 sobre 10' },
+  { activity: 'Prácticas', weight: 40, minimum: '4 sobre 10' },
+  { activity: 'Trabajo', weight: 20, minimum: 'No' },
+  { activity: 'Asistencia', weight: null, minimum: '' }
+];
+const r2 = (n) => Math.round(n * 100) / 100;
+
+test('parseGrade: 0 to 10, with a comma or a point', () => {
+  assert.equal(MAK.parseGrade('6,5'), 6.5);
+  assert.equal(MAK.parseGrade(' 10 '), 10);
+  assert.equal(MAK.parseGrade('0'), 0);
+  for (const bad of ['', '11', '-1', 'abc', '6,5,1', '1e1', null]) assert.equal(MAK.parseGrade(bad), null, String(bad));
+});
+
+test('guideCalc: the grade that you need in the rest, with the minimums, and the final grade', () => {
+  let c = MAK.guideCalc(SSI_ROWS, {});
+  assert.equal(c.rows.length, 3, 'only the activities with a weight');
+  assert.equal(c.total, 100);
+  assert.equal(c.need, 5, 'nothing yet: 5 in all');
+  assert.deepEqual(c.rows.map((r) => r.minimum), [5, 4, null]);
+
+  c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6 });
+  // 6 * 0.4 = 2.4; the rest (60 %) needs 2.6 / 0.6 = 4.33; Prácticas has the minimum 4 (below).
+  assert.equal(r2(c.need), 4.33);
+  assert.deepEqual(c.rows.map((r) => r.plan === undefined ? null : r2(r.plan)), [null, 4.33, 4.33]);
+  assert.equal(r2(c.projected), 5);
+  assert.equal(c.complete, false);
+
+  c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 7, Trabajo: 9 });
+  // 2.8 + 1.8 = 4.6; Prácticas needs 1 (0.4 / 0.4), but its minimum is 4: the plan is 4.
+  assert.equal(r2(c.rows[1].plan), 4, 'the minimum is larger than the 1 that is missing');
+  assert.equal(c.need, 0, 'no other activity: the minimum gives more than 5');
+  assert.equal(r2(c.projected), 6.2);
+
+  c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 1, Prácticas: 1 });
+  assert.equal(c.reachable, false, '0.8 + 0.2 * 10 = 2.8 < 5');
+  assert.equal(r2(c.projected), 2.8);
+  assert.deepEqual(c.rows.map((r) => r.below), [true, true, false]);
+
+  c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6, Prácticas: 7, Trabajo: 3 });
+  assert.equal(c.complete, true);
+  assert.equal(r2(c.final), 5.8);
+  assert.equal(c.passed, true);
+  c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 4, Prácticas: 9, Trabajo: 9 });
+  assert.equal(r2(c.final), 7);
+  assert.equal(c.passed, false, 'the exam is below its minimum');
+  assert.equal(MAK.guideCalc([{ activity: 'A', weight: 30 }, { activity: 'B', weight: 30 }], { A: 10 }).need, 0, 'the weights make 60 %: 10 in A gives 5');
+  assert.equal(MAK.guideCalc([], {}).total, 0);
+});

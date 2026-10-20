@@ -116,7 +116,7 @@ function setQuery(value) {
 
 function resultMeta(x) {
   if (x.type === 'delivery' || x.type === 'event' || x.type === 'announcement') return x.time ? MAK.formatDate(x.time) : '';
-  if (x.type === 'file' || x.type === 'forum' || x.type === 'site') return x.meta;
+  if (x.type === 'file' || x.type === 'forum' || x.type === 'lesson' || x.type === 'site') return x.meta;
   return '';
 }
 
@@ -1049,7 +1049,8 @@ function renderSettings(el) {
       { class: 'section' },
       h('h2', { text: t('set.courseData') }),
       checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } })),
-      checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } }))
+      checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } })),
+      checkbox(t('set.notifyDue'), t('set.notifyDueHelp'), s.notifyDue, (v) => send({ type: 'setSettings', patch: { notifyDue: v } }))
     ),
     h(
       'div',

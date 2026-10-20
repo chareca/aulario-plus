@@ -83,3 +83,13 @@ test('setForwardEmail: only a correct address stays in the settings', async () =
   assert.deepEqual(await send({ type: 'setForwardEmail', email: 'no <valid>' }), { ok: false });
   assert.equal((await bg.ext.storage.local.get('settings')).settings.forwardEmail, '');
 });
+
+test('setGuideGrades: the grades of the calculator of a known site; an empty object removes them', async () => {
+  const bg = loadBackground({ local: { sites: [{ id: 'S1', title: 'SSI' }] } });
+  const send = (msg) => bg.send(msg, CONTENT);
+  assert.deepEqual(await send({ type: 'setGuideGrades', siteId: 'S1', grades: { Examen: 6, Malo: 20 } }), { ok: true });
+  assert.deepEqual((await bg.ext.storage.local.get('settings')).settings.guideGrades, { S1: { Examen: 6 } });
+  assert.deepEqual(await send({ type: 'setGuideGrades', siteId: 'other', grades: { Examen: 6 } }), { ok: false }, 'unknown site');
+  await send({ type: 'setGuideGrades', siteId: 'S1', grades: {} });
+  assert.deepEqual((await bg.ext.storage.local.get('settings')).settings.guideGrades, {});
+});

@@ -55,3 +55,14 @@ test('each __MSG_name__ of the manifests exists in all the _locales', () => {
     }
   }
 });
+
+test('no text name twice in a language (the second one would replace the first one)', () => {
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../extension/common/lib/i18n.js'), 'utf8');
+  const blocks = src.split(/\n {4}(?=(?:es|en): \{)/).slice(1);
+  assert.equal(blocks.length, 2);
+  for (const b of blocks) {
+    const keys = [...b.matchAll(/^ {6}'([\w.]+)':/gm)].map((m) => m[1]);
+    const twice = keys.filter((k, i) => keys.indexOf(k) !== i);
+    assert.deepEqual(twice, [], b.slice(0, 2));
+  }
+});

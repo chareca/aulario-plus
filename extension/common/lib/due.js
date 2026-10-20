@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
-  const { DAY } = MAK;
+  const { HOUR, DAY } = MAK;
 
   MAK.OFFLINE_TYPE = 'NON_ELECTRONIC_ASSIGNMENT_SUBMISSION';
 
@@ -102,6 +102,25 @@
       w.total = w.deliveries.length + w.events.length;
     }
     return weeks;
+  };
+
+  // The reminder "1 hour left" (the setting notifyDue): the deliveries that are not submitted, online,
+  // with a due time in the future. now: the deliveries with 1 hour or less (and no reminder yet);
+  // later: [{ id, when }], the time of the reminder of the others. notified: { id: due } of the
+  // reminders that were shown; a new due date gives a new reminder.
+  MAK.DUE_REMINDER_MS = HOUR;
+  MAK.dueReminders = function ({ assignments, hidden, now, notified }) {
+    const hide = hidden || new Set();
+    const shown = notified || {};
+    const out = { now: [], later: [] };
+    for (const a of assignments || []) {
+      if (hide.has(a.siteId) || !a.due || a.due <= now || a.type === MAK.OFFLINE_TYPE) continue;
+      if (MAK.deliveryState(a, now) !== 'pending') continue;
+      const at = a.due - MAK.DUE_REMINDER_MS;
+      if (at > now) out.later.push({ id: a.id, when: at });
+      else if (shown[a.id] !== a.due) out.now.push(a);
+    }
+    return out;
   };
 
   // Text for the time that remains, for example "quedan 2d 04h 12m" or "vencida hace 3h 05m".

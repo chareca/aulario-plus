@@ -113,6 +113,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
         alarms.set(name, { name, scheduledTime: info.when || Date.now() + (info.delayInMinutes || 0) * 60000, periodInMinutes: info.periodInMinutes });
       },
       get: async (name) => alarms.get(name),
+      getAll: async () => [...alarms.values()],
       clear: async (name) => alarms.delete(name),
       onAlarm: on(listeners.alarm)
     },

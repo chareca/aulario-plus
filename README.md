@@ -19,10 +19,10 @@
 ## Qué hace
 
 - **Sesión siempre activa:** MiAulario no te echa.
-- **Todo en un clic:** entregas, anuncios, mensajes, calendario y notas de todas tus materias.
-- **⌘K / Ctrl+K:** encuentra cualquier materia, archivo o entrega con unas letras.
+- **Todo en un clic:** entregas, anuncios, mensajes, calendario y notas de todas tus materias, con un aviso 1 hora antes de una entrega pendiente.
+- **⌘K / Ctrl+K:** encuentra cualquier materia, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno.
-- **Guías docentes:** cómo se evalúa cada materia y qué nota necesitas.
+- **Guías docentes:** cómo se evalúa cada materia, y una calculadora que guarda tus notas y te dice qué necesitas para aprobar.
 - **Archivos:** descarga una materia en ZIP o envía sus archivos por el correo interno.
 
 ## Privacidad

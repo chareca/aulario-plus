@@ -82,6 +82,9 @@
       resources: (siteId) => getJson(`/direct/content/site/${enc(siteId)}.json`, 'content_collection'),
       calendar: (fromYmd, toYmd) => getJson(`/direct/calendar/my.json?firstDate=${fromYmd}&lastDate=${toYmd}`, 'calendar_collection'),
       grades: () => getJson('/api/users/me/grades', 'grades'),
+      // The pages of the tool Lessons ("Contenidos") of a site, and the tree of one page.
+      lessons: (siteId) => getJson(`/direct/lessons/site/${enc(siteId)}.json`, 'lessons_collection'),
+      lesson: (id) => getJson(`/direct/lessons/lesson/${enc(id)}.json`),
       // The Gradebook page of a site (HTML), for the grade calculator. This request is user activity.
       gradebook: (placement) => getHtml(`/portal/tool/${enc(placement)}`),
       // Mark the notifications of one tool in one site as viewed (the bell in MiAulario).
@@ -203,6 +206,69 @@
       link: r.type === 'text/url' ? MAK.safeHttpUrl(r.webLinkUrl) : null,
       copyright: !!r.copyrightAlert // MiAulario asks to accept a copyright notice before the download
     };
+  };
+
+  // ---- Lessons ("Contenidos") -------------------------------------------------------
+  // The search finds the parts of the pages of Lessons: the subpages, the files and links, and the
+  // titles and links in the text blocks (many teachers put all the material in text blocks: "Tema 1",
+  // a link to the PDF). Each part: { title, url (null: the page of the tool), path, kind }.
+  const LESSON = { RESOURCE: 1, PAGE: 2, TEXT: 5, URL: 6, MULTIMEDIA: 7 };
+  const MAX_LESSON_ITEMS = 300;
+  const oneLine = (html) => MAK.htmlToText(html).replace(/\s+/g, ' ').trim().slice(0, 150);
+
+  // The titles and the links of a text block, in their order.
+  function textParts(html) {
+    const out = [];
+    const re = /<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1\s*>|<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a\s*>/gi;
+    for (let m; (m = re.exec(String(html || '')));) {
+      if (m[1]) out.push({ heading: oneLine(m[2]) });
+      else out.push({ href: MAK.htmlToText(m[3] !== undefined ? m[3] : m[4]).trim(), text: oneLine(m[5]) });
+    }
+    return out;
+  }
+
+  // An address of a link: http(s), or a path of MiAulario.
+  function lessonUrl(href) {
+    const s = String(href || '').trim();
+    if (s.startsWith('/')) return MAK.safeSiteUrl(MAK.BASE + s);
+    return MAK.safeHttpUrl(s);
+  }
+
+  // The parts of the tree of a page of Lessons (/direct/lessons/lesson/{id}). title: the name of the
+  // page in the list of the site.
+  MAK.trimLessonTree = function (tree, title) {
+    const out = [];
+    const add = (part) => { if (out.length < MAX_LESSON_ITEMS && part.title) out.push(part); };
+    const walk = (node, path) => {
+      let heading = '';
+      for (const it of (node && Array.isArray(node.contentsList) ? node.contentsList : [])) {
+        if (!it || typeof it !== 'object') continue;
+        const where = [path, heading].filter(Boolean).join(' › ');
+        const name = String(it.name || '').trim().slice(0, 150);
+        if (it.type === LESSON.PAGE) {
+          add({ title: name, url: null, path, kind: 'page' });
+          walk(it, [path, name].filter(Boolean).join(' › '));
+        } else if (it.type === LESSON.TEXT) {
+          for (const p of textParts(it.html)) {
+            if (p.heading) {
+              heading = p.heading;
+              add({ title: heading, url: null, path, kind: 'heading' });
+            } else {
+              const url = lessonUrl(p.href);
+              if (url) add({ title: p.text || url, url, path: [path, heading].filter(Boolean).join(' › '), kind: 'link' });
+            }
+          }
+        } else if (it.type === LESSON.RESOURCE || it.type === LESSON.URL || it.type === LESSON.MULTIMEDIA) {
+          const id = String(it.sakaiId || '');
+          const url = lessonUrl(it.url) || (/^\/(group|user)\//.test(id) ? MAK.safeSiteUrl(`${MAK.BASE}/access/content${id.split('/').map(encodeURIComponent).join('/')}`) : null);
+          add({ title: name, url, path: where, kind: 'link' });
+        } else if (name) {
+          add({ title: name, url: null, path: where, kind: 'item' });
+        }
+      }
+    };
+    walk(tree, String(title || '').trim().slice(0, 150));
+    return out;
   };
 
   MAK.trimSite = function (s) {

@@ -40,8 +40,8 @@
     .card h4 { margin: 0; font-size: 14px; flex: 1; min-width: 0; cursor: pointer; }
     .card-head { display: flex; align-items: flex-start; gap: 8px; }
     .card-head .mak-icon { flex: none; width: 28px; height: 24px; }
-    .card-head .mak-icon svg { transition: transform 0.15s; }
-    .card.open .card-head .mak-icon svg { transform: rotate(180deg); }
+    .card-head .arrow svg { transition: transform 0.15s; }
+    .card.open .card-head .arrow svg { transform: rotate(180deg); }
     .more { margin-top: 2px; }
     /* The weights as one bar: one part for each kind of activity, with its name and weight. */
     .bar { display: flex; gap: 2px; height: 22px; border-radius: 6px; overflow: hidden; margin: 8px 0 4px; }
@@ -140,6 +140,18 @@
     ];
   };
 
+  // The button of the calculator (content-calc.js): only for a guide with weights. outline: the look
+  // of the arrow of a box (the head of the box of a site), else the look of the arrow of a card.
+  function calcButton(site, name, rows, outline) {
+    if (!rows.some((r) => r.weight > 0) || !MAK.openGuideCalc) return null;
+    const label = MAK.t('gcalc.open', { site: name });
+    return h('button', {
+      class: outline ? `mak-fold${MAK.isDarkPage() ? ' dark' : ''}` : MAK.extButtonClass('icon'),
+      attrs: { type: 'button', title: label, 'aria-label': label, 'aria-haspopup': 'dialog' },
+      on: { click: () => MAK.openGuideCalc({ site: { id: site.id, name }, rows }) }
+    }, MAK.icon('calc'));
+  }
+
   // The home page of a site: all the guide.
   const guideBody = (guide) => [teachers(guide), weightBar(guide.evaluation.rows), details(guide)];
 
@@ -152,11 +164,11 @@
     let open = false;
     try { open = localStorage.getItem(key) === '1'; } catch {}
     const more = h('div', { class: 'more' }, details(guide));
-    const arrow = h('button', { class: MAK.extButtonClass('icon'), attrs: { type: 'button' } }, MAK.icon('chevron'));
+    const arrow = h('button', { class: `${MAK.extButtonClass('icon')} arrow`, attrs: { type: 'button' } }, MAK.icon('chevron'));
     const card = h(
       'section',
       { class: 'card' },
-      h('div', { class: 'card-head' }, h('h4', null, name, rows.some((r) => r.weight) ? h('span', { class: 'meta', text: ` · ${rows.length} ${MAK.t('guide.activities')}` }) : null), arrow),
+      h('div', { class: 'card-head' }, h('h4', null, name, rows.some((r) => r.weight) ? h('span', { class: 'meta', text: ` · ${rows.length} ${MAK.t('guide.activities')}` }) : null), calcButton(site, name, rows), arrow),
       teachers(guide),
       weightBar(rows),
       more
@@ -180,7 +192,8 @@
     return card;
   }
 
-  function show(title, body) {
+  // extra: a button for the head, before the arrow.
+  function show(title, body, extra) {
     const old = document.getElementById(HOST_ID);
     if (old) old.remove();
     const host = document.createElement('div');
@@ -198,7 +211,7 @@
       try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, open ? '0' : '1'); } catch {}
     });
     const name = h('strong', { text: `📘 ${title}`, on: { click: () => toggle.click() } });
-    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
+    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, extra || null, toggle), content));
     // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
     // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
     const slot = mySite ? MAK.mySiteSlot() : null;
@@ -222,7 +235,8 @@
       // Only the home page of the site: /portal/site/<id> or its first page.
       if (!p || !p.guide || (where.pageOrTool && where.pageOrTool !== p.home)) return;
       const guide = await guideOf(siteId, data).catch(() => null);
-      if (guide) show(MAK.t('guide.title'), guideBody(guide));
+      const site = sites.find((s) => s.id === siteId) || { id: siteId, title: siteId };
+      if (guide) show(MAK.t('guide.title'), guideBody(guide), calcButton(site, MAK.publicSiteName(site), guide.evaluation.rows, true));
       return;
     }
     // "Mi sitio": only its home page.

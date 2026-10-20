@@ -340,13 +340,72 @@ async function openGradeNote(id) {
   await ext.tabs.create({ url });
 }
 
-if (ext.notifications) ext.notifications.onClicked.addListener((id) => { openGradeNote(id).catch(() => {}); });
+if (ext.notifications) ext.notifications.onClicked.addListener((id) => {
+  openGradeNote(id).catch(() => {});
+  openDueNote(id).catch(() => {});
+});
+
+// ---- A reminder 1 hour before a delivery that is not submitted ----------------------
+// One alarm for each delivery, at its due time minus 1 hour (MAK.dueReminders). The alarm, the end
+// of a sync and a change of the settings check the deliveries again: a delivery that the user
+// submitted gives no reminder. The notification shows the delivery and the site; a click opens it.
+
+const DUE_NOTE = 'due:'; // the notification and the alarm: "due:<assignment id>"
+
+async function checkDueReminders() {
+  const d = await store.get(['settings', 'assignments', 'sites', 'dueNotified']);
+  const s = MAK.withDefaults(d.settings);
+  const now = Date.now();
+  const r = s.notifyDue && ext.notifications
+    ? MAK.dueReminders({ assignments: d.assignments, hidden: MAK.hiddenEverywhere(s), now, notified: d.dueNotified })
+    : { now: [], later: [] };
+  const want = new Map(r.later.map((x) => [DUE_NOTE + x.id, x.when]));
+  for (const a of (await ext.alarms.getAll()) || []) {
+    if (a.name.startsWith(DUE_NOTE) && want.get(a.name) !== a.scheduledTime) await ext.alarms.clear(a.name);
+  }
+  for (const [name, when] of want) if (!(await ext.alarms.get(name))) await ext.alarms.create(name, { when });
+  if (!r.now.length) return;
+  MAK.setLang(s.lang);
+  const names = new Map(MAK.namedSites(d.sites, s).map((x) => [x.id, x.title]));
+  const iconUrl = ext.runtime.getURL('icons/icon128.png');
+  for (const a of r.now) {
+    const left = Math.max(1, Math.round((a.due - now) / MAK.MINUTE));
+    const title = left >= 55 ? MAK.t('note.dueHour') : MAK.t('note.due', { n: left });
+    const message = [a.title, names.get(a.siteId)].filter(Boolean).join('\n');
+    try {
+      await ext.notifications.create(DUE_NOTE + a.id, { type: 'basic', iconUrl, title, message });
+    } catch {}
+  }
+  // The shown reminders, only of the deliveries that are still in the list.
+  const ids = new Set((d.assignments || []).map((a) => a.id));
+  await store.update('dueNotified', (cur) => {
+    const out = {};
+    for (const [k, v] of Object.entries(cur || {})) if (ids.has(k)) out[k] = v;
+    for (const a of r.now) out[a.id] = a.due;
+    return out;
+  });
+}
+let dueTimer = null;
+const checkDueSoon = () => {
+  clearTimeout(dueTimer);
+  dueTimer = setTimeout(() => checkDueReminders().catch(() => {}), 300);
+};
+
+// A click opens the delivery in MiAulario.
+async function openDueNote(id) {
+  if (!id.startsWith(DUE_NOTE)) return;
+  const { assignments, pages } = await store.get(['assignments', 'pages']);
+  const a = (assignments || []).find((x) => DUE_NOTE + x.id === id);
+  try { await ext.notifications.clear(id); } catch {}
+  await ext.tabs.create({ url: (a && MAK.deliveryUrl(a, pages)) || ext.runtime.getURL('popup.html?view=tab&tab=due') });
+}
 
 // Draw the badge again when the data or the settings change (wait a moment to group the changes).
 let badgeTimer = null;
 let searchCache = null; // the search index; made again after a change of the data
 ext.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') searchCache = null;
+  if (area === 'local' && (changes.assignments || changes.settings)) checkDueSoon();
   if (area !== 'local' || !Object.keys(changes).some((k) => BADGE_KEYS.includes(k))) return;
   clearTimeout(badgeTimer);
   badgeTimer = setTimeout(updateBadge, 300);
@@ -694,6 +753,23 @@ const handlers = {
   },
   // A name from the user for a site (the pencil in the popup or in MiAulario). An empty name,
   // or the automatic name, removes the name from the user.
+  // The grades of the calculator of a guide (content-calc.js): all the grades of one site; an empty
+  // object removes them.
+  setGuideGrades: {
+    content: true,
+    run: async (msg) => {
+      if (!(await knownSite(msg.siteId))) return { ok: false };
+      const grades = msg.grades && typeof msg.grades === 'object' && !Array.isArray(msg.grades) ? msg.grades : {};
+      await store.update('settings', (cur) => {
+        const s = MAK.withDefaults(cur);
+        const all = Object.assign({}, s.guideGrades);
+        delete all[msg.siteId];
+        if (Object.keys(grades).length) all[msg.siteId] = grades;
+        return MAK.withDefaults(Object.assign({}, s, { guideGrades: all }));
+      });
+      return { ok: true };
+    }
+  },
   renameSite: {
     content: true,
     run: async (msg) => {
@@ -784,10 +860,12 @@ const alarmHandlers = {
     await sync.run().catch(() => {});
     // The time changes the deliveries that are due soon.
     await updateBadge();
+    await checkDueReminders().catch(() => {});
   }
 };
 
 ext.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name.startsWith(DUE_NOTE)) return checkDueReminders().catch(() => {});
   const run = alarmHandlers[alarm.name];
   if (run) return run(alarm);
 });
@@ -800,6 +878,7 @@ async function boot() {
   await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});
+  await checkDueReminders().catch(() => {});
 }
 
 ext.runtime.onInstalled.addListener(boot);

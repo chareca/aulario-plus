@@ -1,6 +1,6 @@
 // Aulario Plus: the search in all the sites (Ctrl+K, ⌘K on macOS, in MiAulario, and the search box
 // of the popup). The index has one entry for each site, page (tool), delivery, calendar event, file,
-// announcement, grade item and forum topic. It uses only the stored data: the search sends no requests.
+// part of Lessons ("Contenidos"), announcement, grade item and forum topic. It uses only the stored data: the search sends no requests.
 //
 // The search is a fuzzy finder, like fzf:
 // - Each word of the query must match. A word matches the title, or "site / folder / title", if its
@@ -17,7 +17,7 @@
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
 
-  MAK.SEARCH_TYPES = ['site', 'tool', 'delivery', 'event', 'file', 'announcement', 'grade', 'forum'];
+  MAK.SEARCH_TYPES = ['site', 'tool', 'delivery', 'event', 'file', 'lesson', 'announcement', 'grade', 'forum'];
   const RANK = Object.fromEntries(MAK.SEARCH_TYPES.map((type, i) => [type, i]));
   const CONTENT = '/access/content/group/';
   // The words of a text, without case and accents: "Tema 2 - Integrales.pdf" -> tema, 2, integrales, pdf.
@@ -408,7 +408,7 @@
       const site = byId.get(siteId);
       if (!site || !title || !url) return;
       const e = Object.assign({ type, siteId, site: site.title, title, url, meta: '', time: 0, extra: '' }, more);
-      e.pathText = type === 'site' ? title : [site.title, type === 'file' || type === 'forum' ? e.meta : '', title].filter(Boolean).join(' / ');
+      e.pathText = type === 'site' ? title : [site.title, type === 'file' || type === 'forum' || type === 'lesson' ? e.meta : '', title].filter(Boolean).join(' / ');
       e.fTitle = field(title);
       e.fPath = field(e.pathText);
       // Only the start of these words: the full name of the site ("26_0_240504_1 ANÁLISIS…"), the
@@ -422,6 +422,8 @@
       for (const p of (pages[s.id] && pages[s.id].nav) || []) add('tool', s.id, p.title, p.url);
       const res = d[MAK.resourceKey(s.id)];
       for (const r of (res && res.items) || []) if (!r.folder) add('file', s.id, r.title, r.link || r.url, { meta: folderOf(r.url, s.id), time: r.modified || 0 });
+      const lessonsUrl = MAK.toolUrl(pages, s.id, 'sakai.lessonbuildertool');
+      for (const it of (d.lessons && d.lessons[s.id] && d.lessons[s.id].items) || []) add('lesson', s.id, it.title, MAK.safeHttpUrl(it.url) || lessonsUrl, { meta: it.path || '' });
       const forumUrl = MAK.toolUrl(pages, s.id, 'sakai.forums');
       for (const tp of (d.forums && d.forums[s.id] && d.forums[s.id].topics) || []) add('forum', s.id, tp.title, forumUrl, { meta: tp.forum || '' });
     }

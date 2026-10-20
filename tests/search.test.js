@@ -155,3 +155,53 @@ test('fuzzy: a large index is fast', () => {
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
   assert.ok(ms < 1500, `${big.length} entries, 6 searches: ${ms.toFixed(0)} ms`);
 });
+
+// ---- Lessons ("Contenidos") ----------------------------------------------------------
+
+// The tree of a page of Lessons, as the Contenidos of SSI: text blocks with titles and links.
+const SSI_TREE = { contentsList: [
+  { type: 5, name: '', html: '<h1>Pagina de entrega de flags</h1><ul><li><p><a href="http://10.6.31.60">Enlace</a></p></li></ul><h1>Recursos adicionales:</h1><ul><li><a href="https://www.tlm.unavarra.es/~santi/SSI/libro/libro.pdf">Libro</a></li></ul>' },
+  { type: 5, name: '', html: '<h1 style="text-align:center">Septiembre</h1>' },
+  { type: 5, name: '', html: '<h2>Mi&eacute;rcoles d&iacute;a 9</h2><p>Teoria 15:00 - 17:00</p><ul><li><a href="https://www.tlm.unavarra.es/~santi/SSI/transparencias/tema1.0.pdf">Criptograf&iacute;a (Parte 1)</a></li><li><a href="javascript:alert(1)">mal</a></li></ul>' },
+  { type: 2, name: 'Prácticas', contentsList: [{ type: 1, name: 'Enunciado práctica 2.pdf', sakaiId: '/group/S/Lessons/práctica 2.pdf', url: '' }] }
+] };
+
+test('trimLessonTree: the titles and the links of the text blocks, the subpages and the files, with their place', () => {
+  const parts = MAK.trimLessonTree(SSI_TREE, 'Contenidos');
+  assert.deepEqual(parts.map((p) => [p.kind, p.title, p.path, p.url]), [
+    ['heading', 'Pagina de entrega de flags', 'Contenidos', null],
+    ['link', 'Enlace', 'Contenidos › Pagina de entrega de flags', 'http://10.6.31.60/'],
+    ['heading', 'Recursos adicionales:', 'Contenidos', null],
+    ['link', 'Libro', 'Contenidos › Recursos adicionales:', 'https://www.tlm.unavarra.es/~santi/SSI/libro/libro.pdf'],
+    ['heading', 'Septiembre', 'Contenidos', null],
+    ['heading', 'Miércoles día 9', 'Contenidos', null],
+    ['link', 'Criptografía (Parte 1)', 'Contenidos › Miércoles día 9', 'https://www.tlm.unavarra.es/~santi/SSI/transparencias/tema1.0.pdf'],
+    ['page', 'Prácticas', 'Contenidos', null],
+    ['link', 'Enunciado práctica 2.pdf', 'Contenidos › Prácticas', 'https://miaulario.unavarra.es/access/content/group/S/Lessons/pr%C3%A1ctica%202.pdf']
+  ], 'no javascript: link');
+  assert.deepEqual(MAK.trimLessonTree(null, 'x'), []);
+});
+
+test('the sync reads the Contenidos of the sites with Lessons (an error 500 gives no parts, not an error); the search finds them', async () => {
+  const routes = F.routes();
+  const withLessons = (id) => {
+    const p = F.pages(id);
+    p.push({ id: `${id}-page-9`, title: 'Contenidos', url: `https://miaulario.unavarra.es/portal/site/${id}/page/${id}-page-9`, tools: [{ id: `${id}-tool-9`, toolId: 'sakai.lessonbuildertool', title: 'Contenidos' }] });
+    return p;
+  };
+  routes[`/direct/site/${F.CS}/pages.json`] = withLessons(F.CS);
+  routes[`/direct/site/${F.PHYS}/pages.json`] = withLessons(F.PHYS);
+  routes[`/direct/lessons/site/${F.CS}.json`] = { lessons_collection: [{ id: 77, lessonTitle: 'Contenidos', hidden: false }] };
+  routes['/direct/lessons/lesson/77.json'] = SSI_TREE;
+  routes[`/direct/lessons/site/${F.PHYS}.json`] = fakeFetch.raw({ ok: false, status: 500, headers: { get: () => 'text/html' } });
+  const area = memoryArea();
+  const sync = MAK.createSync({ api: MAK.createApi({ fetch: fakeFetch(routes) }), store: MAK.createStore(area), now: () => F.NOW, pauseMs: 0 });
+  const r = await sync.run({ force: true, full: true });
+  assert.ok(!r.backoff, 'no backoff for the error 500');
+  assert.equal(area.data.lessons[F.CS].items.length, 9);
+  assert.deepEqual(area.data.lessons[F.PHYS].items, [], 'error 500: no parts');
+  assert.equal(area.data.meta.stale[`lessons:${F.PHYS}`], undefined, 'not stale');
+  const hit = find(area.data, 'cripto')[0];
+  assert.deepEqual([hit.type, hit.title, hit.site, hit.meta, hit.url], ['lesson', 'Criptografía (Parte 1)', 'Computer Science', 'Contenidos › Miércoles día 9', 'https://www.tlm.unavarra.es/~santi/SSI/transparencias/tema1.0.pdf']);
+  assert.equal(find(area.data, 'septiembre')[0].url, `https://miaulario.unavarra.es/portal/site/${F.CS}/page/${F.CS}-page-9`, 'a title opens the page of Contenidos');
+});

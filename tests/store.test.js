@@ -93,3 +93,9 @@ test('the template of the message to a teacher: empty by default, text only, lim
   assert.equal(MAK.withDefaults({ teacherBody: 'y'.repeat(5000) }).teacherBody.length, 3000);
   assert.equal(MAK.withDefaults({ teacherBody: 42 }).teacherBody, '');
 });
+
+test('the grades of the calculator of the guides: numbers 0 to 10 only', () => {
+  assert.deepEqual(MAK.withDefaults({}).guideGrades, {});
+  const s = MAK.withDefaults({ guideGrades: { S1: { Examen: 6.5, Malo: 11, Texto: '7' }, S2: 'x', S3: {} } });
+  assert.deepEqual(s.guideGrades, { S1: { Examen: 6.5 } });
+});

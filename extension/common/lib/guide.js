@@ -276,6 +276,68 @@
     return of > 0 ? Math.min(10, (n / of) * 10) : null;
   };
 
+  // ---- The calculator of a guide ("Mi sitio") ------------------------------------------
+
+  MAK.PASS_GRADE = 5;
+
+  // A grade that the user writes (0..10, "6,5" or "6.5"), or null.
+  MAK.parseGrade = function (v) {
+    const s = String(v === null || v === undefined ? '' : v).trim().replace(',', '.');
+    if (!/^\d{1,2}(\.\d{1,3})?$/.test(s)) return null;
+    const n = Number(s);
+    return n >= 0 && n <= 10 ? n : null;
+  };
+
+  // The calculator: the activities of the guide with a weight, and the grades of the user
+  // ({ activity name: 0..10 }). The final grade is the mean of the grades with the weights (over
+  // the total of the weights). Result:
+  // - rows: [{ activity, weight, minimum (0..10 or null), grade (or null), plan (the grade for an
+  //   empty activity: "need" or its minimum, the larger), below (a grade under its minimum) }]
+  // - complete: all the activities have a grade; final: the final grade then
+  // - need: the same grade in all the empty activities that gives 5, with their minimums (0 if the
+  //   grades already give 5); reachable: need <= 10; projected: the final grade with the plan
+  // - passed: complete, final >= 5 and no grade under its minimum
+  MAK.guideCalc = function (rows, grades) {
+    const g = grades || {};
+    const acts = (rows || []).filter((r) => r && r.weight > 0).map((r) => ({
+      activity: r.activity,
+      weight: r.weight,
+      minimum: MAK.guideMinimum(r.minimum),
+      grade: typeof g[r.activity] === 'number' ? g[r.activity] : null
+    }));
+    const total = acts.reduce((n, a) => n + a.weight, 0);
+    const out = { rows: acts, total, complete: false, final: null, need: null, reachable: true, projected: null, passed: false };
+    if (!total) return out;
+    const part = (a, grade) => (a.weight / total) * grade;
+    const points = acts.reduce((n, a) => n + (a.grade === null ? 0 : part(a, a.grade)), 0);
+    for (const a of acts) a.below = a.grade !== null && a.minimum !== null && a.grade < a.minimum;
+    const empty = acts.filter((a) => a.grade === null);
+    if (!empty.length) {
+      out.complete = true;
+      out.final = points;
+      out.passed = points >= MAK.PASS_GRADE - 1e-9 && !acts.some((a) => a.below);
+      return out;
+    }
+    // The empty activities with a minimum above the common grade take their minimum; the others
+    // share what is missing to 5.
+    const fixed = new Set();
+    let need = 0;
+    for (;;) {
+      const rest = empty.filter((a) => !fixed.has(a));
+      const base = points + [...fixed].reduce((n, a) => n + part(a, a.minimum), 0);
+      const weight = rest.reduce((n, a) => n + a.weight / total, 0);
+      need = weight > 0 ? Math.max(0, (MAK.PASS_GRADE - base) / weight) : 0;
+      const more = rest.filter((a) => a.minimum !== null && a.minimum > need);
+      if (!more.length) break;
+      for (const a of more) fixed.add(a);
+    }
+    for (const a of empty) a.plan = fixed.has(a) ? a.minimum : Math.max(need, a.minimum || 0);
+    out.need = need;
+    out.reachable = need <= 10 + 1e-9;
+    out.projected = points + empty.reduce((n, a) => n + part(a, Math.min(10, a.plan)), 0);
+    return out;
+  };
+
   // ---- Get a guide -------------------------------------------------------------------
 
   // The guide of a site: the stored one if it is recent, else read again. tool: pages[siteId].guide.
