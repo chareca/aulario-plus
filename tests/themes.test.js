@@ -39,7 +39,7 @@ test('a theme sets only the variables of the list (no typo), with a value', () =
 
 test('nothing from other servers: no http address, no @import, no script in the themes', () => {
   for (const th of MAK.THEMES) {
-    const all = [th.css, th.blockCss || '', ...Object.values(th.light), ...Object.values(th.dark)].join('\n');
+    const all = [th.css, th.blockCss || '', th.cardCss || '', ...Object.values(th.light), ...Object.values(th.dark)].join('\n');
     assert.doesNotMatch(all, /url\(\s*["']?(https?:)?\/\//i, th.id);
     assert.doesNotMatch(all, /@import|javascript:|expression\(/i, th.id);
   }
@@ -53,6 +53,17 @@ test('the CSS of a theme for the block of "Mi sitio" (in the page): only rules o
     }
   }
   assert.ok(MAK.theme('cuaderno').blockCss.includes('#mak-block::before'), 'the spiral of Cuaderno');
+});
+
+test('the CSS of a theme for its card in the settings: only rules of its card, in the CSS of every page', () => {
+  for (const th of MAK.THEMES) {
+    for (const rule of (th.cardCss || '').split('}').map((r) => r.trim()).filter(Boolean)) {
+      for (const sel of rule.slice(0, rule.indexOf('{')).split(',')) assert.ok(sel.trim().startsWith(`.theme-card[data-theme="${th.id}"]`), `${th.id}: ${sel.trim()}`);
+    }
+  }
+  const xp = MAK.theme('cromo').cardCss;
+  assert.ok(xp, 'the card of AulaXP: a window');
+  for (const id of MAK.themeIds()) assert.ok(MAK.pageThemeCss(id, (f) => `fonts/${f}`, 'light').includes(xp), `with the theme ${id}`);
 });
 
 test('the name in the titles: "AulaXP" with AulaXP, else "Aulario Plus"', () => {
@@ -95,7 +106,7 @@ test('the icons of a theme: known names, a drawing of its own, nothing from othe
       assert.doesNotMatch(svg.replace('http://www.w3.org/2000/svg', ''), /https?:|href|<script|on\w+=/i, `${th.id}: ${name}`);
     }
   }
-  const css = MAK.themeIconCss(MAK.theme('cromo'));
+  const css = MAK.themeIconCss(MAK.theme('cuaderno'));
   assert.match(css, /svg\.ap-icon-mail \{ background: url\("data:image\/svg\+xml,%3Csvg/);
   assert.match(css, /svg\.ap-icon-mail > \* \{ display: none; \}/);
   assert.equal(MAK.themeIconCss(MAK.theme('bloques')), '', 'no icons: the lines of MAK.icon');

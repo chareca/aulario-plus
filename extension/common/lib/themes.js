@@ -11,7 +11,8 @@
 // set has the value of BASE (light or dark). "icons" (optional): its own drawings for the icons. Its own CSS goes into every part (the popup, each shadow root): use the class
 // names of the parts, and :host for a shadow root. "blockCss" (optional): CSS for the block "Aulario Plus" of
 // "Mi sitio", which is in the page (each rule starts with #mak-block). "brand" (optional): the name in the
-// titles (else "Aulario Plus"). Nothing from other servers: the fonts are files of the
+// titles (else "Aulario Plus"). "cardCss" (optional): CSS for its card in the settings, with any theme (each rule
+// starts with .theme-card[data-theme="<id>"]). Nothing from other servers: the fonts are files of the
 // extension, the images are data: URLs. tests/themes.test.js checks the list.
 (function (root) {
   'use strict';
@@ -207,6 +208,10 @@
     // The icons of a balloon: information, warning
     info: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><radialGradient id="i" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#8fb6ff"/><stop offset="1" stop-color="#1f56d6"/></radialGradient></defs><circle cx="8" cy="8" r="7.4" fill="url(#i)" stroke="#173f9e" stroke-width=".8"/><circle cx="8" cy="4.4" r="1.25" fill="#ffffff"/><rect x="6.9" y="6.6" width="2.2" height="6" rx=".6" fill="#ffffff"/></svg>'),
     warn: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 1.2l7 13.3H1z" fill="#ffd21f" stroke="#a37b00" stroke-linejoin="round"/><rect x="7" y="5.4" width="2" height="5.4" rx=".5" fill="#000000"/><circle cx="8" cy="12.5" r="1.1" fill="#000000"/></svg>'),
+    // The three buttons of a title bar (minimize, maximize, close) in one drawing; dim: of a window that is not active
+    captions: (dim) => svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 19"><defs><radialGradient id="b" cx=".9" cy=".9" r="1"><stop offset="0" stop-color="#0054e3"/><stop offset=".55" stop-color="#2263d5"/><stop offset=".7" stop-color="#4479e4"/><stop offset=".9" stop-color="#a3bbec"/><stop offset="1" stop-color="#ffffff"/></radialGradient><radialGradient id="r" cx=".9" cy=".9" r="1"><stop offset="0" stop-color="#cc4600"/><stop offset=".55" stop-color="#dc6527"/><stop offset=".7" stop-color="#cd7546"/><stop offset=".9" stop-color="#ffccb2"/><stop offset="1" stop-color="#ffffff"/></radialGradient></defs><g opacity="${dim ? 0.55 : 1}"><rect x=".5" y=".5" width="18" height="18" rx="3" fill="url(#b)" stroke="#ffffff"/><rect x="5" y="12" width="6" height="2.5" fill="#ffffff"/><rect x="22.5" y=".5" width="18" height="18" rx="3" fill="url(#b)" stroke="#ffffff"/><rect x="27.5" y="5.5" width="8" height="8" fill="none" stroke="#ffffff"/><rect x="27" y="5" width="9" height="2.6" fill="#ffffff"/><rect x="44.5" y=".5" width="18" height="18" rx="3" fill="url(#r)" stroke="#ffffff"/><path d="M49.5 5.5l8 8M57.5 5.5l-8 8" stroke="#ffffff" stroke-width="2"/></g></svg>`),
+    // The title bar of an active window
+    title: 'linear-gradient(180deg, #0997ff 0%, #0053ee 8%, #0050ee 40%, #0066ff 88%, #0066ff 93%, #005bff 95%, #003dd7 96%, #003dd7 100%)',
     // A button: its face, pressed
     face: 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
     pressed: 'linear-gradient(180deg, #cdcac3 0%, #e3e3db 8%, #e5e5de 94%, #f2f2f1 100%)',
@@ -646,9 +651,6 @@
       about: { es: 'Barra de título azul, ventanas beige y botones con borde azul, como el escritorio de 2002.', en: 'Blue title bars, beige windows and buttons with a blue border, as the desktop of 2002.' },
       fonts: [],
       icons: {
-        mail: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4e0f7"/></linearGradient></defs><rect x="2.5" y="5.5" width="19" height="13" rx="1.5" fill="url(#g)" stroke="#2c5bc0"/><path d="M3.2 6.6L12 13l8.8-6.4" fill="none" stroke="#2c5bc0" stroke-width="1.3"/><path d="M3.5 17.6l6.4-5.6M20.5 17.6l-6.4-5.6" fill="none" stroke="#8eaae0"/></svg>`,
-        pencil: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.3 15.2L15.9 4.6l3.5 3.5L8.8 18.7z" fill="#f6c445" stroke="#7a5a10"/><path d="M15.9 4.6l1.5-1.5a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2l-1.5 1.5z" fill="#ef8aa0" stroke="#7a3040"/><path d="M5.3 15.2L4 20l4.8-1.3z" fill="#f3dab2" stroke="#7a5a10" stroke-linejoin="round"/><path d="M4 20l.7-2.4 1.7 1.7z" fill="#333333"/><path d="M7 15.8l9.3-9.3" stroke="#fde18f"/></svg>`,
-        calc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f6f6"/><stop offset="1" stop-color="#c4c4c4"/></linearGradient></defs><rect x="4.5" y="2.5" width="15" height="19" rx="1.5" fill="url(#b)" stroke="#4d4d4d"/><rect x="6.5" y="4.5" width="11" height="4" fill="#d6ebcf" stroke="#64845a" stroke-width=".8"/><g fill="#2c5bc0"><rect x="6.5" y="10.5" width="3" height="2.3"/><rect x="10.5" y="10.5" width="3" height="2.3"/><rect x="6.5" y="13.9" width="3" height="2.3"/><rect x="10.5" y="13.9" width="3" height="2.3"/><rect x="6.5" y="17.2" width="3" height="2.3"/><rect x="10.5" y="17.2" width="3" height="2.3"/></g><rect x="14.5" y="10.5" width="3" height="9" fill="#d64529"/></svg>`,
         arrow: XP_ARROW
       },
       light: {
@@ -680,7 +682,7 @@
         'mark-bg': '#316ac5',
         'mark-fg': '#ffffff',
         // The title bar of the windows
-        'head-bg': 'linear-gradient(180deg, #0997ff 0%, #0053ee 8%, #0050ee 40%, #0066ff 88%, #0066ff 93%, #005bff 95%, #003dd7 96%, #003dd7 100%)',
+        'head-bg': XP.title,
         'head-fg': '#ffffff',
         'head-line': '0 solid transparent',
         'head-btn-bg': 'radial-gradient(circle at 90% 90%, #0054e3 0%, #2263d5 55%, #4479e4 70%, #a3bbec 90%, #ffffff 100%)',
@@ -751,6 +753,25 @@
         'count-hot-fg': '#ff8a7a',
         'count-ok-fg': '#8bd36a'
       },
+      // Its card in the settings: a small window (active when it is the theme, else inactive: a pale title bar)
+      // with the buttons of the title bar, the radio button as the icon of the window, and a button.
+      cardCss: `
+        .theme-card[data-theme="cromo"] { gap: 4px; padding: 0 0 10px; border: 3px solid #7a96df; border-top: 0; border-radius: 8px 8px 0 0;
+          background: var(--ap-win-bg); box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.3); }
+        .theme-card[data-theme="cromo"]:has(input:checked) { border-color: #0831d9; }
+        .theme-card[data-theme="cromo"] .name { display: block; margin: 0 0 4px; padding: 6px 72px 6px 28px; border-radius: 6px 6px 0 0; color: #ffffff;
+          font: 700 13px/1.25 "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px 0 #3d4f8f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          background: ${XP.captions(true)} right 4px center / 63px 19px no-repeat, linear-gradient(180deg, #a8c0f0 0%, #7a96df 10%, #7a96df 88%, #6f8ad9 100%); }
+        .theme-card[data-theme="cromo"]:has(input:checked) .name { text-shadow: 1px 1px 0 #0f1089;
+          background: ${XP.captions(false)} right 4px center / 63px 19px no-repeat, ${XP.title}; }
+        .theme-card[data-theme="cromo"] input { -webkit-appearance: none; appearance: none; left: 7px; top: 7px; width: 14px; height: 14px; margin: 0;
+          border: 1px solid #1c5180; border-radius: 50%; background: linear-gradient(135deg, #dcdcd7 0%, #ffffff 100%); }
+        .theme-card[data-theme="cromo"] input:checked { background: radial-gradient(circle, #5fdc54 0 1.8px, #21a121 2.8px, rgba(33, 161, 33, 0) 3.4px), linear-gradient(135deg, #dcdcd7 0%, #ffffff 100%); }
+        .theme-card[data-theme="cromo"] .about, .theme-card[data-theme="cromo"] .sample { padding-left: 10px; padding-right: 10px; }
+        .theme-card[data-theme="cromo"] .about { font: 11px/1.4 Tahoma, "Segoe UI", sans-serif; color: var(--ap-fg); }
+        .theme-card[data-theme="cromo"] .chip { min-width: 64px; padding: 2px 10px; text-align: center; color: #000000; font: 400 11px Tahoma, "Segoe UI", sans-serif;
+          background: ${XP.face}; border: 1px solid #003c74; border-radius: 3px; box-shadow: ${XP.default}; }
+      `,
       // The block of "Mi sitio": a window with the buttons of a title bar (minimize: fold, maximize: the full
       // width), and the blue pane of tasks of the file explorer.
       blockCss: `
@@ -786,27 +807,31 @@
           background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
         .win > header button.x:hover, .mail > header button.x:hover, .box > .head button.close:hover, .panel > .bar button.x:hover { filter: brightness(1.15); }
         /* The head of a box on a page: the title bar; the arrow: minimize */
-        :host(:not(.in-block)) .box > .head .mak-fold { width: 21px; height: 21px; border: 1px solid #ffffff; border-radius: 3px; box-shadow: none;
+        :host(:not(.in-block)) .box > .head .mak-fold[aria-expanded] { width: 21px; height: 21px; border: 1px solid #ffffff; border-radius: 3px; box-shadow: none;
           background: ${XP.min} center / 11px no-repeat, var(--ap-head-btn-bg); }
-        :host(:not(.in-block)) .box > .head .mak-fold svg { display: none; }
+        :host(:not(.in-block)) .box > .head .mak-fold[aria-expanded] svg { display: none; }
+        /* The buttons with an icon (the pencil, the mail, the calculator): the buttons of a title bar, a white symbol */
+        .mak-icon, .box > .head .mak-fold:not([aria-expanded]) { width: 21px; height: 21px; padding: 0; color: #ffffff; border: 1px solid #ffffff; border-radius: 3px;
+          box-shadow: 0 0 0 1px rgba(0, 40, 140, 0.35); background: var(--ap-head-btn-bg); }
+        .mak-icon svg, .box > .head .mak-fold:not([aria-expanded]) svg { width: 13px; height: 13px; }
+        .mak-icon:hover, .mak-icon:focus-visible, .box > .head .mak-fold:not([aria-expanded]):hover { filter: brightness(1.18); box-shadow: 0 0 0 1px rgba(0, 40, 140, 0.35); }
+        .mak-icon:active { filter: brightness(0.88); }
         :host(:not(.in-block)) .box > .head .mak-fold[aria-expanded="false"] { background: ${XP.restore} center / 11px no-repeat, var(--ap-head-btn-bg); }
 
         /* ---- The controls ---- */
         /* The buttons: 23 px high, 75 px wide with a text; an orange light on hover; pressed; the default one with a blue edge */
-        .btn, .mak-btn, .mak-icon, .chips button, .week, .win button.plain, .win button.btn, .mail button:not(.x), .theme-card[data-theme="cromo"] .chip {
+        .btn, .mak-btn, .chips button, .week, .win button.plain, .win button.btn, .mail button:not(.x) {
           color: #000000; font-family: var(--ap-font); font-weight: 400; background: ${XP.face}; border: 1px solid #003c74; border-radius: 3px; box-shadow: none; }
         .btn, .mak-btn, .win button.plain, .win button.btn, .mail button:not(.x) { min-width: 75px; min-height: 23px; padding: 2px 12px; }
         .chips button { min-height: 21px; padding: 1px 10px; }
-        .mak-icon { width: 25px; height: 23px; }
-        .theme-card[data-theme="cromo"] .chip { min-width: 60px; padding: 2px 10px; text-align: center; }
-        .btn:hover, .mak-btn:hover, .mak-icon:hover, .chips button:hover, .week:hover, .win button.plain:hover, .win button.btn:hover, .mail button:not(.x):hover {
+        .btn:hover, .mak-btn:hover, .chips button:hover, .week:hover, .win button.plain:hover, .win button.btn:hover, .mail button:not(.x):hover {
           filter: none; box-shadow: ${XP.hover}; }
-        .btn.primary, .mak-btn, .theme-card[data-theme="cromo"] .chip { box-shadow: ${XP.default}; }
-        .btn:active, .mak-btn:active, .mak-icon:active, .chips button:active, .week:active, .win button.plain:active, .win button.btn:active, .mail button:not(.x):active,
+        .btn.primary, .mak-btn { box-shadow: ${XP.default}; }
+        .btn:active, .mak-btn:active, .chips button:active, .week:active, .win button.plain:active, .win button.btn:active, .mail button:not(.x):active,
         .chips button[aria-pressed="true"], .week.on { background: ${XP.pressed}; box-shadow: none; outline: 0; }
-        .btn:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .chips button:focus-visible, .week:focus-visible, .win button:focus-visible, .mail button:focus-visible {
+        .btn:focus-visible, .mak-btn:focus-visible, .chips button:focus-visible, .week:focus-visible, .win button:focus-visible, .mail button:focus-visible {
           outline: 1px dotted #000000; outline-offset: -4px; }
-        .btn:disabled, .mak-btn:disabled, .mak-icon:disabled, .win button.plain:disabled, .win button.btn:disabled, .mail button:disabled {
+        .btn:disabled, .mak-btn:disabled, .win button.plain:disabled, .win button.btn:disabled, .mail button:disabled {
           color: #aca899; background: #f5f4ea; border-color: #c9c7ba; box-shadow: none; opacity: 1; }
         /* The check boxes and the radio buttons: white, a green tick, a green dot */
         input[type="checkbox"], input[type="radio"] { -webkit-appearance: none; appearance: none; flex: none; width: 13px; height: 13px; padding: 0; cursor: pointer;
@@ -1231,13 +1256,14 @@
 
   // The CSS of a theme for a page of the extension (the popup, the tools page): the fonts of all the
   // themes (for the previews of the settings), the variables of the mode (scheme: 'light', 'dark', or
-  // 'system': light, and dark with prefers-color-scheme) and the CSS of the theme.
+  // 'system': light, and dark with prefers-color-scheme), the cards of all the themes and the CSS of the theme.
   MAK.pageThemeCss = function (id, url, scheme) {
     const th = MAK.theme(id);
     const vars = scheme === 'light' || scheme === 'dark'
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), th.css || '', MAK.themeIconCss(th)].join('\n');
+    const cards = MAK.THEMES.map((t) => t.cardCss || '');
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, th.css || '', MAK.themeIconCss(th)].join('\n');
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
