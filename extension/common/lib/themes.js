@@ -80,6 +80,7 @@
       blur: 'none', // backdrop-filter of the boxes (glass)
       backdrop: 'rgba(0, 0, 0, 0.35)', // behind a window
       'win-bg': 'var(--ap-surface)', // a window over the page, and the block "Aulario Plus" of "Mi sitio"
+      'pane-bg': 'transparent', // the body of the block "Aulario Plus" (under its boxes)
       // A row of a list (a delivery, a message)
       'item-bg': 'transparent',
       'item-edge': 'transparent',
@@ -183,6 +184,35 @@
   const SPIRAL = `content: ""; position: absolute; top: 6px; bottom: 6px; left: -14px; width: 34px; pointer-events: none; background: ${svgUrl(COIL)} 0 0 / 34px 24px repeat-y;`;
   // A magnifier in pen (the search field).
   const LENS = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.2" fill="none" stroke="#5a6cc0" stroke-width="2.2"/><path d="M14.6 14.8l5.6 5.4" stroke="#5a6cc0" stroke-width="2.6" stroke-linecap="round"/></svg>');
+
+  // ---- The drawings of "AulaXP" (our own, in the style of the desktop of 2002) ----
+  const XP = {
+    // The buttons of a title bar: minimize, maximize, restore (white)
+    min: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11"><rect x="2" y="7.5" width="6" height="2.5" fill="#ffffff"/></svg>'),
+    max: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11"><rect x="1.5" y="1.5" width="8" height="8" fill="none" stroke="#ffffff"/><rect x="1" y="1" width="9" height="2.6" fill="#ffffff"/></svg>'),
+    restore: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11"><path d="M3.5 3V1.5h6v5H8" fill="none" stroke="#ffffff"/><rect x="3" y="1" width="7" height="2" fill="#ffffff"/><rect x="1.5" y="4.5" width="6" height="5" fill="none" stroke="#ffffff"/><rect x="1" y="4" width="7" height="2" fill="#ffffff"/></svg>'),
+    // The green tick of a check box
+    check: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"><path d="M1 4.3l2.4 2.4L8 1.9" fill="none" stroke="#21a121" stroke-width="2"/></svg>'),
+    // The arrows of a combo box and of a scroll bar
+    down: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 5"><path d="M.6.6L4 4 7.4.6" fill="none" stroke="#4d6185" stroke-width="1.7"/></svg>'),
+    up: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 5"><path d="M.6 4.4L4 1l3.4 3.4" fill="none" stroke="#4d6185" stroke-width="1.7"/></svg>'),
+    left: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 8"><path d="M4.4.6L1 4l3.4 3.4" fill="none" stroke="#4d6185" stroke-width="1.7"/></svg>'),
+    right: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 8"><path d="M.6.6L4 4 .6 7.4" fill="none" stroke="#4d6185" stroke-width="1.7"/></svg>'),
+    // The light blue button of a combo box and of a scroll bar
+    knob: 'linear-gradient(135deg, #e3ecfe 0%, #c4d6fc 55%, #a9c2f7 100%)',
+    // The lines on the thumb of a scroll bar
+    grip: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><path d="M0 .5h8M0 2.5h8M0 4.5h8M0 6.5h8" stroke="#eef4fe"/><path d="M0 1.5h8M0 3.5h8M0 5.5h8M0 7.5h8" stroke="#8cb0f8"/></svg>'),
+    // The corner of a status bar (to resize a window)
+    corner: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12"><g fill="#ffffff"><rect x="10" y="10" width="2" height="2"/><rect x="10" y="7" width="2" height="2"/><rect x="10" y="4" width="2" height="2"/><rect x="7" y="10" width="2" height="2"/><rect x="7" y="7" width="2" height="2"/><rect x="4" y="10" width="2" height="2"/></g><g fill="#a3a08f"><rect x="9" y="9" width="2" height="2"/><rect x="9" y="6" width="2" height="2"/><rect x="9" y="3" width="2" height="2"/><rect x="6" y="9" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/><rect x="3" y="9" width="2" height="2"/></g></svg>'),
+    // The icons of a balloon: information, warning
+    info: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><radialGradient id="i" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#8fb6ff"/><stop offset="1" stop-color="#1f56d6"/></radialGradient></defs><circle cx="8" cy="8" r="7.4" fill="url(#i)" stroke="#173f9e" stroke-width=".8"/><circle cx="8" cy="4.4" r="1.25" fill="#ffffff"/><rect x="6.9" y="6.6" width="2.2" height="6" rx=".6" fill="#ffffff"/></svg>'),
+    warn: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 1.2l7 13.3H1z" fill="#ffd21f" stroke="#a37b00" stroke-linejoin="round"/><rect x="7" y="5.4" width="2" height="5.4" rx=".5" fill="#000000"/><circle cx="8" cy="12.5" r="1.1" fill="#000000"/></svg>'),
+    // A button: its face, pressed
+    face: 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
+    pressed: 'linear-gradient(180deg, #cdcac3 0%, #e3e3db 8%, #e5e5de 94%, #f2f2f1 100%)',
+    hover: 'inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a',
+    default: 'inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4'
+  };
 
   MAK.THEMES = [
     // ---- 1 · Bloques: Neo-Brutalism + Bento Grid ----------------------------------------------
@@ -605,13 +635,14 @@
       `
     },
 
-    // ---- 6 · Cromo: the desktop of 2002 (blue title bars, beige windows; the dark mode as the black
-    // themes of that time). The fonts of the system (Tahoma, Trebuchet MS). The icons are drawings of
-    // our own in that style, not the icons of a system.
+    // ---- 6 · AulaXP (id "cromo"): the desktop of 2002. Blue title bars with their buttons, beige windows,
+    // buttons of 23 px, check boxes with a green tick, combo boxes and scroll bars in light blue, balloons,
+    // and the blue pane of tasks of the file explorer; the dark mode: the same, on dark backgrounds. The
+    // fonts of the system (Tahoma, Trebuchet MS). The drawings are our own, in that style.
     {
       id: 'cromo',
-      name: { es: 'Cromo XP', en: 'Chrome XP' },
-      brand: 'Aulario XP',
+      name: { es: 'AulaXP', en: 'AulaXP' },
+      brand: 'AulaXP',
       about: { es: 'Barra de título azul, ventanas beige y botones con borde azul, como el escritorio de 2002.', en: 'Blue title bars, beige windows and buttons with a blue border, as the desktop of 2002.' },
       fonts: [],
       icons: {
@@ -655,15 +686,16 @@
         'head-btn-bg': 'radial-gradient(circle at 90% 90%, #0054e3 0%, #2263d5 55%, #4479e4 70%, #a3bbec 90%, #ffffff 100%)',
         'head-btn-fg': '#ffffff',
         'head-btn-edge': '#ffffff',
-        'head-btn-size': '22px',
+        'head-btn-size': '21px',
         // The buttons
-        'btn-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
+        'btn-bg': XP.face,
         'btn-fg': '#000000',
         'btn-edge': '#003c74',
-        'primary-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
+        'primary-bg': XP.face,
         'primary-fg': '#000000',
         'primary-edge': '#003c74',
         // A window: a thick blue frame, rounded at the top
+        'pane-bg': 'linear-gradient(180deg, #7ba2e7 0%, #6375d6 100%)', // the pane of tasks of the file explorer
         radius: '8px 8px 0 0',
         'radius-sm': '3px',
         'radius-box': '3px',
@@ -700,6 +732,7 @@
         solid: '#151b27',
         surface2: '#24304a',
         'win-bg': '#232c3f',
+        'pane-bg': 'linear-gradient(180deg, #2c4170 0%, #1f2b52 100%)',
         fg: '#eef2f8',
         muted: '#b6bfd0',
         line: '#3e4a63',
@@ -718,29 +751,104 @@
         'count-hot-fg': '#ff8a7a',
         'count-ok-fg': '#8bd36a'
       },
+      // The block of "Mi sitio": a window with the buttons of a title bar (minimize: fold, maximize: the full
+      // width), and the blue pane of tasks of the file explorer.
+      blockCss: `
+        #mak-block > .mak-head { gap: 4px; padding: 5px 6px 5px 9px; }
+        #mak-block .mak-logo { width: 18px; height: 18px; margin-right: 4px; }
+        #mak-block .mak-title { text-shadow: 1px 1px 0 #0f1089; }
+        #mak-block > #mak-block-body { padding: 12px; }
+        #mak-block .mak-head .mak-fold, #mak-block .mak-widen { position: static; flex: none; width: 21px; height: 21px; margin: 0; opacity: 1; clip-path: none;
+          border: 1px solid #ffffff; border-radius: 3px; box-shadow: none; background: ${XP.min} center / 11px no-repeat, var(--ap-head-btn-bg); }
+        #mak-block .mak-head .mak-fold svg { display: none; }
+        #mak-block .mak-head .mak-fold[aria-expanded="false"], #mak-block .mak-widen[aria-pressed="true"] { background: ${XP.restore} center / 11px no-repeat, var(--ap-head-btn-bg); }
+        #mak-block .mak-widen { margin-left: 2px; background: ${XP.max} center / 11px no-repeat, var(--ap-head-btn-bg); }
+        #mak-block .mak-head .mak-fold:hover, #mak-block .mak-widen:hover, #mak-block .mak-head .mak-fold:focus-visible, #mak-block .mak-widen:focus-visible { filter: brightness(1.18); opacity: 1; }
+      `,
       css: `
-        /* Title bars: Trebuchet, with a dark blue shadow */
+        /* ---- The windows ---- */
+        /* The popup: a window, with its blue frame, its title bar and a status bar */
+        body { border: 3px solid #0831d9; border-top: 0; }
+        header.top { padding: 6px 6px 6px 9px; }
+        header.top .mak-logo { width: 22px; height: 22px; }
         header.top h1, .box > .head .title, .win > header h2, .mail > header h2, .panel > .bar { text-shadow: 1px 1px 0 #0f1089; }
-        /* The popup: the content in a white panel, with the border of the lists */
+        footer.privacy { padding: 3px 20px 3px 8px; text-align: left; background: ${XP.corner} right 2px bottom 2px / 12px no-repeat, var(--ap-win-bg);
+          border-top: 1px solid rgba(0, 0, 0, 0.22); box-shadow: inset 0 1px rgba(255, 255, 255, 0.7); }
+        footer.privacy button, footer.privacy span { color: var(--ap-fg); font-size: 11px; }
+        /* The content: a white panel, with the border of the lists */
         main { border: 1px solid #7f9db9; border-radius: 0; }
-        /* Buttons of 23 px; an orange light on hover; the default button with a blue edge */
-        .btn, .mak-btn, .win button.plain, .win button.btn, .mail button:not(.x), .chips button { min-height: 23px; padding: 2px 12px; font-weight: 400; }
-        .btn:hover, .chips button:hover, .week:hover, button.plain:hover, button.btn:hover, .mak-btn:hover, .mak-icon:hover, .icon-btn:hover {
-          filter: none; box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a; }
-        .btn.primary, .mak-btn { box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4; }
+        /* The buttons of a title bar: blue, white symbols; open in a tab = maximize; the red close button */
+        .icon-btn { width: 21px; height: 21px; padding: 0; font-size: 13px; font-weight: 700; border: 1px solid #ffffff; border-radius: 3px; box-shadow: none; }
+        #openTab { font-size: 0; background: ${XP.max} center / 11px no-repeat, var(--ap-head-btn-bg); }
+        .icon-btn:hover, .icon-btn:focus-visible { filter: brightness(1.18); }
+        .win > header button.x, .mail > header button.x, .box > .head button.close, .panel > .bar button.x, header.top .icon-btn.close { width: 21px; height: 21px; padding: 0;
+          color: #ffffff; font-size: 13px; font-weight: 700; border: 1px solid #ffffff; border-radius: 3px; box-shadow: none;
+          background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
+        .win > header button.x:hover, .mail > header button.x:hover, .box > .head button.close:hover, .panel > .bar button.x:hover { filter: brightness(1.15); }
+        /* The head of a box on a page: the title bar; the arrow: minimize */
+        :host(:not(.in-block)) .box > .head .mak-fold { width: 21px; height: 21px; border: 1px solid #ffffff; border-radius: 3px; box-shadow: none;
+          background: ${XP.min} center / 11px no-repeat, var(--ap-head-btn-bg); }
+        :host(:not(.in-block)) .box > .head .mak-fold svg { display: none; }
+        :host(:not(.in-block)) .box > .head .mak-fold[aria-expanded="false"] { background: ${XP.restore} center / 11px no-repeat, var(--ap-head-btn-bg); }
+
+        /* ---- The controls ---- */
+        /* The buttons: 23 px high, 75 px wide with a text; an orange light on hover; pressed; the default one with a blue edge */
+        .btn, .mak-btn, .mak-icon, .chips button, .week, .win button.plain, .win button.btn, .mail button:not(.x), .theme-card[data-theme="cromo"] .chip {
+          color: #000000; font-family: var(--ap-font); font-weight: 400; background: ${XP.face}; border: 1px solid #003c74; border-radius: 3px; box-shadow: none; }
+        .btn, .mak-btn, .win button.plain, .win button.btn, .mail button:not(.x) { min-width: 75px; min-height: 23px; padding: 2px 12px; }
+        .chips button { min-height: 21px; padding: 1px 10px; }
+        .mak-icon { width: 25px; height: 23px; }
+        .theme-card[data-theme="cromo"] .chip { min-width: 60px; padding: 2px 10px; text-align: center; }
+        .btn:hover, .mak-btn:hover, .mak-icon:hover, .chips button:hover, .week:hover, .win button.plain:hover, .win button.btn:hover, .mail button:not(.x):hover {
+          filter: none; box-shadow: ${XP.hover}; }
+        .btn.primary, .mak-btn, .theme-card[data-theme="cromo"] .chip { box-shadow: ${XP.default}; }
+        .btn:active, .mak-btn:active, .mak-icon:active, .chips button:active, .week:active, .win button.plain:active, .win button.btn:active, .mail button:not(.x):active,
+        .chips button[aria-pressed="true"], .week.on { background: ${XP.pressed}; box-shadow: none; outline: 0; }
+        .btn:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .chips button:focus-visible, .week:focus-visible, .win button:focus-visible, .mail button:focus-visible {
+          outline: 1px dotted #000000; outline-offset: -4px; }
+        .btn:disabled, .mak-btn:disabled, .mak-icon:disabled, .win button.plain:disabled, .win button.btn:disabled, .mail button:disabled {
+          color: #aca899; background: #f5f4ea; border-color: #c9c7ba; box-shadow: none; opacity: 1; }
+        /* The check boxes and the radio buttons: white, a green tick, a green dot */
+        input[type="checkbox"], input[type="radio"] { -webkit-appearance: none; appearance: none; flex: none; width: 13px; height: 13px; padding: 0; cursor: pointer;
+          border: 1px solid #1c5180; border-radius: 0; background: linear-gradient(135deg, #dcdcd7 0%, #ffffff 100%); box-shadow: none; }
+        input[type="radio"] { border-radius: 50%; }
+        input[type="checkbox"]:checked { background: ${XP.check} center / 9px no-repeat, linear-gradient(135deg, #dcdcd7 0%, #ffffff 100%); }
+        input[type="radio"]:checked { background: radial-gradient(circle, #5fdc54 0 1.6px, #21a121 2.6px, rgba(33, 161, 33, 0) 3.2px), linear-gradient(135deg, #dcdcd7 0%, #ffffff 100%); }
+        input[type="checkbox"]:hover, input[type="radio"]:hover { box-shadow: inset -2px -2px #f8b636, inset 2px 2px #fedf9c; }
+        /* The combo boxes: white, with the light blue button and its arrow */
+        select { -webkit-appearance: none; appearance: none; min-height: 21px; padding: 1px 22px 1px 4px; color: #000000; border: 1px solid #7f9db9; border-radius: 0;
+          background: ${XP.down} right 6px center / 8px 5px no-repeat, ${XP.knob} right 1px center / 16px calc(100% - 2px) no-repeat, #ffffff; }
+        select:hover { background: ${XP.down} right 6px center / 8px 5px no-repeat, linear-gradient(135deg, #f2f6ff 0%, #d4e2fd 55%, #bad0fa 100%) right 1px center / 16px calc(100% - 2px) no-repeat, #ffffff; }
+        /* The scroll bars */
+        ::-webkit-scrollbar { width: 17px; height: 17px; }
+        ::-webkit-scrollbar-track { background: linear-gradient(90deg, #f3f1ec 0%, #fefefe 100%); }
+        ::-webkit-scrollbar-thumb { border: 1px solid #ffffff; border-radius: 3px; box-shadow: inset 0 0 0 1px #b1c6f7;
+          background: ${XP.grip} center / 8px 8px no-repeat, linear-gradient(90deg, #c8d6fb 0%, #bccefa 45%, #b0c6f9 100%); }
+        ::-webkit-scrollbar-thumb:hover { background: ${XP.grip} center / 8px 8px no-repeat, linear-gradient(90deg, #dae5fd 0%, #cddcfc 45%, #c2d4fb 100%); }
+        ::-webkit-scrollbar-button { display: block; width: 17px; height: 17px; border: 1px solid #ffffff; border-radius: 3px; box-shadow: inset 0 0 0 1px #b1c6f7; }
+        ::-webkit-scrollbar-button:start:increment, ::-webkit-scrollbar-button:end:decrement { display: none; }
+        ::-webkit-scrollbar-button:vertical:start:decrement { background: ${XP.up} center / 8px 5px no-repeat, ${XP.knob}; }
+        ::-webkit-scrollbar-button:vertical:end:increment { background: ${XP.down} center / 8px 5px no-repeat, ${XP.knob}; }
+        ::-webkit-scrollbar-button:horizontal:start:decrement { background: ${XP.left} center / 5px 8px no-repeat, ${XP.knob}; }
+        ::-webkit-scrollbar-button:horizontal:end:increment { background: ${XP.right} center / 5px 8px no-repeat, ${XP.knob}; }
+        ::-webkit-scrollbar-corner { background: var(--ap-win-bg); }
         /* The tabs of a window of properties */
         nav.tabs { gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid #919b9c; }
         nav.tabs button { flex: none; padding: 3px 8px; margin-bottom: -1px; color: #000000; font-size: 11px; border: 1px solid #919b9c; border-bottom: 0;
           border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #ffffff 0%, #fafaf9 26%, #f0f0ea 95%, #ecebe6 100%); }
+        nav.tabs button:hover { border-top: 2px solid #e68b2c; padding-top: 2px; }
         nav.tabs button[aria-selected="true"] { color: var(--ap-fg); background: var(--ap-surface); border-top: 3px solid #e68b2c; padding-top: 1px; font-weight: 400; }
         /* The week strip: buttons, with the dark text of the buttons also in the dark mode */
         .week .n { color: #000000; }
         .week .label { color: #444444; }
         .week .track { background: #d6d0c5; }
-        /* The close button of a window: the red square */
-        .win > header button.x, .mail > header button.x, .box > .head button.close, .panel > .bar button.x, header.top .icon-btn.close { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
-          border: 1px solid #ffffff; border-radius: 3px; background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
-        /* The search (Ctrl+K): a window with a title bar, a field and a white list, and a status bar */
+        /* The balloons of the notification area: information, warning */
+        .whatsnew, .notice { color: #000000; padding: 8px 10px 8px 32px; border: 1px solid #000000; border-radius: 7px; box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.3);
+          background: ${XP.info} 9px 9px / 16px no-repeat, #ffffe1; }
+        .notice { background: ${XP.warn} 9px 9px / 16px no-repeat, #ffffe1; }
+        .whatsnew .x { color: #000000; }
+
+        /* ---- The search (Ctrl+K): a window with a title bar, a field and a white list, and a status bar ---- */
         .panel > .bar { display: flex; }
         .panel > input { margin: 10px 10px 6px; padding: 3px 6px; font-family: var(--ap-font); font-size: 12px; font-weight: 400; font-style: normal; letter-spacing: normal;
           color: var(--ap-input-fg); background: var(--ap-input-bg); border: 1px solid var(--ap-input-edge); caret-color: auto; }
@@ -749,32 +857,36 @@
         .panel h3 { margin: 6px 4px 2px; font-family: var(--ap-font); font-size: 11px; font-weight: 700; font-style: normal; color: var(--ap-link); }
         .panel a.item { padding: 3px 6px; border-radius: 0; }
         .panel .tip { padding: 4px 4px 0; }
-        .panel > .foot { padding: 3px 10px; font-size: 11px; color: var(--ap-fg); border-top: 1px solid #d0d0bf; }
+        .panel > .foot { padding: 3px 20px 3px 10px; font-size: 11px; color: var(--ap-fg); border-top: 1px solid rgba(0, 0, 0, 0.22);
+          box-shadow: inset 0 1px rgba(255, 255, 255, 0.7); background: ${XP.corner} right 2px bottom 2px / 12px no-repeat; }
         /* The selection of the lists */
         a.item.sel, .result.sel { background: #316ac5; color: #ffffff; }
         a.item.sel .meta, .result.sel .meta { color: inherit; opacity: 0.85; }
         a.item.sel mark, .result.sel mark { background: none; color: inherit; text-decoration: underline; }
-        /* Group boxes: the title on the border */
-        .tile, .guide-card { border: 1px solid #d0d0bf; border-radius: 3px; }
-        .tile h4, .guide-card h4 { font-family: var(--ap-font); font-size: 11px; font-weight: 700; text-shadow: none; }
-        .tile h4 { font-size: 13px; color: var(--ap-link); }
-        .sem { position: relative; margin-top: 12px; padding: 12px 10px 8px; border: 1px solid #d0d0bf; border-radius: 3px; }
-        .sem-head { position: absolute; top: -11px; left: 8px; right: 8px; }
-        .sem-head .sem-title { flex: none; padding: 0 4px; background: var(--ap-win-bg); color: var(--ap-link); font-family: var(--ap-font); font-size: 11px; font-weight: 400; }
-        .tile .sem-head .sem-title { background: var(--ap-surface); }
-        .sem-head .mak-fold { margin-left: auto; }
-        .exams li { border-radius: 3px; background: var(--ap-surface); }
-        /* The panels of tasks: the head (white to blue, a round button), the body in light blue */
-        :host(.in-block) .box > .head { margin: 0; padding: 5px 8px 5px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%); color: #215dc6;
-          border-radius: 5px 5px 0 0; }
-        :host(.in-block) .box > .head .title { font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
-        :host(.in-block) .box > .head + * { padding: 10px; background: var(--ap-accent-soft); border: 1px solid #ffffff; border-top: 0; }
+
+        /* ---- Mi sitio: the panes of tasks of the file explorer, on the blue of the block ---- */
+        /* A pane: the head (white to blue, the title in blue, a round button), the body in light blue */
+        .tile, :host(.in-block) .box > .head + *, .actions { background: var(--ap-accent-soft); border: 1px solid #ffffff; border-radius: 5px 5px 0 0; }
+        .tile { padding: 0 12px 12px; }
+        .tile > h4, :host(.in-block) .box > .head { margin: 0 -12px 10px; padding: 6px 8px 6px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%);
+          color: #215dc6; border-radius: 4px 4px 0 0; }
+        :host(.in-block) .box > .head { margin: 0; border-radius: 5px 5px 0 0; }
+        .tile > h4, :host(.in-block) .box > .head .title { font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
+        :host(.in-block) .box > .head + * { padding: 10px; border-top: 0; border-radius: 0; }
         :host(.in-block) .box > .head .mak-fold, .sem .mak-fold { width: 20px; height: 20px; border-radius: 50%; color: #215dc6; border: 1px solid #ffffff;
           background: linear-gradient(180deg, #ffffff 0%, #c6d3f7 100%); box-shadow: 0 0 0 1px #8aa4d8; }
         .mak-fold svg { width: 14px; height: 14px; }
-        /* The actions: the links of a panel of tasks, the green arrow first */
-        .actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; background: var(--ap-accent-soft);
-          border: 1px solid #ffffff; border-radius: 3px; }
+        /* Group boxes: the title on the border */
+        .guide-card { border: 1px solid #d0d0bf; border-radius: 3px; }
+        .guide-card h4 { font-family: var(--ap-font); font-size: 11px; font-weight: 700; text-shadow: none; }
+        .sem { position: relative; margin-top: 12px; padding: 12px 10px 8px; border: 1px solid #d0d0bf; border-radius: 3px; }
+        .sem-head { position: absolute; top: -11px; left: 8px; right: 8px; }
+        .sem-head .sem-title { flex: none; padding: 0 4px; background: var(--ap-win-bg); color: var(--ap-link); font-family: var(--ap-font); font-size: 11px; font-weight: 400; }
+        :host(.in-block) .sem-head .sem-title { background: var(--ap-accent-soft); }
+        .sem-head .mak-fold { margin-left: auto; }
+        .exams li { border-radius: 3px; background: var(--ap-surface); }
+        /* The actions: the links of a pane of tasks, the green arrow first */
+        .actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; border-radius: 5px; }
         .actions .action { min-height: 0; padding: 0; gap: 6px; flex-direction: row-reverse; background: none; border: 0; box-shadow: none; color: var(--ap-link);
           font-weight: 400; text-decoration: underline; text-decoration-color: transparent; }
         .actions .action:hover, .actions .action:focus-visible { filter: none; box-shadow: none; text-decoration-color: currentColor; }
@@ -786,8 +898,8 @@
         /* The weights: a progress bar */
         .bar.weights { height: 16px; padding: 1px; gap: 1px; border: 1px solid #686868; border-radius: 3px; background: #ffffff; }
         .bar.weights span { border-radius: 2px; font-size: 10px; }
-        /* The next exam: the days in large, in the blue of the titles */
-        .next-exam { background: var(--ap-accent-soft); border: 1px solid #ffffff; border-radius: 3px; }
+        /* The next exam: a white panel, the days in large, in the blue of the titles */
+        .next-exam { background: var(--ap-surface); border: 1px solid #7f9db9; border-radius: 0; }
         .next-exam .day { font-size: 34px; color: var(--ap-link); text-shadow: none; }
         .next-exam .count { font-size: 1.15em; }
       `
@@ -1062,7 +1174,7 @@
   // The name of a theme in the language of the user.
   MAK.themeName = (th, lang) => (th.name && (th.name[lang] || th.name.es)) || th.id;
   MAK.themeAbout = (th, lang) => (th.about && (th.about[lang] || th.about.es)) || '';
-  // The name of the extension in the titles: the name of the theme ("Aulario XP"), else "Aulario Plus".
+  // The name of the extension in the titles: the name of the theme ("AulaXP"), else "Aulario Plus".
   MAK.brandName = (th) => (th || MAK.theme(MAK.themeId)).brand || 'Aulario Plus';
 
   // All the variables of a theme for one mode: BASE (light, then dark in the dark mode), then the light

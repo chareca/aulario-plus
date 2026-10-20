@@ -56,7 +56,7 @@
       border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow);
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     #mak-block[hidden], #mak-block > #mak-block-body[hidden] { display: none !important; }
-    #mak-block > #mak-block-body { padding: 8px 14px 10px; background: transparent !important; }
+    #mak-block > #mak-block-body { padding: 8px 14px 10px; background: var(--ap-pane-bg) !important; }
     #mak-block > .mak-head { position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
       font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); background: var(--ap-head-bg); color: var(--ap-head-fg);
       border: 0; border-bottom: var(--ap-head-line); border-top-left-radius: calc(var(--ap-radius) - var(--ap-bw)); border-top-right-radius: calc(var(--ap-radius) - var(--ap-bw)); }

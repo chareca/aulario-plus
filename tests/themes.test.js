@@ -55,9 +55,9 @@ test('the CSS of a theme for the block of "Mi sitio" (in the page): only rules o
   assert.ok(MAK.theme('cuaderno').blockCss.includes('#mak-block::before'), 'the spiral of Cuaderno');
 });
 
-test('the name in the titles: "Aulario XP" with Cromo XP, else "Aulario Plus"', () => {
-  assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'Cromo XP');
-  assert.equal(MAK.brandName(MAK.theme('cromo')), 'Aulario XP');
+test('the name in the titles: "AulaXP" with AulaXP, else "Aulario Plus"', () => {
+  assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'AulaXP');
+  assert.equal(MAK.brandName(MAK.theme('cromo')), 'AulaXP');
   for (const id of ['bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
