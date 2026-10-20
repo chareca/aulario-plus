@@ -25,7 +25,7 @@
     .list { overflow: auto; padding: 2px 8px 8px; }
     h3 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); font-size: calc(13px * var(--ap-head-zoom));
       color: var(--ap-muted); margin: 10px 8px 4px; }
-    a.item { display: block; padding: 7px 10px; border-radius: var(--ap-radius-sm); color: inherit; text-decoration: none; }
+    a.item { display: block; padding: 7px 10px; border-radius: var(--ap-radius-box); color: inherit; text-decoration: none; }
     a.item.sel { background: var(--ap-surface2); }
     .title { display: block; font-weight: 700; overflow-wrap: anywhere; }
     .meta { display: block; font-size: 0.86em; color: var(--ap-muted); }

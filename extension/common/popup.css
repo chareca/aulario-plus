@@ -55,7 +55,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* Search */
 .searchbar { display: flex; padding: 8px 12px; }
 .searchbar input { flex: 1; padding: 7px 10px; }
-.result { display: block; padding: 6px 8px; margin: 0 -4px; border-radius: var(--ap-radius-sm); text-decoration: none; color: var(--ap-fg); }
+.result { display: block; padding: 6px 8px; margin: 0 -4px; border-radius: var(--ap-radius-box); text-decoration: none; color: var(--ap-fg); }
 .result:hover, .result.sel { background: var(--ap-surface2); }
 .result .title { display: block; font-weight: 700; overflow-wrap: anywhere; }
 .result .meta { display: block; }
@@ -98,7 +98,7 @@ details > summary { cursor: pointer; font-family: var(--ap-font-head); font-weig
 .tag.info { background: var(--ap-blue-bg); color: var(--ap-blue); }
 .tag.new { background: var(--ap-green-bg); color: var(--ap-green); }
 .empty { color: var(--ap-muted); text-align: center; padding: 28px 10px; }
-.notice { margin: 4px 0 10px; padding: 8px; border-radius: var(--ap-radius-sm); border: var(--ap-bw-sm) solid var(--ap-orange); color: var(--ap-orange); background: var(--ap-orange-bg); }
+.notice { margin: 4px 0 10px; padding: 8px; border-radius: var(--ap-radius-box); border: var(--ap-bw-sm) solid var(--ap-orange); color: var(--ap-orange); background: var(--ap-orange-bg); }
 .notice button { margin-top: 6px; width: 100%; }
 /* The correction of a delivery */
 .feedback { margin-top: 4px; }
@@ -106,7 +106,7 @@ details > summary { cursor: pointer; font-family: var(--ap-font-head); font-weig
 .feedback .fb-comment { white-space: pre-wrap; margin: 4px 0; }
 .feedback ul { margin: 2px 0; padding-left: 18px; }
 /* After an update: "Aulario Plus 1.6.4 · Novedades" */
-.whatsnew { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; padding: 6px 8px; border-radius: var(--ap-radius-sm); border: var(--ap-bw-sm) solid var(--ap-edge); background: var(--ap-accent-soft); }
+.whatsnew { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; padding: 6px 8px; border-radius: var(--ap-radius-box); border: var(--ap-bw-sm) solid var(--ap-edge); background: var(--ap-accent-soft); }
 .whatsnew span { flex: 1; }
 .whatsnew button { flex: none; }
 .whatsnew .x { background: none; border: 0; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; color: inherit; box-shadow: none; }
@@ -212,7 +212,7 @@ body.tools { width: auto; height: auto; min-height: 100vh; }
 /* Week view */
 .weeks { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 2px 0 12px; }
 .week { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; font: inherit; color: var(--ap-btn-fg); cursor: pointer;
-  background: var(--ap-btn-bg); border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: min(var(--ap-radius), 14px); box-shadow: var(--ap-shadow-sm); }
+  background: var(--ap-btn-bg); border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-box); box-shadow: var(--ap-shadow-sm); }
 .week:hover { filter: brightness(0.97); }
 .week.on { outline: 2px solid var(--ap-fg); outline-offset: 1px; }
 .week .n { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }

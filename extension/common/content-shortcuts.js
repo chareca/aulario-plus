@@ -42,7 +42,7 @@
     .next-exam .count { font-size: var(--ap-count-size); }
     /* One small card for each subject, in columns: the name and the countdown, then the two dates. */
     .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
-    .exams li { min-width: 0; padding: 7px 9px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-sm); }
+    .exams li { min-width: 0; padding: 7px 9px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
     .exams .top { display: flex; gap: 6px; align-items: flex-start; }
     .exams .name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.93em; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
     .exams .count { font-size: calc(var(--ap-count-size) * 0.78); }

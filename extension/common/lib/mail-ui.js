@@ -61,7 +61,7 @@
     .help.intro { margin: -4px 0 8px; }
     ul.files { margin: 0 0 10px; padding-left: 18px; max-height: 110px; overflow: auto; }
     .modes { display: flex; gap: 14px; margin: 6px 0 8px; }
-    .people { border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-sm); padding: 6px; margin-bottom: 8px; }
+    .people { border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); padding: 6px; margin-bottom: 8px; }
     .people .list { max-height: 160px; overflow: auto; margin-top: 6px; }
     .people label { display: flex; gap: 6px; align-items: center; padding: 2px 0; }
     label.field { display: block; margin: 8px 0 2px; font-weight: 700; font-size: 0.93em; }
@@ -73,11 +73,11 @@
       border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
     button.primary { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); font-weight: 700; }
     button.x { border: 0; background: none; box-shadow: none; font-size: 18px; line-height: 1; padding: 2px 6px; color: inherit; }
-    .linkbox { margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-sm); background: var(--ap-surface2); }
+    .linkbox { margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-box); background: var(--ap-surface2); }
     .linkrow { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
     .linkrow input { flex: 1; min-width: 0; }
     code { font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; }
-    .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-sm); background: var(--ap-surface2); }
+    .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-box); background: var(--ap-surface2); }
   `;
 
   // Draw the window in "into" (an element). opts:

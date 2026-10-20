@@ -118,7 +118,7 @@
     .sems-wrap { container-type: inline-size; }
     .sems { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-items: start; }
     @container (min-width: 560px) { .sems.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
-    .sem { min-width: 0; border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-sm); padding: 6px 10px; }
+    .sem { min-width: 0; border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); padding: 6px 10px; }
     .sem-head { display: flex; align-items: center; gap: 8px; }
     .sem-head .sem-title { flex: 1; min-width: 0; font-weight: 700; cursor: pointer; font-family: var(--ap-font-head); font-style: var(--ap-head-style);
       font-size: calc(14px * var(--ap-head-zoom)); }
@@ -230,7 +230,7 @@
     :host(.in-block) { margin: 0 0 4px; }
     [hidden] { display: none !important; } /* the arrows: the rules with "display" must not show it */
     * { box-sizing: border-box; }
-    .box { font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); background: var(--ap-surface);
+    .box { font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); background: var(--ap-win-bg);
       border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow); padding: 12px 14px;
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     :host(.in-block) .box { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 6px 0;

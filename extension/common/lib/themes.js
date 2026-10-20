@@ -67,7 +67,8 @@
       'primary-edge': 'var(--ap-accent)',
       // Forms
       radius: '10px', // the boxes and the cards
-      'radius-sm': '6px', // the buttons, the fields and the small parts
+      'radius-sm': '6px', // the buttons, the fields and the tags
+      'radius-box': 'var(--ap-radius-sm)', // the small boxes in a box (a semester, an exam, a result)
       bw: '1px', // the border of the boxes
       'bw-sm': '1px', // the border of the buttons and the fields
       shadow: 'none',
@@ -452,7 +453,7 @@
         page: 'radial-gradient(circle 64px at 88% 250px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(420px 300px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(400px 320px at 100% 30%, #c6dcfb, transparent 60%), radial-gradient(420px 300px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
         surface: 'rgba(255, 255, 255, 0.38)',
         solid: '#f6f0f7',
-        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), radial-gradient(circle 70px at 94% 90px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(640px 420px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(640px 440px at 100% 45%, #c6dcfb, transparent 60%), radial-gradient(640px 420px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
+        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(640px 420px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(640px 440px at 100% 45%, #c6dcfb, transparent 60%), radial-gradient(640px 420px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
         surface2: 'rgba(255, 255, 255, 0.62)',
         fg: '#2a2740',
         muted: '#5c5778',
@@ -479,6 +480,7 @@
         'primary-edge': '#2a2740',
         radius: '22px',
         'radius-sm': '999px',
+        'radius-box': '16px',
         shadow: '0 24px 50px -28px rgba(70, 50, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85)',
         'shadow-pop': '0 30px 70px -20px rgba(70, 50, 120, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.85)',
         blur: 'blur(18px) saturate(150%)',
@@ -509,7 +511,7 @@
         page: 'radial-gradient(circle 64px at 88% 250px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%), radial-gradient(460px 380px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(460px 380px at 100% 100%, #3d2348, transparent 60%), #13142a',
         surface: 'rgba(36, 34, 70, 0.48)',
         solid: '#1f1e3d',
-        'win-bg': 'linear-gradient(rgba(19, 20, 42, 0.35), rgba(19, 20, 42, 0.35)), radial-gradient(circle 70px at 94% 90px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%), radial-gradient(640px 460px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(640px 460px at 100% 100%, #3d2348, transparent 60%), #13142a',
+        'win-bg': 'linear-gradient(rgba(19, 20, 42, 0.35), rgba(19, 20, 42, 0.35)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%), radial-gradient(640px 460px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(640px 460px at 100% 100%, #3d2348, transparent 60%), #13142a',
         surface2: 'rgba(255, 255, 255, 0.1)',
         'accent-soft': 'rgba(255, 255, 255, 0.08)',
         fg: '#ecebff',
@@ -557,7 +559,13 @@
         .countdown, .count { letter-spacing: 0; }
         nav.tabs { border-bottom: 1px solid var(--ap-line); }
         .mak-logo { border-radius: 50%; }
-        .exams li, .guide-card, .sem, .tile { background: rgba(255, 255, 255, 0.28); border: 1px solid var(--ap-edge); }
+        /* One level of glass (a tile, a card of a guide); in it, rows with thin lines, not more glass. */
+        .tile, .guide-card { background: var(--ap-surface2); border: 1px solid var(--ap-edge); }
+        .sem { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 0 4px; }
+        .sems.two .sem { border-top: 0; }
+        .exams { gap: 0 18px; }
+        .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
+        .exams .when { color: var(--ap-muted); }
         .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
           background: radial-gradient(circle at 34% 28%, #fff 0%, #ffe3ec 42%, #c9d6fb 100%); box-shadow: 0 18px 30px -12px rgba(110, 80, 160, 0.5); color: #2a2740; font-size: 34px; line-height: 0.9; }
         .next-exam .day small { font-size: 16px; }
@@ -616,6 +624,7 @@
         'primary-edge': '#1c5bcc',
         radius: '10px',
         'radius-sm': '999px',
+        'radius-box': '8px',
         shadow: '0 14px 28px -14px rgba(30, 60, 140, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.55)',
         'shadow-sm': 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 40, 120, 0.25)',
         'shadow-pop': '0 20px 40px -10px rgba(30, 60, 140, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.6)',
@@ -698,8 +707,7 @@
         .actions .action .label { display: none; }
         .bar.weights { height: 18px; border-radius: 99px; border: 1px solid #7a9cc9; gap: 0; }
         .bar.weights span { border-right: 1px solid rgba(0, 0, 0, 0.15); font-size: 10.5px; }
-        .sem, .guide-card { border: 1px solid #c9c9b5; border-radius: 5px; }
-        .exams li, .week { border-radius: 8px; }
+        .sem, .guide-card { border: 1px solid var(--ap-line); }
       `
     },
 

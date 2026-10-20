@@ -26,7 +26,7 @@
     input.book { color: var(--ap-blue); }
     .book-status { margin: 8px 0 0; }
     .need { font-weight: 700; }
-    .sum { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--ap-radius-sm); background: var(--ap-accent-soft); color: var(--ap-fg); border: var(--ap-bw-sm) solid var(--ap-line); }
+    .sum { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--ap-radius-box); background: var(--ap-accent-soft); color: var(--ap-fg); border: var(--ap-bw-sm) solid var(--ap-line); }
     .sum p { margin: 2px 0; }
     .big { font-family: var(--ap-font-num); font-size: 1.35em; font-weight: 700; }
     .need.big { font-size: 1.8em; }
