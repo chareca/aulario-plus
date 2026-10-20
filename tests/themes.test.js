@@ -87,7 +87,8 @@ test('the fonts of the themes are files of the extension, with the OFL license',
     }
   }
   const css = MAK.fontFaceCss(MAK.THEMES, (f) => `fonts/${f}`);
-  assert.match(css, /@font-face \{ font-family: "AP Archivo"; src: url\("fonts\/archivo\.woff2"\) format\("woff2"\); font-weight: 500 900; font-style: normal; font-display: swap; \}/);
+  assert.match(css, /@font-face \{ font-family: "AP Bangers"; src: url\("fonts\/bangers\.woff2"\) format\("woff2"\); font-weight: 400; font-style: normal; font-display: swap; \}/);
+  assert.match(css, /font-family: "AP Comic Neue"; src: url\("fonts\/comic-neue-bold\.woff2"\) format\("woff2"\); font-weight: 700;/, 'one family, a file for each weight');
   assert.match(css, /font-family: "AP Cormorant"; src: url\("fonts\/cormorant-italic\.woff2"\) format\("woff2"\); font-weight: 400 700; font-style: italic;/);
   for (const name of ['chromium', 'firefox']) {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', `manifest.${name}.json`), 'utf8'));
@@ -126,7 +127,8 @@ test('the variables of a theme: the values of BASE where the theme has none, the
   assert.equal(dark['head-bg'], light['head-bg'], 'a light value that the dark mode does not change (the title bar)');
   assert.equal(light['item-gap'], '0px', 'a value of BASE');
   const vars = MAK.themeVars('bloques', false);
-  assert.match(vars, /--ap-head-bg: #ffd400;/);
+  assert.match(vars, /--ap-font-head: "AP Bangers"/);
+  assert.match(vars, /--ap-page: url\("data:image\/svg\+xml,[^;]*radial-gradient\(circle, rgba\(205, 150, 60, 0\.12\) 30%, transparent 34%\) 0 0 \/ 7px 7px/, 'the newsprint: its grain and its dots');
   assert.doesNotMatch(vars, /undefined/);
   assert.equal(MAK.theme('').id, MAK.DEFAULT_THEME);
   assert.equal(MAK.theme('no-such-theme').id, MAK.DEFAULT_THEME);
