@@ -882,25 +882,6 @@ function renderSites(el) {
 // ---- Settings ----------------------------------------------------------------
 
 // How to receive the messages to me in a different email: a forward filter in the UPNA email.
-function forwardGuide() {
-  const copyBtn = h('button', { class: 'btn', text: t('fwd.copy'), attrs: { type: 'button' } });
-  copyBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(MAK.MAIL_MARK);
-      copyBtn.textContent = t('fwd.copied');
-      setTimeout(() => { copyBtn.textContent = t('fwd.copy'); }, 1500);
-    } catch {}
-  });
-  return h(
-    'div',
-    { class: 'section' },
-    h('h2', { text: t('fwd.section') }),
-    h('p', { class: 'small', text: t('fwd.text') }),
-    h('details', null, h('summary', { text: t('fwd.steps') }), h('p', { class: 'small', text: t('fwd.gmail') }), h('p', { class: 'small', text: t('fwd.outlook') }), h('p', { class: 'small meta', text: t('fwd.share') })),
-    h('div', { class: 'row' }, copyBtn)
-  );
-}
-
 // Download links without a login (Send). In the same click: save the setting, then ask for the
 // host permission (Firefox can close the popup while it asks, and the setting is saved before).
 const LINK_DOWNLOADS = [1, 2, 3, 5, 10, 20];
@@ -1200,8 +1181,6 @@ function renderSettings(el) {
     ),
     teacherSection(),
     linksSection(),
-    forwardGuide(),
-    helpSection(),
     h(
       'div',
       { class: 'section' },
@@ -1240,12 +1219,7 @@ function renderSettings(el) {
         Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
       )
     ),
-    h(
-      'div',
-      { class: 'section', attrs: { id: 'privacy' } },
-      h('h2', { text: t('privacy.title') }),
-      ['privacy.text1', 'privacy.text2', 'privacy.text3', 'privacy.text4'].map((k) => h('p', { class: 'small', text: t(k) }))
-    )
+    helpSection()
   );
   updateKeepAlive(Date.now());
 }
@@ -1357,9 +1331,8 @@ async function init() {
   $('refresh').addEventListener('click', refresh);
   setupSearch();
   $('privacyLink').addEventListener('click', () => {
-    selectTab('settings');
-    const el = $('privacy');
-    if (el) el.scrollIntoView({ block: 'start' });
+    ext.tabs.create({ url: MAK.PRIVACY_URL });
+    window.close();
   });
   $('openTab').addEventListener('click', () => {
     ext.tabs.create({ url: ext.runtime.getURL('popup.html?view=tab') });

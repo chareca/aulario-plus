@@ -209,14 +209,6 @@
       'check.resourcesPage': 'Página de Recursos',
       'check.gradebook': 'Libro de calificaciones',
       'check.mail': 'Correo interno',
-      'fwd.section': 'Recibir en otro correo',
-      'fwd.text': 'El Correo interno solo envía a personas de la materia, y la copia llega a tu correo de la UPNA (@e.unavarra.es). Para recibir en otro correo lo que te envías a ti mismo, crea una vez un filtro de reenvío en tu correo de la UPNA. Aulario Plus pone «[Aulario Plus]» al principio del asunto de esos mensajes.',
-      'fwd.steps': 'Cómo crear el filtro',
-      'fwd.gmail': 'Si tu correo de la UPNA es Gmail: Configuración → «Reenvío y correo POP/IMAP» → añade y verifica tu otra dirección. Después, «Filtros y direcciones bloqueadas» → «Crear un filtro» → Asunto: [Aulario Plus] → «Reenviarlo a» tu otra dirección.',
-      'fwd.outlook': 'Si es Outlook: Configuración → Correo → Reglas → «Agregar nueva regla» → condición «El asunto incluye» [Aulario Plus] → acción «Reenviar a» tu otra dirección.',
-      'fwd.share': 'También puedes usar «Compartir» en la ventana de envío, si tu navegador lo permite: abre tu aplicación de correo con el archivo.',
-      'fwd.copy': 'Copiar «[Aulario Plus]»',
-      'fwd.copied': 'Copiado',
       'mail.files': '{n} archivos',
       'mail.files_one': '1 archivo',
       'mail.toMe': 'A mí',
@@ -638,10 +630,6 @@
 
       'privacy.short': 'Solo se conecta con MiAulario. Tus datos no salen de tu navegador.',
       'privacy.title': 'Privacidad',
-      'privacy.text1': 'La extensión hace peticiones a MiAulario (miaulario.unavarra.es) y lee las guías docentes públicas de la UPNA (www.unavarra.es). No tiene analíticas ni servidores propios.',
-      'privacy.text2': 'También alarga la cookie del inicio de sesión de la UPNA (sso.unavarra.es), pero no le hace peticiones. Tu navegador abre esa página cuando inicias sesión.',
-      'privacy.text3': 'Los datos que necesita (tus ajustes y los nombres de tus materias, una copia de tus entregas, anuncios, eventos, novedades y notas, y lo que has leído) se guardan solo en tu navegador. Nadie más los recibe. Los datos de las asignaturas se borran al cerrar sesión.',
-      'privacy.text4': 'Enlaces de descarga (solo si los activas): el archivo sale de tu navegador ya cifrado hacia el servidor de Send que elijas, y la dirección pasa por un acortador (is.gd, spoo.me o TinyURL). Ninguno de los dos puede abrir el archivo solo.'
     },
     en: {
       'app.title': 'Aulario Plus',
@@ -847,14 +835,6 @@
       'check.resourcesPage': 'Resources page',
       'check.gradebook': 'Gradebook',
       'check.mail': 'Internal mail',
-      'fwd.section': 'Receive in a different email',
-      'fwd.text': 'The internal mail sends only to persons of the site, and the copy goes to your UPNA email address (@e.unavarra.es). To receive the messages to you in a different email, make one forward filter in your UPNA email. The subject of these messages starts with "[Aulario Plus]".',
-      'fwd.steps': 'How to make the filter',
-      'fwd.gmail': 'If your UPNA email is Gmail: Settings → "Forwarding and POP/IMAP" → add and verify your other address. Then "Filters and Blocked Addresses" → "Create a new filter" → Subject: [Aulario Plus] → "Forward it to" your other address.',
-      'fwd.outlook': 'If it is Outlook: Settings → Mail → Rules → "Add new rule" → condition "Subject includes" [Aulario Plus] → action "Forward to" your other address.',
-      'fwd.share': 'You can also use "Share" in the send window, if your browser has it: it opens your email app with the file.',
-      'fwd.copy': 'Copy "[Aulario Plus]"',
-      'fwd.copied': 'Copied',
       'mail.files': '{n} files',
       'mail.files_one': '1 file',
       'mail.toMe': 'To me',
@@ -1276,10 +1256,6 @@
 
       'privacy.short': 'Connects only to MiAulario. Your data stays in your browser.',
       'privacy.title': 'Privacy',
-      'privacy.text1': 'The extension sends requests to MiAulario (miaulario.unavarra.es), and it reads the public course guides of the UPNA (www.unavarra.es). It has no analytics and no servers of its own.',
-      'privacy.text2': 'It also makes the cookie of the UPNA login page (sso.unavarra.es) last longer, but it does not send requests to that page. Your browser opens it when you log in.',
-      'privacy.text3': 'The extension keeps the data that it needs (your settings and the names of your sites, a copy of your deliveries, announcements, events, new items and grades, and what you read) only in your browser. Nobody else receives this data. The extension removes the course data when you log out.',
-      'privacy.text4': 'Download links (only if you enable them): the file goes from your browser, encrypted, to the Send server that you select, and the address goes through a shortener (is.gd, spoo.me or TinyURL). Neither of the two can open the file alone.'
     }
   };
 
