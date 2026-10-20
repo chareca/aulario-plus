@@ -27,6 +27,8 @@ test('guideWeight and guideMinimum: numbers of the table', () => {
   assert.equal(MAK.guideMinimum('50 %'), 5);
   assert.equal(MAK.guideMinimum('4 (40%)'), 4, 'the percent is not the first number');
   assert.equal(MAK.guideMinimum('Sí, 5 sobre 10 (50%)'), 5);
+  assert.equal(MAK.guideMinimum('50% (5 sobre 10)'), 5, 'the percent first');
+  assert.equal(MAK.guideMinimum('35% del examen (3,5 sobre 10)'), 3.5);
   assert.equal(MAK.guideMinimum('No'), null);
   assert.equal(MAK.guideMinimum(''), null);
 });
@@ -42,7 +44,7 @@ test('guideTeacher: the same name with or without accents, case or user name', (
 test('activityMatches: the same words, a number, or the first word of an activity without a number', () => {
   const yes = [['Entrega 1', 'Entrega 1 - Análisis'], ['Entrega 1', 'entrega1'], ['Prácticas', 'Práctica 2'], ['Examen teórico-práctico', 'Examen teórico-práctico (enero)'], ['Examen', 'Examen final']];
   const no = [['Entrega 1', 'Entrega 2'], ['Entrega 1', 'Entrega 10'], ['Prácticas', 'Examen'], ['Lab', 'Laboratorio 1']];
-  for (const [a, b] of yes.concat([['Informes', 'Informe 1'], ['Clases', 'Clase 2'], ['Exámenes', 'Examen 1'], ['Controles', 'Control 2']])) assert.ok(MAK.activityMatches(a, b), `${a} ~ ${b}`);
+  for (const [a, b] of yes.concat([['Informes', 'Informe 1'], ['Clases', 'Clase 2'], ['Exámenes', 'Examen 1'], ['Controles', 'Control 2'], ['Fase de diseño', 'Fase 1']])) assert.ok(MAK.activityMatches(a, b), `${a} ~ ${b}`);
   for (const [a, b] of no) assert.ok(!MAK.activityMatches(a, b), `${a} !~ ${b}`);
 });
 
@@ -221,4 +223,8 @@ test('guideBookGrades: the grades of the gradebook for the activities of the gui
   const exams = [{ activity: 'Examen parcial', weight: 30 }, { activity: 'Examen final', weight: 50 }, { activity: 'Informes', weight: 20 }];
   const two = { unused: [], categories: [{ items: [{ key: 'p', name: 'Examen parcial', score: 9, max: 10 }, { key: 'f', name: 'Examen final', score: 3, max: 10 }] }] };
   assert.deepEqual(MAK.guideBookGrades(exams, two), { 'Examen parcial': 9, 'Examen final': 3 });
+  // A word of an activity inside the item of another one: the first word decides ("Memoria prácticas" is of "Memoria de prácticas").
+  const memo = [{ activity: 'Memoria de prácticas', weight: 40 }, { activity: 'Prácticas', weight: 20 }];
+  const items = { unused: [], categories: [{ items: [{ key: 'm', name: 'Memoria prácticas', score: 8, max: 10 }, { key: 'p', name: 'Práctica 1', score: 6, max: 10 }] }] };
+  assert.deepEqual(MAK.guideBookGrades(memo, items), { 'Memoria de prácticas': 8, Prácticas: 6 });
 });

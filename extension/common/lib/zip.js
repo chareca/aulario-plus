@@ -203,17 +203,21 @@
     const folders = items.filter((x) => x.folder).sort((a, b) => a.url.length - b.url.length);
     const downloads = items.filter((x) => !x.folder);
     zip.addDir(rootName, now);
-    const dirNames = new Map(); // url path of a folder -> unique folder path in the archive
+    // The address of a folder (its path, with "/" at the end) -> its unique path in the archive. By the
+    // address: two folders whose names become the same ("a: b", "a? b") stay apart.
+    const dirNames = new Map();
     const folderOf = (segments) => [rootName].concat(segments.slice(0, -1)).join('/');
+    const addressOf = (url) => { try { return new URL(url).pathname; } catch { return ''; } };
+    const parentOf = (url) => dirNames.get(addressOf(url).replace(/[^/]+\/?$/, ''));
 
     for (const f of folders) {
       const seg = MAK.resourceSegments(f.url, siteId);
       if (!seg || !seg.length) continue;
       // In the folder of its parent, also when that one has a new name ("practicas (2)").
-      const parent = dirNames.get(seg.slice(0, -1).join('/')) || folderOf(seg);
+      const parent = parentOf(f.url) || folderOf(seg);
       const name = unique(parent, seg[seg.length - 1]);
       const path = `${parent}/${name}`;
-      dirNames.set(seg.join('/'), path);
+      dirNames.set(addressOf(f.url), path);
       zip.addDir(path, f.modified);
     }
 
@@ -223,8 +227,7 @@
       if (signal && signal.aborted) throw new Error('aborted');
       const seg = MAK.resourceSegments(item.url, siteId);
       if (!seg || !seg.length) continue;
-      const parentKey = seg.slice(0, -1).join('/');
-      const parent = parentKey ? dirNames.get(parentKey) || folderOf(seg) : rootName;
+      const parent = seg.length > 1 ? parentOf(item.url) || folderOf(seg) : rootName;
       const baseName = item.link ? MAK.safeFileName(`${item.title || seg[seg.length - 1]}.html`) : seg[seg.length - 1];
       const name = unique(parent, baseName);
       const path = `${parent}/${name}`;

@@ -164,6 +164,20 @@ test('buildSiteZip: a folder in a folder with a new name ("practicas (2)") stays
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('buildSiteZip: two folders whose names become the same ("Tema 1: Intro", "Tema 1? Intro") keep their own files', async () => {
+  const base = `https://miaulario.unavarra.es/access/content/group/${F.CS}`;
+  const enc = (p) => p.split('/').map(encodeURIComponent).join('/');
+  const folder = (p) => ({ url: `${base}/${enc(p)}/`, title: p.split('/').pop(), type: 'collection', size: 0, modified: F.NOW, folder: true, link: null, copyright: false });
+  const file = (p) => ({ url: `${base}/${enc(p)}`, title: p.split('/').pop(), type: 'application/pdf', size: 1, modified: F.NOW, folder: false, link: null, copyright: false });
+  const items = [folder('Tema 1: Intro'), folder('Tema 1? Intro'), folder('Tema 1: Intro/sub'), file('Tema 1: Intro/sub/a.pdf'), file('Tema 1: Intro/b.pdf'), file('Tema 1? Intro/c.pdf')];
+  const r = await MAK.buildSiteZip({ items, siteId: F.CS, siteTitle: 'CS', fetchFile: async (url) => ({ ok: true, status: 200, url, type: 'application/pdf', data: bytes('x') }), t: MAK.t, now: F.NOW });
+  const dir = tmp();
+  const z = pythonRead(writeZip(dir, r.parts));
+  const files = z.names.filter((n) => !n.endsWith('/')).sort();
+  assert.deepEqual(files, ['CS/Tema 1_ Intro (2)/c.pdf', 'CS/Tema 1_ Intro/b.pdf', 'CS/Tema 1_ Intro/sub/a.pdf']);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('buildSiteZip: a redirect out of the content area is an error; cancel stops the job', async () => {
   const items = [MAK.trimResource({ url: `https://miaulario.unavarra.es/access/content/group/${F.CS}/a.pdf`, title: 'a.pdf', type: 'application/pdf', size: 1, modifiedDate: F.sakaiDate(F.NOW) }, F.CS)];
   const r = await MAK.buildSiteZip({ items, siteId: F.CS, siteTitle: 'CS', fetchFile: async () => ({ ok: true, status: 200, url: 'https://miaulario.unavarra.es/portal/login', type: 'application/pdf', data: bytes('x') }), t: MAK.t });

@@ -220,17 +220,18 @@
   const stem = (w) => w.replace(/e?s$|e$/, '');
   // An item of the gradebook is a part of an activity of the guide: the same words in the same
   // order ("Entrega 1" in "Entrega 1 - Análisis"), or, for an activity without a number
-  // ("Prácticas"), the same first word ("Práctica 2"). strict: only the first rule.
+  // ("Prácticas"), the same first word ("Práctica 2"). strict: only the first rule, and with the same
+  // first word ("Prácticas" is not "Memoria prácticas").
   MAK.activityMatches = function (activity, item, strict) {
     const a = words(activity);
     const b = words(item);
     if (!a.length || !b.length) return false;
     // x is a sequence of whole words of y ("entrega 1" is in "entrega 1 analisis", not in "entrega 10").
     const inside = (x, y) => y.some((_, i) => x.every((w, j) => y[i + j] === w));
-    if (inside(a, b) || inside(b, a)) return true;
+    if ((inside(a, b) || inside(b, a)) && (!strict || a[0] === b[0])) return true;
     if (strict) return false;
     const hasNumber = a.some((w) => /^\d+$/.test(w));
-    return !hasNumber && stem(a[0]) === stem(b[0]) && stem(a[0]).length >= 4;
+    return !hasNumber && stem(a[0]) === stem(b[0]) && a[0].length >= 4; // the word, not its stem: "fase" is "fas"
   };
 
   // A book for MAK.gradeModel with the weights of the guide: each activity with a weight is a
@@ -271,13 +272,13 @@
   };
 
   // The minimum grade (0..10) of an activity from its text ("5 sobre 10", "4,5", "50 %"), or null
-  // ("No", empty). A percent only when the first number has it: "4 (40 %)" and "5 sobre 10 (50 %)" are 4 and 5.
+  // ("No", empty). The first number counts: "4 (40 %)" is 4, "50 % (5 sobre 10)" and "5 sobre 10 (50 %)" are 5.
   MAK.guideMinimum = function (text) {
     const s = String(text || '');
     const n = MAK.guideWeight(s);
     if (n === null || n <= 0) return null;
+    if (/^\D*\d+(?:[.,]\d+)?\s*%/.test(s)) return n / 10;
     const m = /sobre\s*(\d+(?:[.,]\d+)?)|\/\s*(\d+(?:[.,]\d+)?)|out of\s*(\d+)/i.exec(s);
-    if (!m && /^\D*\d+(?:[.,]\d+)?\s*%/.test(s)) return n / 10;
     const of = m ? Number((m[1] || m[2] || m[3]).replace(',', '.')) : 10;
     return of > 0 ? Math.min(10, (n / of) * 10) : null;
   };
