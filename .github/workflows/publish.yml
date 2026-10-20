@@ -154,6 +154,7 @@ jobs:
             exit 0
           fi
           # Listed version: AMO does the review and then signs and publishes it. The job does not wait.
-          npx --yes web-ext@8 sign --source-dir dist/firefox --artifacts-dir web-ext-artifacts \
+          # An exact version: this step has the keys of AMO, so a new release of web-ext does not run here unseen.
+          npx --yes web-ext@8.10.0 sign --source-dir dist/firefox --artifacts-dir web-ext-artifacts \
             --channel listed --approval-timeout 0
           echo "::notice::$TAG is in the review of Firefox Add-ons."
