@@ -307,13 +307,27 @@
     return codes && rows.length >= 0.8 * codes ? rows : [];
   };
 
+  // The guides of the sites of the last academic year of the user ("26_0_240504_1 …" is of 26), and of
+  // the sites without a year: an old site ("25_0_…") is a subject of another year, often passed.
+  // guides: [{ siteId, guide }]; sites: [{ id, title }].
+  MAK.lastYearGuides = function (guides, sites) {
+    const titles = new Map((sites || []).map((s) => [s.id, s.title]));
+    const year = (g) => Number((/^(\d{2})_\d+_/.exec(titles.get(g.siteId) || '') || [])[1]) || null;
+    const last = Math.max(0, ...(guides || []).map(year).filter(Boolean));
+    return (guides || []).filter((g) => !last || !year(g) || year(g) === last);
+  };
+
   // The exams of the subjects of the user: the rows with the code of a guide, the next first.
-  // subjects: [{ code, siteId }]. Each result: the row and the site.
+  // subjects: [{ code, siteId }]. Each result: the row and the site. Not the rows of an old calendar
+  // (all their dates before 1 August of this academic year: the page of the degree can still link it).
   MAK.myExams = function (rows, subjects, now) {
     const bySite = new Map((subjects || []).filter((s) => s.code).map((s) => [s.code, s.siteId]));
+    const d = new Date(now);
+    const yearStart = new Date(d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1, 7, 1).getTime();
     const out = [];
     for (const r of rows || []) {
       if (!bySite.has(r.code) || out.some((x) => x.code === r.code)) continue;
+      if (![r.final, r.recovery].some((t) => t && t >= yearStart)) continue;
       out.push(Object.assign({}, r, { siteId: bySite.get(r.code) }));
     }
     const today = new Date(new Date(now).toDateString()).getTime(); // from the start of today: yesterday's final is past

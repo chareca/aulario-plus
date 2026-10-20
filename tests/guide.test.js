@@ -42,7 +42,7 @@ test('guideTeacher: the same name with or without accents, case or user name', (
 test('activityMatches: the same words, a number, or the first word of an activity without a number', () => {
   const yes = [['Entrega 1', 'Entrega 1 - Análisis'], ['Entrega 1', 'entrega1'], ['Prácticas', 'Práctica 2'], ['Examen teórico-práctico', 'Examen teórico-práctico (enero)'], ['Examen', 'Examen final']];
   const no = [['Entrega 1', 'Entrega 2'], ['Entrega 1', 'Entrega 10'], ['Prácticas', 'Examen'], ['Lab', 'Laboratorio 1']];
-  for (const [a, b] of yes) assert.ok(MAK.activityMatches(a, b), `${a} ~ ${b}`);
+  for (const [a, b] of yes.concat([['Informes', 'Informe 1'], ['Clases', 'Clase 2'], ['Exámenes', 'Examen 1'], ['Controles', 'Control 2']])) assert.ok(MAK.activityMatches(a, b), `${a} ~ ${b}`);
   for (const [a, b] of no) assert.ok(!MAK.activityMatches(a, b), `${a} !~ ${b}`);
 });
 

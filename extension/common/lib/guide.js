@@ -216,7 +216,8 @@
 
   // "Entrega1 - Análisis" -> ["entrega", "1", "analisis"].
   const words = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/(\d)([a-z])|([a-z])(\d)/g, '$1$3 $2$4').split(/[^a-z0-9]+/).filter(Boolean);
-  const stem = (w) => w.replace(/(es|s)$/, '');
+  // The singular: "informes", "informe" -> "inform"; "clases", "clase" -> "clas"; "examenes" -> "examen".
+  const stem = (w) => w.replace(/e?s$|e$/, '');
   // An item of the gradebook is a part of an activity of the guide: the same words in the same
   // order ("Entrega 1" in "Entrega 1 - Análisis"), or, for an activity without a number
   // ("Prácticas"), the same first word ("Práctica 2"). strict: only the first rule.

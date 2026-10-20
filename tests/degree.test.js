@@ -87,6 +87,18 @@ test('my exams: only the subjects of the guides, the next exam first', () => {
   assert.deepEqual(mine.map((r) => [r.code, r.siteId]), [['3', 'c'], ['1', 'a'], ['2', 'b']]);
 });
 
+test('my exams: not the subjects of an old year, not the rows of an old calendar', () => {
+  const sites = [{ id: 'new', title: '26_0_240702_1 PROCESADORES' }, { id: 'old', title: '25_0_240101_1 CÁLCULO' }, { id: 'x', title: 'Coordinación' }];
+  const guides = [{ siteId: 'new' }, { siteId: 'old' }, { siteId: 'x' }];
+  assert.deepEqual(MAK.lastYearGuides(guides, sites).map((g) => g.siteId), ['new', 'x']);
+  assert.deepEqual(MAK.lastYearGuides([{ siteId: 'x' }], sites).map((g) => g.siteId), ['x'], 'no year: all');
+  const at = (y, m, d) => new Date(y, m - 1, d, 9).getTime();
+  const rows = [{ code: '1', final: at(2026, 6, 10), recovery: at(2026, 7, 1) }, { code: '2', final: at(2026, 12, 15), recovery: null }];
+  const mine = MAK.myExams(rows, [{ code: '1', siteId: 'a' }, { code: '2', siteId: 'b' }], at(2026, 9, 20));
+  assert.deepEqual(mine.map((r) => r.code), ['2'], 'June and July 2026 are of the last academic year in September');
+  assert.deepEqual(MAK.myExams(rows, [{ code: '1', siteId: 'a' }], at(2026, 7, 2)).map((r) => r.code), ['1'], 'in July: this academic year');
+});
+
 test('my exams: the day after a final, its recovery is the next date (from the start of today)', () => {
   const at = (d, hour) => new Date(2027, 0, d, hour).getTime();
   const rows = [{ code: '1', final: at(11, 16), recovery: at(31, 9) }, { code: '2', final: at(20, 9), recovery: null }];

@@ -344,7 +344,7 @@
     MAK.setLang(settings.lang);
     // The guides of the sites that the user did not hide (the old subjects are often hidden).
     const hidden = MAK.hiddenEverywhere(settings);
-    const guides = Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId));
+    const guides = MAK.lastYearGuides(Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId)), data.sites);
     const now = Date.now();
     const examTile = h('section', { class: 'tile' }, h('h4', { text: t('short.exams') }), h('p', { class: 'meta', text: t('short.loading') }));
     const actions = h('div', { class: 'actions' });

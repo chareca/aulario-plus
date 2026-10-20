@@ -247,10 +247,9 @@
     const now = Date.now();
     const current = MAK.currentSeason(now);
     const cards = { autumn: [], spring: [] };
-    for (const s of list) {
-      const guide = await guideOf(s.id, data).catch(() => null);
-      if (guide) cards[MAK.guideSeason(guide) || current].push(guideCard(s, guide));
-    }
+    // All the guides at once (an old one: 2 requests); the background writes them one after another.
+    const guides = await Promise.all(list.map((s) => guideOf(s.id, data).catch(() => null)));
+    list.forEach((s, i) => { if (guides[i]) cards[MAK.guideSeason(guides[i]) || current].push(guideCard(s, guides[i])); });
     const parts = {};
     for (const season of ['autumn', 'spring']) if (cards[season].length) parts[season] = { body: h('div', { class: 'grid' }, cards[season]) };
     const sections = MAK.semesterSections({ key: 'guides', now, parts, title: (season) => MAK.t(`short.semester.${season}`) });
