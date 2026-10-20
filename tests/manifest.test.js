@@ -64,5 +64,5 @@ test('Firefox: a fixed add-on id and the declaration of the data that goes out o
   assert.match(gecko.id, /^[a-zA-Z0-9-._]*@[a-zA-Z0-9-._]+$/);
   assert.notEqual(gecko.id, 'aulario-plus@local');
   assert.deepEqual(gecko.data_collection_permissions, { required: ['none'], optional: ['websiteContent'] });
-  assert.ok(Number(gecko.strict_min_version) >= 140);
+  assert.ok(Number(gecko.strict_min_version) >= 142, "the checks of the extension need Firefox 142");
 });
