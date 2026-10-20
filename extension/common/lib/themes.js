@@ -409,7 +409,7 @@
     // ---- 1 · Bloques: Neo-Brutalism + Bento Grid ----------------------------------------------
     {
       id: 'bloques',
-      name: { es: 'Bloques', en: 'Blocks' },
+      name: { es: 'Cómic', en: 'Comic' },
       about: { es: 'Bordes negros gruesos, sombras duras y colores planos.', en: 'Thick black borders, hard shadows and flat colors.' },
       fonts: [{ family: 'AP Archivo', file: 'archivo.woff2', weight: '500 900' }],
       light: {
@@ -548,7 +548,7 @@
     // ---- 3 · Plastilina: Claymorphism + Neumorphism ----------------------------------------------
     {
       id: 'plastilina',
-      name: { es: 'Plastilina', en: 'Clay' },
+      name: { es: 'Malvavisco', en: 'Marshmallow' },
       about: { es: 'Formas blandas e infladas, colores pastel y campos hundidos.', en: 'Soft puffy shapes, pastel colors and sunken fields.' },
       fonts: [
         { family: 'AP Fredoka', file: 'fredoka.woff2', weight: '400 700' },
@@ -685,7 +685,7 @@
     // ---- 5 · Etérea: Glassmorphism + Ethereal + Surrealism -----------------------------------------
     {
       id: 'eterea',
-      name: { es: 'Etérea', en: 'Ethereal' },
+      name: { es: 'Aurora', en: 'Aurora' },
       about: { es: 'Vidrio esmerilado sobre un amanecer pastel, con una luna que flota.', en: 'Frosted glass over a pastel dawn, with a floating moon.' },
       fonts: [
         { family: 'AP Cormorant', file: 'cormorant.woff2', weight: '400 700' },
@@ -1121,7 +1121,7 @@
     // The dark mode: a notebook of black paper and a white gel pen (the notes and the erasers stay as they are).
     {
       id: 'cuaderno',
-      name: { es: 'Cuaderno', en: 'Notebook' },
+      name: { es: 'Folio', en: 'Folio' },
       about: { es: 'Hojas rayadas con espiral, post-its, separadores, resaltador y gomas de borrar.', en: 'Lined pages with a spiral, sticky notes, dividers, a highlighter and erasers.' },
       fonts: [
         { family: 'AP Caveat', file: 'caveat.woff2', weight: '400 700' },

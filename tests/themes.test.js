@@ -126,8 +126,8 @@ test('the variables of a theme: the values of BASE where the theme has none, the
   assert.doesNotMatch(vars, /undefined/);
   assert.equal(MAK.theme('').id, MAK.DEFAULT_THEME);
   assert.equal(MAK.theme('no-such-theme').id, MAK.DEFAULT_THEME);
-  assert.equal(MAK.themeName(MAK.theme('cuaderno'), 'en'), 'Notebook');
-  assert.equal(MAK.themeName(MAK.theme('cuaderno'), 'fr'), 'Cuaderno');
+  assert.equal(MAK.themeName(MAK.theme('plastilina'), 'en'), 'Marshmallow');
+  assert.equal(MAK.themeName(MAK.theme('plastilina'), 'fr'), 'Malvavisco', 'another language: Spanish');
 });
 
 test('the CSS of a page: the fonts, the values of the mode, the CSS of the theme', () => {
