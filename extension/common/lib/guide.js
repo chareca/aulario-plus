@@ -219,14 +219,15 @@
   const stem = (w) => w.replace(/(es|s)$/, '');
   // An item of the gradebook is a part of an activity of the guide: the same words in the same
   // order ("Entrega 1" in "Entrega 1 - Análisis"), or, for an activity without a number
-  // ("Prácticas"), the same first word ("Práctica 2").
-  MAK.activityMatches = function (activity, item) {
+  // ("Prácticas"), the same first word ("Práctica 2"). strict: only the first rule.
+  MAK.activityMatches = function (activity, item, strict) {
     const a = words(activity);
     const b = words(item);
     if (!a.length || !b.length) return false;
     // x is a sequence of whole words of y ("entrega 1" is in "entrega 1 analisis", not in "entrega 10").
     const inside = (x, y) => y.some((_, i) => x.every((w, j) => y[i + j] === w));
     if (inside(a, b) || inside(b, a)) return true;
+    if (strict) return false;
     const hasNumber = a.some((w) => /^\d+$/.test(w));
     return !hasNumber && stem(a[0]) === stem(b[0]) && stem(a[0]).length >= 4;
   };
@@ -241,11 +242,15 @@
     const used = new Set();
     // The activities with a number first ("Entrega 1"), then the general ones ("Prácticas").
     const order = acts.map((a, i) => i).sort((x, y) => Number(!/\d/.test(acts[x].activity)) - Number(!/\d/.test(acts[y].activity)));
-    const matched = new Map();
-    for (const i of order) {
-      const list = items.filter((it) => !used.has(it.key) && MAK.activityMatches(acts[i].activity, it.name));
-      for (const it of list) used.add(it.key);
-      matched.set(i, list);
+    const matched = new Map(acts.map((a, i) => [i, []]));
+    // First the same words for all the activities, then the same first word for the items that are
+    // left: "Examen parcial" does not take "Examen final".
+    for (const strict of [true, false]) {
+      for (const i of order) {
+        const list = items.filter((it) => !used.has(it.key) && MAK.activityMatches(acts[i].activity, it.name, strict));
+        for (const it of list) used.add(it.key);
+        matched.get(i).push(...list);
+      }
     }
     const categories = acts.map((a, i) => {
       const list = matched.get(i);
@@ -265,13 +270,13 @@
   };
 
   // The minimum grade (0..10) of an activity from its text ("5 sobre 10", "4,5", "50 %"), or null
-  // ("No", empty).
+  // ("No", empty). A percent only when the first number has it: "4 (40 %)" and "5 sobre 10 (50 %)" are 4 and 5.
   MAK.guideMinimum = function (text) {
     const s = String(text || '');
     const n = MAK.guideWeight(s);
     if (n === null || n <= 0) return null;
-    if (/%/.test(s)) return n / 10;
     const m = /sobre\s*(\d+(?:[.,]\d+)?)|\/\s*(\d+(?:[.,]\d+)?)|out of\s*(\d+)/i.exec(s);
+    if (!m && /^\D*\d+(?:[.,]\d+)?\s*%/.test(s)) return n / 10;
     const of = m ? Number((m[1] || m[2] || m[3]).replace(',', '.')) : 10;
     return of > 0 ? Math.min(10, (n / of) * 10) : null;
   };
@@ -330,7 +335,7 @@
     const empty = acts.filter((a) => a.grade === null);
     if (!empty.length) {
       out.complete = true;
-      out.final = points;
+      out.final = Math.floor(points * 100 + 1e-6) / 100; // down: 4,998 is not a 5
       out.passed = points >= MAK.PASS_GRADE - 1e-9 && !acts.some((a) => a.below);
       return out;
     }
@@ -347,6 +352,8 @@
       if (!more.length) break;
       for (const a of more) fixed.add(a);
     }
+    // Up to 2 decimals (4,333 needs 4,34), without the error of the floats (4e-15 is 0), as MAK.neededAverage.
+    need = Math.max(0, Math.ceil(need * 100 - 1e-6) / 100);
     for (const a of empty) a.plan = fixed.has(a) ? a.minimum : Math.max(need, a.minimum || 0);
     out.need = need;
     out.reachable = need <= 10 + 1e-9;

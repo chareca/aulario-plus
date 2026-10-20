@@ -25,6 +25,8 @@ test('guideWeight and guideMinimum: numbers of the table', () => {
   assert.equal(MAK.guideMinimum('4,5'), 4.5);
   assert.equal(MAK.guideMinimum('2 sobre 4'), 5);
   assert.equal(MAK.guideMinimum('50 %'), 5);
+  assert.equal(MAK.guideMinimum('4 (40%)'), 4, 'the percent is not the first number');
+  assert.equal(MAK.guideMinimum('Sí, 5 sobre 10 (50%)'), 5);
   assert.equal(MAK.guideMinimum('No'), null);
   assert.equal(MAK.guideMinimum(''), null);
 });
@@ -162,9 +164,9 @@ test('guideCalc: the grade that you need in the rest, with the minimums, and the
   assert.deepEqual(c.rows.map((r) => r.minimum), [5, 4, null, null]);
 
   c = MAK.guideCalc(SSI_ROWS, { 'Examen de teoría': 6 });
-  // 6 * 0.4 = 2.4; the rest (60 %) needs 2.6 / 0.6 = 4.33; Prácticas has the minimum 4 (below).
-  assert.equal(r2(c.need), 4.33);
-  assert.deepEqual(c.rows.map((r) => r.plan === undefined ? null : r2(r.plan)), [null, 4.33, 4.33, null]);
+  // 6 * 0.4 = 2.4; the rest (60 %) needs 2.6 / 0.6 = 4.333, up: 4.34 (4.33 gives 4.998); Prácticas has the minimum 4 (below).
+  assert.equal(c.need, 4.34);
+  assert.deepEqual(c.rows.map((r) => r.plan === undefined ? null : r2(r.plan)), [null, 4.34, 4.34, null]);
   assert.equal(r2(c.projected), 5);
   assert.equal(c.complete, false);
 
@@ -188,6 +190,9 @@ test('guideCalc: the grade that you need in the rest, with the minimums, and the
   assert.equal(c.passed, false, 'the exam is below its minimum');
   assert.equal(MAK.guideCalc([{ activity: 'A', weight: 30 }, { activity: 'B', weight: 30 }], { A: 10 }).need, 0, 'the weights make 60 %: 10 in A gives 5');
   assert.equal(MAK.guideCalc([], {}).total, 0);
+  const three = [{ activity: 'A', weight: 10 }, { activity: 'B', weight: 70 }, { activity: 'C', weight: 20 }];
+  assert.equal(MAK.guideCalc(three, { A: 1, B: 7 }).need, 0, '0.1 + 4.9 is 5: not 4e-15 (the error of the floats)');
+  assert.equal(MAK.guideCalc([{ activity: 'E', weight: 40 }, { activity: 'P', weight: 30 }, { activity: 'Q', weight: 30 }], { E: 6, P: 4.33, Q: 4.33 }).final, 4.99, '4.998 is not a 5');
 });
 
 test('guideCalc with the weights of the user; parseWeight', () => {
@@ -212,4 +217,8 @@ test('guideBookGrades: the grades of the gradebook for the activities of the gui
   ] }] };
   assert.deepEqual(MAK.guideBookGrades(SSI_ROWS, book), { 'Examen de teoría': 7, Prácticas: 8 }, '(18 + 6) / (20 + 10); no grade for the work yet');
   assert.deepEqual(MAK.guideBookGrades(SSI_ROWS, null), {});
+  // The same first word: each exam keeps its own item ("Examen parcial" does not take "Examen final").
+  const exams = [{ activity: 'Examen parcial', weight: 30 }, { activity: 'Examen final', weight: 50 }, { activity: 'Informes', weight: 20 }];
+  const two = { unused: [], categories: [{ items: [{ key: 'p', name: 'Examen parcial', score: 9, max: 10 }, { key: 'f', name: 'Examen final', score: 3, max: 10 }] }] };
+  assert.deepEqual(MAK.guideBookGrades(exams, two), { 'Examen parcial': 9, 'Examen final': 3 });
 });
