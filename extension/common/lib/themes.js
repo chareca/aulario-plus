@@ -9,7 +9,9 @@
 // A new theme: add an object to MAK.THEMES (copy one and change it). "light": its values; "dark": only the
 // values that change in the dark mode (the others stay as in "light"). A variable that the theme does not
 // set has the value of BASE (light or dark). "icons" (optional): its own drawings for the icons. Its own CSS goes into every part (the popup, each shadow root): use the class
-// names of the parts, and :host for a shadow root. Nothing from other servers: the fonts are files of the
+// names of the parts, and :host for a shadow root. "blockCss" (optional): CSS for the block "Aulario Plus" of
+// "Mi sitio", which is in the page (each rule starts with #mak-block). "brand" (optional): the name in the
+// titles (else "Aulario Plus"). Nothing from other servers: the fonts are files of the
 // extension, the images are data: URLs. tests/themes.test.js checks the list.
 (function (root) {
   'use strict';
@@ -150,15 +152,36 @@
     }
   };
 
-  // The paper of "Cuaderno" (fractal noise, an SVG in a data: URL).
+  // The grain of paper, cloth and rubber (fractal noise, an SVG in a data: URL).
   const NOISE = (alpha) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .26 0 0 0 0 .2 0 0 0 ${alpha} 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
-  // A red scribble under a title (Cuaderno).
-  const SCRIBBLE = (color) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'%3E%3Cpath d='M2 6 C 40 2, 70 9, 110 5 S 170 3, 198 6' stroke='${encodeURIComponent(color)}' stroke-width='2.4' fill='none' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")`;
   const GRID = (c) => `linear-gradient(${c} 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, ${c} 1px, transparent 1px) 0 0 / 22px 22px`;
-  const HATCH = (deg, c) => `repeating-linear-gradient(${deg}deg, ${c} 0 1.5px, transparent 1.5px 6px)`;
 
   // The green arrow of the links of Cromo (a drawing of our own, in the style of 2002).
   const XP_ARROW = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86d863"/><stop offset="1" stop-color="#2a8a0e"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="4" fill="url(#a)" stroke="#1d6a08"/><path d="M6.5 12h10M12.5 7.5L17 12l-4.5 4.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // ---- The drawings and the pieces of CSS of "Cuaderno" ----
+  const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  // The lines of a page (every 26 px).
+  const RULED = (c) => `repeating-linear-gradient(180deg, transparent 0 25px, ${c} 25px 26px)`;
+  // The red margin of a page, 34 px from the left.
+  const MARGIN = 'linear-gradient(90deg, transparent 33px, color-mix(in srgb, var(--ap-accent) 55%, transparent) 33px 34.5px, transparent 34.5px)';
+  // A line in pen under a title.
+  const PEN_LINE = (c) => svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 10" preserveAspectRatio="none"><path d="M2 5.5C50 3 120 7 198 4" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`);
+  // The rubber of an eraser: a light on the top, a darker bottom, a little dirt. base: a color or a gradient.
+  const RUBBER = (base) => `linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, 0.13) 100%), ${NOISE(0.1)}, ${base}`;
+  // A sticky note: a light on the paper, the corner a little up, the shadow under it (declarations).
+  const NOTE = (c) => `background: linear-gradient(172deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 38%), linear-gradient(315deg, rgba(110, 80, 0, 0.16) 0%, rgba(110, 80, 0, 0) 18%), ${c};
+    border-radius: 2px 2px 34px 2px / 2px 2px 6px 2px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.14), 3px 10px 12px -8px rgba(0, 0, 0, 0.5);`;
+  // A piece of washi tape on the top of a note (the declarations of its ::before).
+  const TAPE = (c) => `content: ""; position: absolute; z-index: 1; top: -11px; left: 50%; width: 88px; height: 22px; margin-left: -44px; pointer-events: none; transform: rotate(-3deg);
+    background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 3px, rgba(255, 255, 255, 0) 3px 7px), ${c};
+    clip-path: polygon(0 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 0 100%, 3% 75%, 0 50%, 3% 25%);`;
+  // The spiral (the ::before of a page): a ring every 24 px, the hole in the paper and the wire over the
+  // edge (the edge of the paper is at x = 14 of the drawing).
+  const COIL = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="24" viewBox="0 0 34 24"><defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#b4b8bf"/><stop offset="1" stop-color="#555a62"/></linearGradient></defs><ellipse cx="26" cy="12" rx="3.2" ry="3.5" fill="#1b1916" stroke="#8c8c8c" stroke-opacity=".55" stroke-width=".8"/><path d="M26.5 10.5C21 4.5 6 4 4 10.5C2.6 15.5 9 17.5 15 16" fill="none" stroke="#000000" stroke-opacity=".3" stroke-width="3" stroke-linecap="round" transform="translate(.8 1.5)"/><path d="M26.5 10.5C21 4.5 6 4 4 10.5C2.6 15.5 9 17.5 15 16" fill="none" stroke="url(#w)" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  const SPIRAL = `content: ""; position: absolute; top: 6px; bottom: 6px; left: -14px; width: 34px; pointer-events: none; background: ${svgUrl(COIL)} 0 0 / 34px 24px repeat-y;`;
+  // A magnifier in pen (the search field).
+  const LENS = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.2" fill="none" stroke="#5a6cc0" stroke-width="2.2"/><path d="M14.6 14.8l5.6 5.4" stroke="#5a6cc0" stroke-width="2.6" stroke-linecap="round"/></svg>');
 
   MAK.THEMES = [
     // ---- 1 · Bloques: Neo-Brutalism + Bento Grid ----------------------------------------------
@@ -586,7 +609,8 @@
     // our own in that style, not the icons of a system.
     {
       id: 'cromo',
-      name: { es: 'Cromo', en: 'Chrome' },
+      name: { es: 'Cromo XP', en: 'Chrome XP' },
+      brand: 'Aulario XP',
       about: { es: 'Barra de título azul, ventanas beige y botones con borde azul, como el escritorio de 2002.', en: 'Blue title bars, beige windows and buttons with a blue border, as the desktop of 2002.' },
       fonts: [],
       icons: {
@@ -695,7 +719,7 @@
       },
       css: `
         /* Title bars: Trebuchet, with a dark blue shadow */
-        header.top h1, .box > .head .title, .win > header h2, .mail > header h2 { text-shadow: 1px 1px 0 #0f1089; }
+        header.top h1, .box > .head .title, .win > header h2, .mail > header h2, .panel > .bar { text-shadow: 1px 1px 0 #0f1089; }
         /* The popup: the content in a white panel, with the border of the lists */
         main { border: 1px solid #7f9db9; border-radius: 0; }
         /* Buttons of 23 px; an orange light on hover; the default button with a blue edge */
@@ -713,8 +737,18 @@
         .week .label { color: #444444; }
         .week .track { background: #d6d0c5; }
         /* The close button of a window: the red square */
-        .win > header button.x, .mail > header button.x, .box > .head button.close { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
+        .win > header button.x, .mail > header button.x, .box > .head button.close, .panel > .bar button.x { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
           border: 1px solid #ffffff; border-radius: 3px; background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
+        /* The search (Ctrl+K): a window with a title bar, a field and a white list, and a status bar */
+        .panel > .bar { display: flex; }
+        .panel > input { margin: 10px 10px 6px; padding: 3px 6px; font-family: var(--ap-font); font-size: 12px; font-weight: 400; font-style: normal; letter-spacing: normal;
+          color: var(--ap-input-fg); background: var(--ap-input-bg); border: 1px solid var(--ap-input-edge); caret-color: auto; }
+        .panel > input::placeholder { color: #808080; }
+        .panel > .list { margin: 0 10px 8px; padding: 2px; background: var(--ap-surface); border: 1px solid #7f9db9; }
+        .panel h3 { margin: 6px 4px 2px; font-family: var(--ap-font); font-size: 11px; font-weight: 700; font-style: normal; color: var(--ap-link); }
+        .panel a.item { padding: 3px 6px; border-radius: 0; }
+        .panel .tip { padding: 4px 4px 0; }
+        .panel > .foot { padding: 3px 10px; font-size: 11px; color: var(--ap-fg); border-top: 1px solid #d0d0bf; }
         /* The selection of the lists */
         a.item.sel, .result.sel { background: #316ac5; color: #ffffff; }
         a.item.sel .meta, .result.sel .meta { color: inherit; opacity: 0.85; }
@@ -758,142 +792,258 @@
       `
     },
 
-    // ---- 7 · Cuaderno: Conceptual Sketch + Wabi-Sabi ------------------------------------------------
+    // ---- 7 · Cuaderno: a real notebook. A page with lines, a red margin and a spiral; blue pen; sticky
+    // notes with washi tape, index cards, dividers with tabs, highlighters, and erasers for the buttons.
+    // The dark mode: a notebook of black paper and a white gel pen (the notes and the erasers stay as they are).
     {
       id: 'cuaderno',
       name: { es: 'Cuaderno', en: 'Notebook' },
-      about: { es: 'Papel, letra a mano, resaltador y un sello rojo. Imperfecto a propósito.', en: 'Paper, handwriting, a highlighter and a red stamp. Imperfect on purpose.' },
+      about: { es: 'Hojas rayadas con espiral, post-its, separadores, resaltador y gomas de borrar.', en: 'Lined pages with a spiral, sticky notes, dividers, a highlighter and erasers.' },
       fonts: [
         { family: 'AP Caveat', file: 'caveat.woff2', weight: '400 700' },
         { family: 'AP Patrick Hand', file: 'patrick-hand.woff2', weight: '400' }
       ],
+      icons: {
+        pencil: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6.2 14.6L15.8 5l3.2 3.2-9.6 9.6z" fill="#f5c542" stroke="#6b4e0e" stroke-width=".8"/><path d="M7.9 16.3l9.5-9.5" stroke="#dca21c" stroke-width="1.3"/><path d="M15.8 5l1.4-1.4a1.2 1.2 0 0 1 1.7 0l1.5 1.5a1.2 1.2 0 0 1 0 1.7L19 8.2z" fill="#ef9aa6" stroke="#7a3644" stroke-width=".8"/><path d="M15 5.8l3.2 3.2" stroke="#9aa0a8" stroke-width="1.7"/><path d="M6.2 14.6L4 20l5.4-2.2z" fill="#f1d3a6" stroke="#6b4e0e" stroke-width=".8" stroke-linejoin="round"/><path d="M4 20l.9-2.3 1.4 1.4z" fill="#2b2b2b"/></svg>',
+        mail: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="1" fill="#fbf7ec"/><rect x="2.5" y="5.5" width="19" height="13" rx="1" fill="none" stroke="#d8434b" stroke-width="1.6" stroke-dasharray="2.2 2.2"/><rect x="2.5" y="5.5" width="19" height="13" rx="1" fill="none" stroke="#2b4fb3" stroke-width="1.6" stroke-dasharray="2.2 2.2" stroke-dashoffset="2.2"/><path d="M4.2 7.2l7.8 5.8 7.8-5.8" fill="none" stroke="#6a5a3a" stroke-width="1"/></svg>'
+      },
       light: {
         font: '"AP Patrick Hand", "Patrick Hand", "Comic Sans MS", cursive',
         'font-head': '"AP Caveat", "Caveat", "Comic Sans MS", cursive',
         'font-num': '"AP Caveat", "Caveat", "Comic Sans MS", cursive',
-        zoom: '1.12',
+        zoom: '1.1',
         'head-weight': '700',
         'head-zoom': '1.45',
-        page: `${NOISE(0.09)}, #e9e2d4`,
-        surface: `${NOISE(0.07)}, #f6f1e7`,
-        solid: '#f6f1e7',
-        surface2: '#fff8d6',
-        fg: '#2a2622',
-        muted: '#6a6259',
-        line: 'rgba(42, 38, 34, 0.35)',
-        edge: '#2a2622',
-        accent: '#c23b22',
+        // The cover of the notebook (blue cloth); the page (lines on cream paper)
+        page: `${NOISE(0.2)}, #2f5089`,
+        'win-bg': `${NOISE(0.05)}, ${RULED('rgba(88, 132, 205, 0.33)')}, #fbf8ef`,
+        surface: '#fffdf7', // an index card
+        solid: '#fbf8ef',
+        surface2: '#eadcbc', // a divider of cardboard
+        // The blue pen
+        fg: '#1d2a78',
+        muted: '#58619a',
+        line: 'rgba(29, 42, 120, 0.28)',
+        edge: 'rgba(80, 60, 20, 0.15)',
+        accent: '#d8434b', // the red pen (the margin, the circles)
         'accent-fg': '#ffffff',
-        'accent-soft': '#fde9dc',
-        link: '#2f4c73',
-        red: '#c23b22', 'red-bg': '#fde9dc',
-        orange: '#b0581c', 'orange-bg': '#fbe8d2',
-        yellow: '#7d6a12', 'yellow-bg': '#fff5c2',
-        green: '#4e6b2e', 'green-bg': '#e8efd9',
-        blue: '#2f4c73', 'blue-bg': '#e3eaf3',
-        grey: '#6a6259', 'grey-bg': '#ece6da',
-        'mark-bg': 'linear-gradient(100deg, transparent 1%, #ffe27a 4%, #ffe27a 95%, transparent 99%)',
-        'head-fg': '#2a2622',
-        'head-line': '1.5px dashed rgba(42, 38, 34, 0.45)',
-        'title-deco': `${SCRIBBLE('#c23b22')} left bottom / 100% 8px no-repeat`,
+        'accent-soft': '#fdf09a', // the yellow sticky note
+        link: '#1f45c0',
+        red: '#cf2b2b', 'red-bg': '#fde3e0',
+        orange: '#b8580f', 'orange-bg': '#fde9d2',
+        yellow: '#7a6400', 'yellow-bg': '#fdf6c2',
+        green: '#2c7a3a', 'green-bg': '#e1f1dc',
+        blue: '#1f45c0', 'blue-bg': '#d9e4f2',
+        grey: '#58619a', 'grey-bg': '#ece7da',
+        'mark-bg': 'linear-gradient(100deg, rgba(255, 226, 60, 0) 1%, rgba(255, 226, 60, 0.85) 4%, rgba(255, 220, 40, 0.75) 95%, rgba(255, 226, 60, 0) 99%)',
+        // The titles: written on the page, a line in pen under them
+        'head-bg': 'transparent',
+        'head-fg': '#1d2a78',
+        'head-line': '0 solid transparent',
+        'head-btn-bg': 'transparent',
+        'head-btn-fg': '#1d2a78',
+        'head-btn-edge': '#1d2a78',
+        'head-btn-size': '28px',
+        'title-deco': `${PEN_LINE('#2b3fae')} left bottom / 100% 8px no-repeat`,
         'title-pad': '6px',
-        'btn-bg': '#f6f1e7',
-        'btn-fg': '#2a2622',
-        'btn-edge': '#2a2622',
-        'primary-bg': '#fff1a6',
-        'primary-fg': '#2a2622',
-        'primary-edge': '#2a2622',
-        radius: '255px 14px 225px 14px / 14px 225px 14px 255px',
-        'radius-sm': '15px 255px 15px 225px / 225px 15px 255px 15px',
-        bw: '2px',
-        'bw-sm': '2px',
-        shadow: '3px 4px 0 rgba(42, 38, 34, 0.18)',
-        'shadow-sm': '2px 3px 0 #2a2622',
-        'shadow-pop': '4px 8px 18px -6px rgba(0, 0, 0, 0.4)',
-        backdrop: 'rgba(42, 38, 34, 0.35)',
-        'item-sep': '1.5px dashed rgba(42, 38, 34, 0.35)',
+        // The buttons: erasers (a white one; the main one pink)
+        'btn-bg': RUBBER('#f5f2ea'),
+        'btn-fg': '#1d2a78',
+        'btn-edge': 'rgba(0, 0, 0, 0.1)',
+        'primary-bg': RUBBER('#f3a2a8'),
+        'primary-fg': '#1d2a78',
+        'primary-edge': 'rgba(120, 30, 40, 0.22)',
+        radius: '4px',
+        'radius-sm': '9px',
+        'radius-box': '3px',
+        bw: '0px',
+        'bw-sm': '1px',
+        // The page: the pages under it
+        shadow: '0 1px 1px rgba(0, 0, 0, 0.12), 2px 3px 0 -1px #f3eee0, 2px 3px 1px -1px rgba(0, 0, 0, 0.2), 4px 6px 0 -2px #ebe4d2, 4px 6px 1px -2px rgba(0, 0, 0, 0.2), 0 12px 20px -10px rgba(0, 0, 0, 0.45)',
+        // The thickness of an eraser
+        'shadow-sm': 'inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 3px rgba(0, 0, 0, 0.08), 0 3px 0 -1px rgba(0, 0, 0, 0.2), 0 6px 8px -4px rgba(0, 0, 0, 0.45)',
+        'shadow-pop': '0 2px 3px rgba(0, 0, 0, 0.2), 0 22px 44px -12px rgba(0, 0, 0, 0.55)',
+        backdrop: 'rgba(30, 24, 12, 0.4)',
+        'item-sep': '0 solid transparent',
+        'item-pad': '7px 2px',
+        // The countdowns: written with the pen; a red circle when it is close
+        'count-fg': '#1d2a78',
         'count-size': '1.35em',
         'count-pad': '0 6px',
-        'count-hot-fg': '#c23b22',
-        'count-hot-edge': '#c23b22',
         'count-radius': '50% 45% 55% 48% / 55% 50% 45% 52%',
-        'count-ok-fg': '#c23b22',
-        'count-ok-edge': '#c23b22',
-        'input-bg': 'transparent',
-        'input-edge': '#2a2622',
-        'input-radius': '12px 225px 10px 255px / 225px 10px 255px 12px',
+        'count-soon-fg': '#c2570c',
+        'count-hot-fg': '#d0262b',
+        'count-hot-edge': '#d0262b',
+        'count-ok-fg': '#2c7a3a',
+        'count-ok-edge': '#2c7a3a',
+        // The fields: a box drawn with the pen
+        'input-bg': 'rgba(255, 255, 255, 0.5)',
+        'input-fg': '#1d2a78',
+        'input-edge': '#2b3a8f',
+        'input-radius': '12px 16px 10px 14px / 14px 10px 16px 12px',
         'logo-bg': 'transparent',
-        'logo-ring': '#c23b22',
-        'logo-dot': '#2a2622',
-        'k-exam': HATCH(45, 'rgba(42, 38, 34, 0.75)'), 'k-exam-fg': '#2a2622',
-        'k-practice': HATCH(-45, 'rgba(47, 76, 115, 0.75)'), 'k-practice-fg': '#2a2622',
-        'k-work': 'repeating-linear-gradient(0deg, rgba(78, 107, 46, 0.7) 0 1.5px, transparent 1.5px 5px)', 'k-work-fg': '#2a2622',
-        'k-participation': 'rgba(194, 59, 34, 0.45)', 'k-participation-fg': '#2a2622',
-        'k-presentation': 'radial-gradient(rgba(42, 38, 34, 0.6) 1.2px, transparent 1.6px) 0 0 / 6px 6px', 'k-presentation-fg': '#2a2622',
-        'k-other': HATCH(90, 'rgba(42, 38, 34, 0.35)'), 'k-other-fg': '#2a2622'
+        'logo-ring': '#1f45c0',
+        'logo-dot': '#d8434b',
+        // The weights: highlighters
+        'k-exam': 'rgba(255, 210, 0, 0.82)', 'k-exam-fg': '#1d2a78',
+        'k-practice': 'rgba(255, 110, 170, 0.6)', 'k-practice-fg': '#1d2a78',
+        'k-work': 'rgba(80, 210, 110, 0.6)', 'k-work-fg': '#1d2a78',
+        'k-participation': 'rgba(255, 150, 40, 0.65)', 'k-participation-fg': '#1d2a78',
+        'k-presentation': 'rgba(90, 170, 255, 0.6)', 'k-presentation-fg': '#1d2a78',
+        'k-other': 'rgba(160, 160, 160, 0.5)', 'k-other-fg': '#1d2a78'
       },
       dark: {
-        page: `${NOISE(0.12)}, #1d362b`,
-        surface: `${NOISE(0.1)}, #24433a`,
-        solid: '#24433a',
-        surface2: '#2e5247',
-        'accent-soft': '#4a2d26',
-        fg: '#f1efe6',
-        muted: '#bcc6b8',
-        line: 'rgba(241, 239, 230, 0.3)',
-        edge: '#f1efe6',
-        accent: '#ff9a85',
-        'accent-fg': '#1d362b',
-        link: '#bcd8ff',
-        red: '#ff9a85', 'red-bg': '#4a2d26',
-        orange: '#ffbe85', 'orange-bg': '#4a3a26',
-        green: '#c8e6a0', 'green-bg': '#2e4a2e',
-        blue: '#bcd8ff', 'blue-bg': '#2a3f52',
-        grey: '#bcc6b8', 'grey-bg': '#2e5247',
-        'mark-bg': 'linear-gradient(100deg, transparent 1%, rgba(255, 226, 122, 0.35) 4%, rgba(255, 226, 122, 0.35) 95%, transparent 99%)',
-        'head-fg': '#f1efe6',
-        'head-line': '1.5px dashed rgba(241, 239, 230, 0.4)',
-        'title-deco': `${SCRIBBLE('#ff9a85')} left bottom / 100% 8px no-repeat`,
-        'btn-bg': '#24433a',
-        'btn-fg': '#f1efe6',
-        'btn-edge': '#f1efe6',
-        'primary-bg': '#3d5a3a',
-        'primary-fg': '#f1efe6',
-        'primary-edge': '#f1efe6',
-        shadow: '3px 4px 0 rgba(0, 0, 0, 0.3)',
-        'shadow-sm': '2px 3px 0 rgba(0, 0, 0, 0.45)',
-        'item-sep': '1.5px dashed rgba(241, 239, 230, 0.3)',
-        'count-hot-fg': '#ff9a85',
-        'count-hot-edge': '#ff9a85',
-        'count-ok-fg': '#ff9a85',
-        'count-ok-edge': '#ff9a85',
-        'input-edge': '#f1efe6',
-        'logo-ring': '#ff9a85',
-        'logo-dot': '#f1efe6',
-        'k-exam': HATCH(45, 'rgba(241, 239, 230, 0.7)'), 'k-exam-fg': '#f1efe6',
-        'k-practice': HATCH(-45, 'rgba(188, 216, 255, 0.7)'), 'k-practice-fg': '#f1efe6',
-        'k-work': 'repeating-linear-gradient(0deg, rgba(200, 230, 160, 0.6) 0 1.5px, transparent 1.5px 5px)', 'k-work-fg': '#f1efe6',
-        'k-participation': 'rgba(255, 154, 133, 0.45)', 'k-participation-fg': '#f1efe6',
-        'k-presentation': 'radial-gradient(rgba(241, 239, 230, 0.6) 1.2px, transparent 1.6px) 0 0 / 6px 6px', 'k-presentation-fg': '#f1efe6',
-        'k-other': HATCH(90, 'rgba(241, 239, 230, 0.3)'), 'k-other-fg': '#f1efe6'
+        page: `${NOISE(0.25)}, #142038`,
+        'win-bg': `${NOISE(0.12)}, ${RULED('rgba(150, 178, 230, 0.17)')}, #1f1e1c`,
+        surface: '#2d2b28',
+        solid: '#1f1e1c',
+        surface2: '#3b3428',
+        // The white gel pen
+        fg: '#eeebe3',
+        muted: '#aca79d',
+        line: 'rgba(238, 235, 227, 0.25)',
+        edge: 'rgba(0, 0, 0, 0.5)',
+        accent: '#ff8a80',
+        'accent-fg': '#1f1e1c',
+        'accent-soft': '#e8d978',
+        link: '#93b8ff',
+        red: '#ff8a80', 'red-bg': '#4a2420',
+        orange: '#ffb070', 'orange-bg': '#45301a',
+        yellow: '#f1d86a', 'yellow-bg': '#3d3518',
+        green: '#8fd49a', 'green-bg': '#1f3a26',
+        blue: '#93b8ff', 'blue-bg': '#283245',
+        grey: '#aca79d', 'grey-bg': '#2d2b28',
+        'mark-bg': 'linear-gradient(100deg, rgba(255, 214, 0, 0) 1%, rgba(255, 214, 0, 0.55) 4%, rgba(255, 208, 0, 0.5) 95%, rgba(255, 214, 0, 0) 99%)',
+        'head-fg': '#eeebe3',
+        'head-btn-fg': '#eeebe3',
+        'head-btn-edge': '#eeebe3',
+        'title-deco': `${PEN_LINE('#93b8ff')} left bottom / 100% 8px no-repeat`,
+        shadow: '0 1px 1px rgba(0, 0, 0, 0.4), 2px 3px 0 -1px #2a2926, 2px 3px 1px -1px rgba(0, 0, 0, 0.6), 4px 6px 0 -2px #252421, 4px 6px 1px -2px rgba(0, 0, 0, 0.6), 0 12px 20px -10px rgba(0, 0, 0, 0.8)',
+        'shadow-pop': '0 2px 3px rgba(0, 0, 0, 0.5), 0 22px 44px -12px rgba(0, 0, 0, 0.85)',
+        backdrop: 'rgba(0, 0, 0, 0.6)',
+        'count-fg': '#eeebe3',
+        'count-soon-fg': '#ffb070',
+        'count-hot-fg': '#ff8a80',
+        'count-hot-edge': '#ff8a80',
+        'count-ok-fg': '#8fd49a',
+        'count-ok-edge': '#8fd49a',
+        'input-bg': 'rgba(255, 255, 255, 0.05)',
+        'input-fg': '#eeebe3',
+        'input-edge': '#cfcabe',
+        'logo-ring': '#93b8ff',
+        'logo-dot': '#ff8a80',
+        'k-exam': 'rgba(255, 214, 40, 0.88)', 'k-exam-fg': '#1d1b16',
+        'k-practice': 'rgba(255, 130, 185, 0.85)', 'k-practice-fg': '#1d1b16',
+        'k-work': 'rgba(110, 220, 135, 0.85)', 'k-work-fg': '#1d1b16',
+        'k-participation': 'rgba(255, 165, 70, 0.88)', 'k-participation-fg': '#1d1b16',
+        'k-presentation': 'rgba(120, 185, 255, 0.85)', 'k-presentation-fg': '#1d1b16',
+        'k-other': 'rgba(190, 190, 190, 0.75)', 'k-other-fg': '#1d1b16'
       },
+      // The block of "Mi sitio": a page with the spiral on the left and the red margin.
+      blockCss: `
+        #mak-block { position: relative; margin-top: 6px; background: ${MARGIN}, var(--ap-win-bg) !important; }
+        #mak-block::before { ${SPIRAL} }
+        #mak-block > .mak-head { padding: 12px 14px 2px 46px; }
+        #mak-block > #mak-block-body { padding: 4px 16px 16px 46px; }
+        #mak-block .mak-title { font-size: calc(21px * var(--ap-head-zoom)); }
+        #mak-block .mak-head .mak-fold { border-width: 1.6px; border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px; box-shadow: none; }
+      `,
       css: `
-        .countdown.u-hot, .count.hot, .count.ok, .tag.ok, .countdown.ok { border: 2px solid var(--ap-count-hot-edge); }
-        .tag.ok, .count.ok { display: inline-grid; place-items: center; min-width: 46px; min-height: 46px; padding: 0 4px; border-style: double; border-width: 3px;
-          border-radius: 50%; transform: rotate(-12deg); font-family: var(--ap-font-num); font-size: 1.25em; }
-        nav.tabs { border-bottom: 1.5px dashed var(--ap-line); }
-        nav.tabs button { font-family: var(--ap-font-head); font-size: 1.35em; font-weight: 700; }
-        nav.tabs button[aria-selected="true"] { border-bottom: 0; text-decoration: underline wavy var(--ap-accent); text-underline-offset: 5px; }
-        .bar.weights { border: 2px solid var(--ap-edge); border-radius: 4px 9px 5px 10px; gap: 0; }
-        .bar.weights span { border-right: 2px solid var(--ap-edge); text-shadow: 0 0 3px var(--ap-solid), 0 0 3px var(--ap-solid); }
-        .bar.weights span:last-child { border-right: 0; }
-        .next-exam { --ap-fg: #2a2622; --ap-muted: #5e564d; --ap-count-fg: #2a2622; --ap-count-hot-fg: #c23b22; --ap-count-hot-edge: #c23b22;
-          background: #fff1a6; color: #2a2622; transform: rotate(-1.5deg); box-shadow: 2px 6px 12px -5px rgba(0, 0, 0, 0.35); border-radius: 2px; }
-        .next-exam .day { font-family: var(--ap-font-head); font-size: 54px; }
-        .exams li { border-radius: 4px 12px 6px 14px; }
-        .actions .action { background: transparent; border: 0; box-shadow: none; padding: 2px 0; color: var(--ap-link); text-decoration: underline; text-underline-offset: 3px; }
-        .actions .action::before { content: "→ "; text-decoration: none; }
-        .actions .action .label { display: none; }
+        /* ---- The popup: the page on the blue cover, the spiral, the red margin ---- */
+        html { background: var(--ap-page); }
+        body { position: relative; border: 6px solid transparent; border-left-width: 18px; background: ${MARGIN}, var(--ap-win-bg);
+          background-clip: padding-box; background-origin: padding-box; }
+        body::before { ${SPIRAL} }
+        header.top { padding: 10px 12px 2px 46px; }
+        header.top h1 { font-size: calc(19px * var(--ap-head-zoom)); }
+        .searchbar { padding: 6px 12px 8px 46px; }
+        .searchbar input { padding-left: 32px; background: ${LENS} 9px center / 16px no-repeat, var(--ap-input-bg); }
+        main { margin: 0 8px 4px 40px; padding: 10px 6px 12px 6px; background: none; border: 0; border-radius: 0; box-shadow: none; }
+        footer.privacy { padding-left: 46px; }
+        /* The tabs: the tabs of the dividers, of colored cardboard */
+        nav.tabs { gap: 3px; padding: 4px 8px 0 42px; border-bottom: 2px solid var(--ap-line); }
+        nav.tabs button { flex: 1 1 auto; min-width: 0; margin-bottom: -2px; padding: 4px 2px 1px; overflow: hidden; text-overflow: ellipsis;
+          font-family: var(--ap-font-head); font-size: 1.12em; font-weight: 700; color: #1d2a78; border: 0; border-radius: 9px 9px 0 0;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 60%), ${NOISE(0.08)}, var(--nb-tab);
+          box-shadow: inset 0 -7px 6px -6px rgba(0, 0, 0, 0.35); opacity: 0.82; }
+        nav.tabs button:nth-child(6n+1) { --nb-tab: #f2b3b9; } nav.tabs button:nth-child(6n+2) { --nb-tab: #eadbb5; }
+        nav.tabs button:nth-child(6n+3) { --nb-tab: #b9d0ee; } nav.tabs button:nth-child(6n+4) { --nb-tab: #c3e2c1; }
+        nav.tabs button:nth-child(6n+5) { --nb-tab: #d8cbf0; } nav.tabs button:nth-child(6n+6) { --nb-tab: #f5cfae; }
+        nav.tabs button[aria-selected="true"] { color: #1d2a78; opacity: 1; transform: translateY(-3px); box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.14);
+          text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+        nav.tabs .count-badge { background: #d8434b; color: #ffffff; font-family: var(--ap-font); }
+        /* The buttons of the head and the weeks: boxes drawn with the pen */
+        .icon-btn { box-shadow: none; border-width: 1.6px; border-radius: 6px 9px 7px 8px / 8px 6px 9px 7px; }
+        .week { color: var(--ap-fg); background: none; border: 1.5px solid var(--ap-line); border-radius: 8px 12px 7px 10px / 10px 7px 12px 8px; box-shadow: none; }
+        .week.on { outline: 0; border-color: var(--ap-fg); background: var(--ap-mark-bg); }
+        .week .n { font-family: var(--ap-font-head); font-size: 1.45em; line-height: 1; }
+        .week .track { background: none; border: 1.5px solid var(--ap-line); border-radius: 3px 5px 4px 6px / 6px 4px 5px 3px; }
+        .week .bar { opacity: 0.85; }
+        /* A note after an update: a sticky note */
+        .whatsnew { --ap-fg: #1d2a78; color: #1d2a78; border: 0; border-radius: 2px; transform: rotate(-0.8deg); ${NOTE('var(--ap-accent-soft)')} }
+        .notice { border: 2px solid var(--ap-red); border-radius: 12px 16px 10px 14px / 14px 10px 16px 12px; background: none; }
+        .tag { font-family: var(--ap-font-head); font-size: 1.1em; background: none; border: 1.5px solid currentColor; border-radius: 10px 14px 9px 12px / 12px 9px 14px 10px; }
+
+        /* ---- The parts in MiAulario ---- */
+        /* The titles: written on the page, a line in pen under them */
+        .tile h4 { display: inline-block; padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
+        .tile { padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+        /* The arrows: a box drawn with the pen */
+        .mak-fold { color: var(--ap-fg) !important; background: transparent !important; border: 1.6px solid currentColor !important; box-shadow: none !important;
+          border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px !important; }
+        /* The next exam: a yellow sticky note with tape */
+        .next-exam { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-count-fg: #1d2a78; --ap-count-soon-fg: #c2570c; --ap-count-hot-fg: #d0262b; --ap-count-hot-edge: #d0262b;
+          position: relative; margin: 16px 6px 18px; padding: 16px 18px 14px; color: #1d2a78; border: 0; transform: rotate(-1.2deg);
+          ${NOTE('var(--ap-accent-soft)')} }
+        .next-exam::before { ${TAPE('rgba(240, 150, 168, 0.62)')} }
+        .next-exam .day { font-size: 60px; }
+        .next-exam .count { font-size: 1.6em; }
+        /* The semesters: dividers of cardboard, with the tab on top */
+        .sem { --nb-folder: var(--ap-surface2); position: relative; margin-top: 30px; padding: 6px 10px 12px; border: 0; border-radius: 0 6px 6px 6px;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 40%), ${NOISE(0.08)}, var(--nb-folder);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 7px 10px -8px rgba(0, 0, 0, 0.45); }
+        .sem + .sem { --nb-folder: var(--ap-blue-bg); }
+        .sem-head { justify-content: flex-end; min-height: 26px; }
+        .sem-head .sem-title { position: absolute; left: 0; bottom: 100%; flex: none; padding: 3px 18px 0; border-radius: 10px 10px 0 0;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 70%), ${NOISE(0.08)}, var(--nb-folder);
+          font-size: calc(15px * var(--ap-head-zoom)); box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.12); }
+        .sem .mak-fold { width: 24px; height: 24px; }
+        /* The exams: index cards */
+        .exams { gap: 12px; }
+        .exams li { padding: 8px 10px; border: 0; border-radius: 2px; background: var(--ap-surface);
+          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), 0 5px 8px -5px rgba(0, 0, 0, 0.4); }
+        .exams li:nth-child(odd) { transform: rotate(-0.6deg); }
+        .exams li:nth-child(even) { transform: rotate(0.5deg); }
+        .exams .name { font-family: var(--ap-font-head); font-size: 1.25em; line-height: 1.1; }
+        .count.hot, .count.ok, .countdown.u-hot, .tag.ok { border: 2px solid var(--ap-count-hot-edge); }
+        .count.ok, .tag.ok { border-color: var(--ap-count-ok-edge); }
+        /* The links: blue pen */
+        .mak-link .t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+        /* The actions: three erasers */
+        .actions { gap: 18px; padding: 8px 4px 6px; }
+        .actions .action { min-height: 50px; padding: 8px 14px; color: #1d2a78; border: 0; border-radius: 11px; box-shadow: var(--ap-shadow-sm);
+          font-family: var(--ap-font-head); font-size: 1.45em; font-weight: 700; }
+        .actions .action:nth-child(3n+1) { background: ${RUBBER('#f3a2a8')}; transform: rotate(-1.5deg); }
+        .actions .action:nth-child(3n+2) { background: ${RUBBER('linear-gradient(90deg, #5a82c8 0 24%, #f5f2ea 24%)')}; padding-left: calc(24% + 10px); transform: rotate(1deg); }
+        .actions .action:nth-child(3n+3) { background: ${RUBBER('linear-gradient(90deg, #f5f2ea 0 12%, #a3cbaa 12% 88%, #f5f2ea 88%)')}; transform: rotate(-0.6deg); }
+        .actions .action:hover, .actions .action:focus-visible { filter: brightness(0.97); translate: 0 -1px; }
+        /* The course guides: sticky notes of colors, with tape */
+        .guide-card { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-link: #1f45c0; --ap-line: rgba(29, 42, 120, 0.25);
+          position: relative; margin-top: 10px; padding: 14px 14px 12px; color: #1d2a78; border: 0; ${NOTE('var(--nb-note)')} }
+        .guide-card:nth-child(4n+1) { --nb-note: color-mix(in srgb, #ddd0f4 85%, var(--ap-solid)); --nb-tape: rgba(150, 200, 175, 0.62); transform: rotate(-0.7deg); }
+        .guide-card:nth-child(4n+2) { --nb-note: color-mix(in srgb, #cdeacf 85%, var(--ap-solid)); --nb-tape: rgba(240, 150, 168, 0.6); transform: rotate(0.6deg); }
+        .guide-card:nth-child(4n+3) { --nb-note: color-mix(in srgb, #fcd8c2 85%, var(--ap-solid)); --nb-tape: rgba(150, 185, 235, 0.62); transform: rotate(0.4deg); }
+        .guide-card:nth-child(4n+4) { --nb-note: color-mix(in srgb, #cfe1f6 85%, var(--ap-solid)); --nb-tape: rgba(245, 210, 110, 0.66); transform: rotate(-0.5deg); }
+        .guide-card::before { ${TAPE('var(--nb-tape)')} }
+        .guide-card h4 { font-size: calc(16px * var(--ap-head-zoom)); }
+        /* The weights: strokes of highlighter */
+        .bar.weights { gap: 3px; height: 23px; overflow: visible; border: 0; border-radius: 0; }
+        .bar.weights span { border-radius: 3px 11px 4px 12px / 11px 3px 12px 4px; text-shadow: none; }
+        /* The windows and the search: a sheet of paper; the selection with the highlighter */
+        .backdrop .win > header, .mail > header { border-bottom: 0; }
+        a.item.sel, .result.sel { background: var(--ap-mark-bg); }
+        .panel > input { margin: 12px 14px 4px; padding: 6px 12px; border: 1.6px solid var(--ap-input-edge); border-radius: var(--ap-input-radius); background: var(--ap-input-bg); }
+        .panel > .foot { border-top: 0; }
       `
     }
   ];
@@ -905,6 +1055,8 @@
   // The name of a theme in the language of the user.
   MAK.themeName = (th, lang) => (th.name && (th.name[lang] || th.name.es)) || th.id;
   MAK.themeAbout = (th, lang) => (th.about && (th.about[lang] || th.about.es)) || '';
+  // The name of the extension in the titles: the name of the theme ("Aulario XP"), else "Aulario Plus".
+  MAK.brandName = (th) => (th || MAK.theme(MAK.themeId)).brand || 'Aulario Plus';
 
   // All the variables of a theme for one mode: BASE (light, then dark in the dark mode), then the light
   // values of the theme, then (dark) the dark values of the theme. { name: value }.
@@ -963,7 +1115,7 @@
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
-  // <style id="ap-theme">. Result: { id, scheme }.
+  // <style id="ap-theme">; the elements with "data-brand" get the name of the theme. Result: { id, scheme }.
   MAK.applyPageTheme = function (doc, id, url, scheme) {
     const th = MAK.theme(id);
     const mode = scheme === 'light' || scheme === 'dark' ? scheme : 'system';
@@ -977,6 +1129,7 @@
     if (style.textContent !== css) style.textContent = css;
     doc.documentElement.dataset.theme = th.id;
     doc.documentElement.dataset.scheme = mode;
+    for (const el of doc.querySelectorAll('[data-brand]')) el.textContent = MAK.brandName(th);
     return { id: th.id, scheme: mode };
   };
 
@@ -991,10 +1144,11 @@
     const th = MAK.theme(MAK.themeId);
     const dark = typeof MAK.isDarkPage === 'function' && MAK.isDarkPage();
     const scope = (opts && opts.scope) || ':host';
-    const own = opts && opts.scope ? '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // only in a shadow root
+    const own = opts && opts.scope ? th.blockCss || '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // the block: its own CSS
     return `${scope} { ${MAK.themeVars(th.id, dark)} }\n${css}\n${own}`;
   }
-  // opts.scope: a selector for a style in the page (not in a shadow root); then only the variables.
+  // opts.scope: a selector for a style in the page (not in a shadow root); then the variables and the
+  // blockCss of the theme (the only style in the page is the one of the block).
   MAK.themedStyle = function (css, opts) {
     const el = document.createElement('style');
     el.textContent = themedText(css, opts);

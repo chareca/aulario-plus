@@ -44,6 +44,9 @@
   // it does not look like a part of MiAulario. The arrow of the head folds the block; it stays folded when
   // the page opens again. The block shows only with a box in it. A site has no block: its boxes are at
   // the top of the content. Result: the body of the block, or null (no block on the page).
+  // The triangle in the top right corner widens the block to the full width of the page, above the two
+  // columns (in a full row of its own, the calendar below it); a second click puts it back in the column.
+  // It stays wide when the page opens again. A page with one column has no triangle.
   // The block is in the page (not in a shadow root): all its rules start with #mak-block, and
   // MAK.themedStyle puts the variables of the theme on #mak-block.
   const scoped = (css) => css.replace(/\.mak-(fold|logo)/g, '#mak-block .mak-$1');
@@ -54,7 +57,7 @@
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     #mak-block[hidden], #mak-block > #mak-block-body[hidden] { display: none !important; }
     #mak-block > #mak-block-body { padding: 8px 14px 10px; background: transparent !important; }
-    #mak-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
+    #mak-block > .mak-head { position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
       font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); background: var(--ap-head-bg); color: var(--ap-head-fg);
       border: 0; border-bottom: var(--ap-head-line); border-top-left-radius: calc(var(--ap-radius) - var(--ap-bw)); border-top-right-radius: calc(var(--ap-radius) - var(--ap-bw)); }
     #mak-block.mak-closed > .mak-head { border-bottom: 0; border-radius: calc(var(--ap-radius) - var(--ap-bw)); }
@@ -64,9 +67,26 @@
       font-size: calc(19px * var(--ap-head-zoom)); line-height: 1.15; text-transform: none; }
     ${scoped(MAK.FOLD_CSS)}
     ${scoped(MAK.LOGO_CSS)}
+    /* The row of the columns is a flex row: a full line of its own. */
+    #mak-block-wide { flex: 0 0 100% !important; width: 100% !important; max-width: 100% !important; }
+    #mak-block-wide[hidden] { display: none !important; }
+    #mak-block .mak-widen { position: absolute; top: 0; right: 0; width: 20px; height: 20px; margin: 0; padding: 0; border: 0; border-radius: 0; cursor: pointer;
+      background: var(--ap-head-fg); opacity: 0.45; clip-path: polygon(0 0, 100% 0, 100% 100%); box-shadow: none; transition: opacity 0.15s ease; }
+    #mak-block .mak-widen:hover, #mak-block .mak-widen:focus-visible { opacity: 0.9; }
+    #mak-block .mak-widen:focus-visible { outline: 2px solid var(--ap-head-fg); outline-offset: -4px; }
     #mak-block .mak-head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
   `;
   const BLOCK_CLOSED = 'mak-mysite-closed';
+  const BLOCK_WIDE = 'mak-mysite-wide';
+
+  // The column of an element: its ancestor next to another column with blocks of MiAulario (the
+  // calendar). Null: a page with one column.
+  function columnOf(el) {
+    for (; el.parentElement && el.parentElement !== document.body; el = el.parentElement) {
+      if ([...el.parentElement.children].some((c) => c !== el && c.querySelector('.Mrphs-container'))) return el;
+    }
+    return null;
+  }
 
   MAK.mySiteSlot = function () {
     const made = document.getElementById('mak-block-body');
@@ -83,7 +103,12 @@
       (document.head || document.documentElement).append(style);
     }
     let closed = false;
-    try { closed = localStorage.getItem(BLOCK_CLOSED) === '1'; } catch {}
+    let wide = false;
+    const column = columnOf(anchor);
+    try {
+      closed = localStorage.getItem(BLOCK_CLOSED) === '1';
+      wide = !!column && localStorage.getItem(BLOCK_WIDE) === '1';
+    } catch {}
     const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-block-body' } });
     const block = h('div', { class: 'Mrphs-container Mrphs-aulario-plus', attrs: { id: 'mak-block', role: 'region', 'aria-labelledby': 'mak-block-title' } });
     const draw = () => {
@@ -96,18 +121,43 @@
       try { localStorage.setItem(BLOCK_CLOSED, closed ? '1' : '0'); } catch {}
     });
     fold.setAttribute('aria-controls', 'mak-block-body');
+    // The wide block: in a column of the row of its own, with the classes (and the margins) of the column.
+    const wrap = column ? h('div', { class: column.className, attrs: { id: 'mak-block-wide' } }) : null;
+    const widen = column ? h('button', { class: 'mak-widen', attrs: { type: 'button' }, on: { click: () => {
+      wide = !wide;
+      place();
+      try { localStorage.setItem(BLOCK_WIDE, wide ? '1' : '0'); } catch {}
+    } } }) : null;
+    const place = () => {
+      if (wide) {
+        wrap.append(block);
+        column.parentElement.prepend(wrap);
+      } else {
+        anchor.before(block);
+        if (wrap) wrap.remove();
+      }
+      if (!widen) return;
+      const label = MAK.t(wide ? 'block.narrow' : 'block.wide');
+      widen.setAttribute('aria-pressed', String(wide));
+      widen.setAttribute('aria-label', label);
+      widen.title = label;
+    };
     block.append(
       h('div', { class: 'mak-head' },
         MAK.logo(),
-        h('h2', { class: 'mak-title', text: 'Aulario Plus', title: MAK.t('block.tagHelp'), attrs: { id: 'mak-block-title' } }),
-        fold),
+        h('h2', { class: 'mak-title', text: MAK.brandName(), title: MAK.t('block.tagHelp'), attrs: { id: 'mak-block-title' } }),
+        fold,
+        widen),
       body);
     draw();
     // Only with a box in it.
-    const fill = () => { block.hidden = !body.childElementCount; };
+    const fill = () => {
+      block.hidden = !body.childElementCount;
+      if (wrap) wrap.hidden = block.hidden;
+    };
     new MutationObserver(fill).observe(body, { childList: true });
     fill();
-    anchor.before(block);
+    place();
     return body;
   };
 

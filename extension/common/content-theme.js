@@ -20,6 +20,8 @@
     const s = MAK.withDefaults(saved);
     MAK.themeId = MAK.theme(s.theme).id;
     MAK.colorMode = s.colorMode;
+    const title = document.getElementById('mak-block-title');
+    if (title) title.textContent = MAK.brandName();
     MAK.loadPageFonts(MAK.themeId, url).catch(() => {});
     redraw(true);
   }

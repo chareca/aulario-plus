@@ -39,10 +39,29 @@ test('a theme sets only the variables of the list (no typo), with a value', () =
 
 test('nothing from other servers: no http address, no @import, no script in the themes', () => {
   for (const th of MAK.THEMES) {
-    const all = [th.css, ...Object.values(th.light), ...Object.values(th.dark)].join('\n');
+    const all = [th.css, th.blockCss || '', ...Object.values(th.light), ...Object.values(th.dark)].join('\n');
     assert.doesNotMatch(all, /url\(\s*["']?(https?:)?\/\//i, th.id);
     assert.doesNotMatch(all, /@import|javascript:|expression\(/i, th.id);
   }
+});
+
+test('the CSS of a theme for the block of "Mi sitio" (in the page): only rules of the block', () => {
+  for (const th of MAK.THEMES) {
+    // The selectors: the text before each "{" that is not in a value (the values have no "{").
+    for (const rule of (th.blockCss || '').split('}').map((r) => r.trim()).filter(Boolean)) {
+      for (const sel of rule.slice(0, rule.indexOf('{')).split(',')) assert.match(sel.trim(), /^#mak-block\b/, `${th.id}: ${sel.trim()}`);
+    }
+  }
+  assert.ok(MAK.theme('cuaderno').blockCss.includes('#mak-block::before'), 'the spiral of Cuaderno');
+});
+
+test('the name in the titles: "Aulario XP" with Cromo XP, else "Aulario Plus"', () => {
+  assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'Cromo XP');
+  assert.equal(MAK.brandName(MAK.theme('cromo')), 'Aulario XP');
+  for (const id of ['bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
+  const popup = read('popup.html');
+  assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
+  assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);
 });
 
 test('the fonts of the themes are files of the extension, with the OFL license', () => {

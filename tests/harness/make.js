@@ -198,6 +198,9 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   main { padding: 16px 24px; }
   .portal-header-breadcrumb { padding: 6px 0 12px; font: 13px sans-serif; color: #666; }
   .row { border: 1px dashed #aaa; padding: 24px; }
+  /* The two columns of "Mi sitio" (Bootstrap: a flex row, columns of 50 % with p-2) */
+  .mine-row { display: flex; flex-wrap: wrap; margin: 0 -12px; padding: 0; border: 0; }
+  .mine-row > div { box-sizing: border-box; flex: 0 0 auto; width: 50%; padding: 8px; }
 </style></head>
 <body>
 <aside id="portal-nav-sidebar" style="font:13px sans-serif;border-bottom:1px solid #ccc;padding:6px 24px">
@@ -217,7 +220,7 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   </tbody></table></div>
 </main>
 <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('sakaiUserTheme-dark');</script>
-<script>if (new URLSearchParams(location.search).has('mine')) document.querySelector('.row').insertAdjacentHTML('beforebegin', '<div class="Mrphs-container Mrphs-sakai-iframe-myworkspace"><nav class="Mrphs-toolTitleNav Mrphs-container--toolTitleNav"><h2 class="Mrphs-toolTitleNav__title"><span class="Mrphs-toolTitleNav__text">Mostrar información de Mi Sitio</span></h2></nav><div class="Mrphs-toolBody Mrphs-toolBody__iframe Mrphs-toolBody--sakai-iframe-myworkspace" style="height:300px;overflow:auto;border:1px solid #ccc"><div id="welcome"><h3>Bienvenido a MiSitio</h3><p>MiAulario proporciona a cada participante un espacio personal (texto simulado).</p></div></div></div>'); // the block of the home page of "Mi sitio"</script>
+<script>if (new URLSearchParams(location.search).has('mine')) document.querySelector('.row').outerHTML = '<div class="row mine-row"><div id="col1of2" class="p-2 col-lg-6 col-md-12">' + '<div class="Mrphs-container Mrphs-sakai-iframe-myworkspace"><nav class="Mrphs-toolTitleNav Mrphs-container--toolTitleNav"><h2 class="Mrphs-toolTitleNav__title"><span class="Mrphs-toolTitleNav__text">Mostrar información de Mi Sitio</span></h2></nav><div class="Mrphs-toolBody Mrphs-toolBody__iframe Mrphs-toolBody--sakai-iframe-myworkspace" style="height:300px;overflow:auto;border:1px solid #ccc"><div id="welcome"><h3>Bienvenido a MiSitio</h3><p>MiAulario proporciona a cada participante un espacio personal (texto simulado).</p></div></div></div>' + '</div><div id="col2of2" class="p-2 col-lg-6 col-md-12"><div class="Mrphs-container Mrphs-sakai-summary-calendar"><nav class="Mrphs-toolTitleNav Mrphs-container--toolTitleNav"><h2 class="Mrphs-toolTitleNav__title">Calendario</h2></nav><div class="Mrphs-toolBody" style="height:260px;border:1px solid #ccc">Calendario (simulado)</div></div></div></div>'; // "Mi sitio": two columns (as includePage.vm of Sakai 23), the calendar in the second</script>
 <script>if (new URLSearchParams(location.search).has('messages')) document.querySelector('.row').innerHTML = '<form id="msgForum"><p>Correo interno (simulado): Recibido, Enviado.</p></form>'; // the inbox of the internal mail</script>
 <script>history.replaceState(null, '', (new URLSearchParams(location.search).has('mine') ? '/portal' : '/portal/site/${F.CS}') + location.search); // the path of a site (or "Mi sitio" with ?mine), as in MiAulario</script>
 ${siteTags}

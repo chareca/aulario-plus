@@ -8,7 +8,10 @@
       const el = document.getElementById(id);
       if (el) el.remove();
     }
-    try { localStorage.removeItem('mak-mysite-closed'); } catch {}
+    try {
+      localStorage.removeItem('mak-mysite-closed');
+      localStorage.removeItem('mak-mysite-wide');
+    } catch {}
   };
 
   // A page "Mi sitio": "Mensaje del día" and "Mostrar información de Mi Sitio" in the first column,
@@ -66,6 +69,47 @@
     document.querySelector('#mak-block button.mak-fold').click();
     assert.equal(again.hidden, false, 'the arrow unfolds it');
     assert.equal(localStorage.getItem('mak-mysite-closed'), '0');
+    reset();
+  });
+
+  test('the triangle in the corner: the block on the full width, above the two columns; again: back in the column; it stays', () => {
+    MAK.setLang('es');
+    const main = mySitePage();
+    const col1 = main.querySelector('.col1');
+    MAK.mySiteSlot().append(document.createElement('div'));
+    const block = document.getElementById('mak-block');
+    const widen = block.querySelector('.mak-head button.mak-widen');
+    assert.ok(widen, 'the triangle');
+    assert.equal(widen.getAttribute('aria-pressed'), 'false');
+    assert.equal(widen.getAttribute('aria-label'), 'Todo el ancho');
+    widen.click();
+    const wrap = document.getElementById('mak-block-wide');
+    assert.equal(block.parentElement, wrap);
+    assert.equal(main.firstElementChild, wrap, 'a row of its own, before the columns');
+    assert.equal(wrap.className, col1.className, 'the classes (the margins) of the column');
+    assert.equal(widen.getAttribute('aria-pressed'), 'true');
+    assert.equal(widen.title, 'Volver a la columna');
+    assert.equal(localStorage.getItem('mak-mysite-wide'), '1');
+    // The page opens again: still wide.
+    wrap.remove();
+    MAK.mySiteSlot().append(document.createElement('div'));
+    assert.equal(document.getElementById('mak-block').parentElement.id, 'mak-block-wide');
+    document.querySelector('#mak-block .mak-widen').click();
+    assert.equal(document.getElementById('mak-block').nextElementSibling, main.querySelector('.Mrphs-sakai-motd'), 'back above "Mensaje del día"');
+    assert.equal(document.getElementById('mak-block-wide'), null);
+    assert.equal(localStorage.getItem('mak-mysite-wide'), '0');
+    reset();
+  });
+
+  test('a page with one column: no triangle', () => {
+    reset();
+    const main = document.createElement('main');
+    main.id = 'mak-test-main';
+    main.innerHTML = '<div class="col1"><div class="Mrphs-container Mrphs-sakai-motd"><nav class="Mrphs-toolTitleNav"><h2>Mensaje del día</h2></nav></div></div>';
+    document.body.append(main);
+    MAK.mySiteSlot().append(document.createElement('div'));
+    assert.ok(document.getElementById('mak-block'));
+    assert.equal(document.querySelector('#mak-block .mak-widen'), null);
     reset();
   });
 

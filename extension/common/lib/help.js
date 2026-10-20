@@ -42,7 +42,8 @@
     {
       version: '1.6.4',
       es: [
-        'Cinco temas para elegir en Ajustes: Bloques, Plastilina, Etérea, Cromo y Cuaderno. Cada uno en claro y en oscuro, o como MiAulario.',
+        'Cinco temas para elegir en Ajustes: Bloques, Plastilina, Etérea, Cromo XP y Cuaderno. Cada uno en claro y en oscuro, o como MiAulario.',
+        'El triángulo de la esquina del bloque de Mi sitio lo pone a todo el ancho, con el calendario debajo.',
         'Mi sitio muestra tu próximo examen en grande, y los accesos a tu expediente, Wuolah y el correo interno en una fila.',
         'Ctrl+K (⌘K en Mac) busca también en los «Contenidos» de las materias: títulos y enlaces a PDF.',
         'Avisos antes de una entrega que no entregaste: 24 horas y 1 hora antes, configurables en Ajustes.',
@@ -54,7 +55,8 @@
         'Bienvenida, esta página de novedades, y en Ajustes: reportar un problema e invitarme a un café.'
       ],
       en: [
-        'Five themes to select in the settings: Blocks, Clay, Ethereal, Chrome and Notebook. Each one in light and in dark, or as MiAulario.',
+        'Five themes to select in the settings: Blocks, Clay, Ethereal, Chrome XP and Notebook. Each one in light and in dark, or as MiAulario.',
+        'The triangle in the corner of the block of Mi sitio gives it the full width, with the calendar below it.',
         'Mi sitio shows your next exam in large, and the links to your academic record, Wuolah and the internal mail in one row.',
         'Ctrl+K (⌘K on Mac) also searches the "Contenidos" of the sites: titles and links to PDF files.',
         'Reminders before a delivery that you did not submit: 24 hours and 1 hour before, in the settings.',

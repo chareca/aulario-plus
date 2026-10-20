@@ -33,6 +33,11 @@
     .empty { padding: 14px; color: var(--ap-muted); }
     .tip { padding: 8px 8px 0; font-size: 0.86em; color: var(--ap-muted); }
     .foot { font-size: 0.8em; color: var(--ap-muted); padding: 7px 14px; border-top: var(--ap-item-sep); }
+    /* A title bar with a close button: only a theme with windows shows it (Cromo XP). */
+    .bar { display: none; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; background: var(--ap-head-bg); color: var(--ap-head-fg);
+      font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-size: calc(15px * var(--ap-head-zoom)); }
+    .bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    button.x { font: inherit; line-height: 1; cursor: pointer; color: inherit; background: none; border: 0; padding: 2px 6px; }
   `;
 
   let enabled = true;
@@ -70,6 +75,7 @@
     const panel = h(
       'div',
       { class: 'panel', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': MAK.t('palette.label') } },
+      h('div', { class: 'bar' }, h('span', { text: MAK.t('palette.label') }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: MAK.t('mail.close'), 'aria-label': MAK.t('mail.close') }, on: { click: close } })),
       input,
       list,
       h('div', { class: 'foot', text: MAK.t('palette.keys', { mod: MAC ? '⌘' : 'Ctrl' }) })
