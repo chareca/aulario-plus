@@ -47,6 +47,7 @@
       ],
       "js": [
         "lib/core.js",
+        "lib/store.js",
         "lib/i18n.js",
         "lib/ui.js",
         "lib/pm.js",
