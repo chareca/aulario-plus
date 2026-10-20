@@ -49,11 +49,31 @@
   }
   MAK.insertAtTop = insertAtTop;
 
-  // "Mi sitio": a block "Aulario Plus" with the same structure as the blocks of MiAulario (thus the
-  // same style and theme), just above the block "Mostrar información de Mi Sitio" (the tool
-  // sakai.iframe.myworkspace). That block does not change: the user can edit its text. The boxes of
-  // the extension go in the body of the new block. No such block: above the first block of the page.
+  // "Mi sitio": a block "Aulario Plus" just above the block "Mostrar información de Mi Sitio" (the
+  // tool sakai.iframe.myworkspace). That block does not change: the user can edit its text. No such
+  // block: above the first block of the page. The block has the place and the margins of the blocks of
+  // MiAulario, but its own head (the green of the extension, the logo and the tag "Extensión"), so
+  // that it does not look like a part of MiAulario. The arrow of the head folds the block; it stays
+  // folded when the page opens again. The boxes of the extension go in the body of the block.
   // Result: the body of the new block, or null (no block on the page).
+  const BLOCK_CLOSED = 'mak-mysite-closed';
+  const BLOCK_CSS = `
+    #mak-mysite-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
+      background: #10524e; color: #fff; border-radius: 8px 8px 0 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    #mak-mysite-block.mak-closed > .mak-head { border-radius: 8px; }
+    #mak-mysite-block .mak-logo { width: 26px; height: 26px; flex: none; }
+    #mak-mysite-block .mak-title { flex: 1; margin: 0; padding: 0; border: 0; font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; }
+    #mak-mysite-block .mak-tag { flex: none; font: 500 11px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0b3b38; background: #9ff0d0;
+      border-radius: 10px; padding: 2px 8px; cursor: default; }
+    #mak-mysite-block .mak-fold { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin: 0;
+      padding: 0; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 6px; background: transparent; color: #fff; cursor: pointer; }
+    #mak-mysite-block .mak-fold:hover, #mak-mysite-block .mak-fold:focus-visible { background: rgba(255, 255, 255, 0.15); }
+    #mak-mysite-block .mak-fold:focus-visible { outline: 2px solid #9ff0d0; outline-offset: 2px; }
+    #mak-mysite-block .mak-fold svg { width: 18px; height: 18px; transition: transform 0.15s ease; }
+    #mak-mysite-block.mak-closed .mak-fold svg { transform: rotate(-90deg); }
+    #mak-mysite-block > #mak-mysite-body[hidden] { display: none !important; }
+    @media (prefers-reduced-motion: reduce) { #mak-mysite-block .mak-fold svg { transition: none; } }
+  `;
   MAK.mySiteSlot = function () {
     const made = document.getElementById('mak-mysite-body');
     if (made) return made;
@@ -63,11 +83,33 @@
     const anchor = welcome || main.querySelector('.Mrphs-container');
     if (!anchor) return null;
     const h = MAK.h;
+    if (!document.getElementById('mak-mysite-style')) (document.head || document.documentElement).append(h('style', { attrs: { id: 'mak-mysite-style' }, text: BLOCK_CSS }));
+    let closed = false;
+    try { closed = localStorage.getItem(BLOCK_CLOSED) === '1'; } catch {}
     const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-mysite-body' } });
-    anchor.before(h('div', { class: 'Mrphs-container Mrphs-aulario-plus', attrs: { id: 'mak-mysite-block' } },
-      h('nav', { class: 'Mrphs-toolTitleNav Mrphs-container--toolTitleNav align-items-center', attrs: { 'aria-label': 'Aulario Plus' } },
-        h('h2', { class: 'Mrphs-toolTitleNav__title' }, h('span', { class: 'Mrphs-toolTitleNav__text', text: 'Aulario Plus' }))),
-      body));
+    const fold = h('button', { class: 'mak-fold', attrs: { type: 'button', 'aria-controls': 'mak-mysite-body' } }, MAK.icon('chevron'));
+    const block = h('div', { class: 'Mrphs-container Mrphs-aulario-plus', attrs: { id: 'mak-mysite-block', role: 'region', 'aria-labelledby': 'mak-mysite-title' } },
+      h('div', { class: 'mak-head' },
+        MAK.logo(),
+        h('h2', { class: 'mak-title', text: 'Aulario Plus', attrs: { id: 'mak-mysite-title' } }),
+        h('span', { class: 'mak-tag', text: MAK.t('block.tag'), title: MAK.t('block.tagHelp') }),
+        fold),
+      body);
+    const draw = () => {
+      body.hidden = closed;
+      block.classList.toggle('mak-closed', closed);
+      const label = MAK.t(closed ? 'block.open' : 'block.close');
+      fold.setAttribute('aria-expanded', String(!closed));
+      fold.setAttribute('aria-label', label);
+      fold.title = label;
+    };
+    fold.addEventListener('click', () => {
+      closed = !closed;
+      draw();
+      try { localStorage.setItem(BLOCK_CLOSED, closed ? '1' : '0'); } catch {}
+    });
+    draw();
+    anchor.before(block);
     return body;
   };
 

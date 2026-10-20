@@ -84,6 +84,23 @@
     return svg;
   };
 
+  // The logo of the extension (the icon of the toolbar: a ring and a dot on a dark green square).
+  MAK.logo = function () {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    for (const [k, v] of Object.entries({ viewBox: '0 0 26 26', 'aria-hidden': 'true', class: 'mak-logo' })) svg.setAttribute(k, v);
+    for (const [tag, attrs] of [
+      ['rect', { width: 26, height: 26, rx: 6, fill: '#0b3b38' }],
+      ['circle', { cx: 13, cy: 13, r: 8, fill: 'none', stroke: '#6fe0b8', 'stroke-width': 2.6 }],
+      ['circle', { cx: 13, cy: 13, r: 3.6, fill: '#e9fbf5' }]
+    ]) {
+      const el = document.createElementNS(ns, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+      svg.append(el);
+    }
+    return svg;
+  };
+
   // A text link of the extension: the text and a small arrow (the link opens in a new tab). On hover,
   // the text is underlined and the arrow moves up a little. Put MAK.LINK_CSS in the styles of each
   // shadow root (and of the popup) with these links. --mak-link changes the color.
