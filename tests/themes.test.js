@@ -62,6 +62,7 @@ test('the name in the titles: "Aulario XP" with Cromo XP, else "Aulario Plus"', 
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
   assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);
+  assert.match(popup, /<button id="close" class="icon-btn close" data-i18n-title="header\.close"/, 'the X that closes the popup');
 });
 
 test('the fonts of the themes are files of the extension, with the OFL license', () => {
@@ -129,6 +130,13 @@ test('the CSS of a page: the fonts, the values of the mode, the CSS of the theme
   const light = MAK.pageThemeCss('eterea', (f) => `fonts/${f}`, 'light');
   assert.match(light, /:root \{ color-scheme: light; [^}]*--ap-fg: #2a2740;/);
   assert.doesNotMatch(light, /prefers-color-scheme|#ecebff/);
+});
+
+test('the motion: every change on hover or focus takes 0.18 s, none with reduced motion', () => {
+  const css = MAK.pageThemeCss('bloques', (f) => `fonts/${f}`, 'light');
+  assert.match(css, /\*, \*::before, \*::after \{ transition: color 0\.18s ease, background-color 0\.18s ease/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \*, \*::before, \*::after \{ transition: none !important; \} \}/);
+  assert.match(MAK.motionCss('#mak-block'), /^#mak-block \{ transition: /, 'the block in the page: only its elements');
 });
 
 test('the mode of the pages of the extension: the setting, else the mode of MiAulario, else the system', () => {

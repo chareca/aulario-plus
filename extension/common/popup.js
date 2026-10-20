@@ -1304,6 +1304,7 @@ async function init() {
   if (WIDE) {
     document.body.classList.add('wide');
     $('openTab').hidden = true;
+    $('close').hidden = true; // a tab: the browser closes it
   }
   S = await ext.storage.local.get(null);
   applyTheme();
@@ -1334,6 +1335,7 @@ async function init() {
     ext.tabs.create({ url: MAK.PRIVACY_URL });
     window.close();
   });
+  $('close').addEventListener('click', () => window.close());
   $('openTab').addEventListener('click', () => {
     ext.tabs.create({ url: ext.runtime.getURL('popup.html?view=tab') });
     window.close();

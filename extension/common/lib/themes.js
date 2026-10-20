@@ -172,10 +172,11 @@
   // A sticky note: a light on the paper, the corner a little up, the shadow under it (declarations).
   const NOTE = (c) => `background: linear-gradient(172deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 38%), linear-gradient(315deg, rgba(110, 80, 0, 0.16) 0%, rgba(110, 80, 0, 0) 18%), ${c};
     border-radius: 2px 2px 34px 2px / 2px 2px 6px 2px; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.14), 3px 10px 12px -8px rgba(0, 0, 0, 0.5);`;
-  // A piece of washi tape on the top of a note (the declarations of its ::before).
-  const TAPE = (c) => `content: ""; position: absolute; z-index: 1; top: -11px; left: 50%; width: 88px; height: 22px; margin-left: -44px; pointer-events: none; transform: rotate(-3deg);
+  // A piece of washi tape (the declarations of a ::before or ::after): its look, and one on the top of a note.
+  const TAPE_LOOK = (c) => `content: ""; position: absolute; z-index: 1; height: 22px; pointer-events: none;
     background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 3px, rgba(255, 255, 255, 0) 3px 7px), ${c};
     clip-path: polygon(0 0, 100% 0, 97% 25%, 100% 50%, 97% 75%, 100% 100%, 0 100%, 3% 75%, 0 50%, 3% 25%);`;
+  const TAPE = (c) => `${TAPE_LOOK(c)} top: -11px; left: 50%; width: 88px; margin-left: -44px; transform: rotate(-3deg);`;
   // The spiral (the ::before of a page): a ring every 24 px, the hole in the paper and the wire over the
   // edge (the edge of the paper is at x = 14 of the drawing).
   const COIL = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="24" viewBox="0 0 34 24"><defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#b4b8bf"/><stop offset="1" stop-color="#555a62"/></linearGradient></defs><ellipse cx="26" cy="12" rx="3.2" ry="3.5" fill="#1b1916" stroke="#8c8c8c" stroke-opacity=".55" stroke-width=".8"/><path d="M26.5 10.5C21 4.5 6 4 4 10.5C2.6 15.5 9 17.5 15 16" fill="none" stroke="#000000" stroke-opacity=".3" stroke-width="3" stroke-linecap="round" transform="translate(.8 1.5)"/><path d="M26.5 10.5C21 4.5 6 4 4 10.5C2.6 15.5 9 17.5 15 16" fill="none" stroke="url(#w)" stroke-width="2.6" stroke-linecap="round"/></svg>';
@@ -737,7 +738,7 @@
         .week .label { color: #444444; }
         .week .track { background: #d6d0c5; }
         /* The close button of a window: the red square */
-        .win > header button.x, .mail > header button.x, .box > .head button.close, .panel > .bar button.x { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
+        .win > header button.x, .mail > header button.x, .box > .head button.close, .panel > .bar button.x, header.top .icon-btn.close { width: 22px; height: 22px; padding: 0; color: #ffffff; font-size: 13px;
           border: 1px solid #ffffff; border-radius: 3px; background: radial-gradient(circle at 90% 90%, #cc4600 0%, #dc6527 55%, #cd7546 70%, #ffccb2 90%, #ffffff 100%); }
         /* The search (Ctrl+K): a window with a title bar, a field and a white list, and a status bar */
         .panel > .bar { display: flex; }
@@ -775,8 +776,8 @@
         .actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; background: var(--ap-accent-soft);
           border: 1px solid #ffffff; border-radius: 3px; }
         .actions .action { min-height: 0; padding: 0; gap: 6px; flex-direction: row-reverse; background: none; border: 0; box-shadow: none; color: var(--ap-link);
-          font-weight: 400; }
-        .actions .action:hover, .actions .action:focus-visible { filter: none; box-shadow: none; text-decoration: underline; }
+          font-weight: 400; text-decoration: underline; text-decoration-color: transparent; }
+        .actions .action:hover, .actions .action:focus-visible { filter: none; box-shadow: none; text-decoration-color: currentColor; }
         .actions .action .mak-arrow, .actions button.action::after { width: 16px; height: 16px; }
         .actions button.action::after { content: ""; flex: none; background: url("data:image/svg+xml,${encodeURIComponent(XP_ARROW)}") center / contain no-repeat; }
         /* The links: the green arrow first */
@@ -814,9 +815,9 @@
         zoom: '1.1',
         'head-weight': '700',
         'head-zoom': '1.45',
-        // The cover of the notebook (blue cloth); the page (lines on cream paper)
-        page: `${NOISE(0.2)}, #2f5089`,
-        'win-bg': `${NOISE(0.05)}, ${RULED('rgba(88, 132, 205, 0.33)')}, #fbf8ef`,
+        // The page: lines on cream paper
+        page: `${NOISE(0.05)}, ${RULED('rgba(88, 132, 205, 0.33)')}, #fbf8ef`,
+        'win-bg': 'var(--ap-page)',
         surface: '#fffdf7', // an index card
         solid: '#fbf8ef',
         surface2: '#eadcbc', // a divider of cardboard
@@ -893,8 +894,7 @@
         'k-other': 'rgba(160, 160, 160, 0.5)', 'k-other-fg': '#1d2a78'
       },
       dark: {
-        page: `${NOISE(0.25)}, #142038`,
-        'win-bg': `${NOISE(0.12)}, ${RULED('rgba(150, 178, 230, 0.17)')}, #1f1e1c`,
+        page: `${NOISE(0.12)}, ${RULED('rgba(150, 178, 230, 0.17)')}, #1f1e1c`,
         surface: '#2d2b28',
         solid: '#1f1e1c',
         surface2: '#3b3428',
@@ -949,11 +949,10 @@
         #mak-block .mak-head .mak-fold { border-width: 1.6px; border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px; box-shadow: none; }
       `,
       css: `
-        /* ---- The popup: the page on the blue cover, the spiral, the red margin ---- */
-        html { background: var(--ap-page); }
-        body { position: relative; border: 6px solid transparent; border-left-width: 18px; background: ${MARGIN}, var(--ap-win-bg);
-          background-clip: padding-box; background-origin: padding-box; }
+        /* ---- The popup: the page, the spiral on the edge, the red margin ---- */
+        body { position: relative; background: ${MARGIN}, var(--ap-page); }
         body::before { ${SPIRAL} }
+        body.wide::before { position: fixed; } /* the tab: the page is the window */
         header.top { padding: 10px 12px 2px 46px; }
         header.top h1 { font-size: calc(19px * var(--ap-head-zoom)); }
         .searchbar { padding: 6px 12px 8px 46px; }
@@ -1039,6 +1038,14 @@
         /* The weights: strokes of highlighter */
         .bar.weights { gap: 3px; height: 23px; overflow: visible; border: 0; border-radius: 0; }
         .bar.weights span { border-radius: 3px 11px 4px 12px / 11px 3px 12px 4px; text-shadow: none; }
+        /* The table of a course guide: a sheet glued on the page, a little tilted, with tape on two corners
+           (on a sticky note, only the table) */
+        .content table { position: relative; width: calc(100% - 20px); margin: 34px 10px 20px; background: var(--ap-surface); transform: rotate(-0.4deg);
+          box-shadow: 0 0 0 10px var(--ap-surface), 0 1px 2px 10px rgba(0, 0, 0, 0.1), 0 12px 18px 5px rgba(0, 0, 0, 0.24); }
+        .content table::before { ${TAPE_LOOK('rgba(245, 210, 110, 0.66)')} top: -20px; left: -30px; width: 72px; transform: rotate(-36deg); }
+        .content table::after { ${TAPE_LOOK('rgba(240, 150, 168, 0.62)')} top: -20px; right: -30px; width: 72px; transform: rotate(36deg); }
+        .guide-card table { width: 100%; margin: 6px 0 4px; background: none; transform: none; box-shadow: none; }
+        .guide-card table::before, .guide-card table::after { content: none; }
         /* The windows and the search: a sheet of paper; the selection with the highlighter */
         .backdrop .win > header, .mail > header { border-bottom: 0; }
         a.item.sel, .result.sel { background: var(--ap-mark-bg); }
@@ -1096,6 +1103,13 @@
     return out.join('\n');
   };
 
+  // The motion of the extension: every change of a color, a shadow, a filter or a place (on hover, on focus,
+  // on a click) takes 0.18 s; none with reduced motion. scope: the elements (a selector).
+  MAK.motionCss = (scope) => `${scope} { transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, outline-color 0.18s ease,
+    box-shadow 0.18s ease, filter 0.18s ease, opacity 0.18s ease, transform 0.18s ease, translate 0.18s ease, text-decoration-color 0.18s ease; }
+    @media (prefers-reduced-motion: reduce) { ${scope} { transition: none !important; } }`;
+  const ALL = '*, *::before, *::after';
+
   // The mode (light or dark) of the pages of the extension: 'light', 'dark' or 'system' (the setting of
   // the system). colorMode 'auto': the mode of MiAulario (sakaiMode, from content-theme.js), else the system.
   MAK.pageScheme = function (colorMode, sakaiMode) {
@@ -1111,7 +1125,7 @@
     const vars = scheme === 'light' || scheme === 'dark'
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, th.css || '', MAK.themeIconCss(th)].join('\n');
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), th.css || '', MAK.themeIconCss(th)].join('\n');
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
@@ -1145,7 +1159,8 @@
     const dark = typeof MAK.isDarkPage === 'function' && MAK.isDarkPage();
     const scope = (opts && opts.scope) || ':host';
     const own = opts && opts.scope ? th.blockCss || '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // the block: its own CSS
-    return `${scope} { ${MAK.themeVars(th.id, dark)} }\n${css}\n${own}`;
+    const motion = MAK.motionCss(opts && opts.scope ? `${scope}, ${scope} *, ${scope}::before, ${scope} *::before, ${scope} *::after` : ALL);
+    return `${scope} { ${MAK.themeVars(th.id, dark)} }\n${motion}\n${css}\n${own}`;
   }
   // opts.scope: a selector for a style in the page (not in a shadow root); then the variables and the
   // blockCss of the theme (the only style in the page is the one of the block).

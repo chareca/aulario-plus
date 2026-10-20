@@ -198,7 +198,8 @@
   MAK.LINK_CSS = `
     .mak-link { color: var(--ap-link, #1a5fb4); text-decoration: none; cursor: pointer; }
     .mak-link .mak-arrow { display: inline-block; width: 0.8em; height: 0.8em; margin-left: 0.2em; vertical-align: -0.05em; transition: transform 0.15s ease; }
-    .mak-link:hover .t, .mak-link:focus-visible .t { text-decoration: underline; text-underline-offset: 2px; }
+    .mak-link .t { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; }
+    .mak-link:hover .t, .mak-link:focus-visible .t { text-decoration-color: currentColor; }
     .mak-link:hover .mak-arrow, .mak-link:focus-visible .mak-arrow { transform: translate(1px, -2px); }
     @media (prefers-reduced-motion: reduce) { .mak-link .mak-arrow { transition: none; } }
   `;
@@ -249,8 +250,8 @@
     .meta { color: var(--ap-muted); font-size: 0.86em; }
     a { color: var(--ap-link); }
     mark { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
-    button.plain { font: inherit; font-size: 0.9em; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ap-link); }
-    button.plain:hover, button.plain:focus-visible { text-decoration: underline; text-underline-offset: 2px; }
+    button.plain { font: inherit; font-size: 0.9em; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ap-link); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; }
+    button.plain:hover, button.plain:focus-visible { text-decoration-color: currentColor; }
     select, input { font: inherit; color: var(--ap-input-fg); background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
       border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); padding: 4px 8px; }
     .count { display: inline-block; flex: none; white-space: nowrap; line-height: 1.2; font-variant-numeric: tabular-nums;
