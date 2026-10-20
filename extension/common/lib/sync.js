@@ -102,7 +102,9 @@
       if (lockArea) await lockArea.set({ syncLock: 0 });
     }
 
-    // Remove all the course data and the reading state. Keep the settings.
+    // Remove all the course data and the reading state, and from the settings what the user wrote about
+    // their studies (the grades and the weights of the calculator, the address of the forward): not for
+    // the next user of this browser. Keep the other settings.
     async function clearData() {
       await store.transaction(async (tx) => {
         const all = await tx.get(null);
@@ -110,6 +112,7 @@
         if (keys.length) await tx.remove(keys);
         const meta = all.meta || {};
         await tx.set({ meta: { installedAt: meta.installedAt || now() } });
+        if (all.settings) await tx.set({ settings: Object.assign({}, all.settings, { guideGrades: {}, guideWeights: {}, forwardEmail: '' }) });
       });
     }
 

@@ -13,7 +13,7 @@
   const FILES = [{ itemId: '/group/S/Tema 1.pdf', title: 'Tema 1.pdf' }];
   const LINK = { link: 'https://is.gd/AbC12x', password: 'k7m2x9qp', downloads: 1, expires: Date.UTC(2026, 9, 18, 12, 0) };
 
-  function openWindow({ links, mode = 'me', fail = [] } = {}) {
+  function openWindow({ links, mode = 'me', fail = [], sendFail = null } = {}) {
     MAK.setLang('es');
     const into = document.createElement('div');
     document.body.append(into);
@@ -27,7 +27,10 @@
         if (code) throw Object.assign(new Error(code), { code });
         return c;
       },
-      send: async (c, d) => { log.sent.push(d); },
+      send: async (c, d) => {
+        log.sent.push(d);
+        if (sendFail) throw Object.assign(new Error(sendFail), { code: sendFail });
+      },
       cancel: async () => {}
     };
     MAK.mailWindow(into, {
@@ -74,6 +77,31 @@
     release();
     await until(() => w.log.sent.length === 1);
     assert.deepEqual(w.log.sent[0].to, [{ value: 'u-me', label: 'YO, Test (me1)' }]);
+    w.into.remove();
+  });
+
+  test('mail window: maybe sent (an error after the send): "Send now" stays off, "Open in MiAulario" works', async () => {
+    const w = openWindow({ links: null, sendFail: 'pm.sendUnknown' });
+    w.button(MAK.t('mail.sendNow')).click();
+    w.button(MAK.t('mail.confirmYes')).click();
+    await until(() => w.status() === MAK.t('mail.error.pm.sendUnknown'));
+    assert.equal(w.button(MAK.t('mail.sendNow')).disabled, true, 'no second message');
+    assert.equal(w.button(MAK.t('mail.open')).disabled, false);
+    w.into.remove();
+  });
+
+  test('mail window: to a group or all the participants, a confirmation with the list first', async () => {
+    const w = openWindow({ links: null, mode: 'others' });
+    await until(() => w.into.querySelectorAll('label input[type="checkbox"]').length > 1);
+    const all = [...w.into.querySelectorAll('label')].find((l) => l.textContent.includes('Todos los participantes')).querySelector('input');
+    all.checked = true;
+    all.dispatchEvent(new Event('change'));
+    w.button(MAK.t('mail.sendNow')).click();
+    assert.equal(w.log.sent.length, 0, 'not yet');
+    assert.ok(w.into.querySelector('.confirm').textContent.includes('Todos los participantes'));
+    w.button(MAK.t('mail.confirmYes')).click();
+    await until(() => w.log.sent.length === 1);
+    assert.deepEqual(w.log.sent[0].to.map((p) => p.value), ['u-all']);
     w.into.remove();
   });
 

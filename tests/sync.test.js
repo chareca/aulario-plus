@@ -158,7 +158,7 @@ test('a different user removes all the data of the previous user', async () => {
   assert.equal(s.area.data.meta.userId, 'user-2');
   assert.deepEqual(s.area.data.readAnn || {}, {});
   assert.ok(s.area.data.announcements.every((a) => a.seen === 0), 'the data of the new user is the baseline');
-  assert.deepEqual(s.area.data.settings, { hiddenSites: [F.COORD] }, 'settings stay');
+  assert.deepEqual(s.area.data.settings, { hiddenSites: [F.COORD], guideGrades: {}, guideWeights: {}, forwardEmail: '' }, 'settings stay, without what the user wrote');
 });
 
 test('items that appear after the first sync get the time when the extension saw them', async () => {

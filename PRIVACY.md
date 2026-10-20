@@ -14,8 +14,8 @@ Aulario Plus is a browser extension for MiAulario, the virtual campus of the Uni
 
 | Data | Where it is | Who gets it |
 |---|---|---|
-| Your settings (names of sites, hidden sites, language, targets of the grade calculator, the settings of the download links, the address for the forward of the internal mail) | The storage of the extension in your browser | Nobody |
-| A copy of your course data: sites, pages of the sites, deliveries, announcements, notifications, calendar events, forums, grades, resources, and what you read | The storage of the extension in your browser | Nobody. The extension removes it when you log out of MiAulario or when a different user logs in |
+| Your settings (names of sites, hidden sites, language, the settings of the download links) | The storage of the extension in your browser | Nobody |
+| A copy of your course data: sites, pages of the sites, deliveries, announcements, notifications, calendar events, forums, grades, resources, and what you read; and what you write: the grades and weights of the grade calculator, the address for the forward of the internal mail | The storage of the extension in your browser | Nobody. The extension removes it when you log out of MiAulario or when a different user logs in |
 | The course guides of your sites (assessment, teachers) | The storage of the extension, for 7 days | Nobody |
 | Your degree (from the guides), its exam periods and the exam dates of the calendar (public data) | The storage of the extension, for 7 days (1 day for an exam calendar) | Nobody. The extension removes it when you log out |
 | The session cookies of MiAulario (`miaulario.unavarra.es`) and of the UPNA login page (`sso.unavarra.es`) | Your browser | The extension changes them into persistent cookies, so that the session stays after you close the browser. They do not go to other sites |
@@ -67,8 +67,8 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 | Datos | Dónde están | Quién los recibe |
 |---|---|---|
-| Tus ajustes (nombres de materias, materias ocultas, idioma, objetivos de la calculadora, ajustes de los enlaces de descarga, la dirección de reenvío del Correo interno) | El almacenamiento de la extensión en tu navegador | Nadie |
-| Una copia de tus datos de las asignaturas: sitios, páginas, entregas, anuncios, notificaciones, eventos del calendario, foros, notas, recursos y lo que has leído | El almacenamiento de la extensión en tu navegador | Nadie. La extensión la borra al cerrar sesión en MiAulario o si entra otro usuario |
+| Tus ajustes (nombres de materias, materias ocultas, idioma, ajustes de los enlaces de descarga) | El almacenamiento de la extensión en tu navegador | Nadie |
+| Una copia de tus datos de las asignaturas: sitios, páginas, entregas, anuncios, notificaciones, eventos del calendario, foros, notas, recursos y lo que has leído; y lo que escribes: las notas y los pesos de la calculadora, la dirección de reenvío del Correo interno | El almacenamiento de la extensión en tu navegador | Nadie. La extensión la borra al cerrar sesión en MiAulario o si entra otro usuario |
 | Las guías docentes de tus materias (evaluación, profesorado) | El almacenamiento de la extensión, durante 7 días | Nadie |
 | Tu carrera (de las guías), sus periodos de exámenes y las fechas del calendario de exámenes (datos públicos) | El almacenamiento de la extensión, durante 7 días (1 día para un calendario de exámenes) | Nadie. La extensión los borra al cerrar sesión |
 | Las cookies de sesión de MiAulario (`miaulario.unavarra.es`) y de la página de inicio de sesión de la UPNA (`sso.unavarra.es`) | Tu navegador | La extensión las hace persistentes para que la sesión siga al cerrar el navegador. No van a otros sitios |

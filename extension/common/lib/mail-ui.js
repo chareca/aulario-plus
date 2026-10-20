@@ -223,7 +223,8 @@
     }
 
     const buttons = [];
-    const lock = (on) => { st.busy = on; for (const b of buttons) b.disabled = on; };
+    // After "pm.sendUnknown" (the message may be sent), "Send now" stays off: no second message.
+    const lock = (on) => { st.busy = on; for (const b of buttons) b.disabled = on || (b === sendBtn && st.maybeSent); };
     async function run(kind) {
       if (st.busy) return;
       lock(true);
@@ -247,6 +248,7 @@
         }
         setTimeout(() => opts.onClose && opts.onClose(), 1800);
       } catch (e) {
+        if (e && e.code === 'pm.sendUnknown') st.maybeSent = true;
         say(MAK.mailError(e), 'error');
         lock(false);
       }
@@ -258,7 +260,7 @@
       if (!st.confirm) return;
       MAK.fill(
         confirmBox,
-        h('span', { text: t('mail.confirmMe', { files: t('mail.files', { n: files.length }) }) }),
+        h('span', { text: st.confirm }),
         h('button', { class: 'primary', text: t('mail.confirmYes'), attrs: { type: 'button' }, on: { click: () => { st.confirm = false; drawConfirm(); run('send'); } } }),
         h('button', { text: t('mail.no'), attrs: { type: 'button' }, on: { click: () => { st.confirm = false; drawConfirm(); } } })
       );
@@ -266,7 +268,12 @@
 
     const openBtn = h('button', { text: t('mail.open'), attrs: { type: 'button', title: t('mail.openHelp') }, on: { click: () => run('open') } });
     const sendBtn = h('button', { class: 'primary', text: t('mail.sendNow'), attrs: { type: 'button' }, on: { click: () => {
-      if (st.mode === 'me' && files.length) { st.confirm = true; return drawConfirm(); }
+      // A confirmation: a copy to the email of the user with files, or a group or all the participants.
+      st.confirm = false;
+      const chosen = st.mode === 'others' ? (st.people || []).filter((p) => st.chosen.has(p.value)) : [];
+      if (st.mode === 'me' && files.length) st.confirm = t('mail.confirmMe', { files: t('mail.files', { n: files.length }) });
+      else if (chosen.some((p) => p.kind !== 'person')) st.confirm = t('mail.confirmGroup', { list: chosen.map((p) => p.label).join(', ') });
+      if (st.confirm) return drawConfirm();
       run('send');
     } } });
     buttons.push(openBtn, sendBtn);

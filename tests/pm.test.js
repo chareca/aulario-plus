@@ -61,7 +61,12 @@ function fakeServer(o = {}) {
         state.subject = (e.find(([k]) => k === 'compose:subject') || [])[1] || '';
         return o.noPicker ? { kind: 'other' } : pickerSnap(state.attached);
       }
-      if (btn && /^(Enviar|Send|Bidali)$/.test(btn[1])) return o.sendFails ? composeSnap({ error: 'Debe seleccionar un destinatario' }) : homeSnap();
+      if (btn && /^(Enviar|Send|Bidali)$/.test(btn[1])) {
+        // "sendGateway": MiAulario saved the message, but the answer is an error of the gateway.
+        if (o.sendGateway) throw Object.assign(new Error('504'), { code: 'pm.http' });
+        if (o.sendOther) return { kind: 'other' };
+        return o.sendFails ? composeSnap({ error: 'Debe seleccionar un destinatario' }) : homeSnap();
+      }
       return homeSnap(); // Cancel
     }
     if (url === PICKER && has('sakai_action', 'doAttachitem')) {
@@ -136,6 +141,11 @@ test('send: the button "Send" with the data; the inbox means sent; the form agai
   const bad = fakeServer({ sendFails: true });
   const pm2 = MAK.createPm({ load: bad.load });
   await assert.rejects(pm2.send(await pm2.open('T'), DATA), (e) => e.code === 'pm.notSent' && /destinatario/.test(e.message));
+  // An error after the post, or another page: maybe sent (MiAulario saves the message first).
+  for (const o of [{ sendGateway: true }, { sendOther: true }]) {
+    const odd = MAK.createPm({ load: fakeServer(o).load });
+    await assert.rejects(odd.send(await odd.open('T'), DATA), { code: 'pm.sendUnknown' });
+  }
 });
 
 test('recipients of an older form: found again by their text in the new form (MiAulario makes new values)', async () => {

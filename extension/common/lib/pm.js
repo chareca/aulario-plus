@@ -264,13 +264,17 @@
       return next;
     }
 
-    // Send the prepared message. MiAulario then shows the inbox.
+    // Send the prepared message. MiAulario then shows the inbox. It saves the message before it sends
+    // the copies by email (Sakai 23, PrivateMessageManagerImpl.sendPrivateMessage): an error after the
+    // post (the network, a gateway, another page) can come after the message was sent ("pm.sendUnknown").
     async function send(compose, given) {
       checkData(given);
       const data = withTo(compose, given);
-      const after = await post(compose.snap.action, composeBody(compose, data, compose.buttons.send));
+      const after = await post(compose.snap.action, composeBody(compose, data, compose.buttons.send)).catch((e) => {
+        throw new PmError('pm.sendUnknown', (e && e.code) || '');
+      });
       if (after.kind === 'compose') throw new PmError('pm.notSent', after.error || '');
-      if (after.kind !== 'home') throw new PmError('pm.unknownAfterSend', after.kind);
+      if (after.kind !== 'home') throw new PmError('pm.sendUnknown', after.kind);
       return true;
     }
 
