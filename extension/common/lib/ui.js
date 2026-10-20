@@ -280,7 +280,7 @@
       border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     .win > header { display: flex; align-items: center; gap: 8px; margin: 0 -18px 12px; padding: 11px 18px;
-      background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line); }
+      background: var(--ap-win-head-bg); color: var(--ap-win-head-fg); border-bottom: var(--ap-head-line); }
     .win > header h2 { flex: 0 1 auto; margin: 0 auto 0 0; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
       letter-spacing: var(--ap-head-spacing); font-size: calc(17px * var(--ap-head-zoom)); line-height: 1.2; padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
     .win > header button.plain, .win > header button.btn { color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }

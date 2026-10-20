@@ -54,7 +54,7 @@
       border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     .mail > header { display: flex; align-items: baseline; gap: 8px; margin: 0 -16px 10px; padding: 10px 16px;
-      background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line); }
+      background: var(--ap-win-head-bg); color: var(--ap-win-head-fg); border-bottom: var(--ap-head-line); }
     .mail > header h2 { margin: 0 auto 0 0; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
       letter-spacing: var(--ap-head-spacing); font-size: calc(17px * var(--ap-head-zoom)); padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
     .mail > header .muted { color: inherit; opacity: 0.8; }

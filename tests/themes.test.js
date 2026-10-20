@@ -10,7 +10,8 @@ const read = (f) => fs.readFileSync(path.join(COMMON, f), 'utf8');
 
 test('each theme: a unique id, a name and a text in Spanish and English, light and dark values, its CSS', () => {
   const ids = MAK.themeIds();
-  assert.deepEqual(ids, ['bloques', 'plastilina', 'eterea', 'cromo', 'cuaderno']);
+  assert.deepEqual(ids, ['miaulario', 'bloques', 'plastilina', 'eterea', 'cromo', 'cuaderno']);
+  assert.equal(MAK.DEFAULT_THEME, 'miaulario', 'the default: the look of MiAulario');
   assert.equal(new Set(ids).size, ids.length);
   for (const th of MAK.THEMES) {
     assert.match(th.id, /^[a-z0-9-]{1,32}$/, th.id);
@@ -69,7 +70,7 @@ test('the CSS of a theme for its card in the settings: only rules of its card, i
 test('the name in the titles: "AulaXP" with AulaXP, else "Aulario Plus"', () => {
   assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'AulaXP');
   assert.equal(MAK.brandName(MAK.theme('cromo')), 'AulaXP');
-  for (const id of ['bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
+  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
   assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);

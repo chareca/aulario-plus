@@ -24,7 +24,7 @@
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno, en una columna o a todo el ancho.
 - **Guías docentes:** cómo se evalúa cada materia, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
 - **Archivos:** descarga una materia en ZIP o envía sus archivos por el correo interno.
-- **Temas:** cinco estilos (Bloques, Plastilina, Etérea, AulaXP y Cuaderno), en claro u oscuro.
+- **Temas:** igual que MiAulario (por defecto) o uno de cinco estilos (Bloques, Plastilina, Etérea, AulaXP y Cuaderno), en claro u oscuro.
 
 ## Privacidad
 

@@ -40,8 +40,9 @@
     assert.equal(block.querySelector('h2').textContent, 'Aulario Plus');
     assert.equal(block.querySelector('h2').title, 'Aulario Plus es una extensión de tu navegador. No es de la UPNA.');
     assert.equal(block.querySelector('.Mrphs-toolTitleNav'), null, 'not the head of the blocks of MiAulario');
-    assert.equal(getComputedStyle(block.querySelector('.mak-head')).backgroundColor, 'rgb(255, 212, 0)', 'the head of the theme (Bloques: yellow)');
-    assert.equal(getComputedStyle(block).borderTopWidth, '3px', 'the frame of the theme');
+    const grey = MAK.isDarkPage() ? 'rgb(49, 53, 59)' : 'rgb(227, 228, 229)'; // #31353b, #e3e4e5
+    assert.equal(getComputedStyle(block.querySelector('.mak-head')).backgroundColor, grey, 'the head of the theme (MiAulario: the grey of its blocks)');
+    assert.equal(getComputedStyle(block).borderRadius, '4px', 'the corners of the blocks of MiAulario');
     const fold = block.querySelector('button.mak-fold');
     assert.equal(fold.textContent, '', 'only the arrow, no word');
     assert.equal(fold.getAttribute('aria-label'), 'Plegar Aulario Plus');

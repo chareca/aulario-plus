@@ -60,6 +60,8 @@
       'head-btn-fg': 'var(--ap-btn-fg)',
       'head-btn-edge': 'var(--ap-btn-edge)',
       'head-btn-size': '30px',
+      'win-head-bg': 'var(--ap-head-bg)', // the head of a window over the page (else as the head of a box)
+      'win-head-fg': 'var(--ap-head-fg)',
       'title-deco': 'none', // an image under the titles (a background at the bottom)
       'title-pad': '0px', // the space under the titles for that image
       // Buttons: "btn" the normal ones, "primary" the main action
@@ -220,6 +222,190 @@
   };
 
   MAK.THEMES = [
+    // ---- MiAulario (the default): the look of MiAulario itself, so the parts of the extension do not look
+    // added. The values come from the skin of MiAulario (Sakai 23, /library/skin/default-skin/tool.css): its
+    // colors (--sakai-*), the font Open Sans (14 px), the blocks of "Mi sitio" (white, corners of 4 px, a soft
+    // shadow, a grey head), its buttons and its windows (a blue head). The dark mode: its dark theme.
+    {
+      id: 'miaulario',
+      name: { es: 'MiAulario', en: 'MiAulario' },
+      about: { es: 'Igual que MiAulario: sus colores, su letra, sus bloques y sus botones.', en: 'The same as MiAulario: its colors, its font, its blocks and its buttons.' },
+      // MiAulario loads Open Sans; the popup and the tools page have their own copy.
+      fonts: [{ family: 'AP Open Sans', file: 'open-sans.woff2', weight: '400 700' }],
+      light: {
+        font: '"Open Sans", "AP Open Sans", sans-serif',
+        'head-weight': '700',
+        'head-zoom': '0.95',
+        page: '#ffffff', // --portal-background-color
+        surface: '#ffffff', // --sakai-background-color-1
+        solid: '#ffffff',
+        surface2: '#f3f3f4', // --sakai-background-color-2
+        fg: '#333435', // --sakai-text-color-1
+        muted: '#454749', // --sakai-text-color-dimmed
+        line: '#e3e4e5', // --sakai-border-color
+        edge: '#e3e4e5',
+        accent: '#0f4b70', // --sakai-brand
+        'accent-fg': '#ffffff',
+        'accent-soft': '#e9f5fc', // --infoBanner-bgcolor
+        link: '#0f4b70', // --link-color
+        // The banners of MiAulario (error, warning, success, information)
+        red: '#9e0008', 'red-bg': '#fae6e7',
+        orange: '#a35405', 'orange-bg': '#fdf0e3',
+        yellow: '#6e5c01', 'yellow-bg': '#fbf8e6',
+        green: '#046b32', 'green-bg': '#e6f6ed',
+        blue: '#196390', 'blue-bg': '#e9f5fc',
+        grey: '#6b6e72', 'grey-bg': '#f3f3f4',
+        'mark-bg': '#fff3cd',
+        // The head of a block of "Mi sitio" (--overview-portlet-title-background-color, --button-text-color)
+        'head-bg': '#e3e4e5',
+        'head-fg': '#202122',
+        'head-line': '0 solid transparent',
+        'head-btn-bg': 'transparent',
+        'head-btn-fg': '#202122',
+        'head-btn-edge': 'transparent',
+        // The head of a window (--sakai-modal-header-bg, --sakai-modal-header-color)
+        'win-head-bg': '#0f4b70',
+        'win-head-fg': '#ffffff',
+        // The buttons (--button-*, --button-primary-*)
+        'btn-bg': '#e3e4e5',
+        'btn-fg': '#202122',
+        'btn-edge': '#d3d4d6',
+        'primary-bg': '#0f4b70',
+        'primary-fg': '#ffffff',
+        'primary-edge': '#0f4b70',
+        radius: '4px',
+        'radius-sm': '4px',
+        'radius-box': '4px',
+        bw: '0px',
+        'bw-sm': '1px',
+        shadow: '0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12)', // --elevation-2dp
+        'shadow-pop': '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+        backdrop: 'rgba(0, 0, 0, 0.5)', // --portal-mask-background
+        'item-sep': '1px solid #e3e4e5',
+        'item-pad': '8px 2px',
+        'count-weight': '600',
+        'count-soon-fg': '#a35405',
+        'count-hot-fg': '#9e0008',
+        'count-ok-fg': '#046b32',
+        'input-bg': '#ffffff',
+        'input-fg': '#333435',
+        'input-edge': '#ced4da',
+        'input-radius': '0.4rem',
+        'logo-bg': '#0f4b70', // --logo-background-color
+        'logo-ring': '#ffffff',
+        'logo-dot': '#ffffff',
+        'k-exam': '#1f78af', 'k-exam-fg': '#ffffff',
+        'k-practice': '#05843f', 'k-practice-fg': '#ffffff',
+        'k-work': '#dab601', 'k-work-fg': '#202122',
+        'k-participation': '#d97008', 'k-participation-fg': '#ffffff',
+        'k-presentation': '#4848f9', 'k-presentation-fg': '#ffffff',
+        'k-other': '#898c90', 'k-other-fg': '#ffffff'
+      },
+      // The dark theme of MiAulario (:root.sakaiUserTheme-dark)
+      dark: {
+        page: '#1f2225',
+        surface: '#1f2225',
+        solid: '#1f2225',
+        surface2: '#31353b',
+        fg: '#d3d4d6',
+        muted: '#c3c5c7',
+        line: '#454749',
+        edge: '#454749',
+        'accent-fg': '#e3e4e5',
+        'accent-soft': '#092435',
+        link: '#c7d5dd',
+        red: '#e57e83', 'red-bg': '#300002',
+        orange: '#e1903f', 'orange-bg': '#3a2104',
+        yellow: '#ecda7f', 'yellow-bg': '#332b00',
+        green: '#82d2a6', 'green-bg': '#022713',
+        blue: '#92ccf0', 'blue-bg': '#092435',
+        grey: '#c3c5c7', 'grey-bg': '#31353b',
+        'mark-bg': '#5c4b00',
+        'head-bg': '#31353b',
+        'head-fg': '#e3e4e5',
+        'head-btn-fg': '#e3e4e5',
+        'win-head-bg': '#434950',
+        'win-head-fg': '#d3d4d6',
+        'btn-bg': '#31353b',
+        'btn-fg': '#e3e4e5',
+        'btn-edge': '#434950',
+        'primary-fg': '#e3e4e5',
+        shadow: '0 3px 1px -2px rgba(0, 0, 0, 0.4), 0 2px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 5px 0 rgba(0, 0, 0, 0.3)',
+        'shadow-pop': '0 0.5rem 1rem rgba(0, 0, 0, 0.5)',
+        'item-sep': '1px solid #454749',
+        'count-soon-fg': '#e1903f',
+        'count-hot-fg': '#e57e83',
+        'count-ok-fg': '#82d2a6',
+        'input-bg': '#1f2225',
+        'input-fg': '#d3d4d6',
+        'input-edge': '#555c65'
+      },
+      // The block of "Mi sitio": one more block of MiAulario (the head of 16 px with the title in 14 px,
+      // without the logo; the body with the padding of the blocks).
+      blockCss: `
+        #mak-block { margin: 0 0 16px; }
+        #mak-block > .mak-head { padding: 10px 10px 10px 16px; }
+        #mak-block .mak-logo { display: none; }
+        #mak-block .mak-title { font-size: 14px; font-weight: 400; line-height: 1.43; }
+        #mak-block > #mak-block-body { padding: 12px 16px 14px; }
+        #mak-block .mak-head .mak-fold { border: 0; box-shadow: none; }
+        #mak-block .mak-head .mak-fold:hover { background: rgba(0, 0, 0, 0.08); filter: none; }
+      `,
+      // Its card in the settings: a block of "Mi sitio" (the grey head with the name).
+      cardCss: `
+        .theme-card[data-theme="miaulario"] { gap: 4px; padding: 0 0 10px; border: 0; border-radius: 4px; background: var(--ap-surface); box-shadow: var(--ap-shadow); }
+        .theme-card[data-theme="miaulario"] .name { display: block; margin: 0 0 4px; padding: 9px 12px 9px 34px; border-radius: 4px 4px 0 0; background: var(--ap-head-bg);
+          color: var(--ap-head-fg); font: 400 14px/1.43 "Open Sans", "AP Open Sans", sans-serif; }
+        .theme-card[data-theme="miaulario"] input { left: 12px; top: 12px; accent-color: #0f4b70; }
+        .theme-card[data-theme="miaulario"] .about, .theme-card[data-theme="miaulario"] .sample { padding-left: 12px; padding-right: 12px; }
+        .theme-card[data-theme="miaulario"] .chip { padding: 4px 12px; font-weight: 600; box-shadow: var(--ap-shadow); }
+      `,
+      css: `
+        /* The buttons of MiAulario: 7 px 16 px, 18 px of line; the main one in blue, with a shadow */
+        .btn, .mak-btn, .chips button, .win button.plain, .win button.btn, .mail button:not(.x), .actions .action { padding: 7px 16px; line-height: 18px; font-weight: 400; }
+        .chips button { padding: 4px 12px; }
+        .btn.primary, .mak-btn, .actions .action, .chips button[aria-pressed="true"], .win button.primary { font-weight: 600; box-shadow: var(--ap-shadow); }
+        .btn:hover, .chips button:hover, .win button.plain:hover, .win button.btn:hover, .mail button:not(.x):hover, .week:hover { filter: none; background: var(--ap-btn-edge); }
+        .btn.primary:hover, .mak-btn:hover, .actions .action:hover, .chips button[aria-pressed="true"]:hover, .win button.primary:hover {
+          filter: none; background: color-mix(in srgb, var(--ap-primary-bg) 80%, var(--ap-fg)); box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12); }
+        .actions .action { min-height: 0; }
+        /* "Exámenes finales": in the block itself, as the content of a block of MiAulario */
+        .tile { padding: 0; background: none; border: 0; border-radius: 0; }
+        /* The buttons with an icon (the pencil, the mail, the calculator): as the icons of MiAulario, without a frame */
+        .mak-icon { color: var(--ap-fg); background: transparent; border-color: transparent; box-shadow: none; }
+        .mak-icon:hover { background: var(--ap-surface2); filter: none; }
+        /* The focus: the light blue ring of MiAulario */
+        .btn:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .mak-fold:focus-visible, .chips button:focus-visible, .actions .action:focus-visible,
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 3px #75bfec; }
+        input[type="checkbox"], input[type="radio"], label.check input { accent-color: var(--ap-accent); }
+        /* The tabs of a tool of MiAulario */
+        nav.tabs { flex-wrap: wrap; gap: 4px; padding: 8px 10px 2px; border-bottom: 0; }
+        nav.tabs button { flex: none; padding: 4px 8px; font-size: 12px; line-height: 18px; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: 1px solid var(--ap-line);
+          border-radius: 4px; }
+        nav.tabs button:hover { background: var(--ap-btn-edge); }
+        nav.tabs button[aria-selected="true"] { font-weight: 400; color: var(--ap-link); background: var(--ap-surface);
+          border-top: 3px solid color-mix(in srgb, var(--ap-accent) 55%, var(--ap-surface)); padding-top: 2px; }
+        /* The buttons in the blue head of a window: white, with a light border */
+        .win > header button.plain, .win > header button.btn { color: var(--ap-win-head-fg); background: transparent;
+          border-color: color-mix(in srgb, var(--ap-win-head-fg) 55%, transparent); box-shadow: none; }
+        .win > header button.plain:hover, .win > header button.btn:hover { background: color-mix(in srgb, var(--ap-win-head-fg) 15%, transparent); }
+        /* The popup: the top bar of MiAulario (white, the logo on blue), the content in a block */
+        header.top { background: var(--ap-surface); color: var(--ap-fg); border-bottom: 1px solid var(--ap-line); }
+        .icon-btn { box-shadow: none; }
+        .icon-btn:hover { background: var(--ap-surface2); filter: none; }
+        /* The banners of MiAulario: information and warning */
+        .whatsnew { color: var(--ap-blue); background: var(--ap-blue-bg); border: 1px solid color-mix(in srgb, var(--ap-blue) 45%, transparent); border-radius: 4px; }
+        .notice { color: var(--ap-yellow); background: var(--ap-yellow-bg); border: 1px solid color-mix(in srgb, var(--ap-yellow) 45%, transparent); border-radius: 4px; }
+        /* The next exam: a banner of information */
+        .next-exam { color: var(--ap-fg); background: var(--ap-blue-bg); border: 1px solid color-mix(in srgb, var(--ap-blue) 45%, transparent); border-radius: 4px; }
+        .next-exam .day { color: var(--ap-link); }
+        /* The scroll bars of MiAulario */
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: var(--ap-line); }
+        ::-webkit-scrollbar-thumb { background: var(--ap-link); border-radius: 30px; border: 4px solid var(--ap-line); }
+      `
+    },
+
     // ---- 1 · Bloques: Neo-Brutalism + Bento Grid ----------------------------------------------
     {
       id: 'bloques',
@@ -1192,7 +1378,7 @@
     }
   ];
 
-  MAK.DEFAULT_THEME = 'bloques';
+  MAK.DEFAULT_THEME = 'miaulario';
   MAK.themeIds = () => MAK.THEMES.map((th) => th.id);
   // The theme with this id, else the default theme.
   MAK.theme = (id) => MAK.THEMES.find((th) => th.id === id) || MAK.THEMES.find((th) => th.id === MAK.DEFAULT_THEME) || MAK.THEMES[0];

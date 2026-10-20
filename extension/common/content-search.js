@@ -34,7 +34,7 @@
     .tip { padding: 8px 8px 0; font-size: 0.86em; color: var(--ap-muted); }
     .foot { font-size: 0.8em; color: var(--ap-muted); padding: 7px 14px; border-top: var(--ap-item-sep); }
     /* A title bar with a close button: only a theme with windows shows it (AulaXP). */
-    .bar { display: none; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; background: var(--ap-head-bg); color: var(--ap-head-fg);
+    .bar { display: none; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; background: var(--ap-win-head-bg); color: var(--ap-win-head-fg);
       font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-size: calc(15px * var(--ap-head-zoom)); }
     .bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     button.x { font: inherit; line-height: 1; cursor: pointer; color: inherit; background: none; border: 0; padding: 2px 6px; }
