@@ -96,8 +96,10 @@ test('the fonts of the themes are files of the extension, with the OFL license',
     const scripts = manifest.content_scripts[1].js;
     assert.ok(scripts.indexOf('lib/themes.js') < scripts.indexOf('content-theme.js'), name);
     assert.ok(scripts.indexOf('content-theme.js') < scripts.indexOf('content-banner.js'), `${name}: the theme before the parts`);
-    // The group does not depend on the first one (document_start): it can run without it (a tab open when the extension reloads).
-    assert.ok(scripts.includes('lib/store.js') && scripts.indexOf('lib/store.js') < scripts.indexOf('content-theme.js'), `${name}: MAK.withDefaults in the group of the parts`);
+    // Chrome can run this group without the first one (document_start): it has every lib of the first one, before the parts.
+    for (const lib of manifest.content_scripts[0].js.filter((f) => f.startsWith('lib/'))) {
+      assert.ok(scripts.includes(lib) && scripts.indexOf(lib) < scripts.indexOf('content-theme.js'), `${name}: ${lib} in the group of the parts`);
+    }
   }
 });
 
