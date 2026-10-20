@@ -81,7 +81,7 @@
     const parts = MAK.weightsByKind(rows);
     const total = parts.reduce((n, p) => n + p.weight, 0);
     if (!total) return null;
-    const label = (p) => `${MAK.t(`guide.kind.${p.kind}`)} · ${p.weight.toLocaleString(MAK.locale())} %`;
+    const label = (p) => `${MAK.t(`guide.kind.${p.kind}`)} ${p.weight.toLocaleString(MAK.locale())} %`;
     return h('div', { class: 'bar weights', attrs: { role: 'img', 'aria-label': parts.map(label).join(', ') } },
       parts.map((p) => {
         const part = h('span', { class: `k-${p.kind}`, text: label(p), title: `${label(p)}\n${p.names.map((n) => `• ${n}`).join('\n')}` });
@@ -108,17 +108,18 @@
           'tbody',
           null,
           rows.map((r) => h('tr', null, cell(r.activity, MAK.activityKind(r.activity)), h('td', { class: 'w', text: percent(r) }), cols.map(([k]) => cell(tidy(r[k]))))),
-          total > 0 ? h('tr', { class: 'total' }, h('td', { text: MAK.t('guide.total') }), h('td', { class: 'w', text: `${total.toLocaleString(MAK.locale())} %` }), cols.map(() => h('td'))) : null
+          // The total only when it is not 100 % (then the calculation uses that total).
+          total > 0 && Math.abs(total - 100) > 0.01 ? h('tr', { class: 'total' }, h('td', { text: MAK.t('guide.total') }), h('td', { class: 'w', text: `${total.toLocaleString(MAK.locale())} %` }), cols.map(() => h('td'))) : null
         )
       )
     ];
   }
 
-  // The responsible teachers, with the link to the office hours.
+  // The responsible teachers ("Ana García López · Tutorías"), with the link to the office hours.
   const teachers = (guide) =>
     guide.teachers.filter((t) => t.resp).map((t) => {
       const n = MAK.personParts(t.name);
-      return h('div', { class: 'teacher meta' }, `${MAK.t('guide.responsible')}: ${[n.first, n.last].filter(Boolean).join(' ')}`, t.tutorias ? [' · ', MAK.link(t.tutorias, MAK.t('guide.officeHours'))] : null);
+      return h('div', { class: 'teacher meta', title: MAK.t('guide.responsible') }, [n.first, n.last].filter(Boolean).join(' '), t.tutorias ? [' · ', MAK.link(t.tutorias, MAK.t('guide.officeHours'))] : null);
     });
 
   // The table, the rules of the assessment and the link to the full guide.
@@ -143,8 +144,8 @@
     }, MAK.icon('calc'));
   }
 
-  // The home page of a site: all the guide.
-  const guideBody = (guide) => [teachers(guide), weightBar(guide.evaluation.rows), details(guide)];
+  // The home page of a site: all the guide (the table has the weights: no bar).
+  const guideBody = (guide) => [teachers(guide), details(guide)];
 
   // "Mi sitio": a short card (the name, the responsible teacher and the weights). The arrow shows
   // the rest. The card stays open or closed when the page opens again.
@@ -159,7 +160,7 @@
     const card = h(
       'section',
       { class: 'guide-card' },
-      h('div', { class: 'card-head' }, h('h4', null, name, rows.some((r) => r.weight) ? h('span', { class: 'meta', text: ` · ${rows.length} ${MAK.t('guide.activities')}` }) : null), calcButton(site, name, rows), arrow),
+      h('div', { class: 'card-head' }, h('h4', { text: name }), calcButton(site, name, rows), arrow),
       teachers(guide),
       weightBar(rows),
       more
@@ -251,7 +252,7 @@
       if (guide) cards[MAK.guideSeason(guide) || current].push(guideCard(s, guide));
     }
     const parts = {};
-    for (const season of ['autumn', 'spring']) if (cards[season].length) parts[season] = { count: cards[season].length, body: h('div', { class: 'grid' }, cards[season]) };
+    for (const season of ['autumn', 'spring']) if (cards[season].length) parts[season] = { body: h('div', { class: 'grid' }, cards[season]) };
     const sections = MAK.semesterSections({ key: 'guides', now, parts, title: (season) => MAK.t(`short.semester.${season}`) });
     if (sections) show(MAK.t('guide.allTitle'), sections);
   }

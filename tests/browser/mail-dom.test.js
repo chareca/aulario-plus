@@ -91,9 +91,9 @@
     w.into.remove();
   });
 
-  test('mail window: the internal message is explained, and the copy by email is on for files', async () => {
+  test('mail window: no long explanation; the copy by email is on for files', async () => {
     const w = openWindow();
-    assert.ok(w.into.textContent.includes(MAK.t('mail.internalHelp')));
+    assert.equal(w.into.querySelector('.help.intro'), null, 'the title says that it is an internal message');
     assert.equal([...w.into.querySelectorAll('label.check')].find((l) => l.textContent.includes(MAK.t('mail.copy'))).querySelector('input').checked, true);
     w.into.remove();
   });

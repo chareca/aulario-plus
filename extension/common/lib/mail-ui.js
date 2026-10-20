@@ -58,7 +58,6 @@
     .mail > header h2 { margin: 0 auto 0 0; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
       letter-spacing: var(--ap-head-spacing); font-size: calc(17px * var(--ap-head-zoom)); padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
     .mail > header .muted { color: inherit; opacity: 0.8; }
-    .help.intro { margin: -4px 0 8px; }
     ul.files { margin: 0 0 10px; padding-left: 18px; max-height: 110px; overflow: auto; }
     .modes { display: flex; gap: 14px; margin: 6px 0 8px; }
     .people { border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); padding: 6px; margin-bottom: 8px; }
@@ -315,7 +314,6 @@
       'div',
       { class: 'mail', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': t('mail.title') } },
       h('header', null, h('h2', { text: t('mail.title') }), h('span', { class: 'muted', text: opts.site.name }), close),
-      h('p', { class: 'help intro', text: t('mail.internalHelp') }),
       files.length ? [h('div', { class: 'muted', text: t('mail.files', { n: files.length }) }), h('ul', { class: 'files' }, files.map((f) => h('li', { text: f.title })))] : null,
       h('div', { class: 'modes', attrs: { role: 'radiogroup' } }, modeRadio('me', t('mail.toMe')), modeRadio('others', t('mail.toOthers'))),
       people,

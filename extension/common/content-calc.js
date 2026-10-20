@@ -80,15 +80,13 @@
     const lines = MAK.guideCalc(rows, {}, {}).rows.map((r) => {
       const input = h('input', { attrs: { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '–', 'aria-label': t('gcalc.gradeOf', { activity: r.activity }) } });
       const weight = h('input', { class: 'weight', attrs: { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '0', 'aria-label': t('gcalc.weightOf', { activity: r.activity }) } });
-      const from = h('div', { class: 'tag', hidden: true, text: t('gcalc.fromBook') });
       const state = h('td', { class: 's' });
-      const line = { activity: r.activity, guideWeight: r.guideWeight, input, weight, from, state };
+      const line = { activity: r.activity, guideWeight: r.guideWeight, input, weight, state };
       input.addEventListener('input', () => {
         const v = input.value.trim();
         const n = MAK.parseGrade(v);
         input.classList.toggle('bad', !!v && n === null);
         input.classList.remove('book');
-        from.hidden = true;
         if (n === null) delete grades[r.activity];
         else grades[r.activity] = n;
         draw();
@@ -107,7 +105,7 @@
       line.tr = h('tr', null,
         h('td', null, r.activity, r.minimum !== null ? h('div', { class: 'tag', text: t('gcalc.minimum', { n: fmt(r.minimum) }) }) : null),
         h('td', { class: 'w' }, weight, ' %'),
-        h('td', { class: 'g' }, input, from),
+        h('td', { class: 'g' }, input),
         state);
       return line;
     });
@@ -119,7 +117,6 @@
         if (document.activeElement !== host || !l.input.matches(':focus')) l.input.value = own ? fmt(grades[l.activity]) : fromBook ? fmt(book[l.activity]) : '';
         l.input.classList.toggle('book', fromBook);
         l.input.classList.remove('bad');
-        l.from.hidden = !fromBook;
         const w = typeof weights[l.activity] === 'number' ? weights[l.activity] : l.guideWeight;
         l.weight.value = w ? fmt(w) : '';
         l.weight.classList.toggle('changed', typeof weights[l.activity] === 'number');
@@ -164,7 +161,9 @@
         parts.push(h('p', { class: 'ok', text: t('gcalc.alreadyPass') }));
         parts.push(h('p', { text: t('gcalc.projectedMin', { n: fmt(c.projected) }) }));
       } else {
-        parts.push(h('p', null, t('gcalc.needRest'), ' ', h('span', { class: 'need big', text: fmt(c.need) })));
+        // "Necesitas 5 en lo que falta", the number in large.
+        const [before, after] = t('gcalc.needRest', { n: '\u0001' }).split('\u0001');
+        parts.push(h('p', null, before, h('span', { class: 'need big', text: fmt(c.need) }), after));
         parts.push(h('p', { text: t('gcalc.projected', { n: fmt(c.projected) }) }));
       }
       if (below.length) parts.push(h('p', { class: 'low', text: t('gcalc.belowList', { list: below.join(', ') }) }));
@@ -222,7 +221,7 @@
       if (!host.isConnected) return;
       book = got || {};
       const n = Object.keys(book).length;
-      status.textContent = got === null ? t('gcalc.bookError') : n ? t('gcalc.bookFound', { n }) : t('gcalc.bookNone');
+      status.textContent = got === null ? t('gcalc.bookError') : n ? t('gcalc.bookFound', { n }) : '';
       for (const l of lines) if (l.input === shadow.activeElement) l.input.blur();
       fill();
       draw();

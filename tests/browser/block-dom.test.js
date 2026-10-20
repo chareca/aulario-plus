@@ -81,17 +81,17 @@
     assert.equal(b.getAttribute('aria-label'), 'Plegar «X»');
   });
 
-  test('the semesters: the one of the date open, the other folded below; its state stays; from 25 January only the second', async () => {
+  test('the semesters: the one of the date open, the other folded below; its state stays; from 25 January only the second; no count', async () => {
     const keys = ['mak-sem:test:autumn', 'mak-sem:test:spring'];
     try { for (const k of keys) localStorage.removeItem(k); } catch {}
     MAK.setLang('es');
-    const parts = { autumn: { count: 3, body: document.createTextNode('A') }, spring: { count: 2, body: document.createTextNode('B') } };
+    const parts = { autumn: { body: document.createTextNode('A') }, spring: { body: document.createTextNode('B') } };
     const make = (now) => MAK.semesterSections({ key: 'test', now, parts, title: (s) => MAK.t(`short.semester.${s}`) });
     const autumnDay = new Date(2026, 9, 20).getTime();
     let el = make(autumnDay);
     document.body.append(el);
     let sems = [...el.querySelectorAll('.sem')];
-    assert.deepEqual(sems.map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['Otoño · 1.er semestre · 3', 'sem open'], ['Primavera · 2.º semestre · 2', 'sem closed']]);
+    assert.deepEqual(sems.map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['1.er semestre', 'sem open'], ['2.º semestre', 'sem closed']]);
     assert.equal(el.querySelector('.sems').classList.contains('two'), false, 'one column: the folded one below');
     sems[1].querySelector('.mak-fold').click();
     assert.ok(el.querySelector('.sems').classList.contains('two'), 'both open: two columns');
@@ -100,7 +100,7 @@
     el = make(autumnDay);
     assert.equal(el.querySelectorAll('.sem.open').length, 2, 'the open state stays');
     el = make(new Date(2027, 0, 25).getTime());
-    assert.deepEqual([...el.querySelectorAll('.sem')].map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['Primavera · 2.º semestre · 2', 'sem open']], 'from 25 January: no first semester');
+    assert.deepEqual([...el.querySelectorAll('.sem')].map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['2.º semestre', 'sem open']], 'from 25 January: no first semester');
     assert.equal(MAK.semesterSections({ key: 'test', now: autumnDay, parts: {}, title: String }), null);
     try { for (const k of keys) localStorage.removeItem(k); } catch {}
   });

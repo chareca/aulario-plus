@@ -52,8 +52,7 @@
     .exams .calc-need { font-size: 0.86em; font-weight: 700; color: var(--ap-fg); margin-top: 3px; }
     .exams .calc-need.low { color: var(--ap-red); }
     .exams .calc-need.ok { color: var(--ap-green); }
-    h5 { margin: 10px 0 3px; font-size: calc(13px * var(--ap-head-zoom)); }
-    .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; }
     .note { font-size: 0.93em; margin: 6px 0; }
     /* The actions in one row below the exams: buttons of the theme, the same height. */
     .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: stretch; }
@@ -80,20 +79,23 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = MAK.themedStyle(CSS());
     content = h('div', { class: 'tiles' });
-    let hidden = false;
-    try { hidden = localStorage.getItem(`${HOST_ID}:hidden`) === '1'; } catch {}
-    content.hidden = hidden;
     const title = t('short.title');
-    // The arrow folds the box (the title too); the box stays folded when the page opens again.
-    const toggle = MAK.foldButton(!hidden, { open: t('fold.open', { name: title }), close: t('fold.close', { name: title }) }, (open) => {
-      content.hidden = !open;
-      try { localStorage.setItem(`${HOST_ID}:hidden`, open ? '0' : '1'); } catch {}
-    });
-    const name = h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } });
-    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
-    // In the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), first. Else above the course guides, below the
-    // banner of new items, or at the top of the content.
+    // In the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), first, without a title: the block has the
+    // title and the arrow. Else above the course guides, below the banner of new items, or at the top of the
+    // content, with a title and an arrow that folds the box (it stays folded when the page opens again).
     const slot = MAK.mySiteSlot();
+    let head = null;
+    if (!slot) {
+      let hidden = false;
+      try { hidden = localStorage.getItem(`${HOST_ID}:hidden`) === '1'; } catch {}
+      content.hidden = hidden;
+      const toggle = MAK.foldButton(!hidden, { open: t('fold.open', { name: title }), close: t('fold.close', { name: title }) }, (open) => {
+        content.hidden = !open;
+        try { localStorage.setItem(`${HOST_ID}:hidden`, open ? '0' : '1'); } catch {}
+      });
+      head = h('div', { class: 'head' }, h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } }), toggle);
+    }
+    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, head, content));
     const guide = document.getElementById(GUIDE_ID);
     const banner = document.getElementById(BANNER_ID);
     if (slot) {
@@ -159,7 +161,7 @@
 
   // The periods of the exams of a semester: "Finales: … · Recuperación: …".
   function periodLine(p) {
-    const parts = [p.finals ? `${t('short.finals')}: ${p.finals}` : null, p.recovery ? `${t('short.recovery')}: ${p.recovery}` : null].filter(Boolean);
+    const parts = [p.finals ? `${t('short.finals')} ${MAK.shortPeriod(p.finals)}` : null, p.recovery ? `${t('short.recovery')} ${MAK.shortPeriod(p.recovery)}` : null].filter(Boolean);
     return parts.length ? h('div', { class: 'period', text: parts.join(' · ') }) : null;
   }
 
@@ -225,7 +227,9 @@
     const name = (s && MAK.publicSiteName(s)) || best.r.name;
     const days = daysTo(best.ms, now);
     const d = new Date(best.ms);
-    const when = [t(best.kind === 'final' ? 'short.final' : 'short.rec'), MAK.formatDate(best.ms), best.room].filter(Boolean).join(' · ');
+    // The day is in large: here only the weekday and the time ("Final · martes, 12:00").
+    const day = new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(best.ms);
+    const when = [t(best.kind === 'final' ? 'short.final' : 'short.rec'), day, best.room].filter(Boolean).join(' · ');
     return h('div', { class: 'next-exam' },
       h('div', { class: 'day', attrs: { 'aria-hidden': 'true' } }, String(d.getDate()), h('small', { text: d.toLocaleDateString(MAK.locale(), { month: 'short' }).replace('.', '') })),
       h('div', { class: 'what' }, h('span', { class: 'meta', text: t('short.next') }), h('span', { class: 'name', text: name }), h('span', { class: 'meta', text: when })),
@@ -266,8 +270,7 @@
       const mine = ex.mine.filter((r) => r.season === season);
       if (!period && !mine.length) continue;
       parts[season] = {
-        count: mine.length || null,
-        body: [period ? periodLine(period) : null, mine.length ? [h('h5', { text: t('short.myExams') }), examList(mine, sites, now, need)] : null]
+        body: [period ? periodLine(period) : null, mine.length ? examList(mine, sites, now, need) : null]
       };
     }
     return MAK.semesterSections({ key: 'exams', now, parts, title: (s) => t(`short.semester.${s}`) });
@@ -275,12 +278,12 @@
 
   // "Tu carrera: … · Cambiar": a list of all the degrees to select another one.
   function degreeLine(degree, data, settings, list) {
-    const line = h('div', { class: 'degree meta' }, `${t('short.degree')}: ${degree.name || '–'}`);
+    const line = h('div', { class: 'degree meta' }, degree.name || '–');
     const change = h('button', { class: 'plain', attrs: { type: 'button' }, text: t('short.change') });
     change.addEventListener('click', async () => {
       change.disabled = true;
       const all = list && list.length ? list : await degreeList(data);
-      line.replaceChildren(`${t('short.degree')}: `, select(all, settings.degree));
+      line.replaceChildren(select(all, settings.degree));
     });
     line.append(' · ', change);
     return line;
@@ -366,10 +369,9 @@
       .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
     const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
     MAK.fill(examTile,
-      h('h4', null, t('short.exams'), degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
+      h('h4', { text: t('short.exams') }),
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
       place,
-      h('h5', { text: t('short.links') }),
       h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
       degreeLine(degree, data, settings, degree.list));
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));

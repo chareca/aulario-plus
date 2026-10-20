@@ -10,7 +10,7 @@
   const CSS = () => `${MAK.BOX_CSS()}
     :host { margin: 0 0 12px; }
     .head .title { flex: none; min-width: 0; }
-    .since, .summary { color: inherit; opacity: 0.8; font-size: 0.9em; }
+    .summary { color: inherit; opacity: 0.8; font-size: 0.9em; }
     .spacer { flex: 1; }
     button.close { font: inherit; font-size: 20px; line-height: 1; border: 0; background: none; color: inherit; cursor: pointer; padding: 0 4px; }
     .list { margin-top: 2px; display: grid; gap: 10px; }
@@ -21,6 +21,7 @@
     .tag.updated { background: var(--ap-blue-bg); color: var(--ap-blue); }
     li .meta { margin-left: 4px; }
     .compact .summary { display: none; }
+    .head:has(+ .list:not([hidden])) .summary { display: none; } /* the open list says it */
   `;
 
   // Put a host element at the top of the main content, below the breadcrumb.
@@ -150,7 +151,8 @@
     const list = h(
       'div',
       { class: 'list', hidden: compact || news.total > 6 },
-      group('news.groupFiles', news.files, (f) => h('li', null, MAK.link(f.url, f.title), h('span', { class: `tag ${f.label}`, text: MAK.t(f.label === 'new' ? 'news.tagNew' : 'news.tagUpdated') }))),
+      // All is new here: a tag only for a file that changed.
+      group('news.groupFiles', news.files, (f) => h('li', null, MAK.link(f.url, f.title), f.label === 'new' ? null : h('span', { class: 'tag updated', text: MAK.t('news.tagUpdated') }))),
       group('news.groupAnnouncements', news.announcements, (a) => h('li', null, MAK.link(a.url, a.title), h('span', { class: 'meta', text: MAK.formatDate(a.time) }))),
       group('news.groupDeliveries', news.deliveries, (d) => h('li', null, MAK.link(d.url, d.title), d.due ? h('span', { class: 'meta', text: MAK.t('news.due', { date: MAK.formatDate(d.due) }) }) : null)),
       group('news.groupDates', news.dateChanges || [], (d) => h('li', null, MAK.link(d.url, d.title), h('span', { class: 'meta', text: MAK.dateMove(d.from, d.to) }))),
@@ -160,7 +162,9 @@
     );
     const title = compact
       ? MAK.t('news.chip', { n: news.total })
-      : MAK.t(result.firstVisit ? 'news.titleFirst' : 'news.title');
+      : result.firstVisit
+        ? MAK.t('news.titleFirst')
+        : MAK.t('news.title', { date: new Intl.DateTimeFormat(MAK.locale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(result.since).replace(/,/g, '') });
     // The arrow shows the list (the title too), as in the other boxes of the extension.
     const toggle = MAK.foldButton(!list.hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
       list.hidden = !open;
@@ -183,7 +187,6 @@
         'div',
         { class: 'head' },
         h('span', { class: 'title', text: title, on: { click: () => toggle.click() } }),
-        compact || result.firstVisit ? null : h('span', { class: 'since', text: `(${MAK.formatDate(result.since)})` }),
         h('span', { class: 'summary', text: MAK.newsSummary(news) }),
         h('span', { class: 'spacer' }),
         toggle,

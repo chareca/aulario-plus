@@ -122,13 +122,12 @@
     .sem-head { display: flex; align-items: center; gap: 8px; }
     .sem-head .sem-title { flex: 1; min-width: 0; font-weight: 700; cursor: pointer; font-family: var(--ap-font-head); font-style: var(--ap-head-style);
       font-size: calc(14px * var(--ap-head-zoom)); }
-    .sem-head .sem-title .meta { font-family: var(--ap-font); font-style: normal; font-size: 0.8em; }
     .sem-head .sem-title .meta { font-weight: 400; }
     .sem-body { margin-top: 4px; }
     .sem.closed .sem-body { display: none; }
     .sem .mak-fold { width: 26px; height: 26px; }
   `;
-  // key: the name of the part ("exams", "guides"). parts: { autumn, spring }, each { count, body }
+  // key: the name of the part ("exams", "guides"). parts: { autumn, spring }, each { body }
   // (null: no part). Result: the element, or null without a part.
   MAK.semesterSections = function ({ key, now, parts, title }) {
     const current = MAK.currentSeason(now);
@@ -153,8 +152,7 @@
         try { localStorage.setItem(store, o ? '1' : '0'); } catch {}
         layout();
       });
-      const count = typeof parts[season].count === 'number' ? MAK.h('span', { class: 'meta', text: ` · ${parts[season].count}` }) : null;
-      sem.append(MAK.h('div', { class: 'sem-head' }, MAK.h('span', { class: 'sem-title', on: { click: () => fold.click() } }, label, count), fold), body);
+      sem.append(MAK.h('div', { class: 'sem-head' }, MAK.h('span', { class: 'sem-title', text: label, on: { click: () => fold.click() } }), fold), body);
       sems.append(sem);
     }
     layout();

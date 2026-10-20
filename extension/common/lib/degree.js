@@ -193,6 +193,20 @@
     return { periods: periods.filter((p) => p.finals || p.recovery).slice(0, 4), pdfs };
   };
 
+  // A period of exams of the evaluation page in short: "del 15 al 22 de diciembre y del 7 al 11 de enero"
+  // -> "15–22 dic y 7–11 ene"; "del 17 de mayo al 28 de mayo" -> "17–28 may". Other texts stay.
+  const MONTHS = { enero: 'ene', febrero: 'feb', marzo: 'mar', abril: 'abr', mayo: 'may', junio: 'jun', julio: 'jul', agosto: 'ago', septiembre: 'sep', setiembre: 'sep', octubre: 'oct', noviembre: 'nov', diciembre: 'dic' };
+  const MONTH = `(${Object.keys(MONTHS).join('|')})`;
+  MAK.shortPeriod = function (text) {
+    const m = (name) => MONTHS[name.toLowerCase()];
+    return String(text || '')
+      .replace(new RegExp(`\\bdel (\\d{1,2}) de ${MONTH} al (\\d{1,2}) de ${MONTH}`, 'gi'), (_, a, ma, b, mb) => (m(ma) === m(mb) ? `${a}–${b} ${m(ma)}` : `${a} ${m(ma)}–${b} ${m(mb)}`))
+      .replace(new RegExp(`\\bdel (\\d{1,2}) al (\\d{1,2}) de ${MONTH}`, 'gi'), (_, a, b, mm) => `${a}–${b} ${m(mm)}`)
+      .replace(new RegExp(`\\b(?:el )?(\\d{1,2}) de ${MONTH}`, 'gi'), (_, a, mm) => `${a} ${m(mm)}`)
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   // The semester of a date: the first ("autumn") from August to 24 January (no classes from 14
   // December, but the exams of the first semester), the second ("spring") from 25 January (the
   // start of its classes) to July.

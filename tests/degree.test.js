@@ -203,3 +203,13 @@ test('the semester of a subject: the period of its guide, else the digit of its 
   assert.equal(MAK.guideSeason({ period: 'Anual', code: '240703' }), null, 'the whole year');
   assert.equal(MAK.guideSeason({ code: 'X1' }), null);
 });
+
+test('shortPeriod: the periods of the evaluation page in short', () => {
+  assert.equal(MAK.shortPeriod('del 15 al 22 de diciembre y del 7 al 11 de enero'), '15–22 dic y 7–11 ene');
+  assert.equal(MAK.shortPeriod('del 17 de mayo al 28 de mayo'), '17–28 may');
+  assert.equal(MAK.shortPeriod('del 28 de enero al 3 de febrero'), '28 ene–3 feb');
+  assert.equal(MAK.shortPeriod('Del 15 al 23 de Enero'), '15–23 ene');
+  assert.equal(MAK.shortPeriod('el 9 de julio'), '9 jul');
+  assert.equal(MAK.shortPeriod('semana 20'), 'semana 20', 'another text stays');
+  assert.equal(MAK.shortPeriod(''), '');
+});
