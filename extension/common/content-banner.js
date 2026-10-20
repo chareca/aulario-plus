@@ -12,7 +12,7 @@
       border: 1px solid #cfe3df; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 12px; }
     .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
     .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .title { font-weight: 700; }
+    .title { font-weight: 700; cursor: pointer; }
     .since, .summary { color: #5f6b73; }
     .dark .since, .dark .summary { color: #9aa6ad; }
     .spacer { flex: 1; }
@@ -35,6 +35,7 @@
     .meta { color: #5f6b73; font-size: 12px; margin-left: 4px; }
     .dark .meta { color: #9aa6ad; }
     .compact .summary { display: none; }
+    ${MAK.FOLD_CSS}
   `;
 
   // Put a host element at the top of the main content, below the breadcrumb.
@@ -49,69 +50,82 @@
   }
   MAK.insertAtTop = insertAtTop;
 
-  // "Mi sitio": a block "Aulario Plus" just above the block "Mostrar información de Mi Sitio" (the
-  // tool sakai.iframe.myworkspace). That block does not change: the user can edit its text. No such
-  // block: above the first block of the page. The block has the place and the margins of the blocks of
-  // MiAulario, but its own head (the green of the extension, the logo and the tag "Extensión"), so
-  // that it does not look like a part of MiAulario. The arrow of the head folds the block; it stays
-  // folded when the page opens again. The boxes of the extension go in the body of the block.
-  // Result: the body of the new block, or null (no block on the page).
-  const BLOCK_CLOSED = 'mak-mysite-closed';
+  // The block "Aulario Plus": the boxes of the extension go in its body. It has the place and the
+  // margins of the blocks of MiAulario, but its own head (the green of the extension, the logo and the
+  // tag "Extensión"), so that it does not look like a part of MiAulario. The arrow of the head folds
+  // the block; it stays folded when the page opens again. The block shows only with a box in it.
+  // - "Mi sitio" (MAK.mySiteSlot): at the top of the first column of the page, above the first block
+  //   ("Mensaje del día") and to the left of the calendar. The blocks of MiAulario do not change (the
+  //   user can edit the text of "Mostrar información de Mi Sitio").
+  // - A site (MAK.siteSlot): at the top of the content, below the breadcrumb.
+  // Result: the body of the block, or null (no place for it on the page).
   const BLOCK_CSS = `
-    #mak-mysite-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
+    #mak-block[hidden], #mak-block > #mak-block-body[hidden] { display: none !important; }
+    #mak-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
       background: #10524e; color: #fff; border-radius: 8px 8px 0 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    #mak-mysite-block.mak-closed > .mak-head { border-radius: 8px; }
-    #mak-mysite-block .mak-logo { width: 26px; height: 26px; flex: none; }
-    #mak-mysite-block .mak-title { flex: 1; margin: 0; padding: 0; border: 0; font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; }
-    #mak-mysite-block .mak-tag { flex: none; font: 500 11px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0b3b38; background: #9ff0d0;
+    #mak-block.mak-closed > .mak-head { border-radius: 8px; }
+    #mak-block.mak-site { margin: 0 0 14px; }
+    #mak-block.mak-site > #mak-block-body { padding: 12px 0 0; }
+    #mak-block .mak-logo { width: 26px; height: 26px; flex: none; }
+    #mak-block .mak-title { flex: 1; margin: 0; padding: 0; border: 0; font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; }
+    #mak-block .mak-tag { flex: none; font: 500 11px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0b3b38; background: #9ff0d0;
       border-radius: 10px; padding: 2px 8px; cursor: default; }
-    #mak-mysite-block .mak-fold { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin: 0;
-      padding: 0; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 6px; background: transparent; color: #fff; cursor: pointer; }
-    #mak-mysite-block .mak-fold:hover, #mak-mysite-block .mak-fold:focus-visible { background: rgba(255, 255, 255, 0.15); }
-    #mak-mysite-block .mak-fold:focus-visible { outline: 2px solid #9ff0d0; outline-offset: 2px; }
-    #mak-mysite-block .mak-fold svg { width: 18px; height: 18px; transition: transform 0.15s ease; }
-    #mak-mysite-block.mak-closed .mak-fold svg { transform: rotate(-90deg); }
-    #mak-mysite-block > #mak-mysite-body[hidden] { display: none !important; }
-    @media (prefers-reduced-motion: reduce) { #mak-mysite-block .mak-fold svg { transition: none; } }
+    ${MAK.FOLD_CSS.replace(/\.mak-fold/g, '#mak-block .mak-head .mak-fold')}
+    #mak-block .mak-head .mak-fold, #mak-block .mak-head .mak-fold.dark { border-color: rgba(255, 255, 255, 0.35); color: #fff; }
+    #mak-block .mak-head .mak-fold:hover, #mak-block .mak-head .mak-fold:focus-visible { background: rgba(255, 255, 255, 0.15); }
+    #mak-block .mak-head .mak-fold:focus-visible { outline: 2px solid #9ff0d0; outline-offset: 2px; }
   `;
-  MAK.mySiteSlot = function () {
-    const made = document.getElementById('mak-mysite-body');
+  const BLOCK_CLOSED = { mine: 'mak-mysite-closed', site: 'mak-site-closed' };
+
+  function blockSlot(kind) {
+    const made = document.getElementById('mak-block-body');
     if (made) return made;
-    const titled = (c) => /informaci[oó]n de mi ?sitio|my ?workspace information/i.test(((c.querySelector('.Mrphs-toolTitleNav__title') || {}).textContent) || '');
-    const main = document.querySelector('main#content') || document.querySelector('main') || document;
-    const welcome = main.querySelector('.Mrphs-sakai-iframe-myworkspace') || [...main.querySelectorAll('.Mrphs-container')].find(titled);
-    const anchor = welcome || main.querySelector('.Mrphs-container');
-    if (!anchor) return null;
+    const main = document.querySelector('main#content') || document.querySelector('main');
+    let place;
+    if (kind === 'mine') {
+      // The first block with a title: in the first column, at the top ("Mensaje del día").
+      const scope = main || document;
+      const titled = [...scope.querySelectorAll('.Mrphs-container')].find((c) => c.querySelector('.Mrphs-toolTitleNav'));
+      const anchor = scope.querySelector('.Mrphs-sakai-motd') || titled || scope.querySelector('.Mrphs-container');
+      if (!anchor) return null;
+      place = (block) => anchor.before(block);
+    } else {
+      if (!main) return null;
+      place = (block) => insertAtTop(block);
+    }
     const h = MAK.h;
-    if (!document.getElementById('mak-mysite-style')) (document.head || document.documentElement).append(h('style', { attrs: { id: 'mak-mysite-style' }, text: BLOCK_CSS }));
+    if (!document.getElementById('mak-block-style')) (document.head || document.documentElement).append(h('style', { attrs: { id: 'mak-block-style' }, text: BLOCK_CSS }));
     let closed = false;
-    try { closed = localStorage.getItem(BLOCK_CLOSED) === '1'; } catch {}
-    const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-mysite-body' } });
-    const fold = h('button', { class: 'mak-fold', attrs: { type: 'button', 'aria-controls': 'mak-mysite-body' } }, MAK.icon('chevron'));
-    const block = h('div', { class: 'Mrphs-container Mrphs-aulario-plus', attrs: { id: 'mak-mysite-block', role: 'region', 'aria-labelledby': 'mak-mysite-title' } },
-      h('div', { class: 'mak-head' },
-        MAK.logo(),
-        h('h2', { class: 'mak-title', text: 'Aulario Plus', attrs: { id: 'mak-mysite-title' } }),
-        h('span', { class: 'mak-tag', text: MAK.t('block.tag'), title: MAK.t('block.tagHelp') }),
-        fold),
-      body);
+    try { closed = localStorage.getItem(BLOCK_CLOSED[kind]) === '1'; } catch {}
+    const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-block-body' } });
+    const block = h('div', { class: `Mrphs-container Mrphs-aulario-plus mak-${kind}`, attrs: { id: 'mak-block', role: 'region', 'aria-labelledby': 'mak-block-title' } });
     const draw = () => {
       body.hidden = closed;
       block.classList.toggle('mak-closed', closed);
-      const label = MAK.t(closed ? 'block.open' : 'block.close');
-      fold.setAttribute('aria-expanded', String(!closed));
-      fold.setAttribute('aria-label', label);
-      fold.title = label;
     };
-    fold.addEventListener('click', () => {
-      closed = !closed;
+    const fold = MAK.foldButton(!closed, { open: MAK.t('block.open'), close: MAK.t('block.close') }, (open) => {
+      closed = !open;
       draw();
-      try { localStorage.setItem(BLOCK_CLOSED, closed ? '1' : '0'); } catch {}
+      try { localStorage.setItem(BLOCK_CLOSED[kind], closed ? '1' : '0'); } catch {}
     });
+    fold.setAttribute('aria-controls', 'mak-block-body');
+    block.append(
+      h('div', { class: 'mak-head' },
+        MAK.logo(),
+        h('h2', { class: 'mak-title', text: 'Aulario Plus', attrs: { id: 'mak-block-title' } }),
+        h('span', { class: 'mak-tag', text: MAK.t('block.tag'), title: MAK.t('block.tagHelp') }),
+        fold),
+      body);
     draw();
-    anchor.before(block);
+    // Only with a box in it (for example, the box of new items goes away with its ×).
+    const fill = () => { block.hidden = !body.childElementCount; };
+    new MutationObserver(fill).observe(body, { childList: true });
+    fill();
+    place(block);
     return body;
-  };
+  }
+  MAK.mySiteSlot = () => blockSlot('mine');
+  MAK.siteSlot = () => blockSlot('site');
 
   function group(titleKey, items, render) {
     if (!items.length) return null;
@@ -163,17 +177,12 @@
       group('news.groupForums', news.forums, (f) => h('li', null, MAK.link(f.url, f.title), h('span', { class: 'meta', text: MAK.t('news.forumDelta', { n: f.delta }) }))),
       group('news.groupGrades', news.grades || [], (g) => h('li', null, MAK.link(g.url, g.title), h('span', { class: 'meta', text: MAK.t('news.graded', { date: MAK.formatDate(g.time) }) })))
     );
-    const toggle = h('button', {
-      class: MAK.extButtonClass('btn'),
-      attrs: { type: 'button', 'aria-expanded': String(!list.hidden) },
-      text: MAK.t(list.hidden ? 'news.show' : 'news.hide'),
-      on: {
-        click: () => {
-          list.hidden = !list.hidden;
-          toggle.textContent = MAK.t(list.hidden ? 'news.show' : 'news.hide');
-          toggle.setAttribute('aria-expanded', String(!list.hidden));
-        }
-      }
+    const title = compact
+      ? MAK.t('news.chip', { n: news.total })
+      : MAK.t(result.firstVisit ? 'news.titleFirst' : 'news.title');
+    // The arrow shows the list (the title too), as in the other boxes of the extension.
+    const toggle = MAK.foldButton(!list.hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
+      list.hidden = !open;
     });
     const close = h('button', {
       class: 'close',
@@ -186,16 +195,13 @@
         }
       }
     });
-    const title = compact
-      ? MAK.t('news.chip', { n: news.total })
-      : MAK.t(result.firstVisit ? 'news.titleFirst' : 'news.title');
     const box = h(
       'div',
       { class: `box${MAK.isDarkPage() ? ' dark' : ''}${compact ? ' compact' : ''}`, attrs: { role: 'region', 'aria-label': title } },
       h(
         'div',
         { class: 'head' },
-        h('span', { class: 'title', text: `🆕 ${title}` }),
+        h('span', { class: 'title', text: `🆕 ${title}`, on: { click: () => toggle.click() } }),
         compact || result.firstVisit ? null : h('span', { class: 'since', text: `(${MAK.formatDate(result.since)})` }),
         h('span', { class: 'summary', text: MAK.newsSummary(news) }),
         h('span', { class: 'spacer' }),
@@ -205,6 +211,10 @@
       list
     );
     shadow.append(style, box);
-    return insertAtTop(host);
+    // In the block "Aulario Plus" of the site, first.
+    const slot = MAK.siteSlot();
+    if (!slot) return insertAtTop(host);
+    slot.prepend(host);
+    return true;
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

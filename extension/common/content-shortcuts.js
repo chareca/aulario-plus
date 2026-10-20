@@ -24,12 +24,13 @@
 
   const CSS = `
     :host { all: initial; display: block; margin: 0 0 12px; }
-    [hidden] { display: none !important; } /* "Ocultar": the rules with "display" must not show it */
+    [hidden] { display: none !important; } /* the arrow: the rules with "display" must not show it */
     .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
       border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
     .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .head strong { flex: 1; min-width: 200px; font-size: 15px; }
+    .head strong { flex: 1; min-width: 200px; font-size: 15px; cursor: pointer; }
+    ${MAK.FOLD_CSS}
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     /* The exams on the full width; below them, the row of the actions. */
     .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; container-type: inline-size; }
@@ -95,15 +96,14 @@
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:hidden`) === '1'; } catch {}
     content.hidden = hidden;
-    const toggle = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button', 'aria-expanded': String(!hidden) }, text: t(hidden ? 'guide.show' : 'guide.hide') });
-    toggle.addEventListener('click', () => {
-      content.hidden = !content.hidden;
-      toggle.textContent = t(content.hidden ? 'guide.show' : 'guide.hide');
-      toggle.setAttribute('aria-expanded', String(!content.hidden));
-      try { localStorage.setItem(`${HOST_ID}:hidden`, content.hidden ? '1' : '0'); } catch {}
-    });
     const title = t('short.title');
-    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `⚡ ${title}` }), toggle), content));
+    // The arrow folds the box (the title too); the box stays folded when the page opens again.
+    const toggle = MAK.foldButton(!hidden, { open: t('fold.open', { name: title }), close: t('fold.close', { name: title }) }, (open) => {
+      content.hidden = !open;
+      try { localStorage.setItem(`${HOST_ID}:hidden`, open ? '0' : '1'); } catch {}
+    });
+    const name = h('strong', { text: `⚡ ${title}`, on: { click: () => toggle.click() } });
+    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
     // In the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), first. Else above the course guides, below the
     // banner of new items, or at the top of the content.
     const slot = MAK.mySiteSlot();

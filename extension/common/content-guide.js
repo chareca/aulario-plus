@@ -22,12 +22,13 @@
 
   const CSS = `
     :host { all: initial; display: block; margin: 0 0 12px; }
-    [hidden] { display: none !important; } /* "Ocultar" and the arrow: the rules with "display" must not show it */
+    [hidden] { display: none !important; } /* the arrows: the rules with "display" must not show it */
     .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
       border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
     .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .head strong { flex: 1; min-width: 200px; }
+    .head strong { flex: 1; min-width: 200px; cursor: pointer; }
+    ${MAK.FOLD_CSS}
     a { color: #1a5fb4; } .dark a { color: #8ab4f8; }
     .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     .content { max-width: 1400px; }
@@ -191,17 +192,17 @@
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`) === '1'; } catch {}
     content.hidden = hidden;
-    const toggle = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button', 'aria-expanded': String(!hidden) }, text: MAK.t(hidden ? 'guide.show' : 'guide.hide') });
-    toggle.addEventListener('click', () => {
-      content.hidden = !content.hidden;
-      toggle.textContent = MAK.t(content.hidden ? 'guide.show' : 'guide.hide');
-      toggle.setAttribute('aria-expanded', String(!content.hidden));
-      try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, content.hidden ? '1' : '0'); } catch {}
+    // The arrow folds the box (the title too); the box stays folded when the page opens again.
+    const toggle = MAK.foldButton(!hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
+      content.hidden = !open;
+      try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, open ? '0' : '1'); } catch {}
     });
-    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, h('strong', { text: `📘 ${title}` }), toggle), content));
-    // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
-    // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
-    const slot = mySite ? MAK.mySiteSlot() : null;
+    const name = h('strong', { text: `📘 ${title}`, on: { click: () => toggle.click() } });
+    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
+    // In the block "Aulario Plus" (MAK.mySiteSlot in "Mi sitio", MAK.siteSlot in a site), after the
+    // shortcuts and the box of new items. Without the block: below the shortcuts (content-shortcuts.js)
+    // or the banner of new items, or at the top of the content.
+    const slot = mySite ? MAK.mySiteSlot() : MAK.siteSlot();
     const shortcuts = document.getElementById(SHORTCUTS_ID);
     const above = shortcuts || document.getElementById(BANNER_ID);
     if (shortcuts && slot && slot.contains(shortcuts)) shortcuts.after(host);

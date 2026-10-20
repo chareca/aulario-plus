@@ -101,6 +101,39 @@
     return svg;
   };
 
+  // The arrow that folds a box of the extension (the block "Aulario Plus" of "Mi sitio" and the boxes in
+  // it): only the arrow, down when the box is open and to the right when it is folded. Put
+  // MAK.FOLD_CSS in the styles of the shadow root.
+  MAK.FOLD_CSS = `
+    .mak-fold { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin: 0; padding: 0;
+      border: 1px solid #b9c9c5; border-radius: 6px; background: transparent; color: #10524e; cursor: pointer; }
+    .mak-fold:hover, .mak-fold:focus-visible { background: rgba(16, 82, 78, 0.1); }
+    .mak-fold.dark { border-color: #3a524d; color: #4fd1a5; }
+    .mak-fold.dark:hover, .mak-fold.dark:focus-visible { background: rgba(79, 209, 165, 0.12); }
+    .mak-fold svg { width: 18px; height: 18px; transition: transform 0.15s ease; }
+    .mak-fold[aria-expanded="false"] svg { transform: rotate(-90deg); }
+    @media (prefers-reduced-motion: reduce) { .mak-fold svg { transition: none; } }
+  `;
+  // A button with the arrow. open: the state at the start. labels: { open, close }, the texts for the
+  // screen readers and the tooltip. onToggle(open) after each click.
+  MAK.foldButton = function (open, labels, onToggle) {
+    let state = !!open;
+    const b = MAK.h('button', { class: `mak-fold${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { type: 'button' } }, MAK.icon('chevron'));
+    const draw = () => {
+      const label = state ? labels.close : labels.open;
+      b.setAttribute('aria-expanded', String(state));
+      b.setAttribute('aria-label', label);
+      b.title = label;
+    };
+    b.addEventListener('click', () => {
+      state = !state;
+      draw();
+      onToggle(state);
+    });
+    draw();
+    return b;
+  };
+
   // A text link of the extension: the text and a small arrow (the link opens in a new tab). On hover,
   // the text is underlined and the arrow moves up a little. Put MAK.LINK_CSS in the styles of each
   // shadow root (and of the popup) with these links. --mak-link changes the color.
