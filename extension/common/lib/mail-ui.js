@@ -234,7 +234,7 @@
         if (linkCheck && linkCheck.checked) {
           await makeLink();
           addLinkToBody();
-          d = await data();
+          d.body = MAK.pmBodyHtml(body.value); // only the link is new: the recipients stay the ones of the confirmation
         }
         say(t(kind === 'send' ? 'mail.sending' : 'mail.preparing'));
         const ready = await prepareCompose(d);

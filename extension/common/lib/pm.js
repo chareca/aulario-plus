@@ -62,7 +62,10 @@
     const item = doc.getElementById('doattachitem');
     const attach = doc.getElementById('attachForm');
     if (compose) {
-      return { kind: 'compose', url, action: compose.getAttribute('action'), controls: controls(compose), text: oneLine(compose.textContent), error: errorOf(compose) };
+      // The text without the fields: the body of the message lists the files, the attached ones are in the text.
+      const shown = compose.cloneNode(true);
+      for (const el of shown.querySelectorAll('select, textarea, script')) el.remove();
+      return { kind: 'compose', url, action: compose.getAttribute('action'), controls: controls(compose), text: oneLine(shown.textContent), error: errorOf(compose) };
     }
     if (item && attach) {
       const continueBtn = doc.querySelector('[name=attachButton], #attachButton');

@@ -60,6 +60,23 @@
     w.into.remove();
   });
 
+  test('mail window: the recipients of the confirmation, also when the user changes them while the link is made', async () => {
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    const w = openWindow({ links: { make: async () => { await gate; return LINK; } } });
+    w.button(MAK.t('mail.sendNow')).click();
+    w.button(MAK.t('mail.confirmYes')).click(); // to me
+    await new Promise((r) => setTimeout(r, 30));
+    const others = w.into.querySelector('input[name="mail-mode"][value="others"]');
+    others.checked = true;
+    others.dispatchEvent(new Event('change'));
+    for (const box of w.into.querySelectorAll('label input[type="checkbox"]')) if (box.closest('label').textContent.includes('OTRA')) { box.checked = true; box.dispatchEvent(new Event('change')); }
+    release();
+    await until(() => w.log.sent.length === 1);
+    assert.deepEqual(w.log.sent[0].to, [{ value: 'u-me', label: 'YO, Test (me1)' }]);
+    w.into.remove();
+  });
+
   test('mail window: "Only make the link" makes it one time; "Open the mail" uses it', async () => {
     const w = openWindow();
     w.button(MAK.t('link.make')).click();

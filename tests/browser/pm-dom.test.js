@@ -29,6 +29,8 @@
     assert.equal(c.fields.subject.value, 'Hola');
     assert.deepEqual(c.fields.to.options.filter((o) => o.selected).map((o) => o.value), ['u-me']);
     assert.ok(c.snap.text.includes('Tema 1.pdf'));
+    const none = MAK.pmCompose(snap(F.COMPOSE({ subject: 'Hola', selected: true, body: 'Te paso: - Tema 1.pdf' })));
+    assert.ok(!none.snap.text.includes('Tema 1.pdf'), 'the body lists the file, but it is not attached');
   });
 
   test('pm: an error of MiAulario in the form is in the snapshot', () => {
