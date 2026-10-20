@@ -74,11 +74,9 @@
     if (open || !mailTool) return;
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = `:host { all: initial; } .backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: flex-start;
-      justify-content: center; padding-top: 6vh; background: rgba(0, 0, 0, 0.35); } ${MAK.MAIL_CSS}`;
+    const style = MAK.themedStyle(MAK.MAIL_CSS());
     const into = h('div');
-    const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, into);
+    const backdrop = h('div', { class: 'backdrop' }, into);
     let view = null;
     const close = () => {
       host.remove();
@@ -115,8 +113,7 @@
     const host = document.createElement('span');
     host.className = BUTTON;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = `:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; } ${MAK.EXT_BUTTON_CSS}`;
+    const style = MAK.themedStyle(`:host { all: initial; color: inherit; display: inline-flex; margin-left: 6px; vertical-align: middle; } ${MAK.EXT_BUTTON_CSS}`);
     const btn = h('button', { class: MAK.extButtonClass('icon'), attrs: { type: 'button', title: MAK.t('mail.button'), 'aria-label': `${MAK.t('mail.button')}: ${file.title}` } }, MAK.icon('mail'));
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -138,12 +135,11 @@
     if (!bar) {
       const host = document.createElement('div');
       const shadow = host.attachShadow({ mode: 'closed' });
-      const style = document.createElement('style');
-      style.textContent = `:host { all: initial; } .bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 2147482999;
-        display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
-        font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff; }
-        .dark.bar { color: #e8ecee; background: #1e2a28; }
-        ${MAK.EXT_BUTTON_CSS} .mak-btn { white-space: nowrap; padding: 5px 10px; }`;
+      const style = MAK.themedStyle(`:host { all: initial; } .bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 2147482999;
+        display: flex; gap: 10px; align-items: center; padding: 8px 12px; font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font);
+        color: var(--ap-fg); background: var(--ap-win-bg); border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
+        -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
+        ${MAK.EXT_BUTTON_CSS} .mak-btn { white-space: nowrap; padding: 5px 10px; }`);
       const text = h('span');
       const send = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' } });
       const me = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' } });
@@ -154,7 +150,7 @@
       send.addEventListener('click', () => openWindow(fileRows().filter((f) => f.cb.checked), 'others'));
       me.addEventListener('click', () => openWindow(fileRows().filter((f) => f.cb.checked), 'me'));
     }
-    bar.box.className = `bar${MAK.isDarkPage() ? ' dark' : ''}`;
+    bar.box.className = 'bar';
     bar.text.textContent = MAK.t('mail.bar', { n: chosen.length });
     bar.send.textContent = MAK.t('mail.barSend');
     bar.me.textContent = MAK.t('mail.barMe', { n: chosen.length });

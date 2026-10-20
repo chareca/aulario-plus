@@ -282,10 +282,10 @@ function helpLinks() {
   const lang = MAK.getLang();
   const a = (text, href) => MAK.h('a', { class: 'btn', text, href });
   return MAK.h('div', { class: 'row help-links' },
-    a(`🐞 ${t('help.bug')}`, MAK.issueUrl({ kind: 'bug', version, browser, lang })),
-    a(`💡 ${t('help.idea')}`, MAK.issueUrl({ kind: 'idea', version, browser, lang })),
-    a(`☕ ${t('help.coffee')}`, MAK.COFFEE_URL),
-    a(`</> ${t('help.code')}`, MAK.REPO_URL));
+    a(t('help.bug'), MAK.issueUrl({ kind: 'bug', version, browser, lang })),
+    a(t('help.idea'), MAK.issueUrl({ kind: 'idea', version, browser, lang })),
+    a(t('help.coffee'), MAK.COFFEE_URL),
+    a(t('help.code'), MAK.REPO_URL));
 }
 
 function runWelcome() {
@@ -335,10 +335,16 @@ function runNews() {
 }
 
 async function init() {
-  const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments']);
+  const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments', 'sakaiMode']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
   const { settings, sites } = store;
   MAK.setLang(MAK.withDefaults(settings).lang);
+  const prefs = MAK.withDefaults(settings);
+  const theme = MAK.applyPageTheme(document, prefs.theme, null, MAK.pageScheme(prefs.colorMode, store.sakaiMode));
+  try {
+    localStorage.setItem('mak.theme', theme.id);
+    localStorage.setItem('mak.scheme', theme.scheme);
+  } catch {}
   MAK.applyI18n(document);
   const params = new URLSearchParams(location.search);
   const siteId = params.get('zip');

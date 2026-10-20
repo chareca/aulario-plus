@@ -22,68 +22,52 @@
   const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
   const DAY = 86400000;
 
-  const CSS = `
-    :host { all: initial; display: block; margin: 0 0 12px; }
-    [hidden] { display: none !important; } /* the arrow: the rules with "display" must not show it */
-    .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
-      border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
-    .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
-    .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .head strong { flex: 1; min-width: 200px; font-size: 15px; cursor: pointer; }
-    ${MAK.FOLD_CSS}
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.BOX_CSS.
+  const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
-    .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     /* The exams on the full width; below them, the row of the actions. */
-    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; container-type: inline-size; }
-    .tile { border: 1px solid #d6e3e0; border-radius: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
-    .dark .tile { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
-    .tile h4 { margin: 0 0 6px; font-size: 15px; }
-    .tile h4 .meta { font-weight: 400; }
-    .periods { margin: 0 0 8px; }
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; container-type: inline-size; }
+    .tile { min-width: 0; padding: 12px 14px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
+    .tile h4 { margin: 0 0 8px; font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
+    .tile h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.8em; }
     .period { margin: 2px 0; }
-    .period b { font-weight: 600; }
-    .period.other { color: #5f6b73; font-size: 12px; } .dark .period.other { color: #9aa6ad; }
+    /* The next exam of the user: the day in large, the subject, and the days to it. */
+    .next-exam { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 0 12px; padding: 12px 14px;
+      background: var(--ap-accent-soft); border-radius: var(--ap-radius); }
+    .next-exam .day { flex: none; text-align: center; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
+      letter-spacing: var(--ap-head-spacing); font-size: calc(40px * var(--ap-head-zoom)); line-height: 0.9; }
+    .next-exam .day small { display: block; font-size: 0.4em; letter-spacing: normal; margin-top: 2px; }
+    .next-exam .what { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 1px; }
+    .next-exam .what .name { font-weight: 800; font-size: 1.08em; line-height: 1.2; }
+    .next-exam .count { font-size: var(--ap-count-size); }
     /* One small card for each subject, in columns: the name and the countdown, then the two dates. */
-    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; }
-    .exams li { min-width: 0; padding: 5px 8px; border-radius: 6px; border-left: 3px solid #10524e; background: rgba(16, 82, 78, 0.06); }
-    .dark .exams li { border-left-color: #4fd1a5; background: rgba(79, 209, 165, 0.08); }
+    .exams { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+    .exams li { min-width: 0; padding: 7px 9px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-sm); }
     .exams .top { display: flex; gap: 6px; align-items: flex-start; }
-    .exams .name { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-    .exams .count { flex: none; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 9px; background: #d9efe9; color: #10524e; white-space: nowrap; }
-    .dark .exams .count { background: #1e3a33; color: #7fe0bf; }
-    .exams li.soon .count { background: #feefe3; color: #b45309; } .dark .exams li.soon .count { background: #3d2a16; color: #fcad70; }
-    .exams li.now .count { background: #fce8e6; color: #c5221f; } .dark .exams li.now .count { background: #3c1f1e; color: #f28b82; }
-    .exams .when { font-size: 12px; line-height: 1.4; color: #5f6b73; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .dark .exams .when { color: #9aa6ad; }
-    .exams .when b { font-weight: 600; color: #1d2327; } .dark .exams .when b { color: #e8ecee; }
+    .exams .name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.93em; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+    .exams .count { font-size: calc(var(--ap-count-size) * 0.78); }
+    .exams .when { font-size: 0.86em; line-height: 1.4; color: var(--ap-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exams .when b { font-weight: 700; color: var(--ap-fg); }
     .exams .when.past { opacity: 0.55; text-decoration: line-through; }
-    .exams .calc-need { font-size: 12px; font-weight: 600; color: #10524e; margin-top: 2px; } .dark .exams .calc-need { color: #7fe0bf; }
-    .exams .calc-need.low { color: #c5221f; } .dark .exams .calc-need.low { color: #f28b82; }
-    .exams .calc-need.ok { color: #137333; } .dark .exams .calc-need.ok { color: #81c995; }
-    h5 { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: #5f6b73; text-transform: uppercase; letter-spacing: 0.04em; }
-    .dark h5 { color: #9aa6ad; }
+    .exams .calc-need { font-size: 0.86em; font-weight: 700; color: var(--ap-fg); margin-top: 3px; }
+    .exams .calc-need.low { color: var(--ap-red); }
+    .exams .calc-need.ok { color: var(--ap-green); }
+    h5 { margin: 10px 0 3px; font-size: calc(13px * var(--ap-head-zoom)); }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-    .note { font-size: 13px; margin: 6px 0; }
-    /* The action tiles in one row below the exams: the same height, the buttons at the bottom. */
-    .side { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; align-items: stretch; }
-    /* The width of the box, not of the screen: in "Mi sitio" the box can be in a narrow column. */
-    @container (max-width: 600px) { .side { grid-template-columns: minmax(0, 1fr); } }
-    /* A tile with one action: the text, then a large button in the center. */
-    .tile.action { text-align: center; display: flex; flex-direction: column; }
-    .tile.action .note { margin: 0 0 10px; }
-    .big { display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: 100%; max-width: 280px;
-      margin: auto auto 0; padding: 10px 14px; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; }
-    .big .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
-    .big:hover .mak-arrow, .big:focus-visible .mak-arrow { transform: translate(1px, -2px); }
-    @media (prefers-reduced-motion: reduce) { .big .mak-arrow { transition: none; } }
+    .note { font-size: 0.93em; margin: 6px 0; }
+    /* The actions in one row below the exams: buttons of the theme, the same height. */
+    .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: stretch; }
+    a.action, button.action { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 14px; text-align: center;
+      font: 700 1em/1.25 var(--ap-font); text-decoration: none; cursor: pointer; color: var(--ap-primary-fg); background: var(--ap-primary-bg);
+      border: var(--ap-bw-sm) solid var(--ap-primary-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
+    a.action:hover, button.action:hover, a.action:focus-visible, button.action:focus-visible { filter: brightness(0.95); }
+    a.action:focus-visible, button.action:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
+    .action .mak-arrow { width: 0.85em; height: 0.85em; flex: none; transition: transform 0.15s ease; }
+    .action:hover .mak-arrow, .action:focus-visible .mak-arrow { transform: translate(1px, -2px); }
+    @media (prefers-reduced-motion: reduce) { .action .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .degree select { font: inherit; font-size: 13px; max-width: 100%; }
-    button.plain { font: inherit; font-size: 12px; background: none; border: 0; padding: 0; cursor: pointer; color: #1a5fb4; }
-    .dark button.plain { color: #8ab4f8; }
-    button.plain:hover, button.plain:focus-visible { text-decoration: underline; text-underline-offset: 2px; }
-    ${MAK.EXT_BUTTON_CSS}
-    ${MAK.LINK_CSS}
-    .mak-btn { padding: 3px 12px; }
+    .degree select { font-size: 0.93em; max-width: 100%; }
+    .mak-btn { padding: 4px 12px; }
   `;
 
   // ---- The box -------------------------------------------------------------------------
@@ -94,8 +78,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
     content = h('div', { class: 'tiles' });
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:hidden`) === '1'; } catch {}
@@ -106,15 +89,17 @@
       content.hidden = !open;
       try { localStorage.setItem(`${HOST_ID}:hidden`, open ? '0' : '1'); } catch {}
     });
-    const name = h('strong', { text: `⚡ ${title}`, on: { click: () => toggle.click() } });
-    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
+    const name = h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } });
+    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, toggle), content));
     // In the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), first. Else above the course guides, below the
     // banner of new items, or at the top of the content.
     const slot = MAK.mySiteSlot();
     const guide = document.getElementById(GUIDE_ID);
     const banner = document.getElementById(BANNER_ID);
-    if (slot) slot.prepend(host);
-    else if (guide) guide.before(host);
+    if (slot) {
+      host.classList.add('in-block');
+      slot.prepend(host);
+    } else if (guide) guide.before(host);
     else if (banner) banner.after(host);
     else MAK.insertAtTop(host);
     return content;
@@ -216,12 +201,35 @@
         const text = `${MAK.formatDate(ms)}${room ? ` · ${room}` : ''}`;
         return h('div', { class: `when${ms < now - DAY ? ' past' : ''}`, title: `${label}: ${text}` }, h('b', { text: label }), ` ${text}`);
       };
-      return h('li', { class: days >= 0 && days <= 2 ? 'now' : days >= 0 && days <= 7 ? 'soon' : '' },
-        h('div', { class: 'top' }, h('span', { class: 'name', text: name, title: name }), h('span', { class: 'count', text: countdown(days) })),
+      const near = days >= 0 && days <= 2 ? 'hot' : days >= 0 && days <= 7 ? 'soon' : '';
+      return h('li', { class: near === 'hot' ? 'now' : near },
+        h('div', { class: 'top' }, h('span', { class: 'name', text: name, title: name }), h('span', { class: `count ${near}`, text: countdown(days) })),
         line(t('short.final'), r.final, r.finalRoom),
         line(t('short.rec'), r.recovery, r.recoveryRoom),
-        ((n) => (n ? h('div', { class: `calc-need ${n.cls}`, title: t('short.calcHelp') }, '🧮 ', n.text) : null))(need ? need(r.siteId) : null));
+        ((n) => (n ? h('div', { class: `calc-need ${n.cls}`, title: t('short.calcHelp') }, n.text) : null))(need ? need(r.siteId) : null));
     }));
+  }
+
+  // The next exam of the user (a final or a recovery, from today): the day in large, the subject and the
+  // days to it. Null without a next exam.
+  function nextExam(mine, sites, now) {
+    const today = new Date(new Date(now).toDateString()).getTime();
+    let best = null;
+    for (const r of mine) {
+      for (const [ms, room, kind] of [[r.final, r.finalRoom, 'final'], [r.recovery, r.recoveryRoom, 'rec']]) {
+        if (ms && ms >= today && (!best || ms < best.ms)) best = { ms, room, kind, r };
+      }
+    }
+    if (!best) return null;
+    const s = (sites || []).find((x) => x.id === best.r.siteId);
+    const name = (s && MAK.publicSiteName(s)) || best.r.name;
+    const days = daysTo(best.ms, now);
+    const d = new Date(best.ms);
+    const when = [t(best.kind === 'final' ? 'short.final' : 'short.rec'), MAK.formatDate(best.ms), best.room].filter(Boolean).join(' · ');
+    return h('div', { class: 'next-exam' },
+      h('div', { class: 'day', attrs: { 'aria-hidden': 'true' } }, String(d.getDate()), h('small', { text: d.toLocaleDateString(MAK.locale(), { month: 'short' }).replace('.', '') })),
+      h('div', { class: 'what' }, h('span', { class: 'meta', text: t('short.next') }), h('span', { class: 'name', text: name }), h('span', { class: 'meta', text: when })),
+      h('span', { class: `count${days <= 2 ? ' hot' : days <= 7 ? ' soon' : ''}`, text: countdown(days) }));
   }
 
   // The dates of the subjects of the user, from the exam calendars of the degree: { mine (each
@@ -239,7 +247,7 @@
       else failed++;
     }
     if (permission) {
-      const ask = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: `📅 ${t('short.showDates')}` });
+      const ask = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: t('short.showDates') });
       ask.addEventListener('click', () => send({ type: 'openExamPermission' }));
       return { mine: [], note: h('div', null, h('p', { class: 'note meta', text: t('short.permHelp') }), ask) };
     }
@@ -291,41 +299,32 @@
     return sel;
   }
 
-  // A large button that opens a page in a new tab (MAK.h adds target="_blank").
-  function bigButton(url, text, title) {
+  // An action of the row below the exams: a link that opens a page in a new tab (MAK.h adds
+  // target="_blank"), with an arrow. help: the tooltip.
+  function actionLink(url, text, help) {
     const arrow = MAK.icon('arrow');
     arrow.setAttribute('class', 'mak-arrow');
-    return h('a', { class: `${MAK.extButtonClass('btn')} big`, href: url, title: title || undefined }, h('span', { text }), arrow);
+    return h('a', { class: 'action', href: url, title: help || undefined }, h('span', { class: 'go', text }), arrow);
   }
 
-  function recordTile() {
-    return h('section', { class: 'tile action' },
-      h('h4', { text: `🎓 ${t('short.record')}` }),
-      h('p', { class: 'note meta', text: t('short.recordHelp') }),
-      bigButton(MAK.EXPEDIENTE_URL, t('short.recordLink')));
+  function recordAction() {
+    return actionLink(MAK.EXPEDIENTE_URL, t('short.recordGo'), t('short.recordHelp'));
   }
 
   // The forward of the internal mail of the sites to an email address (content-forward.js).
-  function mailTile() {
-    const open = h('button', { class: `${MAK.extButtonClass('btn')} big`, attrs: { type: 'button', 'aria-haspopup': 'dialog' } }, h('span', { text: t('short.mailButton') }));
+  function mailAction() {
+    const open = h('button', { class: 'action', title: t('short.mailHelp'), attrs: { type: 'button', 'aria-haspopup': 'dialog' } }, h('span', { class: 'go', text: t('short.mailGo') }));
     open.addEventListener('click', () => { if (MAK.openForwardWindow) MAK.openForwardWindow(); });
-    return h('section', { class: 'tile action' },
-      h('h4', { text: `📨 ${t('short.mail')}` }),
-      h('p', { class: 'note meta', text: t('short.mailHelp') }),
-      open);
+    return open;
   }
 
-  // The notes of the degree in Wuolah, at the year of the user (two buttons for a double degree).
-  // links: MAK.wuolahLinks, or null while the degree is not known.
-  function wuolahTile(tile, links) {
-    // "Wuolah"; for a double degree, "Wuolah · ADE" and "Wuolah · Derecho". The address has the year,
-    // but Wuolah can show another year when the user is logged in, so the text does not show it.
-    const label = (w) => (w.name && links.length > 1 ? t('short.wuolahOf', { name: w.name }) : 'Wuolah');
-    MAK.fill(tile,
-      h('h4', { text: `📚 ${t('short.notes')}` }),
-      h('p', { class: 'note meta', text: t('short.wuolahNote') }),
-      links ? links.map((w) => bigButton(w.url, label(w))) : h('p', { class: 'meta', text: t('short.loading') }));
-    return tile;
+  // The notes of the degree in Wuolah, at the year of the user (two links for a double degree).
+  // links: MAK.wuolahLinks, or null while the degree is not known (a link to Wuolah without the degree).
+  function wuolahActions(links) {
+    // "Apuntes en Wuolah"; for a double degree, "Wuolah · ADE" and "Wuolah · Derecho". The address has
+    // the year, but Wuolah can show another year when the user is logged in, so the text does not show it.
+    const label = (w) => (w.name && links.length > 1 ? t('short.wuolahOf', { name: w.name }) : t('short.wuolahGo'));
+    return (links || MAK.wuolahLinks('', null)).map((w) => actionLink(w.url, label(w), t('short.wuolahNote')));
   }
 
   // ---- Run -----------------------------------------------------------------------------
@@ -344,20 +343,21 @@
     const hidden = MAK.hiddenEverywhere(settings);
     const guides = Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId));
     const now = Date.now();
-    const examTile = h('section', { class: 'tile' }, h('h4', { text: `📅 ${t('short.exams')}` }), h('p', { class: 'meta', text: t('short.loading') }));
-    const notesTile = wuolahTile(h('section', { class: 'tile action' }), null);
-    MAK.fill(box(), examTile, h('div', { class: 'side' }, recordTile(), notesTile, mailTile()));
+    const examTile = h('section', { class: 'tile' }, h('h4', { text: t('short.exams') }), h('p', { class: 'meta', text: t('short.loading') }));
+    const actions = h('div', { class: 'actions' });
+    const drawActions = (wuolah) => MAK.fill(actions, recordAction(), wuolahActions(wuolah), mailAction());
+    drawActions(null);
+    MAK.fill(box(), examTile, actions);
     noGuides = !guides.length && !settings.degree;
     if (noGuides) {
       examTile.remove();
-      wuolahTile(notesTile, MAK.wuolahLinks('', null));
       return;
     }
     const degree = await findDegree(data, guides.map((g) => g.guide), settings).catch(() => null);
-    wuolahTile(notesTile, MAK.wuolahLinks(degree && degree.base, MAK.studyYear(guides.map((g) => g.guide))));
+    drawActions(MAK.wuolahLinks(degree && degree.base, MAK.studyYear(guides.map((g) => g.guide))));
     if (!degree || !degree.base) {
       const list = (degree && degree.list) || [];
-      MAK.fill(examTile, h('h4', { text: `📅 ${t('short.exams')}` }), list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
+      MAK.fill(examTile, h('h4', { text: t('short.exams') }), list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
       return;
     }
     // From 25 January the first semester is gone (its exams are past).
@@ -366,7 +366,7 @@
       .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
     const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
     MAK.fill(examTile,
-      h('h4', null, `📅 ${t('short.exams')}`, degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
+      h('h4', null, t('short.exams'), degree.name ? h('span', { class: 'meta', text: ` · ${degree.name}` }) : null),
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
       place,
       h('h5', { text: t('short.links') }),
@@ -374,7 +374,8 @@
       degreeLine(degree, data, settings, degree.list));
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
     const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings));
-    if (sections || ex.note) MAK.fill(place, sections, ex.note);
+    const next = nextExam(ex.mine, data.sites, now);
+    if (sections || ex.note) MAK.fill(place, next, sections, ex.note);
     else place.remove();
   }
   function run() {

@@ -511,6 +511,16 @@ const handlers = {
     }
   },
   // The popup: the notice of the changes of the new version is closed.
+  // The light or dark theme of MiAulario (content-theme.js): 'dark', 'light' or 'system'. The popup and the
+  // pages of the extension follow it with the setting colorMode 'auto'.
+  pageMode: {
+    content: true,
+    run: async (msg) => {
+      const mode = ['dark', 'light', 'system'].includes(msg && msg.mode) ? msg.mode : null;
+      if (mode) await store.set({ sakaiMode: mode });
+      return { ok: !!mode };
+    }
+  },
   dismissWhatsNew: {
     run: async () => {
       await store.remove('whatsNew');

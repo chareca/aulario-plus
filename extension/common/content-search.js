@@ -9,32 +9,30 @@
   const DATE_TYPES = new Set(['delivery', 'event', 'announcement']);
   const h = MAK.h;
 
-  const CSS = `
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle).
+  const CSS = () => `
     :host { all: initial; }
+    * { box-sizing: border-box; }
     .backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: center; align-items: flex-start;
-      padding-top: 12vh; background: rgba(0, 0, 0, 0.35); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      padding-top: 12vh; background: var(--ap-backdrop); font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); }
     .panel { width: min(640px, calc(100vw - 32px)); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
-      color: #1d2327; background: #fff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
-    .dark .panel { color: #e8ecee; background: #1e2a28; }
-    input { font: inherit; font-size: 16px; padding: 12px 14px; border: 0; border-bottom: 1px solid #e3e7ea; outline: none;
-      color: inherit; background: transparent; }
-    .dark input { border-bottom-color: #2e4440; }
-    .list { overflow: auto; padding: 2px 6px 8px; }
-    h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #5f6b73; margin: 10px 8px 4px; }
-    .dark h3, .dark .meta, .dark .foot, .dark .empty { color: #9aa6ad; }
-    a.item { display: block; padding: 6px 8px; border-radius: 6px; color: inherit; text-decoration: none; }
-    a.item.sel { background: #e6f4ea; box-shadow: inset 3px 0 0 #10524e; }
-    .dark a.item.sel { background: #2a3a37; box-shadow: inset 3px 0 0 #4fd1a5; }
-    .title { display: block; font-weight: 600; overflow-wrap: anywhere; }
-    .meta { display: block; font-size: 12px; color: #5f6b73; }
-    mark { background: none; color: #0b6b5f; font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px;
-      text-decoration-color: rgba(16, 82, 78, 0.35); text-underline-offset: 2px; }
-    .dark mark { color: #6fe0b8; text-decoration-color: rgba(111, 224, 184, 0.4); }
-    .empty { padding: 14px; color: #5f6b73; }
-    .tip { padding: 8px 8px 0; font-size: 12px; color: #5f6b73; }
-    .dark .tip { color: #9aa6ad; }
-    .foot { font-size: 11px; color: #5f6b73; padding: 6px 12px; border-top: 1px solid #e3e7ea; }
-    .dark .foot { border-top-color: #2e4440; }
+      color: var(--ap-fg); background: var(--ap-win-bg); border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
+      -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
+    input { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing);
+      font-size: calc(20px * var(--ap-head-zoom)); padding: 12px 16px; border: 0; border-bottom: var(--ap-head-line); outline: none;
+      color: inherit; background: transparent; caret-color: var(--ap-red); }
+    input::placeholder { color: var(--ap-muted); opacity: 0.8; }
+    .list { overflow: auto; padding: 2px 8px 8px; }
+    h3 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); font-size: calc(13px * var(--ap-head-zoom));
+      color: var(--ap-muted); margin: 10px 8px 4px; }
+    a.item { display: block; padding: 7px 10px; border-radius: var(--ap-radius-sm); color: inherit; text-decoration: none; }
+    a.item.sel { background: var(--ap-surface2); }
+    .title { display: block; font-weight: 700; overflow-wrap: anywhere; }
+    .meta { display: block; font-size: 0.86em; color: var(--ap-muted); }
+    mark { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
+    .empty { padding: 14px; color: var(--ap-muted); }
+    .tip { padding: 8px 8px 0; font-size: 0.86em; color: var(--ap-muted); }
+    .foot { font-size: 0.8em; color: var(--ap-muted); padding: 7px 14px; border-top: var(--ap-item-sep); }
   `;
 
   let enabled = true;
@@ -66,8 +64,7 @@
     before = document.activeElement;
     host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
     const input = h('input', { attrs: { type: 'search', placeholder: MAK.t('palette.label'), 'aria-label': MAK.t('palette.label'), autocomplete: 'off', spellcheck: 'false' } });
     const list = h('div', { class: 'list', attrs: { role: 'listbox', 'aria-label': MAK.t('palette.label') } });
     const panel = h(
@@ -77,7 +74,7 @@
       list,
       h('div', { class: 'foot', text: MAK.t('palette.keys', { mod: MAC ? '⌘' : 'Ctrl' }) })
     );
-    const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, panel);
+    const backdrop = h('div', { class: 'backdrop' }, panel);
     let results = [];
     let sel = 0;
     let ask = 0;

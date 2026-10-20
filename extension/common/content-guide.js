@@ -20,53 +20,43 @@
   // Firefox: content.fetch sends the request as the page. Chromium: fetch does this.
   const pageFetch = globalThis.content && typeof globalThis.content.fetch === 'function' ? globalThis.content.fetch.bind(globalThis.content) : fetch;
 
-  const CSS = `
-    :host { all: initial; display: block; margin: 0 0 12px; }
-    [hidden] { display: none !important; } /* the arrows: the rules with "display" must not show it */
-    .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
-      border: 1px solid #d6e3e0; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 14px; }
-    .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
-    .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .head strong { flex: 1; min-width: 200px; cursor: pointer; }
-    ${MAK.FOLD_CSS}
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.BOX_CSS.
+  const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
-    a { color: #1a5fb4; } .dark a { color: #8ab4f8; }
-    .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
     .content { max-width: 1400px; }
     .content.one { max-width: 900px; }
     /* "Mi sitio": one card for each site, in 1, 2 or 3 columns. */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 10px; margin-top: 8px; align-items: start; }
-    .card { border: 1px solid #d6e3e0; border-radius: 8px; padding: 8px 10px; background: rgba(255, 255, 255, 0.55); min-width: 0; }
-    .dark .card { border-color: #2e4440; background: rgba(0, 0, 0, 0.18); }
-    .card h4 { margin: 0; font-size: 14px; flex: 1; min-width: 0; cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 12px; margin-top: 4px; align-items: start; }
+    .guide-card { min-width: 0; padding: 10px 12px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
+    .guide-card h4 { margin: 0; font-size: calc(15px * var(--ap-head-zoom)); line-height: 1.25; flex: 1; min-width: 0; cursor: pointer; }
+    .guide-card h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.75em; }
     .card-head { display: flex; align-items: flex-start; gap: 8px; }
-    .card-head .mak-icon { flex: none; width: 28px; height: 24px; }
+    .card-head .mak-icon { flex: none; width: 30px; height: 26px; }
     .card-head .arrow svg { transition: transform 0.15s; }
-    .card.open .card-head .arrow svg { transform: rotate(180deg); }
+    .guide-card.open .card-head .arrow svg { transform: rotate(180deg); }
     .more { margin-top: 2px; }
     /* The weights as one bar: one part for each kind of activity, with its name and weight. */
-    .bar { display: flex; gap: 2px; height: 22px; border-radius: 6px; overflow: hidden; margin: 8px 0 4px; }
-    .bar span { display: flex; align-items: center; min-width: 0; padding: 0 7px; box-sizing: border-box; font-size: 11.5px; font-weight: 600;
+    .bar.weights { display: flex; gap: 2px; height: 24px; border-radius: var(--ap-radius-sm); overflow: hidden; margin: 8px 0 4px; }
+    .bar.weights span { display: flex; align-items: center; min-width: 0; padding: 0 7px; font-size: 11.5px; font-weight: 700;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    /* The same color for a kind in all the sites (light and dark theme); the dot of a row has it too. */
-    .k-exam { background: #10524e; color: #fff; } .k-practice { background: #2a8c7f; color: #fff; } .k-work { background: #8fd3c4; color: #0b1a17; }
-    .k-participation { background: #b8742a; color: #fff; } .k-presentation { background: #5b5bd6; color: #fff; } .k-other { background: #7a868d; color: #fff; }
-    .dark .k-exam { background: #4fd1a5; color: #0b1a17; } .dark .k-practice { background: #2b9c80; color: #fff; } .dark .k-work { background: #a7e9d6; color: #0b1a17; }
-    .dark .k-participation { background: #e0a253; color: #1a1205; } .dark .k-presentation { background: #9a9af2; color: #0d0d26; } .dark .k-other { background: #9aa6ad; color: #111; }
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+    /* The same color for a kind in all the sites (the variables of the theme); the dot of a row has it too. */
+    .k-exam { background: var(--ap-k-exam); color: var(--ap-k-exam-fg); }
+    .k-practice { background: var(--ap-k-practice); color: var(--ap-k-practice-fg); }
+    .k-work { background: var(--ap-k-work); color: var(--ap-k-work-fg); }
+    .k-participation { background: var(--ap-k-participation); color: var(--ap-k-participation-fg); }
+    .k-presentation { background: var(--ap-k-presentation); color: var(--ap-k-presentation-fg); }
+    .k-other { background: var(--ap-k-other); color: var(--ap-k-other-fg); }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; border: 1px solid var(--ap-line); }
     /* Columns of a fixed width: the activity, the weight next to it, then the other columns. */
-    table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0 4px; font-size: 13px; }
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0 4px; font-size: 0.93em; }
     col.a { width: 40%; } col.w { width: 4.2em; }
-    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #d6e3e0; vertical-align: top; overflow-wrap: anywhere; }
-    .dark th, .dark td { border-color: #2e4440; }
-    th { font-size: 12px; color: #5f6b73; font-weight: 600; } .dark th { color: #9aa6ad; }
+    th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--ap-line); vertical-align: top; overflow-wrap: anywhere; }
+    th { font-size: 0.86em; color: var(--ap-muted); font-weight: 700; }
     td.w, th.w { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    tr.total td { font-weight: 600; border-bottom: 0; }
+    tr.total td { font-weight: 700; border-bottom: 0; }
     details { margin-top: 6px; } summary { cursor: pointer; }
-    .notes p { margin: 4px 0; font-size: 13px; }
+    .notes p { margin: 4px 0; font-size: 0.93em; }
     .teacher { margin-top: 2px; }
-    ${MAK.EXT_BUTTON_CSS}
-    ${MAK.LINK_CSS}
     .mak-btn { padding: 2px 12px; }
   `;
 
@@ -92,7 +82,7 @@
     const total = parts.reduce((n, p) => n + p.weight, 0);
     if (!total) return null;
     const label = (p) => `${MAK.t(`guide.kind.${p.kind}`)} · ${p.weight.toLocaleString(MAK.locale())} %`;
-    return h('div', { class: 'bar', attrs: { role: 'img', 'aria-label': parts.map(label).join(', ') } },
+    return h('div', { class: 'bar weights', attrs: { role: 'img', 'aria-label': parts.map(label).join(', ') } },
       parts.map((p) => {
         const part = h('span', { class: `k-${p.kind}`, text: label(p), title: `${label(p)}\n${p.names.map((n) => `• ${n}`).join('\n')}` });
         // The width with the CSSOM: a "style" attribute can be blocked by the CSP of the page.
@@ -147,7 +137,7 @@
     if (!rows.some((r) => r.weight > 0) || !MAK.openGuideCalc) return null;
     const label = MAK.t('gcalc.open', { site: name });
     return h('button', {
-      class: outline ? `mak-fold${MAK.isDarkPage() ? ' dark' : ''}` : MAK.extButtonClass('icon'),
+      class: outline ? 'mak-fold' : MAK.extButtonClass('icon'),
       attrs: { type: 'button', title: label, 'aria-label': label, 'aria-haspopup': 'dialog' },
       on: { click: () => MAK.openGuideCalc({ site: { id: site.id, name }, rows }) }
     }, MAK.icon('calc'));
@@ -168,7 +158,7 @@
     const arrow = h('button', { class: `${MAK.extButtonClass('icon')} arrow`, attrs: { type: 'button' } }, MAK.icon('chevron'));
     const card = h(
       'section',
-      { class: 'card' },
+      { class: 'guide-card' },
       h('div', { class: 'card-head' }, h('h4', null, name, rows.some((r) => r.weight) ? h('span', { class: 'meta', text: ` · ${rows.length} ${MAK.t('guide.activities')}` }) : null), calcButton(site, name, rows), arrow),
       teachers(guide),
       weightBar(rows),
@@ -200,8 +190,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
     const content = h('div', { class: `content${mySite ? '' : ' one'}` }, body);
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`) === '1'; } catch {}
@@ -211,13 +200,14 @@
       content.hidden = !open;
       try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, open ? '0' : '1'); } catch {}
     });
-    const name = h('strong', { text: `📘 ${title}`, on: { click: () => toggle.click() } });
-    shadow.append(style, h('div', { class: `box${MAK.isDarkPage() ? ' dark' : ''}`, attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, extra || null, toggle), content));
+    const name = h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } });
+    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, extra || null, toggle), content));
     // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
     // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
     const slot = mySite ? MAK.mySiteSlot() : null;
     const shortcuts = document.getElementById(SHORTCUTS_ID);
     const above = shortcuts || document.getElementById(BANNER_ID);
+    if (slot) host.classList.add('in-block');
     if (shortcuts && slot && slot.contains(shortcuts)) shortcuts.after(host);
     else if (slot) slot.append(host);
     else if (above) above.after(host);

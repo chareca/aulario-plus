@@ -11,38 +11,19 @@
   const t = (k, p) => MAK.t(k, p);
   const send = (msg) => MAK.safeCall(() => ext.runtime.sendMessage(msg), null);
 
-  const CSS = `
-    :host { all: initial; }
-    .backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: flex-start; justify-content: center;
-      padding-top: 6vh; background: rgba(0, 0, 0, 0.35); }
-    .win { width: min(600px, calc(100vw - 32px)); max-height: calc(100vh - 12vh); overflow: auto; box-sizing: border-box; padding: 14px 18px;
-      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff;
-      border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
-    .dark .win { color: #e8ecee; background: #1e2a28; }
-    header { display: flex; align-items: center; gap: 8px; }
-    h2 { flex: 1; margin: 0; font-size: 16px; }
-    button.x { font: inherit; font-size: 18px; line-height: 1; background: none; border: 0; padding: 2px 6px; cursor: pointer; color: inherit; }
-    .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    .help { margin: 6px 0 10px; }
-    input[type=email] { font: inherit; box-sizing: border-box; width: 100%; padding: 7px 10px; border: 1px solid #b9c9c5; border-radius: 6px;
-      background: #fff; color: inherit; }
-    .dark input[type=email] { background: #15201e; border-color: #3a524d; }
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.WIN_CSS.
+  const CSS = () => `${MAK.WIN_CSS()}
+    .win { width: min(600px, calc(100vw - 32px)); max-height: calc(100vh - 12vh); }
+    .help { margin: 0 0 10px; }
+    input[type=email] { width: 100%; padding: 7px 10px; }
     .all { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
-    td { padding: 6px 4px; border-top: 1px solid #e1e8e6; vertical-align: middle; }
-    .dark td { border-color: #2e4440; }
-    td.name { font-weight: 600; overflow-wrap: anywhere; }
-    td.state { font-size: 12px; color: #5f6b73; } .dark td.state { color: #9aa6ad; }
-    td.state.ok { color: #137333; } .dark td.state.ok { color: #81c995; }
-    td.state.bad { color: #c5221f; } .dark td.state.bad { color: #f28b82; }
+    table { margin-top: 6px; }
+    td.name { font-weight: 700; overflow-wrap: anywhere; }
+    td.state { font-size: 0.86em; color: var(--ap-muted); }
+    td.state.ok { color: var(--ap-green); }
+    td.state.bad { color: var(--ap-red); }
     td.acts { white-space: nowrap; text-align: right; }
     td.acts button + button { margin-left: 6px; }
-    button.plain { font: inherit; font-size: 13px; background: none; border: 1px solid #b9c9c5; border-radius: 6px; padding: 3px 10px; cursor: pointer; color: inherit; }
-    .dark button.plain { border-color: #3a524d; }
-    button:disabled { opacity: 0.55; cursor: default; }
-    .status { margin: 8px 0 0; font-size: 13px; min-height: 1.4em; }
-    .status.error { color: #c5221f; } .dark .status.error { color: #f28b82; }
-    ${MAK.EXT_BUTTON_CSS}
     .mak-btn { padding: 5px 12px; }
   `;
 
@@ -69,8 +50,7 @@
     MAK.setLang(settings.lang);
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
     let busy = false;
     const close = () => {
       if (busy) return;
@@ -134,13 +114,13 @@
     }
 
     const win = h('div', { class: 'win', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': t('fwd.title') } },
-      h('header', null, h('h2', { text: `📨 ${t('fwd.title')}` }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: close } })),
+      h('header', null, h('h2', { text: t('fwd.title') }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: close } })),
       h('p', { class: 'help meta', text: t('fwd.help') }),
       email,
       h('div', { class: 'all' }, allOn, allOff),
       sites.length ? h('table', null, h('tbody', null, rows.map((r) => r.tr))) : h('p', { class: 'meta', text: t('fwd.noSites') }),
       status);
-    const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, win);
+    const backdrop = h('div', { class: 'backdrop' }, win);
     backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });
     // The keys stay in the window: the page (the shortcuts of MiAulario) does not get them.
     backdrop.addEventListener('keydown', (e) => {

@@ -12,46 +12,25 @@
   const send = (msg) => MAK.safeCall(() => ext.runtime.sendMessage(msg), null);
   const fmt = (n) => (Math.round(n * 100) / 100).toLocaleString(MAK.locale(), { maximumFractionDigits: 2 });
 
-  const CSS = `
-    :host { all: initial; }
-    .backdrop { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: flex-start; justify-content: center;
-      padding-top: 6vh; background: rgba(0, 0, 0, 0.35); }
-    .win { width: min(620px, calc(100vw - 32px)); max-height: 88vh; overflow: auto; box-sizing: border-box; padding: 14px 18px;
-      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff;
-      border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
-    .dark .win { color: #e8ecee; background: #1e2a28; }
-    header { display: flex; align-items: center; gap: 8px; }
-    [hidden] { display: none !important; }
-    h2 { flex: 1; margin: 0; font-size: 16px; }
-    button.x { font: inherit; font-size: 18px; line-height: 1; background: none; border: 0; padding: 2px 6px; cursor: pointer; color: inherit; }
-    .meta { color: #5f6b73; font-size: 12px; } .dark .meta { color: #9aa6ad; }
-    .help { margin: 4px 0 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; font-size: 12px; font-weight: 600; color: #5f6b73; padding: 4px; } .dark th { color: #9aa6ad; }
-    td { padding: 6px 4px; border-top: 1px solid #e1e8e6; vertical-align: middle; }
-    .dark td { border-color: #2e4440; }
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.WIN_CSS.
+  const CSS = () => `${MAK.WIN_CSS()}
+    .help { margin: 0 0 10px; }
     td.w { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; width: 5.4em; }
     td.g { width: 5.5em; }
-    td.s { font-size: 12px; width: 9.5em; }
-    .tag { font-size: 11px; color: #5f6b73; } .dark .tag { color: #9aa6ad; }
-    input { font: inherit; box-sizing: border-box; width: 4.8em; padding: 5px 7px; border: 1px solid #b9c9c5; border-radius: 6px;
-      background: #fff; color: inherit; text-align: right; font-variant-numeric: tabular-nums; }
-    .dark input { background: #15201e; border-color: #3a524d; }
-    input.bad { border-color: #c5221f; outline: 1px solid #c5221f; }
+    td.s { font-size: 0.86em; width: 9.5em; }
+    .tag { font-size: 0.8em; color: var(--ap-muted); }
+    input { width: 4.8em; text-align: right; font-variant-numeric: tabular-nums; }
+    input.bad { border-color: var(--ap-red); outline: 1px solid var(--ap-red); }
     input.weight { width: 3.6em; }
-    input.weight.changed { border-color: #b8742a; } .dark input.weight.changed { border-color: #e0a253; }
-    input.book { color: #1a5fb4; } .dark input.book { color: #8ab4f8; }
+    input.weight.changed { border-color: var(--ap-orange); }
+    input.book { color: var(--ap-blue); }
     .book-status { margin: 8px 0 0; }
-    .need { color: #10524e; font-weight: 600; } .dark .need { color: #4fd1a5; }
-    .low { color: #c5221f; } .dark .low { color: #f28b82; }
-    .ok { color: #137333; } .dark .ok { color: #81c995; }
-    .sum { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: #f3f8f7; border: 1px solid #d6e3e0; }
-    .dark .sum { background: #15201e; border-color: #2e4440; }
+    .need { font-weight: 700; }
+    .sum { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--ap-radius-sm); background: var(--ap-accent-soft); color: var(--ap-fg); border: var(--ap-bw-sm) solid var(--ap-line); }
     .sum p { margin: 2px 0; }
-    .big { font-size: 18px; font-weight: 700; }
+    .big { font-family: var(--ap-font-num); font-size: 1.35em; font-weight: 700; }
+    .need.big { font-size: 1.8em; }
     .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-    button.plain { font: inherit; font-size: 13px; background: none; border: 1px solid #b9c9c5; border-radius: 6px; padding: 4px 12px; cursor: pointer; color: inherit; }
-    .dark button.plain { border-color: #3a524d; }
   `;
 
   let open = null;
@@ -84,8 +63,7 @@
     const tool = raw.pages && raw.pages[site.id] && raw.pages[site.id].tools && raw.pages[site.id].tools['sakai.gradebookng'];
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
     const close = () => {
       host.remove();
       open = null;
@@ -210,7 +188,7 @@
       if (lines[0]) lines[0].input.focus();
     } } });
 
-    const title = `🧮 ${t('gcalc.title', { site: site.name })}`;
+    const title = t('gcalc.title', { site: site.name });
     const win = h('div', { class: 'win', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': title } },
       h('header', null, h('h2', { text: title }), lines.length ? reset : null, h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: close } })),
       h('p', { class: 'help meta', text: t('gcalc.help') }),
@@ -222,7 +200,7 @@
       lines.length ? status : null,
       lines.length ? summary : null,
       lines.length ? h('div', { class: 'row' }, clear) : null);
-    const backdrop = h('div', { class: `backdrop${MAK.isDarkPage() ? ' dark' : ''}` }, win);
+    const backdrop = h('div', { class: 'backdrop' }, win);
     backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });
     // The keys stay in the window: the page (the shortcuts of MiAulario) does not get them.
     backdrop.addEventListener('keydown', (e) => {

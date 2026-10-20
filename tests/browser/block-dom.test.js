@@ -1,5 +1,5 @@
 // The block "Aulario Plus" of "Mi sitio" (content-banner.js): at the top of the first column, with
-// its own head and an arrow that folds it. The arrow of the boxes.
+// its own head (the colors of the theme) and an arrow that folds it. The arrow of the boxes.
 (function () {
   'use strict';
 
@@ -35,9 +35,10 @@
     assert.equal(MAK.mySiteSlot(), body, 'one block');
     assert.ok(block.querySelector('.mak-head svg.mak-logo'), 'the logo');
     assert.equal(block.querySelector('h2').textContent, 'Aulario Plus');
-    assert.equal(block.querySelector('.mak-tag').textContent, 'Extensión');
+    assert.equal(block.querySelector('h2').title, 'Aulario Plus es una extensión de tu navegador. No es de la UPNA.');
     assert.equal(block.querySelector('.Mrphs-toolTitleNav'), null, 'not the head of the blocks of MiAulario');
-    assert.equal(getComputedStyle(block.querySelector('.mak-head')).backgroundColor, 'rgb(16, 82, 78)', 'the green of the extension');
+    assert.equal(getComputedStyle(block.querySelector('.mak-head')).backgroundColor, 'rgb(255, 212, 0)', 'the head of the theme (Bloques: yellow)');
+    assert.equal(getComputedStyle(block).borderTopWidth, '3px', 'the frame of the theme');
     const fold = block.querySelector('button.mak-fold');
     assert.equal(fold.textContent, '', 'only the arrow, no word');
     assert.equal(fold.getAttribute('aria-label'), 'Plegar Aulario Plus');

@@ -193,12 +193,13 @@ function renderHeader() {
   const now = Date.now();
   const meta = S.meta || {};
   const last = S.last || null;
-  const dot = $('dot');
-  dot.className = 'dot';
+  // The state of the session in words (a problem: underlined, in the color of the theme).
+  const line = $('status');
+  line.className = 'status-line';
   let headline;
-  if (S.paused) { dot.classList.add('warn'); headline = t('status.paused'); }
-  else if (last && last.loggedIn) { dot.classList.add('ok'); headline = t('status.connected'); }
-  else if (last) { dot.classList.add('bad'); headline = t(last.error ? 'status.networkError' : 'status.notLoggedIn'); }
+  if (S.paused) { line.classList.add('warn'); headline = t('status.paused'); }
+  else if (last && last.loggedIn) headline = t('status.connected');
+  else if (last) { line.classList.add('bad'); headline = t(last.error ? 'status.networkError' : 'status.notLoggedIn'); }
   else headline = t('status.noPing');
   $('headline').textContent = headline;
 
@@ -269,7 +270,6 @@ function deliveryRow(x, now) {
   return h(
     'div',
     { class: cls.join(' ') },
-    h('span', { class: 'bar' }),
     h(
       'div',
       { class: 'body' },
@@ -404,7 +404,6 @@ function inboxRow(x) {
     return h(
       'div',
       { class: `item ${x.unread ? 'unread' : 'read'}` },
-      h('span', { class: 'bar' }),
       h(
         'div',
         { class: 'body' },
@@ -434,7 +433,6 @@ function inboxRow(x) {
   return h(
     'div',
     { class: 'item unread' },
-    h('span', { class: 'bar' }),
     h('div', { class: 'body' }, h('a', { class: 'title', href: x.url, text: title }), h('div', { class: 'meta', text: meta })),
     x.type === 'forum' && x.title ? h('div', { class: 'side' }, h('span', { class: 'tag info', text: t('inbox.unreadTag', { n: x.count }) })) : null
   );
@@ -1058,9 +1056,9 @@ function helpSection() {
     h('div', { class: 'help-links' },
       btn(t('help.welcome'), ext.runtime.getURL('tools.html?welcome')),
       btn(t('help.news'), ext.runtime.getURL('tools.html?news')),
-      btn(`🐞 ${t('help.bug')}`, MAK.issueUrl({ kind: 'bug', version, browser, lang: settings().lang })),
-      btn(`💡 ${t('help.idea')}`, MAK.issueUrl({ kind: 'idea', version, browser, lang: settings().lang })),
-      btn(`☕ ${t('help.coffee')}`, MAK.COFFEE_URL)),
+      btn(t('help.bug'), MAK.issueUrl({ kind: 'bug', version, browser, lang: settings().lang })),
+      btn(t('help.idea'), MAK.issueUrl({ kind: 'idea', version, browser, lang: settings().lang })),
+      btn(t('help.coffee'), MAK.COFFEE_URL)),
     h('p', { class: 'small meta', text: t('help.coffeeText') }));
 }
 
@@ -1083,6 +1081,66 @@ function renderWhatsNew() {
     h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: t('mail.close'), 'aria-label': t('mail.close') }, on: { click: () => send({ type: 'dismissWhatsNew' }) } }));
 }
 
+// ---- Theme -------------------------------------------------------------------
+// The theme and the mode (light or dark) of the settings on this page. The mode "auto": the mode of
+// MiAulario (sakaiMode, from the content scripts), else the system. The last theme and mode stay in
+// localStorage for the first paint of the next time (boot.js).
+const currentScheme = () => MAK.pageScheme(settings().colorMode, S.sakaiMode);
+const darkNow = () => {
+  const scheme = currentScheme();
+  return scheme === 'dark' || (scheme === 'system' && !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+};
+
+function applyTheme(id) {
+  const r = MAK.applyPageTheme(document, id || settings().theme, null, currentScheme());
+  try {
+    localStorage.setItem('mak.theme', r.id);
+    localStorage.setItem('mak.scheme', r.scheme);
+  } catch {}
+}
+
+function chooseTheme(id) {
+  applyTheme(id);
+  send({ type: 'setSettings', patch: { theme: id } });
+}
+
+// One card for each theme, drawn with the variables of that theme (lib/themes.js), and the mode.
+function themeSection(s) {
+  const lang = MAK.getLang();
+  const dark = darkNow();
+  const current = MAK.theme(s.theme).id;
+  const mode = (m) => h('button', {
+    attrs: { type: 'button', 'aria-pressed': String(s.colorMode === m) },
+    text: t(`theme.mode.${m}`),
+    on: { click: () => send({ type: 'setSettings', patch: { colorMode: m } }) }
+  });
+  return h(
+    'div',
+    { class: 'section', attrs: { id: 'theme' } },
+    h('h2', { text: t('theme.section') }),
+    h('div', { class: 'field-row' }, h('span', { text: t('theme.mode') }), h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': t('theme.mode') } }, ['auto', 'light', 'dark'].map(mode))),
+    h('p', { class: 'small', text: t('theme.modeHelp') }),
+    h(
+      'div',
+      { class: 'themes', attrs: { role: 'radiogroup', 'aria-label': t('theme.section') } },
+      MAK.THEMES.map((th) => {
+        const input = h('input', { attrs: { type: 'radio', name: 'theme', value: th.id, checked: th.id === current }, on: { change: () => chooseTheme(th.id) } });
+        const card = h(
+          'label',
+          { class: 'theme-card', data: { theme: th.id } },
+          input,
+          h('span', { class: 'name', text: MAK.themeName(th, lang) }),
+          h('span', { class: 'about', text: MAK.themeAbout(th, lang) }),
+          h('span', { class: 'sample' }, h('span', { class: 'countdown', text: t('theme.sampleCount') }), h('span', { class: 'chip', text: t('theme.sampleButton') }))
+        );
+        for (const [k, v] of Object.entries(MAK.themeValues(th.id, dark))) card.style.setProperty(`--ap-${k}`, v);
+        return card;
+      })
+    ),
+    h('p', { class: 'small', text: t('theme.help') })
+  );
+}
+
 function checkbox(label, help, checked, onChange) {
   const input = h('input', { attrs: { type: 'checkbox', checked }, on: { change: (e) => onChange(e.target.checked) } });
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
@@ -1092,6 +1150,7 @@ function renderSettings(el) {
   const s = settings();
   fill(
     el,
+    themeSection(s),
     h(
       'div',
       { class: 'section' },
@@ -1273,6 +1332,7 @@ async function init() {
     $('openTab').hidden = true;
   }
   S = await ext.storage.local.get(null);
+  applyTheme();
   applyLanguage();
   ext.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -1283,6 +1343,7 @@ async function init() {
     searchIndex = null;
     // A new ping or a pause changes the time of the next alarm.
     if ('last' in changes || 'paused' in changes) refreshStatus();
+    if ('settings' in changes || 'sakaiMode' in changes) applyTheme();
     if ('settings' in changes && settings().lang !== MAK.getLang()) {
       // A new language: draw everything again now, also if a field has the focus.
       applyLanguage();

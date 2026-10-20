@@ -47,43 +47,37 @@
     return text === key ? MAK.t('mail.error', { code: detail ? `${code}: ${detail.slice(0, 200)}` : code }) : text;
   };
 
-  MAK.MAIL_CSS = `
-    .mail { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; box-sizing: border-box; padding: 14px 16px;
-      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff;
-      border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
-    .dark .mail { color: #e8ecee; background: #1e2a28; }
-    header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
-    header h2 { font-size: 16px; margin: 0; flex: 1; }
+  // The window of a message (the look of the theme: lib/themes.js, MAK.themedStyle, MAK.WIN_CSS).
+  MAK.MAIL_CSS = () => `${MAK.WIN_CSS()}
+    .mail { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; padding: 0 16px 14px;
+      font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); background: var(--ap-win-bg);
+      border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
+      -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
+    .mail > header { display: flex; align-items: baseline; gap: 8px; margin: 0 -16px 10px; padding: 10px 16px;
+      background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line); }
+    .mail > header h2 { margin: 0 auto 0 0; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
+      letter-spacing: var(--ap-head-spacing); font-size: calc(17px * var(--ap-head-zoom)); padding-bottom: var(--ap-title-pad); background: var(--ap-title-deco); }
+    .mail > header .muted { color: inherit; opacity: 0.8; }
     .help.intro { margin: -4px 0 8px; }
-    .muted, .help { color: #5f6b73; font-size: 12px; }
-    .dark .muted, .dark .help { color: #9aa6ad; }
     ul.files { margin: 0 0 10px; padding-left: 18px; max-height: 110px; overflow: auto; }
     .modes { display: flex; gap: 14px; margin: 6px 0 8px; }
-    .people { border: 1px solid #c9d2d6; border-radius: 8px; padding: 6px; margin-bottom: 8px; }
-    .dark .people { border-color: #2e4440; }
+    .people { border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-sm); padding: 6px; margin-bottom: 8px; }
     .people .list { max-height: 160px; overflow: auto; margin-top: 6px; }
     .people label { display: flex; gap: 6px; align-items: center; padding: 2px 0; }
-    label.field { display: block; margin: 8px 0 2px; font-weight: 600; font-size: 13px; }
-    input[type=text], input[type=search], textarea { box-sizing: border-box; width: 100%; font: inherit; padding: 6px 8px;
-      border-radius: 6px; border: 1px solid #c9d2d6; color: inherit; background: transparent; }
-    .dark input[type=text], .dark input[type=search], .dark textarea { border-color: #3a4a47; }
+    label.field { display: block; margin: 8px 0 2px; font-weight: 700; font-size: 0.93em; }
+    input[type=text], input[type=search], textarea { width: 100%; }
     textarea { min-height: 90px; resize: vertical; }
-    .check { display: flex; gap: 6px; align-items: center; margin: 8px 0; font-size: 13px; }
+    .check { display: flex; gap: 6px; align-items: center; margin: 8px 0; font-size: 0.93em; }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    button { font: inherit; cursor: pointer; border-radius: 6px; padding: 6px 12px; border: 1px solid #c9d2d6; background: transparent; color: inherit; }
-    button.primary { background: #10524e; border-color: #10524e; color: #fff; }
-    .dark button.primary { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }
-    button:disabled { opacity: 0.5; cursor: default; }
-    button.x { border: 0; font-size: 18px; line-height: 1; padding: 2px 6px; }
-    .status { min-height: 1.4em; margin-top: 10px; font-size: 13px; }
-    .status.error { color: #c5221f; } .dark .status.error { color: #f28b82; }
-    .status.ok { color: #137333; } .dark .status.ok { color: #81c995; }
-    [hidden] { display: none !important; }
-    .linkbox { margin-top: 10px; padding: 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); }
+    button { font: inherit; cursor: pointer; padding: 6px 12px; color: var(--ap-btn-fg); background: var(--ap-btn-bg);
+      border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
+    button.primary { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); font-weight: 700; }
+    button.x { border: 0; background: none; box-shadow: none; font-size: 18px; line-height: 1; padding: 2px 6px; color: inherit; }
+    .linkbox { margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-sm); background: var(--ap-surface2); }
     .linkrow { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
     .linkrow input { flex: 1; min-width: 0; }
     code { font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; }
-    .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); }
+    .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding: 8px; border-radius: var(--ap-radius-sm); background: var(--ap-surface2); }
   `;
 
   // Draw the window in "into" (an element). opts:
@@ -320,7 +314,7 @@
     const win = h(
       'div',
       { class: 'mail', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-label': t('mail.title') } },
-      h('header', null, h('h2', { text: `✉ ${t('mail.title')}` }), h('span', { class: 'muted', text: opts.site.name }), close),
+      h('header', null, h('h2', { text: t('mail.title') }), h('span', { class: 'muted', text: opts.site.name }), close),
       h('p', { class: 'help intro', text: t('mail.internalHelp') }),
       files.length ? [h('div', { class: 'muted', text: t('mail.files', { n: files.length }) }), h('ul', { class: 'files' }, files.map((f) => h('li', { text: f.title })))] : null,
       h('div', { class: 'modes', attrs: { role: 'radiogroup' } }, modeRadio('me', t('mail.toMe')), modeRadio('others', t('mail.toOthers'))),

@@ -6,36 +6,21 @@
   const MAK = root.MAK;
   const HOST_ID = 'mak-news-host';
 
-  const CSS = `
-    :host { all: initial; display: block; margin: 0 0 12px; }
-    .box { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #f3f8f7;
-      border: 1px solid #cfe3df; border-left: 4px solid #10524e; border-radius: 8px; padding: 10px 12px; }
-    .box.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; border-left-color: #4fd1a5; }
-    .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .title { font-weight: 700; cursor: pointer; }
-    .since, .summary { color: #5f6b73; }
-    .dark .since, .dark .summary { color: #9aa6ad; }
+  // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.BOX_CSS.
+  const CSS = () => `${MAK.BOX_CSS()}
+    :host { margin: 0 0 12px; }
+    .head .title { flex: none; min-width: 0; }
+    .since, .summary { color: inherit; opacity: 0.8; font-size: 0.9em; }
     .spacer { flex: 1; }
-    button { font: inherit; cursor: pointer; border: 1px solid #cfd8dc; background: transparent; color: inherit; border-radius: 6px; padding: 2px 10px; }
-    .dark button { border-color: #3a4a47; }
-    button.close { border: 0; font-size: 18px; line-height: 1; padding: 0 4px; }
-    ${MAK.EXT_BUTTON_CSS}
-    .mak-btn { padding: 2px 12px; }
-    .list { margin-top: 8px; display: grid; gap: 8px; }
-    .list[hidden] { display: none; }
-    h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 3px; color: #5f6b73; }
-    .dark h3 { color: #9aa6ad; }
+    button.close { font: inherit; font-size: 20px; line-height: 1; border: 0; background: none; color: inherit; cursor: pointer; padding: 0 4px; }
+    .list { margin-top: 2px; display: grid; gap: 10px; }
+    h3 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); font-size: calc(14px * var(--ap-head-zoom)); margin: 0 0 3px; }
     ul { margin: 0; padding-left: 18px; }
     li { margin: 2px 0; }
-    ${MAK.LINK_CSS}
-    .tag { font-size: 11px; border-radius: 9px; padding: 0 6px; margin-left: 6px; background: #e6f4ea; color: #137333; }
-    .tag.updated { background: #e8f0fe; color: #1a5fb4; }
-    .dark .tag { background: #1e3326; color: #81c995; }
-    .dark .tag.updated { background: #1c2b41; color: #8ab4f8; }
-    .meta { color: #5f6b73; font-size: 12px; margin-left: 4px; }
-    .dark .meta { color: #9aa6ad; }
+    .tag { font-size: 11px; border-radius: var(--ap-radius-sm); padding: 0 6px; margin-left: 6px; background: var(--ap-green-bg); color: var(--ap-green); }
+    .tag.updated { background: var(--ap-blue-bg); color: var(--ap-blue); }
+    li .meta { margin-left: 4px; }
     .compact .summary { display: none; }
-    ${MAK.FOLD_CSS}
   `;
 
   // Put a host element at the top of the main content, below the breadcrumb.
@@ -51,26 +36,33 @@
   MAK.insertAtTop = insertAtTop;
 
   // "Mi sitio": a block "Aulario Plus" at the top of the first column of the page, above the first block
-  // ("Mensaje del día") and to the left of the calendar; the boxes of the extension go in its body. The
-  // blocks of MiAulario do not change (the user can edit the text of "Mostrar información de Mi Sitio").
-  // The block has the place and the margins of the blocks of MiAulario, but its own head (the green of
-  // the extension, the logo and the tag "Extensión"), so that it does not look like a part of
-  // MiAulario. The arrow of the head folds the block; it stays folded when the page opens again. The
-  // block shows only with a box in it. A site has no block: its boxes are at the top of the content.
-  // Result: the body of the block, or null (no block on the page).
-  const BLOCK_CSS = `
+  // ("Mensaje del día") and to the left of the calendar; the boxes of the extension go in its body (their
+  // hosts have the class "in-block": no frame of their own). The blocks of MiAulario do not change (the
+  // user can edit the text of "Mostrar información de Mi Sitio"). The block has the place of the blocks of
+  // MiAulario, but the look of the theme of the extension (its frame, and a head with the logo), so that
+  // it does not look like a part of MiAulario. The arrow of the head folds the block; it stays folded when
+  // the page opens again. The block shows only with a box in it. A site has no block: its boxes are at
+  // the top of the content. Result: the body of the block, or null (no block on the page).
+  // The block is in the page (not in a shadow root): all its rules start with #mak-block, and
+  // MAK.themedStyle puts the variables of the theme on #mak-block.
+  const scoped = (css) => css.replace(/\.mak-(fold|logo)/g, '#mak-block .mak-$1');
+  const BLOCK_CSS = () => `
+    #mak-block { box-sizing: border-box; margin: 0 0 18px; padding: 0; color: var(--ap-fg); background: var(--ap-win-bg);
+      border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow);
+      -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     #mak-block[hidden], #mak-block > #mak-block-body[hidden] { display: none !important; }
+    #mak-block > #mak-block-body { padding: 8px 14px 10px; }
     #mak-block > .mak-head { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 14px;
-      background: #10524e; color: #fff; border-radius: 8px 8px 0 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    #mak-block.mak-closed > .mak-head { border-radius: 8px; }
-    #mak-block .mak-logo { width: 26px; height: 26px; flex: none; }
-    #mak-block .mak-title { flex: 1; margin: 0; padding: 0; border: 0; font: 600 17px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; }
-    #mak-block .mak-tag { flex: none; font: 500 11px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0b3b38; background: #9ff0d0;
-      border-radius: 10px; padding: 2px 8px; cursor: default; }
-    ${MAK.FOLD_CSS.replace(/\.mak-fold/g, '#mak-block .mak-head .mak-fold')}
-    #mak-block .mak-head .mak-fold, #mak-block .mak-head .mak-fold.dark { border-color: rgba(255, 255, 255, 0.35); color: #fff; }
-    #mak-block .mak-head .mak-fold:hover, #mak-block .mak-head .mak-fold:focus-visible { background: rgba(255, 255, 255, 0.15); }
-    #mak-block .mak-head .mak-fold:focus-visible { outline: 2px solid #9ff0d0; outline-offset: 2px; }
+      font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); background: var(--ap-head-bg); color: var(--ap-head-fg);
+      border: 0; border-bottom: var(--ap-head-line); border-top-left-radius: calc(var(--ap-radius) - var(--ap-bw)); border-top-right-radius: calc(var(--ap-radius) - var(--ap-bw)); }
+    #mak-block.mak-closed > .mak-head { border-bottom: 0; border-radius: calc(var(--ap-radius) - var(--ap-bw)); }
+    #mak-block .mak-logo { width: 28px; height: 28px; flex: none; }
+    #mak-block .mak-title { flex: 0 1 auto; margin: 0 auto 0 0; padding: 0 0 var(--ap-title-pad); border: 0; color: inherit; background: var(--ap-title-deco);
+      font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing);
+      font-size: calc(19px * var(--ap-head-zoom)); line-height: 1.15; text-transform: none; }
+    ${scoped(MAK.FOLD_CSS)}
+    ${scoped(MAK.LOGO_CSS)}
+    #mak-block .mak-head .mak-fold { color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
   `;
   const BLOCK_CLOSED = 'mak-mysite-closed';
 
@@ -83,7 +75,11 @@
     const anchor = main.querySelector('.Mrphs-sakai-motd') || titled || main.querySelector('.Mrphs-container');
     if (!anchor) return null;
     const h = MAK.h;
-    if (!document.getElementById('mak-block-style')) (document.head || document.documentElement).append(h('style', { attrs: { id: 'mak-block-style' }, text: BLOCK_CSS }));
+    if (!document.getElementById('mak-block-style')) {
+      const style = MAK.themedStyle(BLOCK_CSS(), { scope: '#mak-block' });
+      style.id = 'mak-block-style';
+      (document.head || document.documentElement).append(style);
+    }
     let closed = false;
     try { closed = localStorage.getItem(BLOCK_CLOSED) === '1'; } catch {}
     const body = h('div', { class: 'Mrphs-toolBody Mrphs-toolBody--aulario-plus', attrs: { id: 'mak-block-body' } });
@@ -101,8 +97,7 @@
     block.append(
       h('div', { class: 'mak-head' },
         MAK.logo(),
-        h('h2', { class: 'mak-title', text: 'Aulario Plus', attrs: { id: 'mak-block-title' } }),
-        h('span', { class: 'mak-tag', text: MAK.t('block.tag'), title: MAK.t('block.tagHelp') }),
+        h('h2', { class: 'mak-title', text: 'Aulario Plus', title: MAK.t('block.tagHelp'), attrs: { id: 'mak-block-title' } }),
         fold),
       body);
     draw();
@@ -125,9 +120,8 @@
     const host = document.createElement('div');
     host.id = 'mak-zip-host';
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = `:host { all: initial; display: block; margin: 0 0 10px; } ${MAK.EXT_BUTTON_CSS}`;
-    const btn = MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: `📦 ${MAK.t('zip.button')}`, on: { click: onClick } });
+    const style = MAK.themedStyle(`:host { all: initial; display: block; margin: 0 0 10px; } ${MAK.EXT_BUTTON_CSS}`);
+    const btn = MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: MAK.t('zip.button'), on: { click: onClick } });
     shadow.append(style, btn);
     insertAtTop(host);
   };
@@ -151,8 +145,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = CSS;
+    const style = MAK.themedStyle(CSS());
 
     const list = h(
       'div',
@@ -185,11 +178,11 @@
     });
     const box = h(
       'div',
-      { class: `box${MAK.isDarkPage() ? ' dark' : ''}${compact ? ' compact' : ''}`, attrs: { role: 'region', 'aria-label': title } },
+      { class: `box banner${compact ? ' compact' : ''}`, attrs: { role: 'region', 'aria-label': title } },
       h(
         'div',
         { class: 'head' },
-        h('span', { class: 'title', text: `🆕 ${title}`, on: { click: () => toggle.click() } }),
+        h('span', { class: 'title', text: title, on: { click: () => toggle.click() } }),
         compact || result.firstVisit ? null : h('span', { class: 'since', text: `(${MAK.formatDate(result.since)})` }),
         h('span', { class: 'summary', text: MAK.newsSummary(news) }),
         h('span', { class: 'spacer' }),

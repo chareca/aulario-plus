@@ -24,44 +24,43 @@
     :host { display: none; }
     @media (max-width: 767.98px) { :host { display: inline-flex; } }
   `;
+  // The editor of a name and the list of the teachers: small windows next to the button, in the look of
+  // the theme (lib/themes.js, MAK.themedStyle).
   const EDITOR_CSS = `
     :host { all: initial; }
-    .pop { position: fixed; z-index: 2147483000; width: 340px; box-sizing: border-box; padding: 10px;
-      font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d2327; background: #fff;
-      border: 1px solid #c9d2d6; border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+    * { box-sizing: border-box; }
+    .pop { position: fixed; z-index: 2147483000; width: 340px; padding: 12px;
+      font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-fg); background: var(--ap-win-bg);
+      border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop);
+      -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     .pop[hidden] { display: none; }
-    .pop.dark { color: #e8ecee; background: #1e2a28; border-color: #2e4440; }
-    label { display: block; font-size: 12px; color: #5f6b73; margin-bottom: 4px; overflow-wrap: anywhere; }
-    .dark label { color: #9aa6ad; }
-    input { box-sizing: border-box; width: 100%; font: inherit; padding: 5px 8px; border-radius: 6px; border: 1px solid #10524e;
-      color: inherit; background: transparent; }
-    .row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    button { font: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; padding: 4px 10px; border: 1px solid #c9d2d6;
-      background: transparent; color: inherit; }
-    button.save { background: #10524e; border-color: #10524e; color: #fff; }
-    .dark button.save { background: #4fd1a5; border-color: #4fd1a5; color: #0b1a17; }
+    label { display: block; font-size: 0.86em; color: var(--ap-muted); margin-bottom: 4px; overflow-wrap: anywhere; }
+    input { width: 100%; font: inherit; padding: 5px 8px; color: inherit; background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge);
+      border-radius: var(--ap-input-radius); box-shadow: var(--ap-input-shadow); }
+    .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    button { font: inherit; font-size: 0.93em; cursor: pointer; padding: 4px 10px; color: var(--ap-btn-fg); background: var(--ap-btn-bg);
+      border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
+    button.save { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); font-weight: 700; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
   `;
 
   const PICKER_CSS = `${EDITOR_CSS}
     .pop { width: 360px; max-height: min(480px, calc(100vh - 16px)); overflow: auto; }
     header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
-    h2 { font-size: 14px; margin: 0; flex: 1; }
-    button.x { border: 0; font-size: 16px; line-height: 1; padding: 2px 6px; }
-    h3 { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #5f6b73; }
-    .dark h3 { color: #9aa6ad; }
+    h2 { font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); letter-spacing: var(--ap-head-spacing);
+      font-size: calc(15px * var(--ap-head-zoom)); margin: 0; flex: 1; }
+    button.x { border: 0; background: none; box-shadow: none; font-size: 16px; line-height: 1; padding: 2px 6px; color: inherit; }
+    h3 { font-size: 0.86em; font-weight: 700; margin: 10px 0 4px; color: var(--ap-muted); }
     .people { display: flex; flex-direction: column; gap: 4px; }
     .people button { text-align: left; width: 100%; }
-    .people button:hover, .people button:focus-visible { border-color: #10524e; }
     .person { display: flex; gap: 6px; align-items: center; }
     .person button { flex: 1; }
     ${MAK.LINK_CSS}
-    .person .mak-link { font-size: 12px; white-space: nowrap; }
-    .tag { font-size: 11px; margin-left: 6px; padding: 0 6px; border-radius: 9px; background: #e6f4ea; color: #137333; white-space: nowrap; }
-    .dark .tag { background: #1e3326; color: #81c995; }
-    .help, .status { font-size: 12px; color: #5f6b73; margin: 8px 0 0; }
-    .dark .help, .dark .status { color: #9aa6ad; }
-    .status.error { color: #c5221f; } .dark .status.error { color: #f28b82; }
-    input[type=search] { margin-bottom: 4px; border-color: #c9d2d6; }
+    .person .mak-link { font-size: 0.86em; white-space: nowrap; }
+    .tag { font-size: 0.8em; margin-left: 6px; padding: 0 6px; border-radius: var(--ap-radius-sm); background: var(--ap-green-bg); color: var(--ap-green); white-space: nowrap; }
+    .help, .status { font-size: 0.86em; color: var(--ap-muted); margin: 8px 0 0; }
+    .status.error { color: var(--ap-red); }
+    input[type=search] { margin-bottom: 4px; }
   `;
 
   let settings = null;
@@ -76,8 +75,7 @@
     if (editor) return editor;
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = EDITOR_CSS;
+    const style = MAK.themedStyle(EDITOR_CSS);
     const label = h('label');
     const input = h('input', { attrs: { type: 'text', maxlength: 40, 'aria-label': MAK.t('names.edit') } });
     let siteId = null;
@@ -130,7 +128,7 @@
         if (!pop.hidden && siteId === id) return close();
         siteId = id;
         anchor = pencil;
-        pop.className = `pop${MAK.isDarkPage() ? ' dark' : ''}`;
+        pop.className = 'pop';
         label.textContent = MAK.t('names.editSite', { site: nameOf(id) });
         input.value = nameOf(id);
         pop.hidden = false;
@@ -159,8 +157,7 @@
     if (picker) return picker;
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = PICKER_CSS;
+    const style = MAK.themedStyle(PICKER_CSS);
     const title = h('h2');
     const list = h('div');
     const status = h('p', { class: 'status', attrs: { role: 'status' } });
@@ -263,8 +260,8 @@
         if (!tool || busy) return;
         const mine = ++run;
         anchor = button;
-        pop.className = `pop${MAK.isDarkPage() ? ' dark' : ''}`;
-        title.textContent = `✉ ${MAK.t('teach.title', { site: nameOf(siteId) })}`;
+        pop.className = 'pop';
+        title.textContent = MAK.t('teach.title', { site: nameOf(siteId) });
         MAK.fill(list);
         say(MAK.t('teach.loading'));
         pop.hidden = false;
@@ -293,8 +290,7 @@
     const host = document.createElement('span');
     host.className = ENVELOPE;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
+    const style = MAK.themedStyle(inHeader ? HEADER_CSS : PENCIL_CSS);
     const btn = h('button', {
       class: MAK.extButtonClass('icon'),
       attrs: { type: 'button', title: MAK.t('teach.button'), 'aria-label': `${MAK.t('teach.button')}: ${nameOf(siteId)}` },
@@ -324,8 +320,7 @@
     const host = document.createElement('span');
     host.className = PENCIL;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = document.createElement('style');
-    style.textContent = inHeader ? HEADER_CSS : PENCIL_CSS;
+    const style = MAK.themedStyle(inHeader ? HEADER_CSS : PENCIL_CSS);
     const pen = h('button', {
       class: MAK.extButtonClass('icon'),
       attrs: { type: 'button', title: MAK.t('names.edit'), 'aria-label': MAK.t('names.edit') },

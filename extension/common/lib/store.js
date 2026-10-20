@@ -26,7 +26,9 @@
       forwardEmail: '', // the last address for the forward of the internal mail (content-forward.js)
       // The template of a message to a teacher (lib/teachers.js); an empty body is the default text.
       teacherSubject: '',
-      teacherBody: ''
+      teacherBody: '',
+      theme: '', // the id of a theme (lib/themes.js); '' or an unknown id: the default theme
+      colorMode: 'auto' // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
     };
   };
 
@@ -152,7 +154,9 @@
       degree: typeof s.degree === 'string' && /^https:\/\/www\.unavarra\.es\/sites\/grados\/[a-z0-9-]+\/[a-z0-9-]+$/.test(s.degree) ? s.degree : '',
       forwardEmail: typeof s.forwardEmail === 'string' && s.forwardEmail.length <= 200 && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s.forwardEmail) ? s.forwardEmail : '',
       teacherSubject: MAK.cleanText(s.teacherSubject, 200, false),
-      teacherBody: MAK.cleanText(s.teacherBody, 3000, true)
+      teacherBody: MAK.cleanText(s.teacherBody, 3000, true),
+      theme: typeof s.theme === 'string' && /^[a-z0-9-]{1,32}$/.test(s.theme) ? s.theme : '',
+      colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto'
     };
   };
 
