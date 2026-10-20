@@ -105,6 +105,30 @@
     w.into.remove();
   });
 
+  test('mail window: a change of the recipients takes the question away; after "maybe sent" nothing sends again', async () => {
+    const w = openWindow({ links: null, mode: 'others', sendFail: 'pm.sendUnknown' });
+    await until(() => w.into.querySelectorAll('label input[type="checkbox"]').length > 1);
+    const tick = (label, on) => {
+      const box = [...w.into.querySelectorAll('label')].find((l) => l.textContent.includes(label)).querySelector('input');
+      box.checked = on;
+      box.dispatchEvent(new Event('change'));
+    };
+    const confirm = () => w.into.querySelector('.confirm');
+    tick('Todos los participantes', true);
+    w.button(MAK.t('mail.sendNow')).click();
+    assert.equal(confirm().hidden, false);
+    tick('OTRA', true); // after the question: "all" must not go out without a new question
+    assert.equal(confirm().hidden, true);
+    tick('Todos los participantes', false);
+    w.button(MAK.t('mail.sendNow')).click(); // only a person: no question
+    await until(() => w.status() === MAK.t('mail.error.pm.sendUnknown'));
+    assert.equal(confirm().hidden, true, 'no old question with its "Yes"');
+    w.button(MAK.t('mail.sendNow')).click();
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(w.log.sent.length, 1, 'one send');
+    w.into.remove();
+  });
+
   test('mail window: "Only make the link" makes it one time; "Open the mail" uses it', async () => {
     const w = openWindow();
     w.button(MAK.t('link.make')).click();

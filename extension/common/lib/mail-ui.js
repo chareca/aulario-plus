@@ -112,7 +112,7 @@
         peopleList,
         shown.map((p) =>
           h('label', null,
-            h('input', { attrs: { type: 'checkbox', checked: st.chosen.has(p.value) }, on: { change: (e) => { if (e.target.checked) st.chosen.add(p.value); else st.chosen.delete(p.value); drawChosen(); } } }),
+            h('input', { attrs: { type: 'checkbox', checked: st.chosen.has(p.value) }, on: { change: (e) => { if (e.target.checked) st.chosen.add(p.value); else st.chosen.delete(p.value); drawChosen(); st.confirm = false; drawConfirm(); } } }),
             h('span', { text: p.label }))
         )
       );
@@ -219,7 +219,7 @@
     // After "pm.sendUnknown" (the message may be sent), "Send now" stays off: no second message.
     const lock = (on) => { st.busy = on; for (const b of buttons) b.disabled = on || (b === sendBtn && st.maybeSent); };
     async function run(kind) {
-      if (st.busy) return;
+      if (st.busy || (kind === 'send' && st.maybeSent)) return; // every way to send, not only the button
       lock(true);
       try {
         let d = await data();
@@ -266,8 +266,8 @@
       const chosen = st.mode === 'others' ? (st.people || []).filter((p) => st.chosen.has(p.value)) : [];
       if (st.mode === 'me' && files.length) st.confirm = t('mail.confirmMe', { files: t('mail.files', { n: files.length }) });
       else if (chosen.some((p) => p.kind !== 'person')) st.confirm = t('mail.confirmGroup', { list: chosen.map((p) => p.label).join(', ') });
-      if (st.confirm) return drawConfirm();
-      run('send');
+      drawConfirm(); // also hides an old question (other recipients)
+      if (!st.confirm) run('send');
     } } });
     buttons.push(openBtn, sendBtn);
     let linkBtn = null;

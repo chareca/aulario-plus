@@ -63,12 +63,21 @@ function selectTab(name) {
 function renderCurrent() {
   lastRender = Date.now();
   pendingRender = false;
-  // The open lists stay open: the same title (without its count, which a sync can change).
+  // The open lists stay open: the same title (without its count, which a sync can change) and the same
+  // place among the lists with that title (three corrections are three "Comentario del profesor").
   const panel = $(`tab-${current}`);
-  const key = (summary) => summary.textContent.replace(/\s*\(\d+\)\s*$/, '');
-  const open = new Set([...panel.querySelectorAll('details[open] > summary')].map(key));
+  const keyed = () => {
+    const seen = new Map();
+    return [...panel.querySelectorAll('details > summary')].map((s) => {
+      const text = s.textContent.replace(/\s*\(\d+\)\s*$/, '');
+      const n = seen.get(text) || 0;
+      seen.set(text, n + 1);
+      return [`${n} ${text}`, s.parentElement];
+    });
+  };
+  const open = new Set(keyed().filter(([, d]) => d.open).map(([k]) => k));
   panels[current].render(panel);
-  if (open.size) for (const summary of panel.querySelectorAll('details > summary')) if (open.has(key(summary))) summary.parentElement.open = true;
+  if (open.size) for (const [k, d] of keyed()) if (open.has(k)) d.open = true;
   updateTabCounts();
   if (ui.query) renderSearch();
   tick();
