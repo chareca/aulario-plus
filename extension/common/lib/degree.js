@@ -316,7 +316,8 @@
       if (!bySite.has(r.code) || out.some((x) => x.code === r.code)) continue;
       out.push(Object.assign({}, r, { siteId: bySite.get(r.code) }));
     }
-    const next = (r) => [r.final, r.recovery].filter((t) => t && t >= now - 86400000).sort((a, b) => a - b)[0] || Infinity;
+    const today = new Date(new Date(now).toDateString()).getTime(); // from the start of today: yesterday's final is past
+    const next = (r) => [r.final, r.recovery].filter((t) => t && t >= today).sort((a, b) => a - b)[0] || Infinity;
     return out.sort((a, b) => next(a) - next(b) || (a.final || 0) - (b.final || 0));
   };
 

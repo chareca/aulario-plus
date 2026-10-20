@@ -87,6 +87,13 @@ test('my exams: only the subjects of the guides, the next exam first', () => {
   assert.deepEqual(mine.map((r) => [r.code, r.siteId]), [['3', 'c'], ['1', 'a'], ['2', 'b']]);
 });
 
+test('my exams: the day after a final, its recovery is the next date (from the start of today)', () => {
+  const at = (d, hour) => new Date(2027, 0, d, hour).getTime();
+  const rows = [{ code: '1', final: at(11, 16), recovery: at(31, 9) }, { code: '2', final: at(20, 9), recovery: null }];
+  const mine = MAK.myExams(rows, [{ code: '1', siteId: 'a' }, { code: '2', siteId: 'b' }], at(12, 10));
+  assert.deepEqual(mine.map((r) => r.code), ['2', '1'], 'the final of yesterday at 16:00 is past');
+});
+
 test('the degree: the name of the guide line, the plan code of most guides', () => {
   assert.equal(MAK.degreeName('Graduado o Graduada en Ingeniería Informática por la Universidad Pública de Navarra'), 'Ingeniería Informática');
   assert.equal(MAK.degreeName('Graduada en Derecho por la Universidad Pública de Navarra'), 'Derecho');

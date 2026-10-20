@@ -194,14 +194,15 @@
       const s = (sites || []).find((x) => x.id === id);
       return s ? MAK.publicSiteName(s) : '';
     };
+    const today = new Date(new Date(now).toDateString()).getTime(); // the same "from today" as nextExam and MAK.myExams
     return h('ul', { class: 'exams' }, mine.map((r) => {
-      const next = [r.final, r.recovery].filter((x) => x && x >= now - DAY).sort((a, b) => a - b)[0];
+      const next = [r.final, r.recovery].filter((x) => x && x >= today).sort((a, b) => a - b)[0];
       const days = next ? daysTo(next, now) : -1;
       const name = siteName(r.siteId) || r.name;
       const line = (label, ms, room) => {
         if (!ms) return null;
         const text = `${MAK.formatDate(ms)}${room ? ` · ${room}` : ''}`;
-        return h('div', { class: `when${ms < now - DAY ? ' past' : ''}`, title: `${label}: ${text}` }, h('b', { text: label }), ` ${text}`);
+        return h('div', { class: `when${ms < today ? ' past' : ''}`, title: `${label}: ${text}` }, h('b', { text: label }), ` ${text}`);
       };
       const near = days >= 0 && days <= 2 ? 'hot' : days >= 0 && days <= 7 ? 'soon' : '';
       return h('li', { class: near === 'hot' ? 'now' : near },
