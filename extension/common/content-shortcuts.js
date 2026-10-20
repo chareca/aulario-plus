@@ -212,8 +212,8 @@
     }));
   }
 
-  // The next exam of the user (a final or a recovery, from today): the day in large, the subject and the
-  // days to it. Null without a next exam.
+  // The next exam of the user (a final or a recovery, from today): the days to it in large, the subject,
+  // and its date. Null without a next exam.
   function nextExam(mine, sites, now) {
     const today = new Date(new Date(now).toDateString()).getTime();
     let best = null;
@@ -226,14 +226,13 @@
     const s = (sites || []).find((x) => x.id === best.r.siteId);
     const name = (s && MAK.publicSiteName(s)) || best.r.name;
     const days = daysTo(best.ms, now);
-    const d = new Date(best.ms);
-    // The day is in large: here only the weekday and the time ("Final · martes, 12:00").
+    // The date is on the right: here only the weekday and the time ("Final · martes, 12:00").
     const day = new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(best.ms);
     const when = [t(best.kind === 'final' ? 'short.final' : 'short.rec'), day, best.room].filter(Boolean).join(' · ');
     return h('div', { class: 'next-exam' },
-      h('div', { class: 'day', attrs: { 'aria-hidden': 'true' } }, String(d.getDate()), h('small', { text: d.toLocaleDateString(MAK.locale(), { month: 'short' }).replace('.', '') })),
+      h('div', { class: 'day' }, days ? [String(days), h('small', { text: t('short.days', { n: days }) })] : t('short.today')),
       h('div', { class: 'what' }, h('span', { class: 'meta', text: t('short.next') }), h('span', { class: 'name', text: name }), h('span', { class: 'meta', text: when })),
-      h('span', { class: `count${days <= 2 ? ' hot' : days <= 7 ? ' soon' : ''}`, text: countdown(days) }));
+      h('span', { class: `count${days <= 2 ? ' hot' : days <= 7 ? ' soon' : ''}`, text: MAK.formatDay(best.ms) }));
   }
 
   // The dates of the subjects of the user, from the exam calendars of the degree: { mine (each
@@ -306,7 +305,7 @@
   // target="_blank"), with an arrow. help: the tooltip.
   function actionLink(url, text, help) {
     const arrow = MAK.icon('arrow');
-    arrow.setAttribute('class', 'mak-arrow');
+    arrow.classList.add('mak-arrow');
     return h('a', { class: 'action', href: url, title: help || undefined }, h('span', { class: 'go', text }), arrow);
   }
 

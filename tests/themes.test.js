@@ -67,13 +67,27 @@ test('the fonts of the themes are files of the extension, with the OFL license',
   }
 });
 
+test('the icons of a theme: known names, a drawing of its own, nothing from other servers', () => {
+  for (const th of MAK.THEMES) {
+    for (const [name, svg] of Object.entries(th.icons || {})) {
+      assert.ok(MAK.ICON_NAMES.includes(name), `${th.id}: icon ${name}`);
+      assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 24 24">[\s\S]*<\/svg>$/, `${th.id}: ${name}`);
+      assert.doesNotMatch(svg.replace('http://www.w3.org/2000/svg', ''), /https?:|href|<script|on\w+=/i, `${th.id}: ${name}`);
+    }
+  }
+  const css = MAK.themeIconCss(MAK.theme('cromo'));
+  assert.match(css, /svg\.ap-icon-mail \{ background: url\("data:image\/svg\+xml,%3Csvg/);
+  assert.match(css, /svg\.ap-icon-mail > \* \{ display: none; \}/);
+  assert.equal(MAK.themeIconCss(MAK.theme('bloques')), '', 'no icons: the lines of MAK.icon');
+});
+
 test('the variables of a theme: the values of BASE where the theme has none, the dark ones in the dark mode', () => {
   const light = MAK.themeValues('cromo', false);
   const dark = MAK.themeValues('cromo', true);
   assert.equal(Object.keys(light).length, MAK.THEME_VARS.length);
-  assert.equal(light.fg, '#1b2440');
-  assert.equal(dark.fg, '#e4ecff');
-  assert.equal(dark['count-fg'], '#7fe7ff', 'a light value that the dark mode does not change');
+  assert.equal(light.fg, '#000000');
+  assert.equal(dark.fg, '#f2f2f2');
+  assert.equal(dark['count-radius'], '3px', 'a light value that the dark mode does not change');
   assert.equal(light['item-gap'], '0px', 'a value of BASE');
   const vars = MAK.themeVars('bloques', false);
   assert.match(vars, /--ap-head-bg: #ffd400;/);

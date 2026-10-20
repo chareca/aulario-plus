@@ -65,7 +65,8 @@
 
   // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
   // character such as ✉ does not give. name: 'pencil', 'mail', 'chevron' (an arrow down) or 'arrow'
-  // (up and to the right: a link), 'calc' (a calculator).
+  // (up and to the right: a link), 'calc' (a calculator). The class "ap-icon-<name>" lets a theme put
+  // its own drawing (lib/themes.js, ICON_CSS).
   const ICONS = {
     pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
     mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
@@ -76,7 +77,7 @@
   MAK.icon = function (name) {
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
-    for (const [k, v] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) svg.setAttribute(k, v);
+    for (const [k, v] of Object.entries({ class: `ap-icon ap-icon-${name}`, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' })) svg.setAttribute(k, v);
     for (const [tag, attrs] of ICONS[name] || []) {
       const el = document.createElementNS(ns, tag);
       for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
@@ -204,7 +205,7 @@
   MAK.link = function (href, text, props) {
     const p = props || {};
     const arrow = MAK.icon('arrow');
-    arrow.setAttribute('class', 'mak-arrow');
+    arrow.classList.add('mak-arrow');
     return MAK.h('a', Object.assign({}, p, { href, class: ['mak-link', p.class].filter(Boolean).join(' ') }), MAK.h('span', { class: 't', text }), arrow);
   };
 

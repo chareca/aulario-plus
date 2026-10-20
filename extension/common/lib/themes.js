@@ -8,7 +8,7 @@
 //
 // A new theme: add an object to MAK.THEMES (copy one and change it). "light": its values; "dark": only the
 // values that change in the dark mode (the others stay as in "light"). A variable that the theme does not
-// set has the value of BASE (light or dark). Its own CSS goes into every part (the popup, each shadow root): use the class
+// set has the value of BASE (light or dark). "icons" (optional): its own drawings for the icons. Its own CSS goes into every part (the popup, each shadow root): use the class
 // names of the parts, and :host for a shadow root. Nothing from other servers: the fonts are files of the
 // extension, the images are data: URLs. tests/themes.test.js checks the list.
 (function (root) {
@@ -576,138 +576,175 @@
       `
     },
 
-    // ---- 6 · Cromo: Y2K Aesthetic ----------------------------------------------------------------
+    // ---- 6 · Cromo: the desktop of 2002 (blue title bars, beige windows; the dark mode as the black
+    // themes of that time). The fonts of the system (Tahoma, Trebuchet MS). The icons are drawings of
+    // our own in that style, not the icons of a system.
     {
       id: 'cromo',
       name: { es: 'Cromo', en: 'Chrome' },
-      about: { es: 'El escritorio del 2002: barras brillantes, botones de gel y pantallas LCD.', en: 'The desktop of 2002: glossy title bars, gel buttons and LCD screens.' },
-      fonts: [
-        { family: 'AP Rubik', file: 'rubik.woff2', weight: '500 900' },
-        { family: 'AP Silkscreen', file: 'silkscreen.woff2', weight: '400' }
-      ],
+      about: { es: 'Barra de título azul, ventanas beige y botones con borde azul, como el escritorio de 2002.', en: 'Blue title bars, beige windows and buttons with a blue border, as the desktop of 2002.' },
+      fonts: [],
+      icons: {
+        mail: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4e0f7"/></linearGradient></defs><rect x="2.5" y="5.5" width="19" height="13" rx="1.5" fill="url(#g)" stroke="#2c5bc0"/><path d="M3.2 6.6L12 13l8.8-6.4" fill="none" stroke="#2c5bc0" stroke-width="1.3"/><path d="M3.5 17.6l6.4-5.6M20.5 17.6l-6.4-5.6" fill="none" stroke="#8eaae0"/></svg>`,
+        pencil: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.3 15.2L15.9 4.6l3.5 3.5L8.8 18.7z" fill="#f6c445" stroke="#7a5a10"/><path d="M15.9 4.6l1.5-1.5a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2l-1.5 1.5z" fill="#ef8aa0" stroke="#7a3040"/><path d="M5.3 15.2L4 20l4.8-1.3z" fill="#f3dab2" stroke="#7a5a10" stroke-linejoin="round"/><path d="M4 20l.7-2.4 1.7 1.7z" fill="#333333"/><path d="M7 15.8l9.3-9.3" stroke="#fde18f"/></svg>`,
+        calc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f6f6"/><stop offset="1" stop-color="#c4c4c4"/></linearGradient></defs><rect x="4.5" y="2.5" width="15" height="19" rx="1.5" fill="url(#b)" stroke="#4d4d4d"/><rect x="6.5" y="4.5" width="11" height="4" fill="#d6ebcf" stroke="#64845a" stroke-width=".8"/><g fill="#2c5bc0"><rect x="6.5" y="10.5" width="3" height="2.3"/><rect x="10.5" y="10.5" width="3" height="2.3"/><rect x="6.5" y="13.9" width="3" height="2.3"/><rect x="10.5" y="13.9" width="3" height="2.3"/><rect x="6.5" y="17.2" width="3" height="2.3"/><rect x="10.5" y="17.2" width="3" height="2.3"/></g><rect x="14.5" y="10.5" width="3" height="9" fill="#d64529"/></svg>`,
+        arrow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86d863"/><stop offset="1" stop-color="#2a8a0e"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="4" fill="url(#a)" stroke="#1d6a08"/><path d="M6.5 12h10M12.5 7.5L17 12l-4.5 4.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      },
       light: {
-        font: 'Verdana, Tahoma, "DejaVu Sans", sans-serif',
-        'font-head': '"AP Rubik", "Rubik", Verdana, sans-serif',
-        'font-num': '"AP Silkscreen", "Silkscreen", ui-monospace, monospace',
+        font: 'Tahoma, "Segoe UI", Verdana, "DejaVu Sans", sans-serif',
+        'font-head': '"Trebuchet MS", Tahoma, "Segoe UI", sans-serif',
+        'font-num': 'Tahoma, "Segoe UI", Verdana, sans-serif',
         zoom: '0.95',
-        'head-weight': '800',
-        page: 'linear-gradient(160deg, #d3efff 0%, #f6e1ff 55%, #fff4d1 100%)',
+        'head-weight': '700',
+        page: '#ece9d8',
         surface: '#ffffff',
         solid: '#ffffff',
-        surface2: '#eaf3ff',
-        fg: '#1b2440',
-        muted: '#52607f',
-        line: '#c4d4ec',
-        edge: '#5d8fd6',
-        accent: '#2271f5',
+        surface2: '#ece9d8',
+        'win-bg': '#ece9d8',
+        fg: '#000000',
+        muted: '#555555',
+        line: '#d0d0bf',
+        edge: '#0831d9',
+        accent: '#316ac5',
         'accent-fg': '#ffffff',
-        'accent-soft': '#dceeff',
-        link: '#0b4fd4',
-        red: '#c4127a', 'red-bg': '#ffe2f4',
-        orange: '#c25100', 'orange-bg': '#fff0dc',
-        yellow: '#7a6400', 'yellow-bg': '#fff8c9',
-        green: '#2f7d0e', 'green-bg': '#e6fbd0',
-        blue: '#0b4fd4', 'blue-bg': '#dceeff',
-        grey: '#52607f', 'grey-bg': '#eef2f8',
-        'mark-bg': '#fff36b',
-        'head-bg': 'linear-gradient(#a5dcff 0%, #4b95ff 46%, #2271f5 54%, #4fa2ff 100%)',
+        'accent-soft': '#d6dff7',
+        link: '#215dc6',
+        red: '#c00000', 'red-bg': '#ffe4e0',
+        orange: '#b85400', 'orange-bg': '#fff1dc',
+        yellow: '#7a5d00', 'yellow-bg': '#ffffe1',
+        green: '#2b7a0b', 'green-bg': '#e2f5d6',
+        blue: '#215dc6', 'blue-bg': '#d6dff7',
+        grey: '#555555', 'grey-bg': '#ece9d8',
+        'mark-bg': '#316ac5',
+        'mark-fg': '#ffffff',
+        'head-bg': 'linear-gradient(180deg, #0997ff 0%, #0053ee 8%, #0050ee 40%, #0066ff 88%, #0066ff 93%, #005bff 95%, #003dd7 96%, #003dd7 100%)',
         'head-fg': '#ffffff',
-        'head-line': '1px solid #2a64c9',
-        'head-btn-bg': 'linear-gradient(#7fb6ff, #2a6fe6)',
+        'head-line': '0 solid transparent',
+        'head-btn-bg': 'radial-gradient(circle at 90% 90%, #0054e3 0%, #2263d5 55%, #4479e4 70%, #a3bbec 90%, #ffffff 100%)',
         'head-btn-fg': '#ffffff',
         'head-btn-edge': '#ffffff',
-        'btn-bg': 'linear-gradient(#ffffff 0%, #e6edf6 50%, #d6e0ee 51%, #f1f5fa 100%)',
-        'btn-fg': '#1b2440',
-        'btn-edge': '#8aa0bf',
-        'primary-bg': 'linear-gradient(#a8e0ff 0%, #3d8dff 50%, #1d6af2 51%, #5fb2ff 100%)',
-        'primary-fg': '#ffffff',
-        'primary-edge': '#1c5bcc',
-        radius: '10px',
-        'radius-sm': '999px',
-        'radius-box': '8px',
-        shadow: '0 14px 28px -14px rgba(30, 60, 140, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.55)',
-        'shadow-sm': 'inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 40, 120, 0.25)',
-        'shadow-pop': '0 20px 40px -10px rgba(30, 60, 140, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.6)',
-        backdrop: 'rgba(40, 60, 120, 0.3)',
-        'item-sep': '1px dashed #c4d4ec',
-        'count-bg': 'linear-gradient(#082234, #0e3550)',
-        'count-fg': '#7fe7ff',
-        'count-edge': '#000000',
-        'count-radius': '6px',
-        'count-size': '0.85em',
+        'btn-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
+        'btn-fg': '#000000',
+        'btn-edge': '#003c74',
+        'primary-bg': 'linear-gradient(180deg, #ffffff 0%, #ecebe6 86%, #d6d0c5 100%)',
+        'primary-fg': '#000000',
+        'primary-edge': '#003c74',
+        radius: '3px',
+        'radius-sm': '3px',
+        'radius-box': '3px',
+        'shadow-pop': '2px 4px 14px rgba(0, 0, 0, 0.4)',
+        backdrop: 'rgba(0, 0, 0, 0.25)',
+        'item-sep': '1px solid #ece9d8',
+        'count-bg': 'linear-gradient(180deg, #0c59b9 0%, #139ee9 6%, #18b5f2 10%, #139beb 14%, #1290e8 19%, #0d8dea 63%, #0d9ff1 81%, #0f9eed 88%, #119be9 91%, #1392e2 94%, #137ed7 97%, #095bc9 100%)',
+        'count-fg': '#ffffff',
+        'count-edge': '#0b3d91',
+        'count-radius': '3px',
+        'count-size': '0.92em',
         'count-weight': '400',
-        'count-pad': '4px 7px',
-        'count-glow': '0 0 5px rgba(127, 231, 255, 0.8)',
-        'count-soon-bg': 'linear-gradient(#2a1c05, #4a3008)',
-        'count-soon-fg': '#ffd27a',
-        'count-hot-bg': 'linear-gradient(#2b0a2f, #4a1350)',
-        'count-hot-fg': '#ff9be3',
-        'count-ok-bg': 'linear-gradient(#0f2408, #1d3c10)',
-        'count-ok-fg': '#c8ff7a',
+        'count-pad': '2px 7px',
+        'count-glow': '1px 1px 0 rgba(0, 0, 0, 0.35)',
+        'count-soon-bg': '#ffffe1',
+        'count-soon-fg': '#000000',
+        'count-hot-bg': 'linear-gradient(180deg, #f39a7d 0%, #e0451e 45%, #c33a14 100%)',
+        'count-hot-fg': '#ffffff',
+        'count-hot-edge': '#8a2208',
+        'count-ok-bg': 'linear-gradient(180deg, #5cbc3a 0%, #3c8d0d 50%, #2e7d0b 100%)',
+        'count-ok-fg': '#ffffff',
+        'count-ok-edge': '#1d5a06',
         'input-bg': '#ffffff',
         'input-edge': '#7f9db9',
-        'input-radius': '2px',
-        'logo-bg': '#2271f5',
+        'input-radius': '0',
+        'logo-bg': '#245edb',
         'logo-ring': '#ffffff',
-        'logo-dot': '#ff4fbf',
-        'k-exam': 'repeating-linear-gradient(45deg, #7cc4ff 0 7px, #4ea6ff 7px 14px)', 'k-exam-fg': '#0d1a33',
-        'k-practice': 'repeating-linear-gradient(45deg, #ff9fe0 0 7px, #ff6fcd 7px 14px)', 'k-practice-fg': '#330d26',
-        'k-work': 'repeating-linear-gradient(45deg, #c4f77d 0 7px, #9be44a 7px 14px)', 'k-work-fg': '#14330a',
-        'k-participation': 'repeating-linear-gradient(45deg, #ffe07a 0 7px, #ffc93d 7px 14px)', 'k-participation-fg': '#332605',
-        'k-presentation': 'repeating-linear-gradient(45deg, #d6c2ff 0 7px, #b99bff 7px 14px)', 'k-presentation-fg': '#1d0d33',
-        'k-other': 'repeating-linear-gradient(45deg, #e3e9f2 0 7px, #cdd6e3 7px 14px)', 'k-other-fg': '#1b2440'
+        'logo-dot': '#f7c33a',
+        'k-exam': '#245edb', 'k-exam-fg': '#ffffff',
+        'k-practice': '#3c8d0d', 'k-practice-fg': '#ffffff',
+        'k-work': '#f7c33a', 'k-work-fg': '#000000',
+        'k-participation': '#e0451e', 'k-participation-fg': '#ffffff',
+        'k-presentation': '#7a5ac4', 'k-presentation-fg': '#ffffff',
+        'k-other': '#a0a0a0', 'k-other-fg': '#000000'
       },
       dark: {
-        page: 'linear-gradient(160deg, #0f1730 0%, #22123a 55%, #2a2210 100%)',
-        surface: '#1b2134',
-        solid: '#1b2134',
-        surface2: '#263049',
-        'accent-soft': '#1c2f55',
-        fg: '#e4ecff',
-        muted: '#a3b2d6',
-        line: '#33415f',
-        edge: '#3d6fd8',
-        accent: '#4f8dff',
-        link: '#8ec0ff',
-        red: '#ff8ad4', 'red-bg': '#4a1640',
-        orange: '#ffb15c', 'orange-bg': '#3d2a10',
-        green: '#b4f06e', 'green-bg': '#20361a',
-        blue: '#8ec0ff', 'blue-bg': '#1c2f55',
-        grey: '#a3b2d6', 'grey-bg': '#263049',
-        'mark-bg': '#a38f00',
-        'mark-fg': '#ffffff',
-        'head-bg': 'linear-gradient(#4f8dff 0%, #1d4fd6 46%, #0f3db8 54%, #2f6cf0 100%)',
-        'head-line': '1px solid #0f3db8',
-        'btn-bg': 'linear-gradient(#3a4560 0%, #2a3349 50%, #222a3d 51%, #2e3850 100%)',
-        'btn-fg': '#e4ecff',
-        'btn-edge': '#4a5a80',
-        shadow: '0 14px 28px -14px rgba(0, 0, 0, 0.7), 0 0 0 3px rgba(80, 110, 200, 0.25)',
-        'shadow-pop': '0 20px 40px -10px rgba(0, 0, 0, 0.75), 0 0 0 4px rgba(80, 110, 200, 0.3)',
-        'item-sep': '1px dashed #33415f',
-        'input-bg': '#11182a',
-        'input-edge': '#4a5a80'
+        page: '#1e1e1e',
+        surface: '#2b2b2b',
+        solid: '#2b2b2b',
+        surface2: '#383838',
+        'win-bg': '#252525',
+        fg: '#f2f2f2',
+        muted: '#b8b8b8',
+        line: '#4a4a4a',
+        edge: '#0d0d0d',
+        accent: '#f7801e',
+        'accent-fg': '#000000',
+        'accent-soft': '#3d2c1c',
+        link: '#ffa24f',
+        red: '#ff8a70', 'red-bg': '#4a2018',
+        orange: '#ffa24f', 'orange-bg': '#45301a',
+        yellow: '#ffd76a', 'yellow-bg': '#423816',
+        green: '#93d870', 'green-bg': '#20381a',
+        blue: '#8db6ff', 'blue-bg': '#1d2c48',
+        grey: '#b8b8b8', 'grey-bg': '#383838',
+        'mark-bg': '#f7801e',
+        'mark-fg': '#000000',
+        'head-bg': 'linear-gradient(180deg, #727272 0%, #343434 8%, #1d1d1d 40%, #2c2c2c 88%, #101010 100%)',
+        'head-btn-bg': 'linear-gradient(180deg, #5c5c5c 0%, #262626 100%)',
+        'head-btn-edge': '#8c8c8c',
+        'btn-bg': 'linear-gradient(180deg, #4e4e4e 0%, #343434 86%, #262626 100%)',
+        'btn-fg': '#f2f2f2',
+        'btn-edge': '#000000',
+        'primary-bg': 'linear-gradient(180deg, #4e4e4e 0%, #343434 86%, #262626 100%)',
+        'primary-fg': '#f2f2f2',
+        'primary-edge': '#000000',
+        'shadow-pop': '2px 4px 14px rgba(0, 0, 0, 0.7)',
+        backdrop: 'rgba(0, 0, 0, 0.55)',
+        'item-sep': '1px solid #383838',
+        'count-bg': 'linear-gradient(180deg, #4a4a4a 0%, #1c1c1c 100%)',
+        'count-fg': '#ffa24f',
+        'count-edge': '#000000',
+        'count-soon-bg': '#423816',
+        'count-soon-fg': '#ffd76a',
+        'input-bg': '#1a1a1a',
+        'input-edge': '#6a6a6a',
+        'logo-bg': '#f7801e',
+        'logo-ring': '#111111',
+        'logo-dot': '#ffffff'
       },
       css: `
-        header.top h1, .box > .head .title, .win > header h2 { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
-        .btn, .mak-btn, .mak-icon, .mak-fold, .chips button { text-shadow: none; }
-        .btn.primary, .mak-btn { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); }
-        .countdown, .count, .tag { border: 1px solid var(--ap-count-edge); letter-spacing: 0.02em; }
-        .tag { font-family: var(--ap-font-num); font-size: 10px; }
-        nav.tabs { gap: 2px; padding: 6px 8px 0; background: linear-gradient(#f2f7ff, #dce9fb); border-bottom: 1px solid #91b1dd; }
-        nav.tabs button { flex: none; padding: 4px 8px; margin-bottom: -1px; border: 1px solid #91b1dd; border-bottom: 0; border-radius: 6px 6px 0 0; background: linear-gradient(#fff, #e4eefc); color: var(--ap-fg); font-size: 11.5px; }
-        nav.tabs button[aria-selected="true"] { background: #fff; font-weight: 700; border-top: 3px solid #ff9f1c; }
-        a.res.sel, a.item.sel, .result.sel { background: #316ac5; color: #ffffff; }
-        a.res.sel .meta, a.item.sel .meta, .result.sel .meta { color: #dbe8ff; }
-        .next-exam .day { display: inline-block; padding: 6px 12px; border-radius: 6px; border: 1px solid #000; background: linear-gradient(#082234, #0e3550);
-          color: #7fe7ff; text-shadow: 0 0 5px rgba(127, 231, 255, 0.8); font-family: var(--ap-font-num); font-size: 22px; }
-        .next-exam { background: var(--ap-surface2); border: 1px solid var(--ap-line); }
-        .actions .action:nth-child(3n+2) { background: linear-gradient(#e9ffc5 0%, #a7f24a 50%, #84dd25 51%, #c3fa7a 100%); border-color: #4f9a10; color: #17330a; text-shadow: none; }
-        .actions .action:nth-child(3n+3) { background: linear-gradient(#ffc6ee 0%, #ff63c9 50%, #ef34ae 51%, #ff8ed9 100%); border-color: #c4228f; }
-        .actions .action { background: var(--ap-primary-bg); color: #fff; border: 1px solid var(--ap-primary-edge); border-radius: 999px; box-shadow: var(--ap-shadow-sm); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); }
-        .actions .action .label { display: none; }
-        .bar.weights { height: 18px; border-radius: 99px; border: 1px solid #7a9cc9; gap: 0; }
-        .bar.weights span { border-right: 1px solid rgba(0, 0, 0, 0.15); font-size: 10.5px; }
-        .sem, .guide-card { border: 1px solid var(--ap-line); }
+        header.top h1, .box > .head .title, .win > header h2, .mail > header h2 { text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); }
+        /* The popup: the content in a white panel, with the border of the lists */
+        main { border: 1px solid var(--ap-input-edge); border-radius: 0; box-shadow: none; }
+        /* Buttons: an orange light on hover, a blue edge on the main button */
+        .btn:hover, .chips button:hover, .week:hover, button.plain:hover, .mak-btn:hover, .mak-icon:hover, .action:hover, .theme-card:hover {
+          filter: none; box-shadow: inset -1px 1px #fff0cf, inset 1px 2px #fdd889, inset -2px 2px #fbc761, inset 2px -2px #e5a01a; }
+        .btn.primary, .mak-btn, .action { box-shadow: inset -1px 1px #cee7ff, inset 1px 2px #98b8ea, inset -2px 2px #bcd4f6, inset 1px -1px #89ade4, inset 2px -2px #89ade4; }
+        .countdown, .count, .tag { border: 1px solid var(--ap-count-edge); }
+        .tag { border-color: var(--ap-line); }
+        .tag.ok { border-color: var(--ap-count-ok-edge); }
+        /* The tabs of a window of properties */
+        nav.tabs { gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid #919b9c; }
+        nav.tabs button { flex: none; padding: 3px 8px; margin-bottom: -1px; color: var(--ap-fg); font-size: 11.5px; border: 1px solid #919b9c; border-bottom: 0;
+          border-radius: 3px 3px 0 0; background: var(--ap-btn-bg); }
+        nav.tabs button[aria-selected="true"] { background: var(--ap-surface); font-weight: 400; border-top: 3px solid #e68b2c; padding-top: 1px; }
+        /* The selection of the lists */
+        a.item.sel, .result.sel { background: var(--ap-mark-bg); color: var(--ap-mark-fg); }
+        a.item.sel .meta, .result.sel .meta { color: inherit; opacity: 0.85; }
+        a.item.sel mark, .result.sel mark { background: none; color: inherit; text-decoration: underline; }
+        /* Windows: rounded at the top, with the thick frame */
+        .win, .mail, .panel, .pop { border-width: 3px; border-radius: 8px 8px 0 0; }
+        /* The parts of the block: the heads of the panels of tasks, with a round button */
+        :host(.in-block) .box > .head { margin: 0 0 10px; padding: 5px 10px; background: linear-gradient(90deg, var(--ap-surface), var(--ap-accent-soft));
+          color: var(--ap-link); border-radius: 5px 5px 0 0; text-shadow: none; }
+        :host(.in-block) .box > .head .mak-fold, .sem .mak-fold { width: 22px; height: 22px; border-radius: 50%; color: var(--ap-link);
+          background: linear-gradient(180deg, var(--ap-surface), var(--ap-accent-soft)); border: 1px solid var(--ap-input-edge); box-shadow: none; }
+        /* Group boxes */
+        .sem, .guide-card, .tile { border: 1px solid var(--ap-line); border-radius: 3px; }
+        .sem-head .sem-title { color: var(--ap-link); }
+        .exams li { background: var(--ap-surface); }
+        .next-exam { background: var(--ap-accent-soft); border: 1px solid var(--ap-line); }
+        .next-exam .day { padding: 6px 12px; border-radius: 3px; border: 1px solid var(--ap-count-edge); background: var(--ap-count-bg); color: var(--ap-count-fg);
+          text-shadow: var(--ap-count-glow); font-family: var(--ap-font); font-style: normal; font-size: 28px; }
+        .bar.weights { height: 18px; padding: 1px; gap: 1px; border: 1px solid #686868; border-radius: 3px; background: var(--ap-surface); }
+        .bar.weights span { border-radius: 2px; font-size: 10.5px; }
       `
     },
 
@@ -867,6 +904,15 @@
   };
   MAK.THEME_VARS = Object.keys(BASE.light);
 
+  // The icons that a theme can draw again (MAK.icon, lib/ui.js). theme.icons: { name: '<svg …>' }.
+  MAK.ICON_NAMES = ['pencil', 'mail', 'chevron', 'calc', 'arrow'];
+  // CSS that shows the drawing of the theme (an SVG in a data: URL) instead of the lines of the icon.
+  MAK.themeIconCss = function (th) {
+    return Object.entries(th.icons || {})
+      .map(([name, svg]) => `svg.ap-icon-${name} { background: url("data:image/svg+xml,${encodeURIComponent(svg)}") center / contain no-repeat; } svg.ap-icon-${name} > * { display: none; }`)
+      .join('\n');
+  };
+
   // "--ap-name: value;" for all the variables (a CSS declaration block).
   MAK.themeVars = function (id, dark) {
     return Object.entries(MAK.themeValues(id, dark)).map(([k, v]) => `--ap-${k}: ${v};`).join(' ');
@@ -903,7 +949,7 @@
     const vars = scheme === 'light' || scheme === 'dark'
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, th.css || ''].join('\n');
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, th.css || '', MAK.themeIconCss(th)].join('\n');
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
@@ -935,7 +981,7 @@
     const th = MAK.theme(MAK.themeId);
     const dark = typeof MAK.isDarkPage === 'function' && MAK.isDarkPage();
     const scope = (opts && opts.scope) || ':host';
-    const own = opts && opts.scope ? '' : th.css || ''; // the CSS of the theme only in a shadow root
+    const own = opts && opts.scope ? '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // only in a shadow root
     return `${scope} { ${MAK.themeVars(th.id, dark)} }\n${css}\n${own}`;
   }
   // opts.scope: a selector for a style in the page (not in a shadow root); then only the variables.
