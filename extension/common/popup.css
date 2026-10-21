@@ -70,7 +70,7 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .session strong { display: block; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
   letter-spacing: var(--ap-head-spacing); font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
 .session small { display: block; min-height: 1.4em; font-size: 12px; color: var(--ap-muted); }
-/* The panel: a large power button (as in uBlock Origin) */
+/* The session: a large power button (as in uBlock Origin) */
 .home-top { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .power { display: grid; place-items: center; width: 76px; height: 76px; padding: 0; border-radius: 50%; color: var(--ap-primary-fg); background: var(--ap-primary-bg);
   border: var(--ap-bw-sm) solid var(--ap-primary-edge); box-shadow: var(--ap-shadow-sm); }
@@ -78,13 +78,6 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .power.off, .power.wait { color: var(--ap-muted); background: var(--ap-grey-bg); border-color: var(--ap-line); }
 .power.bad { color: var(--ap-red); background: var(--ap-red-bg); border-color: var(--ap-red); }
 .power:hover, .power:focus-visible { filter: brightness(0.96); }
-/* The board: a bar with the session and its button */
-.home-bar { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--ap-radius-box); background: var(--ap-surface2); }
-.home-bar .session { flex: 1; min-width: 0; }
-.home-bar .dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--ap-green); }
-.home-bar.off .dot, .home-bar.wait .dot { background: var(--ap-grey); }
-.home-bar.bad .dot { background: var(--ap-red); }
-.home-bar .btn { flex: none; }
 /* The quick switches: on in the color of the theme, off in grey */
 .switches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .switch { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 7px 2px 6px; color: var(--ap-muted); background: none;
@@ -94,7 +87,7 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .switch[aria-pressed="true"], .switch:not([aria-pressed]) { color: var(--ap-fg); background: var(--ap-accent-soft); border-style: solid; opacity: 1; }
 .switch:hover, .switch:focus-visible { filter: brightness(0.96); }
 /* The counters: each one opens its tab */
-.counters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .counter { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 6px 4px; color: var(--ap-fg); background: none; border: 0;
   border-radius: var(--ap-radius-box); }
 .counter .n { font-family: var(--ap-font-num); font-size: 22px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
@@ -102,17 +95,12 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .counter .sub { font-size: 11px; color: var(--ap-muted); }
 .counter .sub.hot { color: var(--ap-red); font-weight: 700; }
 .counter:hover, .counter:focus-visible { background: var(--ap-surface2); }
-.home.panel .counters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.home.board .counter { padding: 7px 8px 6px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-sm); }
-.home.board .counter .n { font-size: 28px; }
-.home.board .counter:hover, .home.board .counter:focus-visible { background: var(--ap-surface2); }
 /* The links: MiAulario and the help */
 .tools-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 10px; border-top: var(--ap-item-sep); }
 .tool { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 6px 2px; font-size: 11px; line-height: 1.2; text-align: center;
   color: var(--ap-link); background: none; border: 0; border-radius: var(--ap-radius-box); }
 .tool svg { width: 18px; height: 18px; }
 .tool:hover, .tool:focus-visible { background: var(--ap-surface2); }
-.home .look { align-self: flex-end; margin: -2px 0 -6px; font-size: 11px; }
 
 /* The content: one surface (a card, glass, a window, a sheet of paper, as the theme says) */
 main { flex: 1; overflow: auto; margin: 8px 10px 6px; padding: 8px 12px 14px;

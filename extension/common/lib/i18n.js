@@ -30,7 +30,6 @@
       'home.unread': 'Sin leer',
       'home.grades': 'Notas nuevas',
       'home.help': 'Ayuda',
-      'home.tryOther': 'Probar el otro diseño',
       'perm.text': 'La extensión no tiene permiso para miaulario.unavarra.es y sso.unavarra.es.',
       'perm.grant': 'Dar permiso',
 
@@ -681,7 +680,6 @@
       'home.unread': 'Unread',
       'home.grades': 'New grades',
       'home.help': 'Help',
-      'home.tryOther': 'Try the other look',
       'perm.text': 'The extension does not have permission for miaulario.unavarra.es and sso.unavarra.es.',
       'perm.grant': 'Give permission',
 

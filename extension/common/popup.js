@@ -221,11 +221,8 @@ function renderHeader() {
 
 // ---- Home: the main menu -------------------------------------------------------
 // The things that the user needs most, in one place: the session (pause and resume), four switches,
-// the counters of the lists (each one opens its tab), and links to MiAulario and to the help.
-// Two looks: "panel" (a large power button, as in uBlock Origin) and "board" (large cards).
-// shortcut: "Probar el otro diseño" and the look in localStorage are for the trial of the user; keep one look before the release.
-let homeLook = 'panel';
-try { if (localStorage.getItem('mak.home') === 'board') homeLook = 'board'; } catch {}
+// the counters of the lists (each one opens its tab), and links to MiAulario and to the help. The session
+// has a large power button, as in uBlock Origin.
 const MODES = ['auto', 'light', 'dark'];
 const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -276,12 +273,9 @@ function renderHome(el) {
   const said = (name, v) => `${name}: ${t(v ? 'home.on' : 'home.off')}`;
   const set = (patch) => () => send({ type: 'setSettings', patch });
   const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
-  const top = homeLook === 'panel'
-    ? h('div', { class: 'home-top' },
-      h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
-      session)
-    : h('div', { class: `home-bar ${st.cls}` }, h('span', { class: 'dot', attrs: { 'aria-hidden': 'true' } }), session,
-      h('button', { class: 'btn', attrs: { type: 'button' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } }));
+  const top = h('div', { class: 'home-top' },
+    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
+    session);
   const switches = h('div', { class: 'switches' },
     homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),
     homeSwitch('clock', t('home.swDue'), s.notifyDue, said(t('home.swDue'), s.notifyDue), set({ notifyDue: !s.notifyDue })),
@@ -297,13 +291,8 @@ function renderHome(el) {
     link('news', t('help.news'), ext.runtime.getURL('tools.html?news')),
     link('help', t('home.help'), ext.runtime.getURL('tools.html?welcome')),
     link('bug', t('help.bug'), issueUrl('bug')));
-  const look = h('button', { class: 'link-btn look', attrs: { type: 'button' }, text: t('home.tryOther'), on: { click: () => {
-    homeLook = homeLook === 'panel' ? 'board' : 'panel';
-    try { localStorage.setItem('mak.home', homeLook); } catch {}
-    renderCurrent();
-  } } });
   const none = S.paused ? null : noDataMessage('what.home');
-  fill(el, h('div', { class: `home ${homeLook}` }, look, homeLook === 'panel' ? [top, switches, counters, none, tools] : [top, counters, none, switches, tools]));
+  fill(el, h('div', { class: 'home' }, top, switches, counters, none, tools));
 }
 
 // ---- Shared parts ------------------------------------------------------------
