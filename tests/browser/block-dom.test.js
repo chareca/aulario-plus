@@ -136,7 +136,7 @@
     let el = make(autumnDay);
     document.body.append(el);
     let sems = [...el.querySelectorAll('.sem')];
-    assert.deepEqual(sems.map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['1.er semestre', 'sem open'], ['2.º semestre', 'sem closed']]);
+    assert.deepEqual(sems.map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['1er semestre', 'sem open'], ['2do semestre', 'sem closed']]);
     assert.equal(el.querySelector('.sems').classList.contains('two'), false, 'one column: the folded one below');
     sems[1].querySelector('.mak-fold').click();
     assert.ok(el.querySelector('.sems').classList.contains('two'), 'both open: two columns');
@@ -145,7 +145,7 @@
     el = make(autumnDay);
     assert.equal(el.querySelectorAll('.sem.open').length, 2, 'the open state stays');
     el = make(new Date(2027, 0, 25).getTime());
-    assert.deepEqual([...el.querySelectorAll('.sem')].map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['2.º semestre', 'sem open']], 'from 25 January: no first semester');
+    assert.deepEqual([...el.querySelectorAll('.sem')].map((x) => [x.querySelector('.sem-title').textContent, x.className]), [['2do semestre', 'sem open']], 'from 25 January: no first semester');
     assert.equal(MAK.semesterSections({ key: 'test', now: autumnDay, parts: {}, title: String }), null);
     try { for (const k of keys) localStorage.removeItem(k); } catch {}
   });
