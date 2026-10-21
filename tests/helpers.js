@@ -123,9 +123,23 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       setBadgeText: async ({ text }) => { badge.text = text; },
       setBadgeBackgroundColor: async ({ color }) => { badge.color = color; },
       setBadgeTextColor: async () => {},
-      setTitle: async ({ title }) => { badge.title = title; }
+      setTitle: async ({ title }) => { badge.title = title; },
+      openPopup: async () => { badge.popups = (badge.popups || 0) + 1; }
     },
-    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; }, remove: async (id) => { tabsCreated.removed = (tabsCreated.removed || []).concat(id); }, query: async () => [] },
+    tabs: {
+      create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; },
+      remove: async (id) => { tabsCreated.removed = (tabsCreated.removed || []).concat(id); },
+      query: async () => [],
+      update: async () => {},
+      // The tabs that answer a message (tabs.sendMessage): { [tabId]: (msg) => answer }; else no receiver.
+      sendMessage: async (id, msg) => { if (!tabsCreated.receivers || !tabsCreated.receivers[id]) throw new Error('no receiver'); return tabsCreated.receivers[id](msg); }
+    },
+    // A window: one tab, in the same list as tabs.create (with its options and "window: true").
+    windows: {
+      create: async (o) => { tabsCreated.push(Object.assign({ window: true }, o)); return { id: 1000 + tabsCreated.length, tabs: [{ id: tabsCreated.length }] }; },
+      getLastFocused: async () => ({ id: 1, left: 0, top: 0, width: 1440, height: 900 }),
+      update: async () => {}
+    },
     // Host permissions that the user gave (optional_host_permissions).
     permissions: {
       contains: async ({ origins }) => origins.every((o) => granted.has(o)),

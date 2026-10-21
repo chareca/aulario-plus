@@ -186,7 +186,7 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-theme.js', 'content-banner.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/record.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-theme.js', 'content-banner.js', 'content-rank.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <html lang="es" class="Mrphs-html">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/"><title>MiAulario/NireIkasgelategia : ${csTitle} : Inicio</title>
@@ -203,6 +203,13 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
   .mine-row > div { box-sizing: border-box; flex: 0 0 auto; width: 50%; padding: 8px; }
 </style></head>
 <body>
+<header class="portal-header d-flex align-items-center justify-content-between" style="display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 0 0 24px;background:#1f2225;color:#fff;font:15px sans-serif">
+  <span>MiAulario</span>
+  <ul id="sakai-system-indicators" class="nav flex-nowrap align-items-center me-3" style="display:flex;align-items:center;list-style:none;margin:0 16px 0 0;padding:0;height:32px">
+    <li class="d-none d-md-inline"><button class="btn icon-button" type="button" style="background:none;border:0;color:#fff;font-size:18px;padding:6px 10px">🔔</button></li>
+    <li><button class="btn icon-button sak-sysInd-account p-0 me-3 me-md-4 ms-3" type="button" style="background:none;border:0;padding:0;margin:0 24px 0 16px"><img class="sakai-accountProfileImage rounded-circle p-0" width="32" height="32" style="border-radius:50%;display:block" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%235b7083'/%3E%3Ccircle cx='16' cy='12' r='6' fill='%23dfe6ec'/%3E%3Cpath d='M4 30c2-8 22-8 24 0' fill='%23dfe6ec'/%3E%3C/svg%3E" alt="Foto"></button></li>
+  </ul>
+</header>
 <aside id="portal-nav-sidebar" style="font:13px sans-serif;border-bottom:1px solid #ccc;padding:6px 24px">
   <ul style="display:flex;gap:16px;list-style:none;margin:0;padding:0">
     ${data.SITES.map((s) => `<li class="site-list-item" data-site="${s.id}"><div class="site-link-block"><a class="sidebar-site-title" href="#" title="${s.title}">${withoutCode(s.title)}</a></div></li>`).join('')}
@@ -224,6 +231,13 @@ fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
 <script>if (new URLSearchParams(location.search).has('messages')) document.querySelector('.row').innerHTML = '<form id="msgForum"><p>Correo interno (simulado): Recibido, Enviado.</p></form>'; // the inbox of the internal mail</script>
 <script>history.replaceState(null, '', (new URLSearchParams(location.search).has('mine') ? '/portal' : '/portal/site/${F.CS}') + location.search); // the path of a site (or "Mi sitio" with ?mine), as in MiAulario</script>
 ${siteTags}
+<script>
+  // ?rank: a read Expediente (the rank in the bar, next to the photo of the user).
+  if (new URLSearchParams(location.search).has('rank')) {
+    const r = (code, credits, mark, grade) => ({ year: '2024/25-0', code, name: code, credits, group: '1', call: 'Enero', callText: '1', grade, mark, kind: 'Obligatoria', course: '2', term: '1', notes: '' });
+    chrome.storage.local.set({ record: { at: Date.now(), credits: [], rows: [r('240101', 6, 7.5, 'NOTABLE'), r('240102', 6, 9.1, 'SOBRESALIENTE'), r('240103', 12, 8.4, 'NOTABLE'), r('240104', 6, 6.2, 'APROBADO'), r('240702', 6, null, '')] } });
+  }
+</script>
 <script>
   // Show the banner: install time 10 days ago, then a visit of Computer Science.
   // A fake engine of the internal mail: the same compose form as the real one, and a log.

@@ -3,7 +3,7 @@
 // reads the table "Expediente completo" when the user opens it, and every few days in a tab in the
 // background: MiUPNA (portal.unavarra.es; the login of the UPNA with its session, no password) → the link
 // of "Consulta tu Expediente" (with a pass of the portal that the extension never keeps) → SIGMA →
-// "Expediente completo". The grades stay in the browser.
+// "Expediente completo". The grades stay in the browser. Their average gives a rank (MAK.recordSummary).
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
@@ -52,9 +52,6 @@
     return { rows, credits };
   };
 
-  // Is this the view "Expediente completo" (the bar "Mi expediente > Expediente completo")? The first view of SIGMA is "Año actual".
-  MAK.recordComplete = (doc) => /mi expediente\s*>\s*expediente completo/i.test(words(doc.body && doc.body.textContent));
-
   // MiUPNA: the address of "Consulta tu Expediente" (onclick="parent.open('…aplDestino=EXPS…')"), or null.
   MAK.recordEntry = function (doc) {
     for (const el of doc.querySelectorAll('[onclick*="aplDestino=EXPS"]')) {
@@ -79,6 +76,52 @@
     for (const r of next.rows) rows.set(key(r), r);
     return { rows: [...rows.values()], credits: next.credits.length ? next.credits : (kept && kept.credits) || [] };
   };
+
+  // The ranks of the average, from 5 (the average of passed subjects is never lower). Their names: i18n "rank.<id>".
+  MAK.RANKS = [
+    { id: 'bronze', min: 5, color: '#b0703a' },
+    { id: 'silver', min: 6, color: '#8a96a3' },
+    { id: 'gold', min: 7, color: '#c9971c' },
+    { id: 'platinum', min: 8, color: '#2a9d8f' },
+    { id: 'diamond', min: 8.5, color: '#3a7bd5' },
+    { id: 'master', min: 9, color: '#8e44ad' },
+    { id: 'legend', min: 9.5, color: '#d6336c' }
+  ];
+
+  // The average of the record, as the official one: the passed subjects with a number (an annulled one does
+  // not count), each one with the weight of its credits; the best mark of a subject. And its rank.
+  // { count, credits, average (2 decimals), rank, next (the next rank or null), need (the points to it) }, or null.
+  MAK.recordSummary = function (record) {
+    const best = new Map();
+    for (const r of (record && record.rows) || []) {
+      if (r.mark === null || r.mark < 5 || !(r.credits > 0) || /anulad/i.test(r.notes)) continue;
+      if (!best.has(r.code) || best.get(r.code).mark < r.mark) best.set(r.code, r);
+    }
+    const rows = [...best.values()];
+    const credits = rows.reduce((a, r) => a + r.credits, 0);
+    if (!credits) return null;
+    const average = Math.round((rows.reduce((a, r) => a + r.mark * r.credits, 0) / credits) * 100) / 100;
+    const at = MAK.RANKS.findLastIndex((k) => average >= k.min);
+    const next = MAK.RANKS[at + 1] || null;
+    return { count: rows.length, credits, average, rank: MAK.RANKS[Math.max(at, 0)], next, need: next ? Math.round((next.min - average) * 100) / 100 : 0 };
+  };
+
+  // The rank and the average in a page (the popup, MiAulario; with lib/ui.js and lib/i18n.js): a pill in the
+  // color of the rank, and the text of a window.
+  MAK.RANK_CSS = `
+    .mak-rank { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px; white-space: nowrap;
+      font-weight: 700; color: var(--ap-fg); background: var(--ap-surface); border: 2px solid var(--rank); }
+    .mak-rank::before { content: ''; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--rank); }
+    .rank-big { margin: 4px 0 12px; font-size: 1.25em; }
+  `;
+  const avgText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  MAK.rankPill = (sum, tag) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } }, `${MAK.t(`rank.${sum.rank.id}`)} · ${avgText(sum.average)}`);
+  MAK.rankLine = (sum) => MAK.t('record.summary', { n: sum.count, avg: avgText(sum.average), rank: MAK.t(`rank.${sum.rank.id}`) });
+  MAK.rankView = (sum) => [
+    MAK.h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
+    MAK.h('p', { text: MAK.rankLine(sum) }),
+    MAK.h('p', { class: 'meta', text: sum.next ? MAK.t('record.next', { need: avgText(sum.need), rank: MAK.t(`rank.${sum.next.id}`) }) : MAK.t('record.top') })
+  ];
 
   // The record that the background script keeps: only these fields, short texts, numbers or null.
   MAK.cleanRecord = function (raw) {

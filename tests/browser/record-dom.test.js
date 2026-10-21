@@ -26,9 +26,6 @@
     assert.deepEqual(r.credits, [{ kind: 'Formación básica', passed: 60, pending: 0, min: 60 }, { kind: 'Obligatoria', passed: 96, pending: 12, min: 120 }]);
     assert.equal(MAK.parseRecord(parse('<table id="table1"><tr><th>Otra</th></tr><tr><td>1</td></tr></table>')), null, 'another table');
     assert.equal(MAK.parseRecord(parse('<p>Sesión expirada</p>')), null);
-    assert.equal(MAK.recordComplete(doc), false, 'a view without the bar');
-    assert.equal(MAK.recordComplete(parse('<div class="bar">Mi expediente &gt; Expediente completo</div>')), true);
-    assert.equal(MAK.recordComplete(parse('<div class="bar">Mi expediente &gt; Año actual</div><a>Expediente completo</a>')), false, 'the menu has the words too');
   });
 
   test('the way: the link of MiUPNA to the Expediente (only SIGMA), and "Expediente completo" in the menu of SIGMA', () => {

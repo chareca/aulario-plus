@@ -22,7 +22,7 @@ const courseApi = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
 
 const settings = () => MAK.withDefaults(S.settings);
 // The style of the text links (lib/ui.js), with the colors of the popup.
-document.head.append(h('style', { text: MAK.LINK_CSS + MAK.LOGO_CSS }));
+document.head.append(h('style', { text: MAK.LINK_CSS + MAK.LOGO_CSS + MAK.RANK_CSS }));
 const hiddenSet = () => MAK.hiddenEverywhere(settings());
 // The sites with the names to show (short names or names from the user). Made again only when
 // the sites or the settings change.
@@ -1109,21 +1109,27 @@ function dueOffsetsField(s) {
 // Help and support: the welcome page, the changes, a problem or an idea on GitHub (with the version
 // and the browser), and a coffee.
 // The official grades of the Expediente of SIGMA (lib/record.js). The permission for MiUPNA and SIGMA:
-// only a click in a page of the extension can ask for it.
+// only a click in a page of the extension can ask for it. "Activar" and "Leer ahora": first a window that
+// says why the Expediente opens; "Abrir expediente" opens it in a small window (the background script).
 let recordGranted = false;
 function recordSection() {
   const r = S.record;
+  const sum = MAK.recordSummary(r);
   const tried = S.recordTry;
   let state = t('record.off');
-  if (recordGranted) state = r ? t('record.read', { n: r.rows.length, graded: r.rows.filter((x) => x.grade || x.mark !== null).length, ago: MAK.ago(r.at, Date.now()) }) : t('record.none');
+  if (recordGranted && r) state = sum ? t('record.read', { line: MAK.rankLine(sum), ago: MAK.ago(r.at, Date.now()) }) : t('record.readNone', { ago: MAK.ago(r.at, Date.now()) });
+  else if (recordGranted) state = t('record.none');
   if (recordGranted && tried && tried.error === 'login') state += ` ${t('record.login')}`;
   const btn = (text, click) => h('button', { class: 'btn', attrs: { type: 'button' }, text, on: { click } });
-  const start = async () => {
-    if (!(await Promise.resolve(ext.permissions.request(MAK.RECORD_PERMISSION)).catch(() => false))) return;
-    recordGranted = true;
-    renderCurrent();
-    send({ type: 'recordOn' });
-  };
+  const open = () => dialog(t('record.askTitle'), h('p', { text: t('record.ask') }), [
+    { text: t('record.back') },
+    { text: t('record.open'), primary: true, click: async () => {
+      if (!recordGranted && !(await Promise.resolve(ext.permissions.request(MAK.RECORD_PERMISSION)).catch(() => false))) return;
+      recordGranted = true;
+      renderCurrent();
+      send({ type: 'recordOpen' });
+    } }
+  ]);
   const stop = async () => {
     await send({ type: 'recordOff' });
     recordGranted = false;
@@ -1132,8 +1138,32 @@ function recordSection() {
   return h('div', { class: 'section' },
     h('h2', { text: t('record.section') }),
     h('p', { class: 'small', text: t('record.help') }),
+    sum && recordGranted ? h('p', null, MAK.rankPill(sum)) : null,
     h('p', { class: 'small', text: state }),
-    h('div', { class: 'row' }, recordGranted ? [btn(t('record.refresh'), () => send({ type: 'recordRefresh' })), btn(t('record.stop'), stop)] : btn(t('record.start'), start)));
+    h('div', { class: 'row' }, recordGranted ? [btn(t('record.refresh'), open), btn(t('record.stop'), stop)] : btn(t('record.start'), open)));
+}
+
+// A window over the popup: a title, its content and buttons [{ text, primary, click }]. A button closes it,
+// and so does Escape.
+function dialog(title, body, buttons) {
+  const box = h('div', { class: 'dialog-backdrop' },
+    h('div', { class: 'dialog', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
+      h('h2', { text: title }), body,
+      h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
+        on: { click: () => { box.remove(); if (b.click) b.click(); } } })))));
+  box.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.remove(); });
+  document.body.append(box);
+  box.querySelector('button').focus();
+}
+
+// A reading that the user asked for ended while the active tab was not MiAulario: the result here.
+async function showRecordNews() {
+  const area = ext.storage.session || ext.storage.local;
+  const { recordNews } = await Promise.resolve(area.get('recordNews')).catch(() => ({}));
+  const sum = MAK.recordSummary(S.record);
+  if (!recordNews || !sum) return;
+  await area.remove('recordNews');
+  dialog(t('record.doneTitle'), h('div', null, MAK.rankView(sum)), [{ text: t('record.close'), primary: true }]);
 }
 
 // A new issue on GitHub (kind: 'bug' or 'idea'), with the version, the browser and the language.
@@ -1472,6 +1502,7 @@ async function init() {
   selectTab(asked && panels[asked] ? asked : 'home');
   checkPermissions();
   refreshStatus();
+  showRecordNews();
   send({ type: 'touch' });
   setInterval(tick, 1000);
 }

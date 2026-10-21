@@ -166,22 +166,25 @@
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));
   }
 
-  // A question in a window over the page, in the theme of the extension: the buttons "Cancelar" (with the
-  // focus) and yes. Escape, the ✕ or a click outside the window: no. Result: a promise of true or false.
-  function askWindow(title, text, yes) {
+  // A question in a window over the page, in the theme of the extension: the buttons no ("Cancelar", with the
+  // focus; null: none) and yes. Escape, the ✕ or a click outside the window: no. body: a text, or elements.
+  // Result: a promise of true or false.
+  function askWindow(title, body, yes, noText = MAK.t('zip.cancel')) {
     return new Promise((resolve) => {
       const h = MAK.h;
       const host = document.createElement('div');
       const shadow = host.attachShadow({ mode: 'closed' });
       const style = MAK.themedStyle(`${MAK.WIN_CSS()}
         .win { width: min(440px, calc(100vw - 32px)); }
-        .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }`);
+        .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        ${MAK.RANK_CSS || ''}`);
       const answer = (v) => () => { host.remove(); resolve(v); };
-      const no = h('button', { class: 'btn', attrs: { type: 'button' }, text: MAK.t('zip.cancel'), on: { click: answer(false) } });
+      const no = noText === null ? null : h('button', { class: 'btn', attrs: { type: 'button' }, text: noText, on: { click: answer(false) } });
+      const ok = h('button', { class: 'btn primary', attrs: { type: 'button' }, text: yes, on: { click: answer(true) } });
       const win = h('div', { class: 'win', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
         h('header', null, h('h2', { text: title }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: MAK.t('mail.close'), 'aria-label': MAK.t('mail.close') }, on: { click: answer(false) } })),
-        h('p', { text }),
-        h('div', { class: 'row' }, no, h('button', { class: 'btn primary', attrs: { type: 'button' }, text: yes, on: { click: answer(true) } })));
+        typeof body === 'string' ? h('p', { text: body }) : h('div', null, body),
+        h('div', { class: 'row' }, no, ok));
       const backdrop = h('div', { class: 'backdrop' }, win);
       backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) answer(false)(); });
       // The keys stay in the window: the page (the shortcuts of MiAulario) does not get them.
@@ -191,9 +194,10 @@
       });
       shadow.append(style, backdrop);
       document.documentElement.append(host);
-      no.focus();
+      (no || ok).focus();
     });
   }
+  MAK.askWindow = askWindow;
 
   // Small buttons above the Resources tool ("Download all (ZIP)"; in "Mi sitio" also "Delete all").
   // buttons: [{ text, title, onClick(ui) }]. ui.say(text): a short message next to the buttons;

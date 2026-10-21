@@ -1,7 +1,8 @@
 // Aulario Plus: the Expediente of SIGMA (lib/record.js). The background script injects this script in the
 // pages of MiUPNA and SIGMA, only when the user gave the permission for them. In SIGMA, the table of the
-// Expediente goes to the background script. In the tab of a reading: MiUPNA → "Consulta tu Expediente" →
-// "Año actual" → "Expediente completo".
+// Expediente goes to the background script. In the window (or the tab) of a reading: MiUPNA → "Consulta tu
+// Expediente" → the first view of SIGMA ("Año actual") → once "Expediente completo"; after its table, the
+// background script closes it.
 (function () {
   'use strict';
   // The background script injects it at each load of a page (and in its frames): once in a page.
@@ -21,11 +22,11 @@
   (async () => {
     const sigma = location.origin === MAK.SIGMA_ORIGIN;
     const record = sigma ? await waitFor(MAK.parseRecord) : null;
-    const complete = !!record && MAK.recordComplete(document);
-    if (record) await send({ type: 'recordSave', record, complete });
-    // The tab of a reading: from MiUPNA to SIGMA, then from "Año actual" to "Expediente completo" (the page, not a frame).
-    if (complete || window !== window.top || !(await send({ type: 'recordTab' }))) return;
+    if (record) await send({ type: 'recordSave', record });
+    // The page (not a frame) of a reading goes on if the background script says so: all the views of SIGMA
+    // have the same address (".../Controlador/"), so only the background script knows the step.
+    if (window !== window.top || !(await send({ type: 'recordTab', sigma }))) return;
     const next = await waitFor(sigma ? MAK.recordMenuLink : MAK.recordEntry);
-    if (next && next !== location.href) location.assign(next);
+    if (next) location.assign(next);
   })();
 })();

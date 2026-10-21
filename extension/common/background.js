@@ -59,9 +59,11 @@ if (ext.permissions && ext.permissions.onAdded) {
 // their pages) reads the grades when the user opens the Expediente, and every 3 days a tab in the
 // background (not the active tab) does the way of a click: MiUPNA → "Consulta tu Expediente" → "Año
 // actual" → "Expediente completo"; then it closes. The login of the UPNA goes on alone only with its
-// session: if it asks for the password, the tab closes and the extension waits. "Leer ahora": the same in
-// a visible tab, which waits for the user to log in.
+// session: if it asks for the password, the tab closes and the extension waits. "Abrir expediente" (the
+// popup, or the rank in MiAulario): the same in a small window, which waits for the user to log in; then
+// the page where the user was shows the average and the rank.
 const RECORD_ALARM = 'sigma-record';
+const RECORD_END_ALARM = 'sigma-record-end'; // the longest time of a reading
 const RECORD_FILES = ['lib/core.js', 'lib/record.js', 'content-record.js'];
 const RECORD_MS = 3 * MAK.DAY; // a new reading after this time
 const RECORD_RETRY_MS = 12 * MAK.HOUR; // after a reading that did not end
@@ -85,39 +87,69 @@ function injectRecord(tabId) {
   return Promise.resolve(ext.scripting.executeScript({ target: { tabId, allFrames: true }, files: RECORD_FILES })).catch(() => {});
 }
 
+// The reading that is open: { tabId, at, shown, from (the tab that shows the result), followed (it went to "Expediente completo") }.
 const recordRun = async () => (await runArea.get('recordRun')).recordRun || null;
-// The end of a reading: its tab closes. error: '' (the grades came), 'login', 'time' or 'empty'.
+const runLimit = (run) => (run.shown ? RECORD_SHOWN_MS : RECORD_TAB_MS);
+// The end of a reading: its tab (or window) closes. error: '' (the grades came), 'login', 'time' or 'empty'.
 async function endRecordRun(error) {
   const run = await recordRun();
   await runArea.remove('recordRun');
   if (run) await Promise.resolve(ext.tabs.remove(run.tabId)).catch(() => {});
   if (error) await store.set({ recordTry: { at: Date.now(), error } });
+  return run;
+}
+async function endStaleRun() {
+  const run = await recordRun();
+  if (run && Date.now() - run.at >= runLimit(run)) await endRecordRun('time');
 }
 
-// shown: a visible tab ("Leer ahora"), else a tab in the background.
-async function refreshRecord(shown) {
+// shown: a small window, which the user sees ("Abrir expediente"), else a tab in the background.
+// from: the tab that shows the average and the rank at the end (MiAulario), or null.
+async function refreshRecord(shown, from) {
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const run = await recordRun();
-  if (run && Date.now() - run.at < (run.shown ? RECORD_SHOWN_MS : RECORD_TAB_MS)) return { ok: true }; // a reading is open
+  if (run && Date.now() - run.at < runLimit(run)) { // a reading is open: show its window
+    if (shown && run.windowId) await Promise.resolve(ext.windows.update(run.windowId, { focused: true })).catch(() => {});
+    return { ok: true };
+  }
   if (run) await endRecordRun('time');
   await store.set({ recordTry: { at: Date.now(), error: '' } });
-  const tab = await ext.tabs.create({ url: MAK.RECORD_START, active: !!shown });
-  await runArea.set({ recordRun: { tabId: tab.id, at: Date.now(), shown: !!shown } });
-  setTimeout(() => recordRun().then((r) => (r && r.tabId === tab.id ? endRecordRun('time') : null)).catch(() => {}), shown ? RECORD_SHOWN_MS : RECORD_TAB_MS);
+  let tabId, windowId;
+  if (shown) {
+    const size = { width: 640, height: 720 };
+    const over = await Promise.resolve(ext.windows.getLastFocused()).catch(() => null);
+    const place = over && over.width ? { left: Math.max(0, Math.round(over.left + (over.width - size.width) / 2)), top: Math.max(0, Math.round(over.top + (over.height - size.height) / 2)) } : {};
+    const win = await ext.windows.create({ url: MAK.RECORD_START, type: 'popup', ...size, ...place });
+    [tabId, windowId] = [win.tabs[0].id, win.id];
+  } else {
+    tabId = (await ext.tabs.create({ url: MAK.RECORD_START, active: false })).id;
+  }
+  const next = { tabId, windowId, at: Date.now(), shown: !!shown, from: from ?? null, followed: false };
+  await runArea.set({ recordRun: next });
+  await ext.alarms.create(RECORD_END_ALARM, { delayInMinutes: runLimit(next) / MAK.MINUTE });
   return { ok: true };
 }
 
-async function readRecordNow() {
+// "Abrir expediente": the pages of SIGMA that are open now, and a reading in a small window. from: as above.
+async function readRecordNow(from) {
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const open = await Promise.resolve(ext.tabs.query({ url: `${MAK.SIGMA_ORIGIN}/*` })).catch(() => []);
   for (const t of open || []) await injectRecord(t.id);
-  return refreshRecord(true);
+  return refreshRecord(true, from);
+}
+
+// The end of a reading in a window: the tab where the user was (MiAulario) shows the average and the rank.
+// Another page: the popup shows them (Chrome opens it; else at its next opening).
+async function showRecordDone(run) {
+  const shown = run.from !== null && (await Promise.resolve(ext.tabs.sendMessage(run.from, { type: 'recordDone' })).catch(() => false));
+  if (shown) return Promise.resolve(ext.tabs.update(run.from, { active: true })).catch(() => {});
+  await runArea.set({ recordNews: true });
+  if (ext.action.openPopup) await Promise.resolve(ext.action.openPopup()).catch(() => {});
 }
 
 // Every 6 hours: a reading if the grades are older than 3 days. Not when the user is logged out or paused.
 async function recordDue() {
-  const run = await recordRun();
-  if (run && Date.now() - run.at >= (run.shown ? RECORD_SHOWN_MS : RECORD_TAB_MS)) await endRecordRun('time');
+  await endStaleRun();
   if (!(await hasRecordPermission())) return;
   const d = await store.get(['record', 'recordTry', 'paused']);
   const now = Date.now();
@@ -143,6 +175,10 @@ if (ext.tabs && ext.tabs.onUpdated) {
         if (now && String(now.url || '').startsWith(`${SSO_ORIGIN}/`)) await endRecordRun('login');
       }, 6000);
     }).catch(() => {});
+  });
+  // The user closed the window of a reading: no reading is open.
+  ext.tabs.onRemoved.addListener((tabId) => {
+    recordRun().then((run) => (run && run.tabId === tabId ? runArea.remove('recordRun') : null)).catch(() => {});
   });
 }
 
@@ -841,7 +877,7 @@ const handlers = {
       }
     }
   },
-  // A table of the Expediente in SIGMA ("Año actual", "Expediente completo": complete).
+  // A table of the Expediente in SIGMA. In the tab of a reading, the table after "Expediente completo" ends it.
   recordSave: {
     record: true,
     run: async (msg, sender) => {
@@ -853,22 +889,36 @@ const handlers = {
         return { error: 'record.empty' };
       }
       await store.update('record', (cur) => Object.assign(MAK.mergeRecord(cur, next), { at: Date.now() }));
-      if (mine && msg.complete) await endRecordRun('');
+      if (mine && run.followed) {
+        await endRecordRun('');
+        if (run.shown) await showRecordDone(run);
+      }
       return { ok: true };
     }
   },
-  // Is this the tab of a reading in the background? (Then the script follows the links.)
+  // Does this page of the tab of a reading go on? MiUPNA: to SIGMA. SIGMA: once to "Expediente completo".
   recordTab: {
     record: true,
     run: async (msg, sender) => {
       const run = await recordRun();
-      return !!(run && sender.tab && run.tabId === sender.tab.id);
+      if (!run || !sender.tab || run.tabId !== sender.tab.id) return false;
+      if (!msg.sigma) return true;
+      if (run.followed) return false;
+      await runArea.set({ recordRun: Object.assign(run, { followed: true }) });
+      return true;
     }
   },
-  // The settings: the user gave the permission (the popup asks for it), wants a reading now, or turns it off.
-  // "Activar" and "Leer ahora": the pages of SIGMA that are open now, and a reading in a visible tab.
-  recordOn: { run: () => readRecordNow() },
-  recordRefresh: { run: () => readRecordNow() },
+  // "Abrir expediente" in the popup (the user gave the permission, the popup asks for it) or on the rank in
+  // MiAulario: the pages of SIGMA that are open now, and a reading in a small window. The popup: the result
+  // goes to the active tab. Off: the permission and the grades go.
+  recordOpen: {
+    content: true,
+    run: async (msg, sender) => {
+      if (sender.tab) return readRecordNow(sender.tab.id);
+      const [active] = await Promise.resolve(ext.tabs.query({ active: true, lastFocusedWindow: true })).catch(() => []);
+      return readRecordNow(active ? active.id : null);
+    }
+  },
   recordOff: {
     run: async () => {
       await Promise.resolve(ext.permissions.remove(MAK.RECORD_PERMISSION)).catch(() => false);
@@ -1011,6 +1061,7 @@ async function scheduleNext() {
 
 const alarmHandlers = {
   [RECORD_ALARM]: () => recordDue(),
+  [RECORD_END_ALARM]: () => endStaleRun(),
   [PING_ALARM]: async () => {
     // First, set the next alarm. If the worker stops during the ping, the sequence continues.
     await scheduleNext();
