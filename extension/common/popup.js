@@ -433,7 +433,7 @@ function renderDue(el) {
   const model = MAK.buildDue({ assignments: S.assignments, sites: namedSites(), pages: S.pages, hidden: hiddenSet(), now });
   const g = model.groups;
   const all = [...g.late, ...g.pending, ...g.action, ...g.submitted, ...g.closed];
-  if (!all.length && !(S.events || []).length) return fill(el, emptyBox(t('due.none')));
+  if (!all.length && !(S.events || []).some((e) => !MAK.isOfficeHours(e))) return fill(el, emptyBox(t('due.none')));
   const siteIds = [...new Set(all.map((x) => x.siteId))];
   if (ui.dueSite && !siteIds.includes(ui.dueSite)) ui.dueSite = '';
   const bySite = (list) => list.filter((x) => !ui.dueSite || x.siteId === ui.dueSite);

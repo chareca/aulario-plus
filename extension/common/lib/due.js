@@ -83,8 +83,12 @@
     return { todo: groups.late.length + groups.pending.length + groups.action.length, late: groups.late.length, week };
   };
 
+  // An event of the office hours of a teacher ("Tutorías", "Tutoria (0 asistentes)"): not a delivery, so the
+  // week view leaves it out (it stays in the search and in the calendar export).
+  MAK.isOfficeHours = (e) => /^tutorias?\b/.test(MAK.normalizeText(e && e.title).trim());
+
   // The week view: for each week (Monday to Sunday) from this week, the open deliveries and the
-  // calendar events. The events of a delivery (with assignmentId) are not shown two times.
+  // calendar events. The events of a delivery (with assignmentId) are not shown two times; the office hours not at all.
   MAK.buildWeeks = function ({ deliveries, events, sites, hidden, now, count = 6 }) {
     const hide = hidden || new Set();
     const names = new Map((sites || []).map((s) => [s.id, s.title]));
@@ -100,7 +104,7 @@
       if (w) w.deliveries.push(d);
     }
     for (const e of events || []) {
-      if (e.assignmentId || hide.has(e.siteId)) continue;
+      if (e.assignmentId || hide.has(e.siteId) || MAK.isOfficeHours(e)) continue;
       const w = weekOf(e.start);
       if (w) w.events.push(Object.assign({}, e, { siteTitle: names.get(e.siteId) || e.siteTitle }));
     }

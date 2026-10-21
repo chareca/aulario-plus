@@ -60,3 +60,14 @@ test('buildWeeks: 6 weeks from Monday; open deliveries and events; no events of 
   assert.deepEqual(weeks[5].events.map((e) => e.id), ['e4'], 'the last Sunday');
   assert.deepEqual(weeks.map((w) => w.total), [2, 2, 0, 0, 0, 1]);
 });
+
+test('buildWeeks: the office hours (tutorías) are not in the weeks or in their numbers', () => {
+  const now = new Date(2026, 9, 14, 12).getTime();
+  const at = (h) => new Date(2026, 9, 15, h).getTime();
+  const ev = (id, title) => ({ id, siteId: 'a', title, start: at(10), assignmentId: null });
+  const events = [ev('t1', 'Tutorias (0 asistentes)'), ev('t2', 'Tutoría; grupo A, aula 3'), ev('t3', '  TUTORÍAS'), ev('k1', 'Tutorial de Git'), ev('k2', 'Examen parcial'), ev('k3', 'Cambio de tutoría')];
+  const weeks = MAK.buildWeeks({ deliveries: [], events, sites: [], now });
+  assert.deepEqual(weeks[0].events.map((e) => e.id), ['k1', 'k2', 'k3']);
+  assert.equal(weeks[0].total, 3);
+  assert.equal(MAK.isOfficeHours({}), false);
+});
