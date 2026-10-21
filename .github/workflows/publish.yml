@@ -4,8 +4,10 @@ name: Publish to the stores
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
 # AMO is paused: see the job "firefox".
 # A store without its secrets is skipped. To examine the keys without an upload, run the
-# workflow by hand with "check". The keys are secrets of the environment "stores": only the branch
-# main and the tags v* reach it. The actions are pinned to a commit (Dependabot updates them).
+# workflow by hand with "check". The jobs with the keys run in the environment "stores": only the
+# branch main and the tags v* reach it. The keys are secrets of the repository (one maintainer);
+# with more collaborators, new keys go to the environment. The actions are pinned to a commit
+# (Dependabot updates them).
 on:
   release:
     types: [published]
