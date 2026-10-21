@@ -193,6 +193,20 @@ function refreshHistory() {
   historyRunning = (async () => {
     let raw;
     try {
+    // Not while paused, nor after "delete all the data" (the page of the history asks at each opening). After a
+    // logout, a ping first sees if the user logged in again (as the alarm does).
+    let { paused } = await store.get('paused');
+    if (paused === true) {
+      await ping();
+      ({ paused } = await store.get('paused'));
+      if (paused === true) return { error: 'history.login' };
+    }
+    if (paused) return { error: 'history.paused' };
+    // Another user than the one of the kept data: the sync removes the data of the other user first (lib/sync.js).
+    const session = await courseApi.session().catch(() => null);
+    if (!session || !session.userId) return { error: 'history.login' };
+    const { meta } = await store.get('meta');
+    if (meta && meta.userId && meta.userId !== session.userId) await sync.run({ force: true }).catch(() => {});
       raw = await courseApi.tasks();
     } catch (e) {
       // Without a session MiAulario answers with the page of the login.

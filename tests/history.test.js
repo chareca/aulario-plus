@@ -71,6 +71,7 @@ test('the background: reads the panel and the submission of each task; later onl
   const log = [];
   let tasks = RAW;
   const fetch = fakeFetch({
+    '/direct/session/current.json': { userId: 'u' },
     '/api/users/me/tasks': () => ({ tasks, canAddTask: true }),
     '/direct/assignment/item/a1.json': item(SENT),
     '/direct/assignment/item/a2.json': item(null, { id: 'a2' })
@@ -88,4 +89,24 @@ test('the background: reads the panel and the submission of each task; later onl
   tasks = null;
   const login = loadBackground({ fetch: fakeFetch({ '/api/users/me/tasks': fakeFetch.raw(response('<html>login</html>', { type: 'text/html' })) }), now: NOW });
   assert.deepEqual(await login.send({ type: 'historyRefresh' }), { error: 'history.login' });
+});
+
+test('the history is not read while paused or empty, or without a session; another user: the data of the old one goes first', async () => {
+  const log = [];
+  const routes = { '/direct/session/current.json': { userId: 'u' }, '/api/users/me/tasks': { tasks: RAW } };
+  for (const paused of ['reset', 'user']) {
+    const bg = loadBackground({ fetch: fakeFetch(routes, log), now: NOW, local: { paused } });
+    assert.deepEqual(await bg.send({ type: 'historyRefresh' }), { error: 'history.paused' });
+    assert.equal(bg.ext.storage.local.data.history, undefined);
+  }
+  assert.equal(log.length, 0, 'no request');
+  // Logged out (the pause of a logout) and still without a session: the login.
+  const out = loadBackground({ fetch: fakeFetch({ '/direct/session/current.json': { userId: null } }), now: NOW, local: { paused: true } });
+  assert.deepEqual(await out.send({ type: 'historyRefresh' }), { error: 'history.login' });
+  // The kept history is of user "a"; "u" logged in: it goes, then the history of "u".
+  const other = loadBackground({ fetch: fakeFetch(Object.assign({}, routes, { '/direct/assignment/item/a1.json': item(SENT) })), now: NOW,
+    local: { meta: { userId: 'a' }, history: { at: 1, items: { '/assignment/a/x/old': { ref: '/assignment/a/x/old', kind: 'task', title: 'Of user a' } } } } });
+  const r = await other.send({ type: 'historyRefresh' });
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.equal(other.ext.storage.local.data.history.items['/assignment/a/x/old'], undefined, 'nothing of the other user');
 });
