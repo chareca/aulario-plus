@@ -172,10 +172,15 @@ jobs:
         with:
           node-version: 22
 
-      # In a step without the keys, and without the install scripts of the packages. An exact version: a new
-      # release of web-ext does not run here unseen.
+      # pnpm from corepack (part of Node). In a step without the keys, and without the install scripts of the
+      # packages. Exact versions: a new release of pnpm or web-ext does not run here unseen.
       - name: Install web-ext
-        run: npm install --global --ignore-scripts web-ext@8.10.0
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+        run: |
+          mkdir -p "$RUNNER_TEMP/web-ext"
+          corepack pnpm@12.9.1 add --dir "$RUNNER_TEMP/web-ext" --ignore-scripts web-ext@8.10.0
+          echo "$RUNNER_TEMP/web-ext/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Publish to Firefox Add-ons
         env:
