@@ -63,52 +63,6 @@
     return future ? 'pending' : 'missed';
   };
 
-  // The submission confirmation emails of MiAulario that the user pastes: the exams (and the tasks) that the panel
-  // "Tareas" does not have any more (before September 2025). Each email has "Site ID", "Assessment" or "Assignment
-  // Title", "Submitted Date" and the dates. Result: items as MAK.cleanHistoryItems, with source 'email', complete
-  // (it was submitted) and the submitted date.
-  const MONTHS_EN = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-  const MONTHS_ES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, set: 8, oct: 9, nov: 10, dic: 11 };
-  const field = (block, label) => { const m = new RegExp(label + '\\s*:\\s*(.+)').exec(block); return m ? m[1].trim() : ''; };
-  const enDate = (s) => {
-    const m = /\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+\S+\s+(\d{4})/.exec(s);
-    const mo = m && MONTHS_EN[m[1].toLowerCase()];
-    return m && mo !== undefined ? new Date(+m[6], mo, +m[2], +m[3], +m[4], +m[5]).getTime() : null;
-  };
-  const esDate = (s) => {
-    const m = /(\d{4})-([A-Za-záéíóú]+)\.?-(\d{1,2})(?:\s+(\d{1,2}):(\d{2})\s*([ap])\.?\s*\.?\s*m)?/i.exec(s);
-    const mo = m && MONTHS_ES[m[2].slice(0, 3).toLowerCase()];
-    if (!m || mo === undefined) return null;
-    let h = m[4] ? +m[4] : 0;
-    if (m[6]) { const pm = m[6].toLowerCase() === 'p'; if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
-    return new Date(+m[1], mo, +m[3], h, m[5] ? +m[5] : 0).getTime();
-  };
-  MAK.parseSubmissionEmails = function (text) {
-    const str = String(text || '');
-    const blocks = str.split(/The following (?:assessment|assignment) submission/i);
-    const chunks = blocks.length > 1 ? blocks.slice(1) : [str];
-    const out = [];
-    const seen = new Set();
-    for (const b of chunks) {
-      const siteId = field(b, 'Site ID');
-      const title = field(b, 'Assessment') || field(b, 'Assignment Title') || field(b, 'Assignment');
-      if (!/^\d{4}_/.test(siteId) && !/^[0-9a-f-]{20,}$/.test(siteId)) continue; // a site of MiAulario
-      if (!title) continue;
-      const isExam = /Confirmation Number/i.test(b);
-      const parts = field(b, 'Confirmation Number').split('-');
-      const subId = field(b, 'Submission ID') || parts[0] || '';
-      const pubId = isExam ? (parts[1] || subId) : subId;
-      if (!pubId) continue;
-      const ref = isExam ? `/samigo/${siteId}/${pubId}` : `/assignment/a/${siteId}/${pubId}`;
-      if (seen.has(ref)) continue;
-      seen.add(ref);
-      out.push({ ref, kind: isExam ? 'exam' : 'task', id: String(pubId), siteId, siteTitle: field(b, 'Site Title').slice(0, 200),
-        title: title.slice(0, 300), starts: null, due: esDate(field(b, 'Due Date')) || enDate(field(b, 'Due Date')), url: null, complete: true, source: 'email',
-        detail: { at: Date.now(), submitted: true, date: enDate(field(b, 'Submitted Date')) || esDate(field(b, 'Submitted Date')), late: false, files: [], feedback: null, returned: false } });
-    }
-    return out;
-  };
-
   // The academic year of an item: of its site ("2025_0_240610_1_G": 2025/26), else of its date (from August).
   MAK.academicYear = function (it) {
     const site = /^(20\d\d)_/.exec(it.siteId || '');

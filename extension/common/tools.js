@@ -354,25 +354,7 @@ async function runHistory() {
   // What is older than the update of MiAulario to Sakai 25 cannot come back (RESEARCH.md): the notice says it.
   const before = h('p', { class: 'notice history-before' });
   const list = h('div', { class: 'history' });
-  // Import the submission confirmation emails of MiAulario (the exams and tasks of before September 2025).
-  const paste = h('textarea', { class: 'history-paste', attrs: { rows: 6, placeholder: t('history.importPlaceholder'), 'aria-label': t('history.import') } });
-  const importBtn = h('button', { class: 'btn primary', attrs: { type: 'button' }, text: t('history.importDo') });
-  const importStatus = h('span', { class: 'meta' });
-  const importBox = h('details', { class: 'history-import' }, h('summary', { text: t('history.import') }),
-    h('p', { class: 'meta', text: t('history.importHelp') }), paste, h('div', { class: 'row' }, importBtn, importStatus));
-  importBtn.addEventListener('click', async () => {
-    importBtn.disabled = true;
-    importStatus.textContent = '';
-    const r = await Promise.resolve(ext.runtime.sendMessage({ type: 'historyImport', text: paste.value })).catch(() => null);
-    importBtn.disabled = false;
-    if (!r || !r.ok) importStatus.textContent = t('history.importError');
-    else if (!r.total) importStatus.textContent = t('history.importNone');
-    else {
-      importStatus.textContent = t('history.imported', { n: r.added, total: r.total });
-      if (r.added) { paste.value = ''; await load(); }
-    }
-  });
-  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh), status, summary, importBox, list);
+  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh), status, summary, list);
 
   const when = (ms) => (ms ? MAK.formatDate(ms) : '–');
   const STATE = { submitted: 'ok', late: 'warn', missed: 'bad', pending: 'info', unknown: '', sent: 'ok', noRecord: '' };
@@ -385,8 +367,8 @@ async function runHistory() {
     const shown = items.filter((it) => kind.value === 'all' || it.kind === kind.value);
     const tasks = items.filter((it) => it.kind === 'task');
     const exams = items.filter((it) => it.kind === 'exam');
-    // The first item that MiAulario kept for this user (not one of a pasted email).
-    const first = Math.min(...items.filter((it) => it.source !== 'email').map((it) => it.starts || it.due || Infinity));
+    // The first item that MiAulario kept for this user: the earliest start of the panel "Tareas".
+    const first = Math.min(...items.map((it) => it.starts || Infinity));
     const firstDay = Number.isFinite(first) ? new Date(first).toLocaleDateString(MAK.locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : null;
     before.textContent = [t('history.before'), firstDay ? t('history.firstSaved', { date: firstDay }) : null, t(data.record ? 'history.beforeGrades' : 'history.noRecord')].filter(Boolean).join(' ');
     summary.textContent = items.length || grades.length ? [

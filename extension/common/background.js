@@ -1004,18 +1004,6 @@ const handlers = {
   },
   // The page "Historial" (tools.html?history): read the history now.
   historyRefresh: { run: () => refreshHistory() },
-  // Import the submission confirmation emails that the user pastes (the exams and tasks of before September 2025).
-  historyImport: {
-    run: async (msg) => {
-      const items = MAK.parseSubmissionEmails(String((msg && msg.text) || ''));
-      if (!items.length) return { ok: true, added: 0, total: 0 };
-      const { history } = await store.get('history');
-      const before = history ? Object.keys(history.items).length : 0;
-      const next = MAK.mergeHistory(history, items, Date.now());
-      await store.set({ history: next });
-      return { ok: true, added: Object.keys(next.items).length - before, total: items.length };
-    }
-  },
   // The user saw the rank (a window of the popup or of MiAulario): what goes up from now is news.
   recordSeen: {
     content: true,
