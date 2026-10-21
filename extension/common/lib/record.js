@@ -78,17 +78,20 @@
     return { rows: [...rows.values()], credits: next.credits.length ? next.credits : (kept && kept.credits) || [] };
   };
 
-  // The ranks of the degree, by the part of its credits that the user passed (%). Their names: i18n "rank.<id>".
+  // The ranks of the degree: one for each eighth of its credits, so one for each term of a degree of 240 credits
+  // (6 credits a subject, 30 a term, 60 a year). Their names: i18n "rank.<id>".
   MAK.RANKS = [
-    { id: 'bronze', min: 0, color: '#b0703a' },
-    { id: 'silver', min: 15, color: '#8a96a3' },
-    { id: 'gold', min: 30, color: '#c9971c' },
-    { id: 'platinum', min: 45, color: '#2a9d8f' },
-    { id: 'diamond', min: 60, color: '#3a7bd5' },
-    { id: 'master', min: 75, color: '#8e44ad' },
-    { id: 'legend', min: 90, color: '#d6336c' }
+    { id: 'bronze', color: '#b0703a' },
+    { id: 'silver', color: '#8a96a3' },
+    { id: 'gold', color: '#c9971c' },
+    { id: 'platinum', color: '#2a9d8f' },
+    { id: 'diamond', color: '#3a7bd5' },
+    { id: 'master', color: '#8e44ad' },
+    { id: 'grandmaster', color: '#c2410c' },
+    { id: 'legend', color: '#d6336c' }
   ];
-  const rankAt = (pct) => Math.max(0, MAK.RANKS.findLastIndex((k) => pct >= k.min));
+  const rankAt = (passed, total) => Math.min(MAK.RANKS.length - 1, Math.floor((passed * MAK.RANKS.length) / total));
+  const rankIndex = (id) => MAK.RANKS.findIndex((k) => k.id === id);
   // The stages of the degree, for a message that fits each one (i18n "record.stage<Id><1-3>"), and the end.
   const STAGES = [[20, 'Start'], [45, 'Early'], [65, 'Half'], [90, 'Late'], [100, 'Last']];
 
@@ -121,13 +124,13 @@
     const passed = add('passed');
     const done = passed >= total;
     const pct = done ? 100 : Math.floor((passed / total) * 100);
-    return { passed, total, pct, left: done ? 0 : total - passed, rank: MAK.RANKS[rankAt(pct)], stage: done ? 'Done' : STAGES.find(([max]) => pct < max)[1] };
+    return { passed, total, pct, left: done ? 0 : total - passed, rank: MAK.RANKS[rankAt(passed, total)], stage: done ? 'Done' : STAGES.find(([max]) => pct < max)[1] };
   };
 
-  // What the user saw of the record (after a window with the rank): the passed subjects and the part of the degree.
+  // What the user saw of the record (after a window with the rank): the passed subjects and the rank.
   MAK.recordSeenOf = function (record) {
     const sum = MAK.recordSummary(record);
-    return { codes: passedRows(record).map((r) => r.code), pct: sum ? sum.pct : null };
+    return { codes: passedRows(record).map((r) => r.code), rank: sum ? sum.rank.id : null };
   };
   // What went up since then: the new passed subjects, and the rank if it is higher. null: nothing new, or nothing
   // seen yet (the first reading).
@@ -135,7 +138,7 @@
     if (!seen || !Array.isArray(seen.codes)) return null;
     const sum = MAK.recordSummary(record);
     const subjects = passedRows(record).filter((r) => !seen.codes.includes(r.code)).map((r) => ({ name: r.name, credits: r.credits }));
-    const rankUp = sum && typeof seen.pct === 'number' && rankAt(sum.pct) > rankAt(seen.pct) ? sum.rank : null;
+    const rankUp = sum && rankIndex(seen.rank) >= 0 && rankIndex(sum.rank.id) > rankIndex(seen.rank) ? sum.rank : null;
     return subjects.length || rankUp ? { subjects, rankUp } : null;
   };
 

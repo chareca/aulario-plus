@@ -55,10 +55,12 @@ const OTHERS = [{ kind: 'Total créditos reconocidos', passed: 6, pending: null,
 
 test('recordSummary: the credits of the degree (the row "Total" of SIGMA, else its kinds), the rank by its part, the stage', () => {
   const sum = MAK.recordSummary({ rows: [], credits: [...CREDITS, { kind: 'Total', passed: 156, pending: 12, min: 240 }, ...OTHERS] });
-  assert.deepEqual(JSON.parse(JSON.stringify(sum)), { passed: 156, total: 240, pct: 65, left: 84, rank: MAK.RANKS[4], stage: 'Late' });
+  assert.deepEqual(JSON.parse(JSON.stringify(sum)), { passed: 156, total: 240, pct: 65, left: 84, rank: MAK.RANKS[5], stage: 'Late' }, '5 terms and 1 subject: Maestro');
   assert.equal(MAK.recordSummary({ rows: [], credits: [...CREDITS, ...OTHERS] }).total, 240, 'no row "Total": the kinds, not the other totals');
-  const at = (passed) => MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed, min: 240 }] });
-  assert.deepEqual([0, 36, 72, 108, 144, 180, 216].map((p) => at(p).rank.id), ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'legend'], 'every 15 %');
+  const at = (passed, min = 240) => MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed, min }] });
+  assert.deepEqual([0, 30, 60, 90, 120, 150, 180, 210].map((p) => at(p).rank.id), ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster', 'legend'], 'one for each term of 30 credits');
+  assert.deepEqual([at(24).rank.id, at(30).rank.id, at(240).rank.id], ['bronze', 'silver', 'legend'], '4 subjects: not yet; 5: a term; the end: Leyenda');
+  assert.deepEqual([at(37, 300).rank.id, at(38, 300).rank.id], ['bronze', 'silver'], 'a degree of 300 credits: an eighth is 37,5');
   assert.deepEqual([12, 60, 120, 180, 228].map((p) => at(p).stage), ['Start', 'Early', 'Half', 'Late', 'Last'], '5, 25, 50, 75 and 95 %');
   assert.deepEqual([at(239).pct, at(239).stage, at(239).left], [99, 'Last', 1], '99,6 %: not the end');
   assert.deepEqual([at(246).pct, at(246).stage, at(246).left, at(246).rank.id], [100, 'Done', 0, 'legend'], 'more optional credits than the minimum');
@@ -82,16 +84,16 @@ test('stageText: three messages for each stage, another one each day; all in Spa
 
 test('recordGain: only what went up since the user saw it (new passed subjects, a higher rank)', () => {
   const credits = (passed) => [{ kind: 'Total', passed, min: 240 }];
-  const before = { rows: [row({ code: 'A', mark: 6.8 }), row({ code: 'B', mark: 4 })], credits: credits(66) };
+  const before = { rows: [row({ code: 'A', mark: 6.8 }), row({ code: 'B', mark: 4 })], credits: credits(54) };
   const seen = MAK.recordSeenOf(before);
-  assert.deepEqual(seen, { codes: ['A'], pct: 27 });
+  assert.deepEqual(seen, { codes: ['A'], rank: 'silver' });
   assert.equal(MAK.recordGain(before, null), null, 'the first reading: nothing is news');
   assert.equal(MAK.recordGain(before, seen), null, 'nothing new');
-  const up = MAK.recordGain({ rows: [...before.rows, row({ code: 'B', call: 'Junio', mark: 8, name: 'Redes' })], credits: credits(72) }, seen);
-  assert.deepEqual(JSON.parse(JSON.stringify(up)), { subjects: [{ name: 'Redes', credits: 6 }], rankUp: MAK.RANKS[2] }, 'B passed in June: 30 %, Oro');
-  const same = MAK.recordGain({ rows: [...before.rows, row({ code: 'C', mark: 5, name: 'Física' })], credits: credits(66) }, seen);
+  const up = MAK.recordGain({ rows: [...before.rows, row({ code: 'B', call: 'Junio', mark: 8, name: 'Redes' })], credits: credits(60) }, seen);
+  assert.deepEqual(JSON.parse(JSON.stringify(up)), { subjects: [{ name: 'Redes', credits: 6 }], rankUp: MAK.RANKS[2] }, 'B passed in June: 60 credits, the second term, Oro');
+  const same = MAK.recordGain({ rows: [...before.rows, row({ code: 'C', mark: 5, name: 'Física' })], credits: credits(54) }, seen);
   assert.deepEqual(JSON.parse(JSON.stringify(same)), { subjects: [{ name: 'Física', credits: 6 }], rankUp: null });
-  assert.equal(MAK.recordGain(before, { codes: ['A'], average: 6.8 }), null, 'a seen state of a version before (an average, no part): no rank up');
+  assert.equal(MAK.recordGain(before, { codes: ['A'], pct: 20 }), null, 'a seen state of a version before (no rank): no rank up');
 });
 
 test('the reading: in the background (every 3 days) or in a small window ("Abrir expediente"); it ends after "Expediente completo"', async () => {
