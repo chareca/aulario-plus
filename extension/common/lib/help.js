@@ -46,14 +46,18 @@
         'Las notas oficiales se leen cuando abres tu expediente y, cada pocos días, en una pestaña en segundo plano. Se quedan al cerrar sesión; se borran si entra otro usuario.',
         'Un calendario de tus exámenes por meses en cada semestre de Mi sitio y junto a la guía de cada asignatura: finales y recuperaciones en dos colores. Su botón lo muestra u oculta.',
         'Historial (en el menú de inicio): todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario, y con las notas oficiales de SIGMA, la nota de cada asignatura de cada curso, también de los cursos de antes de la actualización de MiAulario de 2025.',
-        'Entregas ya no cuenta las tutorías del calendario.'
+        'El Historial va por curso y por asignatura, en filas por columnas, con filtros de tipo, curso y asignatura y un botón para expandir o colapsar todo.',
+        'Entregas ya no cuenta las tutorías del calendario.',
+        'Ajustes → Danger zone: «Borrar todos los datos» borra todo lo que guarda la extensión, con dos confirmaciones. Sigue instalada y no hace nada hasta que pulses «Empezar de nuevo».'
       ],
       en: [
         'Official grades of SIGMA (turn it on in the settings): your average and your rank next to your photo in MiAulario. There are eight ranks, from Bronze to Legend, one for each eighth of the credits of your degree, each one with its gem; it tells you what you need for the next one.',
         'The extension reads the official grades when you open your record and, every few days, in a tab in the background. They stay when you log out; they go when another user logs in.',
         'A calendar of your exams by month in each semester of Mi sitio and next to the guide of each subject: the finals and the recoveries in two colors. Its button shows or hides it.',
         'History (in the main menu): all your tasks and exams, also of past years, with your submission, the grade and the comment, and with the official grades of SIGMA, the grade of each subject of each year, also of the years before the update of MiAulario in 2025.',
-        'The deliveries do not count the office hours (tutorías) of the calendar any more.'
+        'The history goes by year and by subject, in rows with columns, with filters of type, year and subject and a button to expand or collapse all.',
+        'The deliveries do not count the office hours (tutorías) of the calendar any more.',
+        'Settings → Danger zone: "Delete all the data" deletes all that the extension keeps, with two confirmations. It stays installed and does nothing until you click "Start again".'
       ]
     },
     {
