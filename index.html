@@ -6,7 +6,7 @@
 <!-- A page only to share by link: not in the search engines, not for the crawlers of AI -->
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai">
 <title>Aulario Plus · extensión para MiAulario (UPNA)</title>
-<meta name="description" content="Extensión para MiAulario, el campus virtual de la UPNA. Mantiene la sesión abierta y junta las entregas, los anuncios, los mensajes y las notas de todas tus materias.">
+<meta name="description" content="Extensión para MiAulario, el campus virtual de la UPNA. Mantiene la sesión abierta y junta las entregas, los anuncios, los mensajes y las notas de todas tus asignaturas.">
 <link rel="icon" href="favicon.png">
 <style>
   @font-face { font-family: "Open Sans"; src: url("fonts/open-sans.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
@@ -56,6 +56,13 @@
   .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 520px) { .themes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
+  /* The popup at the top: a picture for each tab, and the tabs of the picture change it. */
+  .demo { position: relative; width: 100%; max-width: 460px; }
+  .demo img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; }
+  .demo [role=tab] { position: absolute; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
+  .demo [role=tab]:hover { background: rgba(15, 75, 112, 0.12); }
+  .demo [role=tab]:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
   ul { padding-left: 22px; margin: 0 0 14px; }
   .full { margin: 0 0 56px; }
   .list2 { columns: 2; column-gap: 56px; }
@@ -77,7 +84,7 @@
         <img src="img/icon.png" alt="" width="56" height="56">
         <h1>Aulario Plus</h1>
       </div>
-      <p class="lead">Una extensión para MiAulario, el campus virtual de la UPNA. Tu sesión no se cierra mientras el navegador está abierto, y las entregas, los anuncios, los mensajes y las notas de todas tus materias están en un solo lugar.</p>
+      <p class="lead">Una extensión para MiAulario, el campus virtual de la UPNA. Tu sesión no se cierra mientras el navegador está abierto, y las entregas, los anuncios, los mensajes y las notas de todas tus asignaturas están en un solo lugar.</p>
       <div class="install">
         <a class="btn main" href="https://chromewebstore.google.com/detail/aulario-plus/gghfebogpkdlclffafmcobjlajhahphp"><img src="img/chromium.svg" alt="" width="24" height="24">Añadir a Chrome</a>
         <a class="btn" href="https://addons.mozilla.org/firefox/addon/aulario-plus/"><img src="img/firefox.svg" alt="" width="24" height="24">Añadir a Firefox</a>
@@ -85,7 +92,19 @@
       <p class="small">En Edge, Brave, Opera y Vivaldi se instala también desde la Chrome Web Store. La versión de Firefox está en revisión en Mozilla; mientras tanto, el ZIP está en <a href="https://github.com/chareca/aulario-plus/releases/latest">GitHub</a>.</p>
     </div>
     <div class="media">
-      <a class="shot" href="img/popup.png"><img src="img/popup.png" alt="El popup de Aulario Plus: las entregas de todas las materias, con la semana, las atrasadas y las pendientes con su cuenta atrás." width="460" height="580"></a>
+      <div class="demo">
+        <img id="demo-shot" src="img/popup-home.png" alt="El popup de Aulario Plus en Inicio: la sesión, cuatro interruptores, lo que tienes pendiente y los accesos." width="460" height="580">
+        <div role="tablist" aria-label="Pestañas del popup">
+          <button type="button" role="tab" aria-selected="true" aria-label="Inicio" data-tab="home" data-alt="El popup de Aulario Plus en Inicio: la sesión, cuatro interruptores, lo que tienes pendiente y los accesos." style="left: 2.17%; top: 19.84%; width: 8.7%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Entregas" data-tab="due" data-alt="La pestaña Entregas: las próximas semanas, las atrasadas y las pendientes con su cuenta atrás." style="left: 11.52%; top: 19.84%; width: 13.45%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Bandeja" data-tab="inbox" data-alt="La pestaña Bandeja: los anuncios y los mensajes sin leer de todas tus asignaturas." style="left: 25.62%; top: 19.84%; width: 17.83%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Novedades" data-tab="new" data-alt="La pestaña Novedades: lo nuevo de cada asignatura desde tu última visita." style="left: 44.11%; top: 19.84%; width: 20.83%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Notas" data-tab="grades" data-alt="La pestaña Notas: las notas de cada asignatura, con la calculadora." style="left: 65.59%; top: 19.84%; width: 9.99%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Sitios" data-tab="sites" data-alt="La pestaña Sitios: tus asignaturas, con un nombre más corto, su ZIP y la opción de ocultarlas." style="left: 76.23%; top: 19.84%; width: 9.32%; height: 4.83%;"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="Ajustes" data-tab="settings" data-alt="La pestaña Ajustes: el tema, el light o dark mode y los ajustes de la extensión." style="left: 86.21%; top: 19.84%; width: 11.62%; height: 4.83%;"></button>
+        </div>
+      </div>
+      <p class="small">Pulsa las pestañas de la imagen para ver cada parte del popup.</p>
     </div>
   </section>
 
@@ -93,52 +112,39 @@
     <h2>Qué hace</h2>
     <ul class="list2">
       <li>Mantiene tu <strong>sesión</strong> de MiAulario <strong>abierta</strong> mientras el navegador está abierto.</li>
+      <li>Un <strong>calendario de tus exámenes</strong> por meses, en Mi sitio y en cada asignatura.</li>
       <li><strong>Entregas</strong> con <strong>cuenta atrás</strong>, y avisos antes de las que no entregaste.</li>
-      <li>Anuncios, mensajes, <strong>novedades</strong> desde tu última visita y <strong>notas nuevas</strong> de todas tus materias.</li>
-      <li>Un <strong>buscador</strong> para todas tus materias: herramientas, archivos, contenidos, entregas y anuncios.</li>
-      <li>En Mi sitio: tus <strong>exámenes finales</strong>, cómo se evalúa cada materia y una <strong>calculadora de notas</strong>.</li>
-      <li>Descarga una materia entera en <strong>ZIP</strong> y envía archivos por el <strong>correo interno</strong>.</li>
-      <li>Seis <strong>temas</strong> para elegir, cada uno en claro y en <strong>oscuro</strong>.</li>
+      <li>En Mi sitio: tus <strong>exámenes finales</strong>, cómo se evalúa cada asignatura y una <strong>calculadora de notas</strong>.</li>
+      <li>Un <strong>buscador</strong> para todas tus asignaturas: herramientas, archivos, contenidos, entregas y anuncios.</li>
+      <li>Seis <strong>temas</strong> para elegir, cada uno en <strong>light</strong> y <strong>dark mode</strong>.</li>
+      <li>Anuncios, mensajes, <strong>novedades</strong> desde tu última visita y <strong>notas nuevas</strong> de todas tus asignaturas.</li>
+      <li>Descarga una asignatura entera en <strong>ZIP</strong> y envía archivos por el <strong>correo interno</strong>.</li>
+      <li>Tu <strong>media</strong> y tu <strong>rango</strong> con las notas oficiales de SIGMA, si lo activas.</li>
       <li><strong>Confeti</strong> cuando entregas una tarea o un examen, sin sonido. Se puede apagar.</li>
     </ul>
+  </section>
+
+  <section class="full">
+    <h2>Calendario de exámenes</h2>
+    <p>Tus finales y recuperaciones en un calendario por meses: en cada semestre de Mi sitio y junto a la guía de cada asignatura, en el espacio libre a su derecha. Pasa el ratón por un día para ver la asignatura, el tipo de examen, la hora y el aula. El botón del calendario lo muestra u oculta.</p>
+    <a class="shot" href="img/calendario.png"><img src="img/calendario.png" alt="La evaluación de Informática y Programación con el calendario de enero a su derecha: el final el día 11 y la recuperación el 22." width="1452" height="293"></a>
   </section>
 
   <section class="row">
     <div>
       <h2>En Mi sitio</h2>
-      <p>Arriba de tu página de Mi sitio aparece un bloque con tu próximo examen final, las fechas de los exámenes de cada materia y la guía docente de cada una: quién la da y cuánto vale cada parte. Con la calculadora ves qué nota te falta para aprobar.</p>
-      <p>El triángulo de la esquina pone el bloque a todo el ancho de la página, con el calendario debajo.</p>
+      <p>Arriba de tu página de Mi sitio aparece un bloque con tu próximo examen final, las fechas de los exámenes de cada asignatura y la guía docente de cada una: quién la da y cuánto vale cada parte. Con la calculadora ves qué nota te falta para aprobar.</p>
+      <p>Cada semestre tiene su calendario de exámenes por meses. El triángulo de la esquina pone el bloque a todo el ancho de la página, con el calendario de MiAulario debajo.</p>
     </div>
     <div class="media">
-      <a class="shot" href="img/misitio.png"><img src="img/misitio.png" alt="El bloque de Aulario Plus en Mi sitio, a todo el ancho: el próximo examen en 57 días, los exámenes del primer semestre en dos columnas y las guías docentes con el peso de cada parte." width="976" height="721"></a>
-    </div>
-  </section>
-
-  <section class="row">
-    <div>
-      <h2>En cada materia</h2>
-      <p>En la página de inicio de cada materia ves lo nuevo desde tu última visita: archivos, anuncios, entregas y notas. Debajo está cómo se evalúa, con la tabla de la guía docente: el peso de cada parte, si se recupera y la nota mínima. El botón de la calculadora la abre con tus notas.</p>
-      <p>En Recursos, junto a cada archivo, hay un sobre para enviarlo por el correo interno, y arriba un botón para descargar la materia entera en ZIP.</p>
-    </div>
-    <div class="media">
-      <a class="shot" href="img/materia.png"><img src="img/materia.png" alt="La página de una materia con dos cajas de Aulario Plus: las novedades desde la última visita y la evaluación de la guía docente." width="1000" height="535"></a>
-    </div>
-  </section>
-
-  <section class="row">
-    <div>
-      <h2>Escribir a un profesor</h2>
-      <p>En el menú de tus sitios, junto al nombre de cada materia, hay un lápiz para ponerle un nombre más corto y un sobre para escribir a un profesor. El sobre muestra quién da la materia, con el responsable primero y el enlace a sus tutorías, y abre el Correo interno con tu plantilla. El mensaje lo envías tú.</p>
-    </div>
-    <div class="media">
-      <a class="shot" href="img/profesor.png"><img src="img/profesor.png" alt="El sobre junto a Matemáticas I abierto: escribir a un profesor de Matemáticas I, con la responsable de la materia y el enlace a sus tutorías." width="505" height="196"></a>
+      <a class="shot" href="img/misitio.png"><img src="img/misitio.png" alt="El bloque de Aulario Plus en Mi sitio, a todo el ancho: el próximo examen en 57 días, los exámenes del primer semestre con su calendario de diciembre y enero, y las guías docentes con el peso de cada parte." width="1000" height="900"></a>
     </div>
   </section>
 
   <section class="row">
     <div>
       <h2>El buscador</h2>
-      <p>Dentro de MiAulario, pulsa <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd> y escribe unas letras: «ip enun» encuentra los enunciados de Informática y Programación. Busca en las herramientas, los archivos, los contenidos, las entregas y los anuncios de todas tus materias.</p>
+      <p>Dentro de MiAulario, pulsa <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd> y escribe unas letras: «ip enun» encuentra los enunciados de Informática y Programación. Busca en las herramientas, los archivos, los contenidos, las entregas y los anuncios de todas tus asignaturas.</p>
     </div>
     <div class="media">
       <a class="shot" href="img/buscar.png"><img src="img/buscar.png" alt="El buscador con la búsqueda «ip enun»: primero el Enunciado.pdf de Informática y Programación." width="640" height="222"></a>
@@ -148,8 +154,8 @@
   <section class="row">
     <div>
       <h2>Temas</h2>
-      <p>Seis temas para que la extensión se vea como prefieras, cada uno en claro y en oscuro: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Se eligen en Ajustes.</p>
-      <button class="btn" type="button" id="dark" aria-pressed="false">Ver en oscuro</button>
+      <p>Seis temas para que la extensión se vea como prefieras, cada uno en light y dark mode: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Se eligen en Ajustes.</p>
+      <button class="btn" type="button" id="dark" aria-pressed="false">Ver en dark mode</button>
     </div>
     <div class="themes">
       <a class="shot" href="img/tema-miaulario.jpg" data-dark="img/tema-miaulario-oscuro.jpg"><img src="img/tema-miaulario.jpg" alt="El popup con el tema MiAulario" title="MiAulario" width="460" height="340"></a>
@@ -158,6 +164,38 @@
       <a class="shot" href="img/tema-eterea.jpg" data-dark="img/tema-eterea-oscuro.jpg"><img src="img/tema-eterea.jpg" alt="El popup con el tema Aurora" title="Aurora" width="460" height="340"></a>
       <a class="shot" href="img/tema-cromo.jpg" data-start-light data-dark="img/tema-cromo-oscuro.jpg"><img src="img/tema-cromo.jpg" alt="El popup con el tema AulaXP" title="AulaXP" width="460" height="340"></a>
       <a class="shot" href="img/tema-cuaderno.jpg" data-start-light data-dark="img/tema-cuaderno-oscuro.jpg"><img src="img/tema-cuaderno.jpg" alt="El popup con el tema Folio" title="Folio" width="460" height="340"></a>
+    </div>
+  </section>
+
+  <section class="row">
+    <div>
+      <h2>En cada asignatura</h2>
+      <p>En la página de inicio de cada asignatura ves lo nuevo desde tu última visita: archivos, anuncios, entregas y notas. Debajo está cómo se evalúa, con la tabla de la guía docente: el peso de cada parte, si se recupera y la nota mínima. El botón de la calculadora la abre con tus notas, y el del calendario muestra tus exámenes de la asignatura a su derecha.</p>
+      <p>En Recursos, junto a cada archivo, hay un sobre para enviarlo por el correo interno, y arriba un botón para descargar la asignatura entera en ZIP.</p>
+    </div>
+    <div class="media">
+      <a class="shot" href="img/materia.png"><img src="img/materia.png" alt="La página de una asignatura con dos cajas de Aulario Plus: las novedades desde la última visita y la evaluación de la guía docente." width="1000" height="535"></a>
+    </div>
+  </section>
+
+  <section class="row">
+    <div>
+      <h2>Escribir a un profesor</h2>
+      <p>En el menú de tus sitios, junto al nombre de cada asignatura, hay un lápiz para ponerle un nombre más corto y un sobre para escribir a un profesor. El sobre muestra quién da la asignatura, con el responsable primero y el enlace a sus tutorías, y abre el Correo interno con tu plantilla. El mensaje lo envías tú.</p>
+    </div>
+    <div class="media">
+      <a class="shot" href="img/profesor.png"><img src="img/profesor.png" alt="El sobre junto a Matemáticas I abierto: escribir a un profesor de Matemáticas I, con la responsable de la asignatura y el enlace a sus tutorías." width="505" height="196"></a>
+    </div>
+  </section>
+
+  <section class="row">
+    <div>
+      <h2>Tu rango</h2>
+      <p>Si activas «Notas oficiales (SIGMA)» en Ajustes, la extensión lee tu expediente oficial y pone tu media y tu rango junto a tu foto en MiAulario. Hay ocho rangos, de Bronce a Leyenda, uno por cada octavo de los créditos de tu carrera, y cada uno tiene su gema.</p>
+      <p>Al pulsarlo ves cuántos créditos llevas, qué te falta para el siguiente rango y lo que acabas de aprobar. Tus notas se quedan en tu navegador.</p>
+    </div>
+    <div class="media">
+      <a class="shot" href="img/rango.png"><img src="img/rango.png" alt="La ventana «Tu rango»: la gema de Maestro, 156 de 240 créditos, el siguiente rango a 4 asignaturas y la subida por aprobar Algoritmia." width="440" height="420"></a>
     </div>
   </section>
 
@@ -185,7 +223,7 @@
   const dark = document.getElementById('dark');
   const show = (on, start) => {
     dark.setAttribute('aria-pressed', String(on));
-    dark.textContent = on ? 'Ver en claro' : 'Ver en oscuro';
+    dark.textContent = on ? 'Ver en light mode' : 'Ver en dark mode';
     for (const a of document.querySelectorAll('.themes a[data-dark]')) {
       if (!a.dataset.light) a.dataset.light = a.getAttribute('href');
       const src = on && !(start && 'startLight' in a.dataset) ? a.dataset.dark : a.dataset.light;
@@ -194,6 +232,18 @@
     }
   };
   show(matchMedia('(prefers-color-scheme: dark)').matches, true);
+
+  // The popup at the top: a tab of the picture shows the picture of that tab.
+  const demo = document.getElementById('demo-shot');
+  const demoTabs = document.querySelectorAll('.demo [role=tab]');
+  for (const b of demoTabs) {
+    new Image().src = `img/popup-${b.dataset.tab}.png`;
+    b.addEventListener('click', () => {
+      demo.src = `img/popup-${b.dataset.tab}.png`;
+      demo.alt = b.dataset.alt;
+      for (const x of demoTabs) x.setAttribute('aria-selected', String(x === b));
+    });
+  }
   dark.addEventListener('click', () => show(dark.getAttribute('aria-pressed') !== 'true', false));
 </script>
 </body>
