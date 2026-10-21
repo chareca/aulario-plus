@@ -61,6 +61,8 @@ test('htmlToText removes tags and scripts and decodes entities', () => {
 test('htmlToText: no tag comes back from the parts of a removed one; a script without its end goes to the end; linear time', () => {
   assert.equal(MAK.htmlToText('a<!<!--x-->--><scr<script>x</script>ipt>alert(1)</script> b'), 'aalert(1) b', 'plain text, no "<"');
   assert.equal(MAK.htmlToText('<p>Hola</p><script>never ends'), 'Hola');
+  assert.equal(MAK.htmlToText('<html><head><meta charset=utf-8><body><p>Examen el lunes</p>'), 'Examen el lunes', '"</head>" is optional in HTML');
+  assert.equal(MAK.htmlToText('<head><title>T</title></head><p>Texto</p>'), 'Texto');
   assert.equal(MAK.htmlToText('nota <b>bien</b>: 3 < 4'), 'nota bien: 3 < 4', 'a "<" after the last tag stays');
   // A post of a forum with many "<" without an end (anybody of the site writes one): no "regular expression DoS".
   for (const evil of ['<a'.repeat(100000), '<li'.repeat(100000), '<script'.repeat(50000), '<!--'.repeat(50000), `${'<p '.repeat(50000)}>${'<'.repeat(50000)}`]) {

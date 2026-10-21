@@ -121,7 +121,10 @@
         const c = s.indexOf('-->', open.lastIndex);
         if (c >= 0) stop = c + 3;
       }
-      if (stop < 0) return out;
+      if (stop < 0) {
+        if (m[1] && m[1].toLowerCase() === 'head') { at = m.index; continue; } // "</head>" is optional: the tag only
+        return out;
+      }
       at = open.lastIndex = stop;
     }
     return out + s.slice(at);
