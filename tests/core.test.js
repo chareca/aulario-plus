@@ -35,6 +35,20 @@ test('formatDuration and urgency', () => {
   assert.equal(MAK.urgency(8 * DAY), 'green');
 });
 
+test('dropStorageKeys: only the keys of Aulario Plus, in the localStorage and the sessionStorage of the page', () => {
+  const area = (o) => Object.assign(Object.create({ removeItem(k) { delete this[k]; } }), o);
+  globalThis.localStorage = area({ 'mak-guide-host:open:x': '1', 'mak.theme': 'comic', 'mak-sem:exams:autumn': '0', 'sakai-sidebar': 'x' });
+  globalThis.sessionStorage = area({ 'aulario-plus-last-relogin': '1', 'mak-confetti:a': '1', other: '2' });
+  try {
+    MAK.dropStorageKeys();
+    assert.deepEqual([Object.keys(globalThis.localStorage), Object.keys(globalThis.sessionStorage)], [['sakai-sidebar'], ['other']], 'the keys of MiAulario stay');
+  } finally {
+    delete globalThis.localStorage;
+    delete globalThis.sessionStorage;
+  }
+  MAK.dropStorageKeys(); // no storage (the service worker): no error
+});
+
 test('htmlToText removes tags and scripts and decodes entities', () => {
   const html = '<p>Hola&nbsp;<b>mundo</b> &amp; m&aacute;s</p><script>alert(1)</script><style>p{}</style>' +
     '<ul><li>Uno</li><li>Dos</li></ul>L&iacute;nea<br>nueva &#8364; &#x41; &unknown;<!-- c -->';

@@ -114,8 +114,10 @@
     setNames(state.sites, state.settings);
   }
 
-  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites']), null)
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites', 'paused']), null)
     .then((d) => {
+      // All the data was deleted (the "Danger zone"): also the keys of the extension in this page.
+      if (d && d.paused === 'reset') MAK.dropStorageKeys();
       state.settings = MAK.withDefaults(d && d.settings);
       state.sites = (d && d.sites) || [];
       apply();

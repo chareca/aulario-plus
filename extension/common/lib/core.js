@@ -11,6 +11,17 @@
   // Keeping the session (the keep-alive ping, the persistent session cookies, the login when MiAulario opens and
   // the repair of the cookies): off for now, until it is checked again. Off, the extension only reads the session.
   MAK.KEEP_SESSION = false;
+  // The keys of Aulario Plus in the storage of a page (the pages of MiAulario, and of the extension): "mak-…",
+  // "mak.…", "aulario-plus-…". MAK.dropStorageKeys removes them (the "Danger zone" of the settings).
+  MAK.STORAGE_KEYS = '^(mak[-.]|aulario-plus-)';
+  MAK.dropStorageKeys = function () {
+    for (const name of ['localStorage', 'sessionStorage']) {
+      try {
+        const s = globalThis[name];
+        for (const k of Object.keys(s)) if (new RegExp(MAK.STORAGE_KEYS).test(k)) s.removeItem(k);
+      } catch {} // no storage here (the service worker), or the page blocks it
+    }
+  };
 
   // ---- Dates ---------------------------------------------------------------
 

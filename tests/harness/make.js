@@ -74,6 +74,7 @@ const libs = [.../importScripts\(([^)]*)\)/.exec(background)[1].matchAll(/'([^']
 const mock = `// Mock extension API for the test harness. Do not ship this file.
 (function () {
   const ROUTES = ${JSON.stringify(routes)};
+  const MANIFEST = ${fs.readFileSync(path.join(ROOT, 'extension', 'manifest.chromium.json'), 'utf8').trim()};
   const listeners = { message: [], storage: [], installed: [], startup: [], alarm: [] };
   const on = (list) => ({ addListener: (f) => list.push(f), removeListener: () => {} });
   const data = {};
@@ -124,6 +125,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
     runtime: {
       id,
       getURL: (p = '') => new URL(p, location.href).href,
+      getManifest: () => (MANIFEST),
       onMessage: on(listeners.message),
       onInstalled: on(listeners.installed),
       onStartup: on(listeners.startup),
@@ -137,6 +139,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
     alarms: {
       create: async (name, info) => alarms.set(name, { name, scheduledTime: info.when || Date.now(), periodInMinutes: info.periodInMinutes }),
       get: async (name) => alarms.get(name),
+      clearAll: async () => { alarms.clear(); return true; },
       onAlarm: on(listeners.alarm)
     },
     cookies: { onChanged: on([]), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },
@@ -153,7 +156,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
       getAll: async () => Object.fromEntries([...window.__notes.keys()].map((k) => [k, true])),
       onClicked: on([])
     },
-    permissions: { contains: async () => true, request: async () => true }
+    permissions: { contains: async () => true, request: async () => true, remove: async () => true }
   };
   window.chrome = ext;
   window.fetch = window.__mockFetch;

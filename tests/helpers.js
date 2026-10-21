@@ -116,6 +116,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       get: async (name) => alarms.get(name),
       getAll: async () => [...alarms.values()],
       clear: async (name) => alarms.delete(name),
+      clearAll: async () => { alarms.clear(); return true; },
       onAlarm: on(listeners.alarm)
     },
     cookies: { onChanged: on(listeners.cookies), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },

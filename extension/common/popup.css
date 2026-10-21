@@ -139,6 +139,12 @@ details > summary { cursor: pointer; font-family: var(--ap-font-head); font-weig
 .empty { color: var(--ap-muted); text-align: center; padding: 28px 10px; }
 .notice { margin: 4px 0 10px; padding: 8px; border-radius: var(--ap-radius-box); border: var(--ap-bw-sm) solid var(--ap-orange); color: var(--ap-orange); background: var(--ap-orange-bg); }
 .notice button { margin-top: 6px; width: 100%; }
+.notice.reset p { margin: 4px 0; }
+/* The "Danger zone" of the settings */
+.danger-zone { padding: 2px 10px 10px; border: var(--ap-bw-sm) solid var(--ap-red); border-radius: var(--ap-radius-box); }
+.danger-zone h2 { color: var(--ap-red); }
+.danger-zone .row { margin-top: 6px; }
+.btn.danger { color: #ffffff; background: #b42318; border-color: #b42318; font-weight: 700; } /* the same red in light and dark mode: 6.5:1 with white */
 /* The correction of a delivery */
 .feedback { margin-top: 4px; }
 .feedback summary { margin: 0; font-size: 12px; color: var(--ap-muted); font-family: inherit; font-weight: inherit; font-style: normal; }

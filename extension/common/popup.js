@@ -271,6 +271,13 @@ function homeSwitch(icon, name, on, title, onClick) {
 
 function renderHome(el) {
   const now = Date.now();
+  // All the data was deleted (the "Danger zone"): the extension does nothing until the user starts it again.
+  if (S.paused === 'reset') {
+    fill(el, h('div', { class: 'home' }, h('div', { class: 'notice reset' },
+      h('strong', { text: t('reset.title') }), h('p', { text: t('reset.text') }),
+      h('button', { class: 'btn primary', text: t('reset.start'), attrs: { type: 'button' }, on: { click: () => send({ type: 'resume' }) } }))));
+    return;
+  }
   const s = settings();
   const st = sessionState(now);
   const said = (name, v) => `${name}: ${t(v ? 'home.on' : 'home.off')}`;
@@ -1181,6 +1188,37 @@ function issueUrl(kind) {
   return MAK.issueUrl({ kind, version, browser: MAK.browserName(navigator.userAgent, !!navigator.brave), lang: settings().lang });
 }
 
+// The "Danger zone": delete all the data of the extension (background.js, wipeAll), after two confirmations.
+// Its step stays when the popup draws the settings again (the deletion changes the storage): 0 the button, 1 and 2
+// a question each, 3 the deletion and its result.
+const danger = { step: 0, text: '' };
+function dangerSection() {
+  const box = h('div', { class: 'section danger-zone', attrs: { id: 'danger' } });
+  const button = (text, cls, onClick) => h('button', { class: `btn ${cls}`, text, attrs: { type: 'button' }, on: { click: onClick } });
+  const go = (step) => {
+    danger.step = step;
+    if (step === 3) {
+      danger.text = t('danger.working');
+      MAK.dropStorageKeys(); // the keys of the pages of the extension (the theme)
+      send({ type: 'wipeAll' }).then((r) => {
+        danger.text = t(r && r.ok ? 'danger.done' : 'danger.error');
+        draw();
+      });
+    }
+    draw();
+  };
+  function draw() {
+    const head = [h('h2', { text: t('danger.title') }), h('p', { class: 'small', text: t('danger.help') })];
+    if (danger.step === 0) return fill(box, head, button(t('danger.button'), 'danger', () => go(1)));
+    if (danger.step === 3) return fill(box, head, h('p', { class: 'small', attrs: { role: 'status' }, text: danger.text }));
+    fill(box, head,
+      h('p', { class: 'small', attrs: { role: 'alert' }, text: t(danger.step === 1 ? 'danger.confirm1' : 'danger.confirm2') }),
+      h('div', { class: 'row' }, button(t('danger.cancel'), '', () => go(0)), button(t(danger.step === 1 ? 'danger.yes1' : 'danger.yes2'), 'danger', () => go(danger.step + 1))));
+  }
+  draw();
+  return box;
+}
+
 function helpSection() {
   const open = (url) => () => { ext.tabs.create({ url }); closePopup(); };
   const btn = (text, url) => h('button', { class: 'btn', text, attrs: { type: 'button' }, on: { click: open(url) } });
@@ -1376,7 +1414,8 @@ function renderSettings(el) {
         Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
       )
     ),
-    helpSection()
+    helpSection(),
+    dangerSection()
   );
   updateKeepAlive(Date.now());
 }

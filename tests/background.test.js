@@ -64,6 +64,28 @@ test('a message without a tab and without an address of the extension is rejecte
   assert.equal((await bg.send({ type: 'pendingMarkViewedDone', siteId: 'x'.repeat(201), toolId: 't', ok: false }, CONTENT())).ok, false, 'a long id');
 });
 
+test('"Danger zone": wipeAll deletes all the data, the alarms, the notifications and the optional permissions; then nothing until "resume"', async () => {
+  const bg = loadBackground({ local: { settings: { lang: 'en' }, history: { at: 1, items: {} }, record: { rows: [] }, sites: [{ id: 'x' }], paused: false } });
+  bg.ext.runtime.getManifest = () => ({ version: '9.9.9', optional_host_permissions: ['https://www2.unavarra.es/*', 'https://academicos.unavarra.es/*'] });
+  await bg.ext.permissions.request({ origins: ['https://www2.unavarra.es/*', 'https://academicos.unavarra.es/*'] });
+  await bg.ext.alarms.create('miaulario-ping', { when: Date.now() + 60000 });
+  await bg.ext.notifications.create('grade-1', {});
+  await bg.ext.storage.session.set({ lock: 1 });
+  assert.equal(await bg.send({ type: 'wipeAll' }, CONTENT()), null, 'not from a page of MiAulario');
+  assert.deepEqual(await bg.send({ type: 'wipeAll' }), { ok: true });
+  assert.deepEqual(bg.ext.storage.local.data, { paused: 'reset' });
+  assert.deepEqual([bg.ext._alarms.size, bg.ext._notes.size, bg.ext._granted.size, Object.keys(bg.ext.storage.session.data).length], [0, 0, 0, 0]);
+  // Empty until the user starts again: no message of the pages, no ping, no alarm at a start of the browser.
+  assert.equal(await bg.send({ type: 'getStatus' }, CONTENT()), null);
+  assert.equal(await bg.send({ type: 'pingNow' }), null);
+  for (const f of bg.ext._listeners.startup) await f();
+  assert.equal(bg.ext._alarms.size, 0);
+  assert.deepEqual(await bg.send({ type: 'resume' }), { ok: true });
+  assert.equal(bg.ext.storage.local.data.paused, false);
+  assert.ok(bg.ext._alarms.get('miaulario-ping'), 'the alarms again');
+  assert.ok(await bg.send({ type: 'getStatus' }, CONTENT()));
+});
+
 test('an extension page in a tab is a page, not a content script', async () => {
   const bg = loadBackground();
   const sender = { id: 'ext-id', tab: { id: 9 }, frameId: 0, url: 'chrome-extension://ext-id/tools.html' };

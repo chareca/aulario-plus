@@ -230,8 +230,8 @@ async function getState() {
 // The keep-alive request: without "auto=true", so Sakai records it as activity.
 async function ping() {
   const { paused } = await ext.storage.local.get('paused');
-  // "Pausar" in the popup ('user'): only "Reanudar" continues.
-  if (paused === 'user') return null;
+  // "Pausar" in the popup ('user'), or all the data deleted ('reset'): only "Reanudar" continues.
+  if (paused === 'user' || paused === 'reset') return null;
   if (paused) {
     // The extension is paused after a manual logout. Only read the session (with "auto=true",
     // it does not reset the timer). If the user logged in again, continue, as "Reanudar" does.
@@ -641,10 +641,12 @@ const handlers = {
   resume: {
     run: async () => {
       await store.set({ paused: false });
-      await persistExisting();
-      return ping();
+      await boot(); // the alarms again (none after all the data was deleted), the cookies, a ping and a sync
+      return { ok: true };
     }
   },
+  // The "Danger zone" of the settings (two confirmations in the popup): delete all the data.
+  wipeAll: { run: () => wipeAll() },
   setAutoLogin: {
     run: async (msg) => {
       await store.set({ autoLogin: !!msg.value });
@@ -664,7 +666,7 @@ const handlers = {
   logout: {
     content: true,
     run: async () => {
-      await store.update('paused', (p) => (p === 'user' ? p : true)); // "Pausar" stays until "Reanudar"
+      await store.update('paused', (p) => (p === 'user' || p === 'reset' ? p : true)); // "Pausar" stays until "Reanudar"
       await clearPersisted();
       // The course data stays only while the user is logged in. It goes now; then the sync that is
       // running ends (a new one stops: paused) and what it wrote goes too. Now first: if the browser
@@ -1137,7 +1139,11 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
   Promise.resolve()
-    .then(() => handler.run(msg, sender))
+    .then(async () => {
+      // After "delete all the data", the pages of MiAulario and SIGMA get nothing until the user starts again.
+      if (kind !== 'page' && (await ext.storage.local.get('paused')).paused === 'reset') return null;
+      return handler.run(msg, sender);
+    })
     .then((result) => sendResponse(result === undefined ? null : result))
     .catch((e) => sendResponse({ error: String(e && e.message ? e.message : e) }));
   return true; // The response is asynchronous.
@@ -1175,7 +1181,47 @@ ext.alarms.onAlarm.addListener((alarm) => {
   if (run) return run(alarm);
 });
 
+// ---- Delete all the data (the "Danger zone" of the settings) --------------------------------------
+// All that the extension keeps or made, as if it was not installed: its storage, its alarms (the pings), its
+// notifications and its badge, the persistent copies of the session cookies (session cookies again, as the
+// server made them), the optional permissions, and its keys in the storage of the MiAulario pages (the open
+// tabs now, the others at their next load: content-early.js). Then the background starts again (its memory),
+// and the extension stays empty ("paused": 'reset'): no alarm, no ping, no sync, no message of the pages, until
+// the user starts it again in the popup ("resume").
+async function wipeAll() {
+  await store.set({ paused: 'reset' }); // first: no new work starts
+  await sync.run().catch(() => {}); // the sync that is running ends
+  if (historyRunning) await historyRunning.catch(() => {});
+  await ext.alarms.clearAll();
+  if (ext.notifications) for (const id of Object.keys((await ext.notifications.getAll()) || {})) await ext.notifications.clear(id);
+  await ext.action.setBadgeText({ text: '' }).catch(() => {});
+  await unpersistExisting();
+  const optional = ext.runtime.getManifest().optional_host_permissions || [];
+  if (optional.length) await Promise.resolve(ext.permissions.remove({ origins: optional })).catch(() => false);
+  if (ext.scripting) {
+    for (const tab of await Promise.resolve(ext.tabs.query({ url: `${MAK.BASE}/*` })).catch(() => [])) {
+      await Promise.resolve(ext.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        func: (re) => {
+          for (const s of [localStorage, sessionStorage]) for (const k of Object.keys(s)) if (new RegExp(re).test(k)) s.removeItem(k);
+        },
+        args: [MAK.STORAGE_KEYS]
+      })).catch(() => {});
+    }
+  }
+  await store.transaction(async (tx) => {
+    await tx.remove(Object.keys(await tx.get(null)));
+    await tx.set({ paused: 'reset' });
+  });
+  if (ext.storage.session) await ext.storage.session.remove(Object.keys(await ext.storage.session.get(null)));
+  // After the answer to the popup (a reload closes it).
+  if (ext.runtime.reload) setTimeout(() => ext.runtime.reload(), 500);
+  return { ok: true };
+}
+
 async function boot() {
+  // All the data was deleted: nothing starts until the user starts it again ("resume").
+  if ((await ext.storage.local.get('paused')).paused === 'reset') return;
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();

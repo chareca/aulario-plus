@@ -48,6 +48,7 @@ Aulario Plus is a browser extension for MiAulario, the virtual campus of the Uni
 
 - Settings → turn off the sync, the notifications, the download links or the official grades (this removes them and the permission).
 - Log out of MiAulario: the extension removes the course data.
+- Settings → Danger zone → "Borrar todos los datos" (two confirmations): the extension removes all its data, its alarms, its notifications, the persistent copies of the session cookies, its keys in the pages of MiAulario and the optional permissions. It stays installed and does nothing until you click "Empezar de nuevo".
 - Remove the extension: the browser removes all its data.
 
 ## Contact
@@ -106,6 +107,7 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 - Ajustes → desactivar la sincronización, las notificaciones, los enlaces de descarga o las notas oficiales (las borra y quita el acceso).
 - Cerrar sesión en MiAulario: la extensión borra los datos de las asignaturas.
+- Ajustes → Danger zone → «Borrar todos los datos» (con dos confirmaciones): la extensión borra todos sus datos, sus alarmas, sus avisos, las copias persistentes de las cookies de sesión, lo que guarda en las páginas de MiAulario y los permisos opcionales. Sigue instalada y no hace nada hasta que pulses «Empezar de nuevo».
 - Quitar la extensión: el navegador borra todos sus datos.
 
 ## Contacto
