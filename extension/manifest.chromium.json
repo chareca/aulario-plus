@@ -5,6 +5,9 @@
   "description": "__MSG_extDescription__",
   "default_locale": "es",
   "minimum_chrome_version": "116",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"
+  },
   "permissions": [
     "alarms",
     "cookies",

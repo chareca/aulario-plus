@@ -86,7 +86,9 @@
     if (where.siteId) {
       const p = pages[where.siteId];
       if (!p || !where.pageOrTool) return { siteId: where.siteId, toolIds: [] };
-      const toolIds = (p.pageTools && p.pageTools[where.pageOrTool]) || (p.placements && p.placements[where.pageOrTool] ? [p.placements[where.pageOrTool]] : []);
+      // Own keys only: the page comes from the address ("__proto__" is not a page).
+      const own = (o, k) => (o && Object.hasOwn(o, k) ? o[k] : null);
+      const toolIds = own(p.pageTools, where.pageOrTool) || (own(p.placements, where.pageOrTool) ? [p.placements[where.pageOrTool]] : []);
       return { siteId: where.siteId, toolIds };
     }
     for (const [siteId, p] of Object.entries(pages)) {

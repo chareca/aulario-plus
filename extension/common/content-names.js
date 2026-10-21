@@ -211,7 +211,7 @@
           if (!['pm.noPicker', 'pm.http', 'pm.network', 'pm.recipientGone'].includes(e && e.code)) throw e;
           await pm.prepare(await pm.open(tool.placement), data, { open: true });
         }
-        location.assign(MAK.safeSiteUrl(tool.page));
+        location.assign(MAK.safeSiteUrl(tool.page) || MAK.siteUrl(siteId));
       } catch (e) {
         busy = false;
         for (const b of buttons) b.disabled = false;

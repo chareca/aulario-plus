@@ -56,6 +56,14 @@ test('messages from other origins, other frames, other extensions or with an unk
   assert.equal(await bg.send(null), null);
 });
 
+test('a message without a tab and without an address of the extension is rejected (fail closed)', async () => {
+  const bg = loadBackground();
+  assert.equal(await bg.send({ type: 'pause' }, { id: 'ext-id' }), null);
+  assert.equal(await bg.send({ type: 'pause' }, { id: 'ext-id', url: 'https://miaulario.unavarra.es/portal' }), null);
+  assert.equal(bg.ext.storage.local.data.paused, undefined);
+  assert.equal((await bg.send({ type: 'pendingMarkViewedDone', siteId: 'x'.repeat(201), toolId: 't', ok: false }, CONTENT())).ok, false, 'a long id');
+});
+
 test('an extension page in a tab is a page, not a content script', async () => {
   const bg = loadBackground();
   const sender = { id: 'ext-id', tab: { id: 9 }, frameId: 0, url: 'chrome-extension://ext-id/tools.html' };

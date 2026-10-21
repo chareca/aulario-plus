@@ -89,7 +89,7 @@ test('an old copy with other attributes is removed: the browser sends one sessio
   assert.ok(list[0].expirationDate);
 });
 
-test('the persistent copy has the attributes of the server cookie', async () => {
+test('the persistent copy has the attributes of the server cookie, and is always secure (https only)', async () => {
   const bg = loadBackground({ web: fastTimers });
   const { server, named } = withJar(bg);
   server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false, sameSite: 'no_restriction' });
@@ -99,7 +99,7 @@ test('the persistent copy has the attributes of the server cookie', async () => 
   assert.deepEqual([sso.domain, sso.hostOnly, sso.path, sso.secure, sso.httpOnly, sso.sameSite], ['.sso.unavarra.es', false, '/', true, true, 'no_restriction']);
   assert.ok(sso.expirationDate);
   const [node] = named('SERVERID');
-  assert.deepEqual([node.value, node.domain, node.hostOnly, node.secure, node.httpOnly, node.sameSite], ['h31', 'miaulario.unavarra.es', true, false, false, 'lax']);
+  assert.deepEqual([node.value, node.domain, node.hostOnly, node.secure, node.httpOnly, node.sameSite], ['h31', 'miaulario.unavarra.es', true, true, false, 'lax']);
   assert.ok(node.expirationDate);
 });
 

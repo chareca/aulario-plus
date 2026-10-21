@@ -4,6 +4,15 @@ const assert = require('node:assert/strict');
 const { loadLib } = require('./helpers');
 const MAK = loadLib('core', 'pm');
 
+test('pmLoader: only addresses of MiAulario (the actions come from the pages); a path is of MiAulario', async () => {
+  const asked = [];
+  const load = MAK.pmLoader(async (u) => { asked.push(u); return { ok: false, status: 500 }; });
+  await assert.rejects(load('https://evil.example/collect', { method: 'POST' }), (e) => e.code === 'pm.url');
+  await assert.rejects(load('javascript:alert(1)'), (e) => e.code === 'pm.url');
+  await assert.rejects(load('/portal/tool/T/compose'), (e) => e.code === 'pm.http');
+  assert.deepEqual(asked, ['https://miaulario.unavarra.es/portal/tool/T/compose'], 'no request to another site');
+});
+
 // Snapshots with the same form names as the real "Correo interno" (Messages tool of Sakai).
 const TOOL = 'https://miaulario.unavarra.es/portal/tool/T';
 const PICKER = `${TOOL}/sakai.filepicker.helper`;

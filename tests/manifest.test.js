@@ -23,6 +23,9 @@ test('both manifests have the same version, name and permissions', () => {
   assert.deepEqual(chromium.permissions, firefox.permissions);
   assert.deepEqual(chromium.host_permissions, firefox.host_permissions);
   assert.deepEqual(chromium.content_scripts, firefox.content_scripts);
+  // An explicit policy for the pages of the extension: only its own scripts, no plugins, no <base>.
+  assert.deepEqual(chromium.content_security_policy, firefox.content_security_policy);
+  assert.equal(chromium.content_security_policy.extension_pages, "script-src 'self'; object-src 'none'; base-uri 'none'");
 });
 
 test('the Chromium importScripts list is the same as the Firefox background scripts', () => {

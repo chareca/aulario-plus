@@ -93,15 +93,18 @@
   // load(url, init) -> snapshot, with fetch and DOMParser (content scripts and extension pages).
   MAK.pmLoader = function (doFetch) {
     return async function (url, init) {
+      // Only MiAulario: the addresses come from the forms of the pages, and a request carries the session.
+      const target = MAK.safeSiteUrl(url);
+      if (!target) throw new PmError('pm.url', String(url).slice(0, 100));
       let res;
       try {
-        res = await doFetch(url, Object.assign({ credentials: 'include', cache: 'no-store' }, init));
+        res = await doFetch(target, Object.assign({ credentials: 'include', cache: 'no-store' }, init));
       } catch {
         throw new PmError('pm.network');
       }
       if (!res.ok) throw new PmError('pm.http', String(res.status));
       const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-      return MAK.pmSnapshot(doc, res.url || url);
+      return MAK.pmSnapshot(doc, res.url || target);
     };
   };
 

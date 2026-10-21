@@ -35,7 +35,8 @@
       if (!cb.value || cb.value.endsWith('/')) continue; // a folder
       const row = cb.closest('tr');
       const cell = row && row.querySelector('td.title');
-      const link = cell && [...cell.querySelectorAll('a[href]')].find((a) => /\/access\/content\//.test(a.href) && oneLine(a.textContent));
+      // Only a file of MiAulario: the window reads it with the session.
+      const link = cell && [...cell.querySelectorAll('a[href]')].find((a) => MAK.safeSiteUrl(a.href) && new URL(a.href).pathname.startsWith('/access/content/') && oneLine(a.textContent));
       if (!link) continue;
       out.push({ cb, cell, link, itemId: cb.value, title: oneLine(link.textContent), url: link.href });
     }

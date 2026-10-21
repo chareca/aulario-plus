@@ -276,7 +276,8 @@ const sameCookie = (a, b) => a.domain === b.domain && (a.path || '/') === (b.pat
 
 // The details for cookies.set: the same cookie (domain, path, flags) with this value and expiration.
 function cookieDetails(c, host, value, expirationDate) {
-  const d = { url: `https://${host}${c.path || '/'}`, name: c.name, value, path: c.path || '/', secure: !!c.secure, httpOnly: !!c.httpOnly, expirationDate };
+  // Always secure: the sites are https, and a persistent copy of a session must not go over http.
+  const d = { url: `https://${host}${c.path || '/'}`, name: c.name, value, path: c.path || '/', secure: true, httpOnly: !!c.httpOnly, expirationDate };
   if (c.sameSite) d.sameSite = c.sameSite;
   if (!c.hostOnly) d.domain = c.domain;
   if (c.storeId) d.storeId = c.storeId;
@@ -589,7 +590,7 @@ function senderKind(sender) {
   if (!sender || sender.id !== ext.runtime.id) return null;
   const extensionOrigin = ext.runtime.getURL('');
   if (sender.url && sender.url.startsWith(extensionOrigin)) return 'page';
-  if (!sender.tab) return 'page';
+  if (!sender.tab) return null; // not a page of the extension and not in a tab: rejected
   try {
     const origin = new URL(sender.url).origin;
     if (origin === MAK.PORTAL_ORIGIN || origin === MAK.SIGMA_ORIGIN) return 'record'; // content-record.js, also in a frame
@@ -1095,7 +1096,7 @@ const handlers = {
   pendingMarkViewedDone: {
     content: true,
     run: async (msg) => {
-      if (typeof msg.siteId !== 'string' || typeof msg.toolId !== 'string') return { ok: false };
+      if (typeof msg.siteId !== 'string' || typeof msg.toolId !== 'string' || msg.siteId.length > 200 || msg.toolId.length > 200) return { ok: false };
       if (msg.ok) {
         await store.update('pendingMarkViewed', (list) => (list || []).filter((x) => x.siteId !== msg.siteId || x.toolId !== msg.toolId));
         await markNotificationsViewed(msg.siteId, msg.toolId);
