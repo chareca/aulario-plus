@@ -117,7 +117,7 @@
   // "Mi sitio" → Recursos: the files of the user, as a personal drive. Download all of them as one ZIP, or
   // send all of them to the trash: the form of the list gets all the files and folders of the first level
   // (also the ones of other pages of the list), and MiAulario asks to confirm. The trash keeps them
-  // (Recursos → Papelera); before it, the bar asks too. action: 'zipDownload' or 'delete' (the actions of
+  // (Recursos → Papelera); before it, a window of the extension asks too. action: 'zipDownload' or 'delete' (the actions of
   // the list of MiAulario). ui: the messages of the bar (MAK.showResourceButtons).
   async function driveAction(form, root, action, ui) {
     const say = ui.say;
@@ -131,8 +131,8 @@
       return say(MAK.t('drive.error'));
     }
     if (!ids.length) return say(MAK.t('drive.empty'));
-    if (action === 'delete' && !(await ui.ask(MAK.t('drive.confirm', { n: ids.length }), MAK.t('drive.confirmYes')))) return;
     say('');
+    if (action === 'delete' && !(await ui.ask(MAK.t('drive.confirmTitle'), MAK.t('drive.confirm', { n: ids.length }), MAK.t('drive.confirmYes')))) return;
     for (const box of form.querySelectorAll('input[name="selectedMembers"]')) box.checked = false;
     form.append(...ids.map((value) => MAK.h('input', { attrs: { type: 'hidden', name: 'selectedMembers', value } })));
     form.querySelector('#sakai_action').value = 'doMultiItemDispatch';

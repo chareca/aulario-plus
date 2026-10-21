@@ -166,26 +166,47 @@
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));
   }
 
+  // A question in a window over the page, in the theme of the extension: the buttons "Cancelar" (with the
+  // focus) and yes. Escape, the ✕ or a click outside the window: no. Result: a promise of true or false.
+  function askWindow(title, text, yes) {
+    return new Promise((resolve) => {
+      const h = MAK.h;
+      const host = document.createElement('div');
+      const shadow = host.attachShadow({ mode: 'closed' });
+      const style = MAK.themedStyle(`${MAK.WIN_CSS()}
+        .win { width: min(440px, calc(100vw - 32px)); }
+        .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }`);
+      const answer = (v) => () => { host.remove(); resolve(v); };
+      const no = h('button', { class: 'btn', attrs: { type: 'button' }, text: MAK.t('zip.cancel'), on: { click: answer(false) } });
+      const win = h('div', { class: 'win', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
+        h('header', null, h('h2', { text: title }), h('button', { class: 'x', text: '✕', attrs: { type: 'button', title: MAK.t('mail.close'), 'aria-label': MAK.t('mail.close') }, on: { click: answer(false) } })),
+        h('p', { text }),
+        h('div', { class: 'row' }, no, h('button', { class: 'btn primary', attrs: { type: 'button' }, text: yes, on: { click: answer(true) } })));
+      const backdrop = h('div', { class: 'backdrop' }, win);
+      backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) answer(false)(); });
+      // The keys stay in the window: the page (the shortcuts of MiAulario) does not get them.
+      backdrop.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') answer(false)();
+      });
+      shadow.append(style, backdrop);
+      document.documentElement.append(host);
+      no.focus();
+    });
+  }
+
   // Small buttons above the Resources tool ("Download all (ZIP)"; in "Mi sitio" also "Delete all").
-  // buttons: [{ text, title, onClick(ui) }]. Next to them: ui.say(text) shows a short message;
-  // ui.ask(text, yes) asks a question with the buttons yes and "Cancelar" (a promise of true or false).
+  // buttons: [{ text, title, onClick(ui) }]. ui.say(text): a short message next to the buttons;
+  // ui.ask(title, text, yes): a question in a window (a promise of true or false).
   MAK.showResourceButtons = function (buttons) {
     if (document.getElementById('mak-zip-host')) return;
     const host = document.createElement('div');
     host.id = 'mak-zip-host';
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = MAK.themedStyle(`:host { all: initial; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
-      .note { font: var(--ap-weight) calc(13px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-muted); }
-      .note button.plain { font: inherit; color: var(--ap-link); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; } ${MAK.EXT_BUTTON_CSS}`);
+      .note { font: var(--ap-weight) calc(13px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-muted); } ${MAK.EXT_BUTTON_CSS}`);
     const note = MAK.h('span', { class: 'note', attrs: { role: 'status' } });
-    const ui = {
-      say: (text) => MAK.fill(note, text),
-      ask: (text, yes) => new Promise((resolve) => {
-        const answer = (v) => () => { MAK.fill(note); resolve(v); };
-        MAK.fill(note, text, ' ', MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: yes, on: { click: answer(true) } }),
-          ' ', MAK.h('button', { class: 'plain', attrs: { type: 'button' }, text: MAK.t('zip.cancel'), on: { click: answer(false) } }));
-      })
-    };
+    const ui = { say: (text) => { note.textContent = text; }, ask: askWindow };
     shadow.append(style, ...buttons.map((b) => MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button', title: b.title }, text: b.text, on: { click: () => b.onClick(ui) } })), note);
     insertAtTop(host);
   };
