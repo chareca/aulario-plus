@@ -211,3 +211,18 @@ test('the sync reads the Contenidos of the sites with Lessons (an error 500 give
   assert.deepEqual([hit.type, hit.title, hit.site, hit.meta, hit.url], ['lesson', 'Criptografía (Parte 1)', 'Computer Science', 'Contenidos › Miércoles día 9', 'https://www.tlm.unavarra.es/~santi/SSI/transparencias/tema1.0.pdf']);
   assert.equal(find(area.data, 'septiembre')[0].url, `https://miaulario.unavarra.es/portal/site/${F.CS}/page/${F.CS}-page-9`, 'a title opens the page of Contenidos');
 });
+
+test('fuzzy: the initials of the words of a name count as letters together ("ip": Informática y Programación)', () => {
+  const file = (id) => ({ items: [{ title: 'Enunciado.pdf', url: `https://miaulario.unavarra.es/access/content/group/${id}/Pr%C3%A1cticas/Enunciado.pdf` }] });
+  const d = {
+    sites: [{ id: 'S1', title: 'Matemáticas I' }, { id: 'S2', title: 'Informática y Programación' }, { id: 'S3', title: 'Procesadores del Lenguaje' }],
+    [MAK.resourceKey('S1')]: file('S1'),
+    [MAK.resourceKey('S2')]: file('S2'),
+    [MAK.resourceKey('S3')]: file('S3')
+  };
+  const sitesOf = (q) => find(d, q).filter((x) => x.type === 'file').map((x) => x.site);
+  assert.equal(sitesOf('ip enun')[0], 'Informática y Programación', 'not "Matemáticas I / Prácticas": the I and the P of two parts');
+  assert.equal(sitesOf('pl enun')[0], 'Procesadores del Lenguaje', '"del" can be skipped');
+  assert.equal(sitesOf('pdl enun')[0], 'Procesadores del Lenguaje');
+  assert.equal(find(d, 'ip')[0].title, 'Informática y Programación', 'the site first');
+});

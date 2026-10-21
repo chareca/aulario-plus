@@ -9,6 +9,8 @@
 //   of a word. Case and accents are not important.
 // - The score is the score of fzf (algorithm V2): letters at the start of a word and letters
 //   together give more points; letters far apart give fewer points.
+// - The initials of words in a row of a name count as letters together: "ip" finds "Informática y
+//   Programación" before "Matemáticas I / Prácticas" ("y", "de", "del"... can be skipped).
 // - If the search finds nothing, a second pass also accepts a word inside a word ("grales" finds
 //   "Integrales") and a word with one error, or two errors in a long word ("integarles").
 // - "'text": only the exact text. "!text": not the results with this text.
@@ -222,6 +224,21 @@
     return best <= max ? best : Infinity;
   }
   const typosAllowed = (term) => (term.length >= 9 ? 2 : term.length >= 5 ? 1 : 0);
+
+  // True if term is the initials of words in a row ("ip": informatica, y, programacion; "pdl" and "pl":
+  // procesadores, del, lenguaje). A short word such as "y" or "del" can be skipped.
+  const LINK_WORDS = new Set(['y', 'e', 'o', 'u', 'a', 'al', 'de', 'del', 'el', 'la', 'las', 'los', 'en', 'con', 'para', 'por']);
+  function initials(term, words) {
+    for (let s = 0; s < words.length; s++) {
+      let i = 0;
+      for (let k = s; k < words.length && i < term.length; k++) {
+        if (words[k][0] === term[i]) i++;
+        else if (!LINK_WORDS.has(words[k])) break;
+      }
+      if (i === term.length) return true;
+    }
+    return false;
+  }
   // The letters of a match are together, or with one other letter between them.
   const compact = (pos, term) => pos.length === term.length && pos[pos.length - 1] - pos[0] <= term.length;
 
@@ -258,6 +275,11 @@
     const p = fuzzy(t.text, e.fPath, true, false);
     if (p) take(p.score * W_PATH, 'path');
     if (t.text.length >= 3 && e.words.some((w) => w.startsWith(t.text))) take(togetherScore(t.text.length, BONUS_WHITE) * W_WORDS, 'words');
+    // The initials of the title or of the name of the site: as letters together at the start of a word.
+    if (t.text.length >= 2) {
+      if (initials(t.text, e.titleWords)) take(togetherScore(t.text.length, BONUS_WHITE) * W_TITLE, 'title');
+      else if (initials(t.text, e.siteWords)) take(togetherScore(t.text.length, BONUS_WHITE) * W_PATH, 'path');
+    }
     if (best || !pass2) return best;
     // Second pass. A word inside a word, or with one letter more in the text: only with 3 letters
     // or more.
@@ -415,6 +437,8 @@
       // folder or forum, and the text of an event or an announcement.
       e.words = [...new Set(tokens([site.fullTitle, e.meta, e.extra].join(' ')))];
       e.typoWords = [...new Set(tokens([title, site.title, e.meta].join(' ')))];
+      e.titleWords = tokens(title);
+      e.siteWords = tokens(site.title);
       out.push(e);
     };
     for (const s of sites) {
