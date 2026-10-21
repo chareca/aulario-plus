@@ -103,3 +103,10 @@ test('the grades of the calculator of the guides: numbers 0 to 10 only', () => {
   assert.deepEqual(MAK.withDefaults({ dueOffsets: [60, 10080, 60, 7, 1440, 180] }).dueOffsets, [10080, 1440, 180], 'known times, once, the earliest first, at most 3');
   assert.deepEqual(MAK.withDefaults({ dueOffsets: [] }).dueOffsets, [1440, 60]);
 });
+
+test('the confetti after a submission: on by default; the user can set it off', () => {
+  assert.equal(MAK.defaultSettings().confetti, true);
+  assert.equal(MAK.withDefaults({}).confetti, true);
+  assert.equal(MAK.withDefaults({ confetti: false }).confetti, false);
+  assert.equal(MAK.withDefaults({ confetti: 0 }).confetti, false);
+});

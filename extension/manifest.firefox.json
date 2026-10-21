@@ -87,6 +87,20 @@
         "content.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://miaulario.unavarra.es/*"
+      ],
+      "js": [
+        "lib/core.js",
+        "lib/store.js",
+        "vendor/canvas-confetti.js",
+        "lib/celebrate.js",
+        "content-confetti.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [

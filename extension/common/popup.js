@@ -1204,7 +1204,8 @@ function themeSection(s) {
         return card;
       })
     ),
-    h('p', { class: 'small', text: t('theme.help') })
+    h('p', { class: 'small', text: t('theme.help') }),
+    checkbox(t('set.confetti'), t('set.confettiHelp'), s.confetti, (v) => send({ type: 'setSettings', patch: { confetti: v } }))
   );
 }
 

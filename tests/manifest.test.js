@@ -66,3 +66,16 @@ test('Firefox: a fixed add-on id and the declaration of the data that goes out o
   assert.deepEqual(gecko.data_collection_permissions, { required: ['none'], optional: ['websiteContent'] });
   assert.ok(Number(gecko.strict_min_version) >= 142, "the checks of the extension need Firefox 142");
 });
+
+test('the confetti: canvas-confetti 1.9.4 without changes, its license, and a small group of its own in every frame', () => {
+  const crypto = require('node:crypto');
+  const lib = fs.readFileSync(path.join(COMMON, 'vendor', 'canvas-confetti.js'));
+  // The file dist/confetti.browser.js of the npm package canvas-confetti@1.9.4 (the stores compare it with the original).
+  assert.equal(crypto.createHash('sha256').update(lib).digest('hex'), '49f4bcbc56e7ceb5c3d25d13db1d0da965b6cd1c8a54a707bb055be0685b0a95');
+  assert.match(fs.readFileSync(path.join(COMMON, 'vendor', 'canvas-confetti.LICENSE.txt'), 'utf8'), /ISC License[\s\S]*Copyright \(c\) 2020, Kiril Vatev/);
+  const groups = chromium.content_scripts;
+  const own = groups.filter((g) => g.js.includes('vendor/canvas-confetti.js'));
+  assert.equal(own.length, 1, 'only in its group');
+  assert.equal(own[0].all_frames, true, 'also a tool in a frame');
+  assert.deepEqual(own[0].js.slice(-3), ['vendor/canvas-confetti.js', 'lib/celebrate.js', 'content-confetti.js']);
+});

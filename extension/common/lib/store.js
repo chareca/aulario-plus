@@ -28,7 +28,8 @@
       teacherSubject: '',
       teacherBody: '',
       theme: '', // the id of a theme (lib/themes.js); '' or an unknown id: the default theme
-      colorMode: 'auto' // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
+      colorMode: 'auto', // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
+      confetti: true // confetti after a submission of a task or an exam (lib/celebrate.js)
     };
   };
 
@@ -156,7 +157,8 @@
       teacherSubject: MAK.cleanText(s.teacherSubject, 200, false),
       teacherBody: MAK.cleanText(s.teacherBody, 3000, true),
       theme: typeof s.theme === 'string' && /^[a-z0-9-]{1,32}$/.test(s.theme) ? s.theme : '',
-      colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto'
+      colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto',
+      confetti: 'confetti' in s ? !!s.confetti : d.confetti
     };
   };
 
