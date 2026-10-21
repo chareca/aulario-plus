@@ -2,6 +2,7 @@ name: Publish to the stores
 
 # A published release of GitHub (tag vX.Y.Z) sends the same version to the Chrome Web Store
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
+# AMO is paused: see the job "firefox".
 # A store without its secrets is skipped. To examine the keys without an upload, run the
 # workflow by hand with "check".
 on:
@@ -131,6 +132,8 @@ jobs:
         run: scripts/cws.sh publish "dist/aulario-plus-chromium-$TAG.zip"
 
   firefox:
+    # Paused (2026-10-21): no new version to AMO until it accepts the first one. To send them again, remove this line.
+    if: false
     needs: build
     runs-on: ubuntu-latest
     steps:
