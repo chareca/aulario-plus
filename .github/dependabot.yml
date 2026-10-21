@@ -1,0 +1,17 @@
+# The actions of the workflows: pinned to a commit, updated by Dependabot. There are no packages (no package.json).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # A new release waits 7 days: a bad release is usually found and removed before.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+    # "build(deps): ...": the format of the commit messages of this repository.
+    commit-message:
+      prefix: build
+      include: scope
