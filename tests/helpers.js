@@ -125,11 +125,12 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       setBadgeTextColor: async () => {},
       setTitle: async ({ title }) => { badge.title = title; }
     },
-    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; } },
+    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; }, remove: async (id) => { tabsCreated.removed = (tabsCreated.removed || []).concat(id); } },
     // Host permissions that the user gave (optional_host_permissions).
     permissions: {
       contains: async ({ origins }) => origins.every((o) => granted.has(o)),
-      request: async ({ origins }) => { for (const o of origins) granted.add(o); return true; }
+      request: async ({ origins }) => { for (const o of origins) granted.add(o); return true; },
+      remove: async ({ origins }) => { for (const o of origins) granted.delete(o); return true; }
     },
     notifications: {
       create: async (id, o) => { notes.set(id, o); return id; },

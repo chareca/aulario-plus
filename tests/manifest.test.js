@@ -52,9 +52,9 @@ test('a content script loads the shared core before the files that use it', () =
   }
 });
 
-test('the optional host permissions are the Send servers, the shorteners and the exam calendars of the code, and nothing more', () => {
-  const MAK = require('./helpers').loadLib('core', 'store', 'send', 'degree');
-  const expected = MAK.SEND_SERVERS.map((s) => `${s}/*`).concat(MAK.SHORTENERS, MAK.EXAMS_PERMISSION.origins).sort();
+test('the optional host permissions are the Send servers, the shorteners, the exam calendars and MiUPNA and SIGMA of the code, and nothing more', () => {
+  const MAK = require('./helpers').loadLib('core', 'store', 'send', 'degree', 'record');
+  const expected = MAK.SEND_SERVERS.map((s) => `${s}/*`).concat(MAK.SHORTENERS, MAK.EXAMS_PERMISSION.origins, MAK.RECORD_PERMISSION.origins).sort();
   assert.deepEqual([...chromium.optional_host_permissions].sort(), expected);
   assert.deepEqual([...firefox.optional_host_permissions].sort(), expected);
 });

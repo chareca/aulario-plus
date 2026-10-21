@@ -1108,6 +1108,34 @@ function dueOffsetsField(s) {
 
 // Help and support: the welcome page, the changes, a problem or an idea on GitHub (with the version
 // and the browser), and a coffee.
+// The official grades of the Expediente of SIGMA (lib/record.js). The permission for MiUPNA and SIGMA:
+// only a click in a page of the extension can ask for it.
+let recordGranted = false;
+function recordSection() {
+  const r = S.record;
+  const tried = S.recordTry;
+  let state = t('record.off');
+  if (recordGranted) state = r ? t('record.read', { n: r.rows.length, graded: r.rows.filter((x) => x.grade || x.mark !== null).length, ago: MAK.ago(r.at, Date.now()) }) : t('record.none');
+  if (recordGranted && tried && tried.error === 'login') state += ` ${t('record.login')}`;
+  const btn = (text, click) => h('button', { class: 'btn', attrs: { type: 'button' }, text, on: { click } });
+  const start = async () => {
+    if (!(await Promise.resolve(ext.permissions.request(MAK.RECORD_PERMISSION)).catch(() => false))) return;
+    recordGranted = true;
+    renderCurrent();
+    send({ type: 'recordOn' });
+  };
+  const stop = async () => {
+    await send({ type: 'recordOff' });
+    recordGranted = false;
+    renderCurrent();
+  };
+  return h('div', { class: 'section' },
+    h('h2', { text: t('record.section') }),
+    h('p', { class: 'small', text: t('record.help') }),
+    h('p', { class: 'small', text: state }),
+    h('div', { class: 'row' }, recordGranted ? [btn(t('record.refresh'), () => send({ type: 'recordRefresh' })), btn(t('record.stop'), stop)] : btn(t('record.start'), start)));
+}
+
 // A new issue on GitHub (kind: 'bug' or 'idea'), with the version, the browser and the language.
 function issueUrl(kind) {
   const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '';
@@ -1266,6 +1294,7 @@ function renderSettings(el) {
       h('h2', { text: t('search.section') }),
       checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
     ),
+    recordSection(),
     teacherSection(),
     linksSection(),
     h(
@@ -1435,6 +1464,7 @@ async function init() {
     await send({ type: 'resume' });
     checkPermissions();
   });
+  recordGranted = await Promise.resolve(ext.permissions.contains(MAK.RECORD_PERMISSION)).catch(() => false);
   // The popup opens on the main menu (Inicio), or on the tab of ?tab=.
   const asked = new URLSearchParams(location.search).get('tab');
   renderHeader();

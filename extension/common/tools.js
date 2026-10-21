@@ -302,7 +302,8 @@ function runWelcome() {
     ['welcome.permWeb', 'welcome.permWebWhy'],
     ['welcome.permNotes', 'welcome.permNotesWhy'],
     ['welcome.permExams', 'welcome.permExamsWhy'],
-    ['welcome.permSend', 'welcome.permSendWhy']
+    ['welcome.permSend', 'welcome.permSendWhy'],
+    ['welcome.permSigma', 'welcome.permSigmaWhy']
   ];
   MAK.fill(box,
     h('p', { text: t('welcome.intro') }),

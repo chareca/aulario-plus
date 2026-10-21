@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -51,6 +51,90 @@ async function hasExamPermission() {
 if (ext.permissions && ext.permissions.onAdded) {
   ext.permissions.onAdded.addListener((p) => {
     if ((p.origins || []).some((o) => o.startsWith(MAK.EXAMS_ORIGIN))) store.set({ examsGranted: Date.now() }).catch(() => {});
+    ensureRecordScripts().catch(() => {});
+  });
+  if (ext.permissions.onRemoved) ext.permissions.onRemoved.addListener(() => ensureRecordScripts().catch(() => {}));
+}
+
+// ---- The Expediente of SIGMA (lib/record.js) ----------------------------------------------------
+// With the optional permission for MiUPNA and SIGMA, a content script reads the grades when the user
+// opens the Expediente, and every 3 days a tab in the background (not the active tab) does the way of a
+// click: MiUPNA → "Consulta tu Expediente" → "Expediente completo"; then it closes. The login of the
+// UPNA goes on alone only with its session: if it asks for the password, the tab closes and the
+// extension waits.
+const RECORD_ALARM = 'sigma-record';
+const RECORD_SCRIPT = 'record';
+const RECORD_MS = 3 * MAK.DAY; // a new reading after this time
+const RECORD_RETRY_MS = 12 * MAK.HOUR; // after a reading that did not end
+const RECORD_TAB_MS = 90 * 1000; // the longest time of the tab of a reading
+const SSO_ORIGIN = 'https://sso.unavarra.es';
+const runArea = ext.storage.session || ext.storage.local; // the tab of the reading that is open
+
+async function hasRecordPermission() {
+  try {
+    return await ext.permissions.contains(MAK.RECORD_PERMISSION);
+  } catch {
+    return false;
+  }
+}
+
+// The content script exists only with the permission (an optional host cannot have a content script in the manifest).
+async function ensureRecordScripts() {
+  if (!ext.scripting || !ext.scripting.registerContentScripts) return;
+  const on = await hasRecordPermission();
+  const have = (await Promise.resolve(ext.scripting.getRegisteredContentScripts({ ids: [RECORD_SCRIPT] })).catch(() => [])).length > 0;
+  if (on && !have) {
+    await ext.scripting.registerContentScripts([{ id: RECORD_SCRIPT, matches: [`${MAK.PORTAL_ORIGIN}/group/estudiantes/*`, `${MAK.SIGMA_ORIGIN}/*`],
+      js: ['lib/core.js', 'lib/record.js', 'content-record.js'], runAt: 'document_idle', persistAcrossSessions: true }]);
+  } else if (!on && have) {
+    await ext.scripting.unregisterContentScripts({ ids: [RECORD_SCRIPT] });
+  }
+}
+
+const recordRun = async () => (await runArea.get('recordRun')).recordRun || null;
+// The end of a reading: its tab closes. error: '' (the grades came), 'login', 'time' or 'empty'.
+async function endRecordRun(error) {
+  const run = await recordRun();
+  await runArea.remove('recordRun');
+  if (run) await Promise.resolve(ext.tabs.remove(run.tabId)).catch(() => {});
+  if (error) await store.set({ recordTry: { at: Date.now(), error } });
+}
+
+async function refreshRecord() {
+  if (!(await hasRecordPermission())) return { error: 'record.permission' };
+  const run = await recordRun();
+  if (run && Date.now() - run.at < RECORD_TAB_MS) return { ok: true }; // a reading is open
+  if (run) await endRecordRun('time');
+  await store.set({ recordTry: { at: Date.now(), error: '' } });
+  const tab = await ext.tabs.create({ url: MAK.RECORD_START, active: false });
+  await runArea.set({ recordRun: { tabId: tab.id, at: Date.now() } });
+  setTimeout(() => recordRun().then((r) => (r && r.tabId === tab.id ? endRecordRun('time') : null)).catch(() => {}), RECORD_TAB_MS);
+  return { ok: true };
+}
+
+// Every 6 hours: a reading if the grades are older than 3 days. Not when the user is logged out or paused.
+async function recordDue() {
+  const run = await recordRun();
+  if (run && Date.now() - run.at >= RECORD_TAB_MS) await endRecordRun('time');
+  if (!(await hasRecordPermission())) return;
+  const d = await store.get(['record', 'recordTry', 'paused']);
+  const now = Date.now();
+  if (d.paused || (d.record && now - d.record.at < RECORD_MS) || (d.recordTry && now - d.recordTry.at < RECORD_RETRY_MS)) return;
+  await refreshRecord();
+}
+
+// The tab of a reading on the login of the UPNA: with a session it goes on at once (a form that sends
+// itself). If it stays, the login asks for the password: close the tab.
+if (ext.tabs && ext.tabs.onUpdated) {
+  ext.tabs.onUpdated.addListener((tabId, info, tab) => {
+    if (info.status !== 'complete' || !tab || !String(tab.url || '').startsWith(`${SSO_ORIGIN}/`)) return;
+    recordRun().then((run) => {
+      if (!run || run.tabId !== tabId) return;
+      setTimeout(async () => {
+        const now = await Promise.resolve(ext.tabs.get(tabId)).catch(() => null);
+        if (now && String(now.url || '').startsWith(`${SSO_ORIGIN}/`)) await endRecordRun('login');
+      }, 6000);
+    }).catch(() => {});
   });
 }
 
@@ -419,7 +503,7 @@ ext.storage.onChanged.addListener((changes, area) => {
 // ---- Message router ----------------------------------------------------------
 
 // Who sent the message: 'page' (popup or a page of the extension), 'content'
-// (content script in the top frame of MiAulario) or null (rejected).
+// (content script in the top frame of MiAulario), 'record' (in the top frame of MiUPNA or SIGMA) or null (rejected).
 function senderKind(sender) {
   if (!sender || sender.id !== ext.runtime.id) return null;
   const extensionOrigin = ext.runtime.getURL('');
@@ -427,13 +511,15 @@ function senderKind(sender) {
   if (!sender.tab) return 'page';
   if (sender.frameId !== 0) return null;
   try {
-    return new URL(sender.url).origin === MAK.BASE ? 'content' : null;
+    const origin = new URL(sender.url).origin;
+    if (origin === MAK.BASE) return 'content';
+    return origin === MAK.PORTAL_ORIGIN || origin === MAK.SIGMA_ORIGIN ? 'record' : null; // content-record.js
   } catch {
     return null;
   }
 }
 
-// Handlers. "content: true" lets content scripts send the message.
+// Handlers. "content: true" lets content scripts send the message; "record: true", the script of the Expediente.
 const handlers = {
   getStatus: {
     content: true,
@@ -748,6 +834,47 @@ const handlers = {
       }
     }
   },
+  // The table "Expediente completo" (or another table of the Expediente) in SIGMA.
+  recordSave: {
+    record: true,
+    run: async (msg, sender) => {
+      const run = await recordRun();
+      const mine = !!(run && sender.tab && run.tabId === sender.tab.id);
+      const next = new URL(sender.url).origin === MAK.SIGMA_ORIGIN ? MAK.cleanRecord(msg.record) : null;
+      if (!next || !next.rows.length) {
+        if (mine) await endRecordRun('empty');
+        return { error: 'record.empty' };
+      }
+      await store.update('record', (cur) => Object.assign(MAK.mergeRecord(cur, next), { at: Date.now() }));
+      if (mine) await endRecordRun('');
+      return { ok: true };
+    }
+  },
+  // Is this the tab of a reading in the background? (Then the script follows the links.)
+  recordTab: {
+    record: true,
+    run: async (msg, sender) => {
+      const run = await recordRun();
+      return !!(run && sender.tab && run.tabId === sender.tab.id);
+    }
+  },
+  // The settings: the user gave the permission (the popup asks for it), wants a reading now, or turns it off.
+  recordOn: {
+    run: async () => {
+      await ensureRecordScripts();
+      return refreshRecord();
+    }
+  },
+  recordRefresh: { run: () => refreshRecord() },
+  recordOff: {
+    run: async () => {
+      await Promise.resolve(ext.permissions.remove(MAK.RECORD_PERMISSION)).catch(() => false);
+      await ensureRecordScripts();
+      await endRecordRun('');
+      await store.remove(['record', 'recordTry']);
+      return { ok: true };
+    }
+  },
   // The page of the extension that asks for the permission of the exam calendars.
   openExamPermission: {
     content: true,
@@ -859,7 +986,7 @@ const handlers = {
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const kind = senderKind(sender);
   const handler = msg && typeof msg.type === 'string' && Object.prototype.hasOwnProperty.call(handlers, msg.type) ? handlers[msg.type] : null;
-  if (!kind || !handler || (kind === 'content' && !handler.content)) {
+  if (!kind || !handler || (kind === 'content' && !handler.content) || (kind === 'record' && !handler.record)) {
     sendResponse(null);
     return false;
   }
@@ -881,6 +1008,7 @@ async function scheduleNext() {
 }
 
 const alarmHandlers = {
+  [RECORD_ALARM]: () => recordDue(),
   [PING_ALARM]: async () => {
     // First, set the next alarm. If the worker stops during the ping, the sequence continues.
     await scheduleNext();
@@ -908,6 +1036,8 @@ async function boot() {
   await ping();
   await sync.run().catch(() => {});
   await checkDueReminders().catch(() => {});
+  await ensureRecordScripts().catch(() => {});
+  if (!(await ext.alarms.get(RECORD_ALARM))) await ext.alarms.create(RECORD_ALARM, { delayInMinutes: 5, periodInMinutes: 360 });
 }
 
 ext.runtime.onInstalled.addListener(boot);

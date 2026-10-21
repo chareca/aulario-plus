@@ -9,7 +9,8 @@
     "alarms",
     "cookies",
     "notifications",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://miaulario.unavarra.es/*",
@@ -23,7 +24,9 @@
     "https://is.gd/*",
     "https://spoo.me/*",
     "https://tinyurl.com/*",
-    "https://www2.unavarra.es/*"
+    "https://www2.unavarra.es/*",
+    "https://portal.unavarra.es/*",
+    "https://academicos.unavarra.es/*"
   ],
   "background": {
     "service_worker": "background.js"

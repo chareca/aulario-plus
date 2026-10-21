@@ -184,7 +184,7 @@
   // when the user logs out or when a different user logs in.
   MAK.DATA_KEYS = [
     'sites', 'pages', 'assignments', 'announcements', 'notifications', 'synoptic', 'forums',
-    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'dueNotified', 'lessons', 'last', 'log' // "log": v1.1 data
+    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'dueNotified', 'lessons', 'record', 'recordTry', 'last', 'log' // "log": v1.1 data
   ];
   MAK.RESOURCE_PREFIX = 'res:';
 
