@@ -5,6 +5,8 @@
 //   login form of sso.unavarra.es opens. The password manager of the browser can fill it.
 // - If a login of the last 2 minutes did not give a session, the script asks the background
 //   script to remove the session cookies, and opens the login one more time (once in 10 minutes).
+// - These two only with MAK.KEEP_SESSION (lib/core.js). Without it, a window says once that keeping the
+//   session is off for now.
 // - If you click "Log out", the script tells the background script to pause.
 // - If you open the Announcements tool of a site, the script tells the background script.
 //   The extension marks these announcements as read, also in the bell of MiAulario.
@@ -49,6 +51,7 @@
 
   // Return true if the script sends the user to the login page.
   async function reloginIfNeeded() {
+    if (!MAK.KEEP_SESSION) return false;
     const status = await send({ type: 'getStatus' });
     if (!status) return false;
     let loggedIn;
@@ -168,7 +171,17 @@
     MAK.showNewsBanner({ siteId: here.siteId, result: r, compact: !r.isNew });
   }
 
+  // Keeping the session is off for now: say it once, in a window over the first page of MiAulario.
+  async function keepOffNotice() {
+    if (MAK.KEEP_SESSION || !MAK.askWindow) return;
+    const r = await send({ type: 'keepOffNotice' });
+    if (!r || !r.show) return;
+    MAK.setLang(r.lang);
+    MAK.askWindow(MAK.t('keepOff.title'), MAK.t('keepOff.text'), MAK.t('keepOff.ok'), null);
+  }
+
   if (await reloginIfNeeded()) return;
+  keepOffNotice();
   reportToolVisit();
   flushPendingMarkViewed();
   reportVisit('load');

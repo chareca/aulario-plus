@@ -79,7 +79,7 @@ test('the ping alarm sets the next random alarm and records the ping', async () 
       return { userId: 'user-1', maxInactiveInterval: 3600 };
     }
   });
-  const bg = loadBackground({ fetch });
+  const bg = loadBackground({ fetch, keepSession: true });
   const before = Date.now();
   await bg.fireAlarm('miaulario-ping');
   const alarm = bg.ext._alarms.get('miaulario-ping');
@@ -90,9 +90,23 @@ test('the ping alarm sets the next random alarm and records the ping', async () 
   assert.equal(bg.ext.storage.local.data.last.status, 200);
 });
 
+test('keeping the session off (MAK.KEEP_SESSION): the ping only reads the session; the notice of MiAulario once', async () => {
+  const log = [];
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log) });
+  assert.equal(bg.MAK.KEEP_SESSION, false, 'off in lib/core.js');
+  await bg.fireAlarm('miaulario-ping');
+  const reads = log.filter((x) => x.url.includes('/direct/session/current.json'));
+  assert.ok(reads.length && reads.every((x) => x.url.includes('auto=true')), 'no request without auto=true: Sakai records no activity');
+  assert.equal(bg.ext.storage.local.data.last.loggedIn, true, 'the state of the session for the popup');
+  const shown = await Promise.all([1, 2].map(() => bg.send({ type: 'keepOffNotice' }, CONTENT())));
+  assert.deepEqual(shown.map((r) => r.show).sort(), [false, true], 'two tabs at once: one window');
+  assert.equal((await bg.send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'only once');
+  assert.equal((await loadBackground({ keepSession: true }).send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'with the session kept: no notice');
+});
+
 test('a paused extension resumes when the user logs in again, and only then pings', async () => {
   const log = [];
-  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: true } });
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: true }, keepSession: true });
   assert.ok(await bg.send({ type: 'pingNow' }));
   assert.equal(bg.ext.storage.local.data.paused, false);
   assert.ok(log[0].url.includes('auto=true'), 'first a read without activity');

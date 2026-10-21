@@ -7,6 +7,9 @@
 //    into persistent cookies. Then the cookies stay after you close the browser.
 // 3. If you log out, the script pauses and removes these cookies. The script starts
 //    again when you log in manually.
+// Points 1 and 2 (and the login of content.js) work only with MAK.KEEP_SESSION (lib/core.js). Without it, the
+// request of point 1 has "auto=true" (only the state of the session), and the persistent copies of an older
+// version become session cookies again.
 
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
@@ -239,7 +242,7 @@ async function ping() {
   }
   const last = { time: Date.now(), ok: false, status: 0, loggedIn: null };
   try {
-    const r = await fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' });
+    const r = await fetch(MAK.KEEP_SESSION ? SESSION_URL : `${SESSION_URL}?auto=true`, { cache: 'no-store', credentials: 'include' });
     const s = await r.json().catch(() => null);
     Object.assign(last, { status: r.status, ok: r.ok, loggedIn: !!(s && s.userId) });
   } catch (e) {
@@ -327,7 +330,7 @@ async function settleCookie(host, name, storeId, round = 0) {
 
 ext.cookies.onChanged.addListener(({ cookie, removed }) => {
   // A persistent cookie is a write of the extension, or a cookie that is persistent already.
-  if (removed || !isSessionCookie(cookie) || cookie.expirationDate) return;
+  if (!MAK.KEEP_SESSION || removed || !isSessionCookie(cookie) || cookie.expirationDate) return;
   const host = cookieHost(cookie);
   const key = watchKey(cookie.storeId, host, cookie.name);
   const watch = cookieWatch.get(key) || {};
@@ -353,8 +356,26 @@ const clearPersisted = () => dropSessionCookies(Object.keys(COOKIE_HOSTS));
 
 // At install or at browser start, change the cookies that exist into persistent cookies.
 async function persistExisting() {
+  if (!MAK.KEEP_SESSION) return;
   for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
     for (const name of names) await queueCookie(() => settleCookie(host, name));
+  }
+}
+
+// Without MAK.KEEP_SESSION: the persistent copies of an older version become session cookies again (the same
+// cookie without its expiration date), so the session ends with the browser, as without the extension.
+async function unpersistExisting() {
+  for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
+    for (const name of names) {
+      await queueCookie(async () => {
+        for (const c of await cookieCopies(host, name)) {
+          if (!c.expirationDate) continue;
+          const d = cookieDetails(c, host, c.value);
+          delete d.expirationDate;
+          try { await ext.cookies.set(d); } catch {}
+        }
+      });
+    }
   }
 }
 
@@ -705,6 +726,20 @@ const handlers = {
       const mode = ['dark', 'light', 'system'].includes(msg && msg.mode) ? msg.mode : null;
       if (mode) await store.set({ sakaiMode: mode });
       return { ok: !!mode };
+    }
+  },
+  // Keeping the session is off (MAK.KEEP_SESSION): the window that says it, once, at the first page of MiAulario
+  // (content.js). true only for the first request, also with several tabs.
+  keepOffNotice: {
+    content: true,
+    run: async () => {
+      let show = false;
+      await store.update('keepOffSeen', (seen) => {
+        show = !seen && !MAK.KEEP_SESSION;
+        return show || undefined;
+      });
+      const { settings } = await store.get('settings');
+      return { show, lang: MAK.withDefaults(settings).lang };
     }
   },
   dismissWhatsNew: {
@@ -1156,7 +1191,7 @@ async function boot() {
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
-  await persistExisting();
+  await (MAK.KEEP_SESSION ? persistExisting() : unpersistExisting());
   await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});

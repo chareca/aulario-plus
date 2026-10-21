@@ -14,7 +14,7 @@ const SAML = '/sakai-login-tool/container/saml/login';
 const LOGIN_KEY = 'aulario-plus-last-relogin';
 const REPAIR_KEY = 'aulario-plus-last-repair';
 
-async function run({ loggedIn = false, paused = false, autoLogin = true, storage = {}, pathname = '/portal' } = {}) {
+async function run({ loggedIn = false, paused = false, autoLogin = true, storage = {}, pathname = '/portal', keepSession = true, notice = false } = {}) {
   const assigned = [];
   const messages = [];
   const session = new Map(Object.entries(storage).map(([k, v]) => [k, String(v)]));
@@ -35,6 +35,7 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, storage
           messages.push(msg.type);
           if (msg.type === 'getStatus') return { paused, autoLogin, nextPing: null };
           if (msg.type === 'repairSession') return { ok: true };
+          if (msg.type === 'keepOffNotice') return { show: notice, lang: 'es' };
           return null;
         }
       },
@@ -45,9 +46,16 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, storage
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   // The shared scripts of the group, then content.js (the other content scripts need a real DOM).
-  for (const file of group.js.filter((f) => f.startsWith('lib/') || f === 'content.js')) vm.runInContext(fs.readFileSync(path.join(COMMON, file), 'utf8'), sandbox, { filename: file });
+  const asked = [];
+  for (const file of group.js.filter((f) => f.startsWith('lib/') || f === 'content.js')) {
+    if (file === 'content.js') {
+      sandbox.MAK.KEEP_SESSION = keepSession;
+      sandbox.MAK.askWindow = (...args) => asked.push(args); // content-banner.js (it needs a real DOM)
+    }
+    vm.runInContext(fs.readFileSync(path.join(COMMON, file), 'utf8'), sandbox, { filename: file });
+  }
   await new Promise((r) => setTimeout(r, 20));
-  return { assigned, messages, session };
+  return { assigned, messages, session, asked };
 }
 
 test('no session and no recent login: the automatic login opens the SAML login', async () => {
@@ -89,6 +97,18 @@ test('automatic login off: no login, but the repair after a login of the user', 
   assert.deepEqual(idle.assigned, []);
   const clicked = await run({ autoLogin: false, storage: { [LOGIN_KEY]: Date.now() - 10000 } });
   assert.deepEqual(clicked.assigned, [SAML]);
+});
+
+test('keeping the session off (MAK.KEEP_SESSION): no automatic login and no repair; the notice of the background once', async () => {
+  const off = await run({ keepSession: false, storage: { [LOGIN_KEY]: Date.now() - 30000 } });
+  assert.deepEqual(off.assigned, []);
+  assert.ok(!off.messages.includes('repairSession') && !off.messages.includes('getStatus'));
+  assert.deepEqual(off.asked, [], 'the background says that the user saw it');
+  const first = await run({ keepSession: false, notice: true, loggedIn: true });
+  assert.equal(first.asked.length, 1);
+  assert.deepEqual([first.asked[0][0], first.asked[0][3]], ['Mantener la sesión, desactivado por ahora', null], 'one button');
+  const on = await run({ notice: true });
+  assert.ok(!on.messages.includes('keepOffNotice'), 'with the session kept: no notice');
 });
 
 test('the login pages are not changed', async () => {

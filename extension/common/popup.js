@@ -229,9 +229,12 @@ const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0'
 // The state of the session for the menu: a class (on, off, bad, wait), a title and a line below it.
 function sessionState(now) {
   const last = S.last || null;
-  if (S.paused) return { cls: 'off', title: t('status.paused'), line: t('home.pausedHelp') };
-  if (!last) return { cls: 'wait', title: t('status.noPing'), line: '' };
-  if (!last.loggedIn) return { cls: 'bad', title: t(last.error ? 'status.networkError' : 'status.notLoggedIn'), line: t('home.loginHelp') };
+  // Keeping the session is off for now (MAK.KEEP_SESSION): the line says it, not the next ping.
+  const keep = MAK.KEEP_SESSION;
+  if (S.paused) return { cls: 'off', title: t('status.paused'), line: t(keep ? 'home.pausedHelp' : 'home.pausedOff') };
+  if (!last) return { cls: 'wait', title: t('status.noPing'), line: keep ? '' : t('home.keepOff') };
+  if (!last.loggedIn) return { cls: 'bad', title: t(last.error ? 'status.networkError' : 'status.notLoggedIn'), line: t(keep ? 'home.loginHelp' : 'home.keepOff') };
+  if (!keep) return { cls: 'on', title: t('status.connected'), line: t('home.keepOff') };
   const next = status && status.nextPing ? Math.max(0, Math.round((status.nextPing - now) / 1000)) : null;
   return { cls: 'on', title: t('home.active'), line: next === null ? '' : t('home.nextPing', { t: clockText(next) }) };
 }
@@ -274,7 +277,7 @@ function renderHome(el) {
   const set = (patch) => () => send({ type: 'setSettings', patch });
   const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
   const top = h('div', { class: 'home-top' },
-    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
+    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t(MAK.KEEP_SESSION ? 'set.keepAlive' : 'home.power'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
     session);
   const switches = h('div', { class: 'switches' },
     homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),
@@ -1284,12 +1287,14 @@ function renderSettings(el) {
       'div',
       { class: 'section' },
       h('h2', { text: t('set.keepAlive') }),
+      MAK.KEEP_SESSION ? null : h('p', { class: 'notice', text: t('set.keepOff') }),
       h(
         'dl',
         { class: 'kv' },
         h('dt', { text: t('set.session') }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
         h('dt', { text: t('set.lastPing') }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
-        h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' }),
+        // The time before Sakai ends the session: only while the pings keep it.
+        MAK.KEEP_SESSION ? [h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' })] : null,
         h('dt', { text: t('set.nextPing') }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
       ),
       h(
@@ -1298,7 +1303,7 @@ function renderSettings(el) {
         h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: t('set.pingNow'), on: { click: pingNow } }),
         h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } })
       ),
-      checkbox(t('set.autoLogin'), null, S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
+      MAK.KEEP_SESSION ? checkbox(t('set.autoLogin'), null, S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v })) : null
     ),
     h(
       'div',
@@ -1380,7 +1385,7 @@ function updateKeepAlive(now) {
   const last = S.last || null;
   $('ka-session').textContent = paused ? t('status.paused') : !last ? '–' : t(last.loggedIn ? 'ka.active' : last.error ? 'status.networkError' : 'ka.loggedOut');
   $('ka-last').textContent = last ? `${MAK.ago(last.time, now)} (${last.status || '–'})` : '–';
-  $('ka-left').textContent = last && last.loggedIn ? `~${Math.max(0, MAX_INACTIVE_MIN - Math.round((now - last.time) / 60000))} min` : '–';
+  if ($('ka-left')) $('ka-left').textContent = last && last.loggedIn ? `~${Math.max(0, MAX_INACTIVE_MIN - Math.round((now - last.time) / 60000))} min` : '–';
   if (status && status.nextPing && !paused) {
     $('ka-next').textContent = t('ka.in', { t: clockText(Math.max(0, Math.round((status.nextPing - now) / 1000))) });
   } else $('ka-next').textContent = '–';

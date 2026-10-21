@@ -38,8 +38,24 @@ function withJar(bg) {
   return { jar, server, named, put };
 }
 
-test('login: after the changes stop, the extension writes the cookie that the browser has', async () => {
+test('keeping the session off (MAK.KEEP_SESSION): no persistent copy; at an update, the old copies become session cookies', async () => {
   const bg = loadBackground({ web: fastTimers });
+  assert.equal(bg.MAK.KEEP_SESSION, false, 'off in lib/core.js');
+  const { server, named, put } = withJar(bg);
+  const later = Date.now() / 1000 + 9 * 86400;
+  server('SERVERID', 'h31');
+  put({ name: 'SAKAISESSIONID', value: 'old', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, httpOnly: true, expirationDate: later });
+  put({ name: 'idpsession', value: 'sso', domain: '.sso.unavarra.es', hostOnly: false, path: '/', secure: true, httpOnly: true, expirationDate: later });
+  await wait(30);
+  assert.equal(named('SERVERID')[0].expirationDate, undefined, 'the cookie of the server stays a session cookie');
+  for (const f of bg.ext._listeners.installed) f({ reason: 'update', previousVersion: '1.6.5' });
+  await wait(80);
+  assert.deepEqual(named('SAKAISESSIONID').map((c) => [c.value, c.hostOnly, c.expirationDate]), [['old', true, undefined]]);
+  assert.deepEqual(named('idpsession').map((c) => [c.value, c.domain, c.expirationDate]), [['sso', '.sso.unavarra.es', undefined]]);
+});
+
+test('login: after the changes stop, the extension writes the cookie that the browser has', async () => {
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { server, named } = withJar(bg);
   server('SAKAISESSIONID', 'A-anonymous');
   server('SAKAISESSIONID', 'B-logged-in');
@@ -54,7 +70,7 @@ test('login: after the changes stop, the extension writes the cookie that the br
 });
 
 test('login: a change of the server during the write is not lost', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { server, named } = withJar(bg);
   const set = bg.ext.cookies.set;
   let raced = false;
@@ -76,7 +92,7 @@ test('login: a change of the server during the write is not lost', async () => {
 });
 
 test('an old copy with other attributes is removed: the browser sends one session cookie', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { server, named, put } = withJar(bg);
   // An old persistent copy (host-only), and the new cookie of the server as a domain cookie.
   put({ name: 'SAKAISESSIONID', value: 'OLD', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, httpOnly: true, expirationDate: Date.now() / 1000 + 1e6 });
@@ -90,7 +106,7 @@ test('an old copy with other attributes is removed: the browser sends one sessio
 });
 
 test('the persistent copy has the attributes of the server cookie, and is always secure (https only)', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { server, named } = withJar(bg);
   server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false, sameSite: 'no_restriction' });
   server('SERVERID', 'h31', { secure: false, httpOnly: false, sameSite: 'lax' });
@@ -104,7 +120,7 @@ test('the persistent copy has the attributes of the server cookie, and is always
 });
 
 test('a persistent cookie, another cookie or a pause: no change', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { put, server } = withJar(bg);
   let sets = 0;
   const set = bg.ext.cookies.set;
@@ -122,7 +138,7 @@ test('a persistent cookie, another cookie or a pause: no change', async () => {
 test('the end of the pause of a logout (a new login): the session cookies are persistent again', async () => {
   const { fakeFetch } = require('./helpers');
   const F = require('./fixtures/miaulario');
-  const bg = loadBackground({ web: fastTimers, fetch: fakeFetch(F.routes()), local: { paused: true } });
+  const bg = loadBackground({ keepSession: true, web: fastTimers, fetch: fakeFetch(F.routes()), local: { paused: true } });
   const { server, named } = withJar(bg);
   server('SAKAISESSIONID', 'NEW');
   await wait(30);
@@ -133,7 +149,7 @@ test('the end of the pause of a logout (a new login): the session cookies are pe
 });
 
 test('repairSession removes all the copies of the Sakai session and SERVERID, and keeps the SSO session', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { put, named } = withJar(bg);
   const later = Date.now() / 1000 + 1e6;
   put({ name: 'SAKAISESSIONID', value: 'OLD', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, expirationDate: later });
@@ -150,7 +166,7 @@ test('repairSession removes all the copies of the Sakai session and SERVERID, an
 });
 
 test('logout removes all the copies of the session cookies', async () => {
-  const bg = loadBackground({ web: fastTimers });
+  const bg = loadBackground({ keepSession: true, web: fastTimers });
   const { put, named } = withJar(bg);
   const later = Date.now() / 1000 + 1e6;
   put({ name: 'SAKAISESSIONID', value: 'A', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: later });
