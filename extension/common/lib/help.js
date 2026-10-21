@@ -40,6 +40,15 @@
   // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey).
   MAK.CHANGES = [
     {
+      version: '1.6.7',
+      es: [
+        'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.'
+      ],
+      en: [
+        'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.'
+      ]
+    },
+    {
       version: '1.6.6',
       es: [
         'Notas oficiales de SIGMA (actívalo en Ajustes): tu media y tu rango junto a tu foto en MiAulario. Hay ocho rangos, de Bronce a Leyenda, uno por cada octavo de los créditos de tu carrera, cada uno con su gema; te dice qué te falta para el siguiente.',
