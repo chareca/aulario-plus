@@ -40,6 +40,23 @@
   // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey).
   MAK.CHANGES = [
     {
+      version: '1.6.5',
+      es: [
+        'El popup abre en un menú de inicio: tu sesión con un botón para pausarla, los avisos y el modo claro u oscuro en un clic, y lo que tienes pendiente.',
+        'Confeti al entregar una tarea o un examen, sin sonido. Se apaga en Ajustes.',
+        'En los Recursos de Mi sitio: descarga todos tus archivos en un ZIP o envíalos todos a la Papelera, siempre con confirmación.',
+        'El buscador da prioridad a las iniciales: «ip» encuentra primero Informática y Programación.',
+        'Las ayudas muestran el atajo de tu sistema: {key}.'
+      ],
+      en: [
+        'The popup opens on a main menu: your session with a button to pause it, the reminders and the light or dark mode in one click, and what you have to do.',
+        'Confetti when you submit a task or an exam, with no sound. You can set it to off in the settings.',
+        'In the Resources of Mi sitio: download all your files in one ZIP, or send all of them to the trash, always with a confirmation.',
+        'The search gives priority to the initials: "ip" finds Informática y Programación first.',
+        'The help shows the shortcut of your system: {key}.'
+      ]
+    },
+    {
       version: '1.6.4',
       es: [
         'Seis temas para elegir en Ajustes: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Cada uno en claro y en oscuro, o como MiAulario.',
