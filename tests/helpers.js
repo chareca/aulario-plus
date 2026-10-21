@@ -125,7 +125,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       setBadgeTextColor: async () => {},
       setTitle: async ({ title }) => { badge.title = title; }
     },
-    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; }, remove: async (id) => { tabsCreated.removed = (tabsCreated.removed || []).concat(id); } },
+    tabs: { create: async (o) => { tabsCreated.push(o); return { id: tabsCreated.length }; }, remove: async (id) => { tabsCreated.removed = (tabsCreated.removed || []).concat(id); }, query: async () => [] },
     // Host permissions that the user gave (optional_host_permissions).
     permissions: {
       contains: async ({ origins }) => origins.every((o) => granted.has(o)),

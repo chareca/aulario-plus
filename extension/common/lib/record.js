@@ -52,6 +52,9 @@
     return { rows, credits };
   };
 
+  // Is this the view "Expediente completo" (the bar "Mi expediente > Expediente completo")? The first view of SIGMA is "Año actual".
+  MAK.recordComplete = (doc) => /mi expediente\s*>\s*expediente completo/i.test(words(doc.body && doc.body.textContent));
+
   // MiUPNA: the address of "Consulta tu Expediente" (onclick="parent.open('…aplDestino=EXPS…')"), or null.
   MAK.recordEntry = function (doc) {
     for (const el of doc.querySelectorAll('[onclick*="aplDestino=EXPS"]')) {

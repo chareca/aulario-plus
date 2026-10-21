@@ -47,19 +47,29 @@ test('the background keeps the grades only from SIGMA, and only with rows', asyn
   assert.equal(await bg.send({ type: 'recordTab' }, SIGMA), false, 'no reading in the background: the script does not follow links');
 });
 
-test('the reading in the background: a tab that is not active, at MiUPNA; the grades of that tab close it', async () => {
+test('the reading: in the background (every 3 days) or visible ("Leer ahora"); the tab closes at "Expediente completo"', async () => {
   // The longest time of the tab (90 s) does not run in the test.
   const bg = loadBackground({ web: { setTimeout: (f, ms) => (ms >= 60000 ? 0 : setTimeout(f, ms)) } });
   assert.deepEqual(await bg.send({ type: 'recordRefresh' }), { error: 'record.permission' }, 'nothing without the permission');
+  await bg.fireAlarm('sigma-record');
+  assert.equal(bg.ext._tabs.length, 0);
   await bg.ext.permissions.request(bg.MAK.RECORD_PERMISSION);
-  assert.deepEqual(await bg.send({ type: 'recordOn' }), { ok: true });
-  assert.deepEqual(JSON.parse(JSON.stringify(bg.ext._tabs.at(-1))), { url: 'https://portal.unavarra.es/group/estudiantes/servicios-sigma', active: false });
+  await bg.fireAlarm('sigma-record');
+  assert.deepEqual(JSON.parse(JSON.stringify(bg.ext._tabs.at(-1))), { url: 'https://portal.unavarra.es/group/estudiantes/servicios-sigma', active: false }, 'in the background');
   const tab = { id: bg.ext._tabs.length };
-  assert.equal(await bg.send({ type: 'recordTab' }, Object.assign({}, SIGMA, { tab })), true);
+  const inTab = Object.assign({}, SIGMA, { tab });
+  assert.equal(await bg.send({ type: 'recordTab' }, inTab), true);
   assert.equal(await bg.send({ type: 'recordTab' }, Object.assign({}, SIGMA, { tab: { id: 99 } })), false, 'another tab of the user');
-  assert.deepEqual(await bg.send({ type: 'recordSave', record: { rows: [row()], credits: [] } }, Object.assign({}, SIGMA, { tab })), { ok: true });
+  assert.equal(await bg.send({ type: 'recordTab' }, Object.assign({}, inTab, { frameId: 3 })), true, 'SIGMA in a frame of the tab');
+  assert.deepEqual(await bg.send({ type: 'recordSave', record: { rows: [row()], credits: [] } }, inTab), { ok: true });
+  assert.equal(bg.ext._tabs.removed, undefined, '"Año actual": the tab goes on to "Expediente completo"');
+  assert.deepEqual(await bg.send({ type: 'recordSave', record: { rows: [row({ code: 'B' })], credits: [] }, complete: true }, inTab), { ok: true });
   assert.deepEqual([...bg.ext._tabs.removed], [tab.id], 'the tab closes');
-  assert.equal(await bg.send({ type: 'recordTab' }, Object.assign({}, SIGMA, { tab })), false);
+  assert.equal((await bg.ext.storage.local.get('record')).record.rows.length, 2);
+  await bg.fireAlarm('sigma-record');
+  assert.equal(bg.ext._tabs.length, 1, 'read now: no other reading for 3 days');
+  assert.deepEqual(await bg.send({ type: 'recordRefresh' }), { ok: true });
+  assert.equal(bg.ext._tabs.at(-1).active, true, '"Leer ahora": a visible tab');
   assert.deepEqual(await bg.send({ type: 'recordOff' }), { ok: true });
   assert.deepEqual(JSON.parse(JSON.stringify(await bg.ext.storage.local.get(['record', 'recordTry']))), {}, 'turned off: the grades go');
 });

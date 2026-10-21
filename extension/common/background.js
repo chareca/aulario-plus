@@ -51,22 +51,22 @@ async function hasExamPermission() {
 if (ext.permissions && ext.permissions.onAdded) {
   ext.permissions.onAdded.addListener((p) => {
     if ((p.origins || []).some((o) => o.startsWith(MAK.EXAMS_ORIGIN))) store.set({ examsGranted: Date.now() }).catch(() => {});
-    ensureRecordScripts().catch(() => {});
   });
-  if (ext.permissions.onRemoved) ext.permissions.onRemoved.addListener(() => ensureRecordScripts().catch(() => {}));
 }
 
 // ---- The Expediente of SIGMA (lib/record.js) ----------------------------------------------------
-// With the optional permission for MiUPNA and SIGMA, a content script reads the grades when the user
-// opens the Expediente, and every 3 days a tab in the background (not the active tab) does the way of a
-// click: MiUPNA → "Consulta tu Expediente" → "Expediente completo"; then it closes. The login of the
-// UPNA goes on alone only with its session: if it asks for the password, the tab closes and the
-// extension waits.
+// With the optional permission for MiUPNA and SIGMA, a script (content-record.js, injected at each load of
+// their pages) reads the grades when the user opens the Expediente, and every 3 days a tab in the
+// background (not the active tab) does the way of a click: MiUPNA → "Consulta tu Expediente" → "Año
+// actual" → "Expediente completo"; then it closes. The login of the UPNA goes on alone only with its
+// session: if it asks for the password, the tab closes and the extension waits. "Leer ahora": the same in
+// a visible tab, which waits for the user to log in.
 const RECORD_ALARM = 'sigma-record';
-const RECORD_SCRIPT = 'record';
+const RECORD_FILES = ['lib/core.js', 'lib/record.js', 'content-record.js'];
 const RECORD_MS = 3 * MAK.DAY; // a new reading after this time
 const RECORD_RETRY_MS = 12 * MAK.HOUR; // after a reading that did not end
-const RECORD_TAB_MS = 90 * 1000; // the longest time of the tab of a reading
+const RECORD_TAB_MS = 90 * 1000; // the longest time of the tab of a reading in the background
+const RECORD_SHOWN_MS = 5 * MAK.MINUTE; // and of a visible tab ("Leer ahora"): time to log in
 const SSO_ORIGIN = 'https://sso.unavarra.es';
 const runArea = ext.storage.session || ext.storage.local; // the tab of the reading that is open
 
@@ -78,17 +78,11 @@ async function hasRecordPermission() {
   }
 }
 
-// The content script exists only with the permission (an optional host cannot have a content script in the manifest).
-async function ensureRecordScripts() {
-  if (!ext.scripting || !ext.scripting.registerContentScripts) return;
-  const on = await hasRecordPermission();
-  const have = (await Promise.resolve(ext.scripting.getRegisteredContentScripts({ ids: [RECORD_SCRIPT] })).catch(() => [])).length > 0;
-  if (on && !have) {
-    await ext.scripting.registerContentScripts([{ id: RECORD_SCRIPT, matches: [`${MAK.PORTAL_ORIGIN}/group/estudiantes/*`, `${MAK.SIGMA_ORIGIN}/*`],
-      js: ['lib/core.js', 'lib/record.js', 'content-record.js'], runAt: 'document_idle', persistAcrossSessions: true }]);
-  } else if (!on && have) {
-    await ext.scripting.unregisterContentScripts({ ids: [RECORD_SCRIPT] });
-  }
+// The pages of MiUPNA and SIGMA where the script goes (an optional host cannot have a content script in the manifest).
+const recordPage = (url) => String(url || '').startsWith(`${MAK.SIGMA_ORIGIN}/`) || String(url || '').startsWith(`${MAK.PORTAL_ORIGIN}/group/estudiantes/`);
+function injectRecord(tabId) {
+  if (!ext.scripting) return Promise.resolve();
+  return Promise.resolve(ext.scripting.executeScript({ target: { tabId, allFrames: true }, files: RECORD_FILES })).catch(() => {});
 }
 
 const recordRun = async () => (await runArea.get('recordRun')).recordRun || null;
@@ -100,22 +94,30 @@ async function endRecordRun(error) {
   if (error) await store.set({ recordTry: { at: Date.now(), error } });
 }
 
-async function refreshRecord() {
+// shown: a visible tab ("Leer ahora"), else a tab in the background.
+async function refreshRecord(shown) {
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const run = await recordRun();
-  if (run && Date.now() - run.at < RECORD_TAB_MS) return { ok: true }; // a reading is open
+  if (run && Date.now() - run.at < (run.shown ? RECORD_SHOWN_MS : RECORD_TAB_MS)) return { ok: true }; // a reading is open
   if (run) await endRecordRun('time');
   await store.set({ recordTry: { at: Date.now(), error: '' } });
-  const tab = await ext.tabs.create({ url: MAK.RECORD_START, active: false });
-  await runArea.set({ recordRun: { tabId: tab.id, at: Date.now() } });
-  setTimeout(() => recordRun().then((r) => (r && r.tabId === tab.id ? endRecordRun('time') : null)).catch(() => {}), RECORD_TAB_MS);
+  const tab = await ext.tabs.create({ url: MAK.RECORD_START, active: !!shown });
+  await runArea.set({ recordRun: { tabId: tab.id, at: Date.now(), shown: !!shown } });
+  setTimeout(() => recordRun().then((r) => (r && r.tabId === tab.id ? endRecordRun('time') : null)).catch(() => {}), shown ? RECORD_SHOWN_MS : RECORD_TAB_MS);
   return { ok: true };
+}
+
+async function readRecordNow() {
+  if (!(await hasRecordPermission())) return { error: 'record.permission' };
+  const open = await Promise.resolve(ext.tabs.query({ url: `${MAK.SIGMA_ORIGIN}/*` })).catch(() => []);
+  for (const t of open || []) await injectRecord(t.id);
+  return refreshRecord(true);
 }
 
 // Every 6 hours: a reading if the grades are older than 3 days. Not when the user is logged out or paused.
 async function recordDue() {
   const run = await recordRun();
-  if (run && Date.now() - run.at >= RECORD_TAB_MS) await endRecordRun('time');
+  if (run && Date.now() - run.at >= (run.shown ? RECORD_SHOWN_MS : RECORD_TAB_MS)) await endRecordRun('time');
   if (!(await hasRecordPermission())) return;
   const d = await store.get(['record', 'recordTry', 'paused']);
   const now = Date.now();
@@ -123,13 +125,19 @@ async function recordDue() {
   await refreshRecord();
 }
 
-// The tab of a reading on the login of the UPNA: with a session it goes on at once (a form that sends
-// itself). If it stays, the login asks for the password: close the tab.
+// A page of MiUPNA or SIGMA that loaded: the script, with the permission. The tab of a reading in the
+// background on the login of the UPNA: with a session it goes on at once (a form that sends itself). If
+// it stays, the login asks for the password: close the tab (a visible tab waits for the user).
 if (ext.tabs && ext.tabs.onUpdated) {
   ext.tabs.onUpdated.addListener((tabId, info, tab) => {
-    if (info.status !== 'complete' || !tab || !String(tab.url || '').startsWith(`${SSO_ORIGIN}/`)) return;
+    if (info.status !== 'complete' || !tab) return;
+    if (recordPage(tab.url)) {
+      hasRecordPermission().then((ok) => (ok ? injectRecord(tabId) : null)).catch(() => {});
+      return;
+    }
+    if (!String(tab.url || '').startsWith(`${SSO_ORIGIN}/`)) return;
     recordRun().then((run) => {
-      if (!run || run.tabId !== tabId) return;
+      if (!run || run.tabId !== tabId || run.shown) return;
       setTimeout(async () => {
         const now = await Promise.resolve(ext.tabs.get(tabId)).catch(() => null);
         if (now && String(now.url || '').startsWith(`${SSO_ORIGIN}/`)) await endRecordRun('login');
@@ -503,17 +511,16 @@ ext.storage.onChanged.addListener((changes, area) => {
 // ---- Message router ----------------------------------------------------------
 
 // Who sent the message: 'page' (popup or a page of the extension), 'content'
-// (content script in the top frame of MiAulario), 'record' (in the top frame of MiUPNA or SIGMA) or null (rejected).
+// (content script in the top frame of MiAulario), 'record' (in a page of MiUPNA or SIGMA) or null (rejected).
 function senderKind(sender) {
   if (!sender || sender.id !== ext.runtime.id) return null;
   const extensionOrigin = ext.runtime.getURL('');
   if (sender.url && sender.url.startsWith(extensionOrigin)) return 'page';
   if (!sender.tab) return 'page';
-  if (sender.frameId !== 0) return null;
   try {
     const origin = new URL(sender.url).origin;
-    if (origin === MAK.BASE) return 'content';
-    return origin === MAK.PORTAL_ORIGIN || origin === MAK.SIGMA_ORIGIN ? 'record' : null; // content-record.js
+    if (origin === MAK.PORTAL_ORIGIN || origin === MAK.SIGMA_ORIGIN) return 'record'; // content-record.js, also in a frame
+    return sender.frameId === 0 && origin === MAK.BASE ? 'content' : null;
   } catch {
     return null;
   }
@@ -834,7 +841,7 @@ const handlers = {
       }
     }
   },
-  // The table "Expediente completo" (or another table of the Expediente) in SIGMA.
+  // A table of the Expediente in SIGMA ("Año actual", "Expediente completo": complete).
   recordSave: {
     record: true,
     run: async (msg, sender) => {
@@ -846,7 +853,7 @@ const handlers = {
         return { error: 'record.empty' };
       }
       await store.update('record', (cur) => Object.assign(MAK.mergeRecord(cur, next), { at: Date.now() }));
-      if (mine) await endRecordRun('');
+      if (mine && msg.complete) await endRecordRun('');
       return { ok: true };
     }
   },
@@ -859,17 +866,12 @@ const handlers = {
     }
   },
   // The settings: the user gave the permission (the popup asks for it), wants a reading now, or turns it off.
-  recordOn: {
-    run: async () => {
-      await ensureRecordScripts();
-      return refreshRecord();
-    }
-  },
-  recordRefresh: { run: () => refreshRecord() },
+  // "Activar" and "Leer ahora": the pages of SIGMA that are open now, and a reading in a visible tab.
+  recordOn: { run: () => readRecordNow() },
+  recordRefresh: { run: () => readRecordNow() },
   recordOff: {
     run: async () => {
       await Promise.resolve(ext.permissions.remove(MAK.RECORD_PERMISSION)).catch(() => false);
-      await ensureRecordScripts();
       await endRecordRun('');
       await store.remove(['record', 'recordTry']);
       return { ok: true };
@@ -1036,7 +1038,6 @@ async function boot() {
   await ping();
   await sync.run().catch(() => {});
   await checkDueReminders().catch(() => {});
-  await ensureRecordScripts().catch(() => {});
   if (!(await ext.alarms.get(RECORD_ALARM))) await ext.alarms.create(RECORD_ALARM, { delayInMinutes: 5, periodInMinutes: 360 });
 }
 
