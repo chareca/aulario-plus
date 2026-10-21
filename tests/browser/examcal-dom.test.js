@@ -31,7 +31,7 @@
     assert.equal(MAK.examCalendar([], {}), null);
   });
 
-  test('a subject: the months of its exams; its days stand out, the days of the others are grey, without a tooltip', () => {
+  test('a subject: the months of its exams; its days stand out, the days of the others are grey, with their tooltip', () => {
     const cal = MAK.examCalendar(days(), { focus: 'si', now: at(2026, 9, 21) });
     assert.ok(cal.classList.contains('focus'));
     assert.deepEqual([...cal.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026', 'enero de 2027']);
@@ -39,8 +39,19 @@
     assert.ok(mine.dataset.tip && !mine.classList.contains('dim'));
     const other = day(cal, 'diciembre', 15);
     assert.ok(other.classList.contains('dim') && other.classList.contains('final'), 'another subject: its color, grey');
-    assert.equal(other.dataset.tip, undefined);
-    assert.equal(other.getAttribute('tabindex'), null);
+    assert.ok(/^Procesadores · Final · .*15.* · A1$/.test(other.dataset.tip), 'which subject and when, on hover');
+    assert.equal(other.getAttribute('tabindex'), '0', 'also with the keyboard');
+    const style = document.createElement('style');
+    style.textContent = MAK.EXAM_CAL_CSS;
+    document.head.append(style);
+    document.body.append(cal);
+    cal.style.cssText = '--ap-surface: #fff; --ap-fg: #000'; // the colors of the ring come from the theme
+    assert.ok(getComputedStyle(mine).boxShadow !== 'none', 'a ring on the days of the subject');
+    assert.equal(getComputedStyle(other).boxShadow, 'none', 'no ring on the grey days: they are not of this subject');
+    other.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    assert.ok(!cal.querySelector('.cal-tip').hidden && cal.querySelector('.cal-tip').textContent.startsWith('Procesadores'), 'the tooltip on hover');
+    cal.remove();
+    style.remove();
     const only = MAK.examCalendar(days().filter((d) => d.siteId !== 'si').concat({ ms: at(2026, 11, 16), kind: 'final', siteId: 'si', name: 'S' }), { focus: 'si' });
     assert.deepEqual([...only.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026'], 'only the months of the subject');
   });

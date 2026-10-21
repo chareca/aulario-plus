@@ -212,7 +212,7 @@
     .cal-day.rec { background: var(--ap-k-participation); color: var(--ap-k-participation-fg); font-weight: 800; }
     .cal-day.final.rec { background: linear-gradient(135deg, var(--ap-k-exam) 50%, var(--ap-k-participation) 50%); }
     .cal-day.dim { opacity: 0.35; filter: grayscale(0.6); font-weight: 400; }
-    .cal.focus .cal-day[data-tip] { box-shadow: 0 0 0 2px var(--ap-surface), 0 0 0 4px var(--ap-fg); z-index: 1; }
+    .cal.focus .cal-day[data-tip]:not(.dim) { box-shadow: 0 0 0 2px var(--ap-surface), 0 0 0 4px var(--ap-fg); z-index: 1; }
     .cal { position: relative; }
     .cal-tip { position: absolute; z-index: 3; width: max-content; max-width: min(260px, 100%); white-space: pre-line; text-align: left;
       padding: 6px 9px; border-radius: var(--ap-radius-sm); font: 600 12px/1.35 var(--ap-font);
@@ -248,10 +248,10 @@
       const key = new Date(year, month, day).toDateString();
       const list = byDay.get(key) || [];
       const mine = focus ? list.filter((d) => d.siteId === focus) : list;
-      const shown = mine.length ? mine : list; // the days of the other subjects: grey, no tooltip
+      const shown = mine.length ? mine : list; // the days of the other subjects: grey, with their tooltip
       const cls = ['cal-day', ...new Set(shown.map((d) => d.kind)), !mine.length && list.length ? 'dim' : '', key === today ? 'today' : ''];
-      if (!mine.length) return h('span', { class: cls.filter(Boolean).join(' '), text: String(day) });
-      const tip = mine.map((d) => `${d.name} · ${kindName(d.kind)} · ${MAK.formatDate(d.ms)}${d.room ? ` · ${d.room}` : ''}`).join('\n');
+      if (!shown.length) return h('span', { class: cls.filter(Boolean).join(' '), text: String(day) });
+      const tip = shown.map((d) => `${d.name} · ${kindName(d.kind)} · ${MAK.formatDate(d.ms)}${d.room ? ` · ${d.room}` : ''}`).join('\n');
       return h('span', { class: cls.filter(Boolean).join(' '), text: String(day), data: { tip }, attrs: { tabindex: '0', 'aria-label': `${day}: ${tip}` } });
     };
     const month = (k) => {
