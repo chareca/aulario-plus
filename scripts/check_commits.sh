@@ -5,7 +5,7 @@
 #
 # The workflow gives these environment variables:
 #   BLOCKED_WORDS  extended regular expression (a repository secret)
-#   EVENT, BEFORE, AFTER, REF_NAME, BASE_SHA, HEAD_SHA, PR_TITLE, PR_BODY
+#   EVENT, BEFORE, AFTER, REF_NAME, DEFAULT_BRANCH, BASE_SHA, HEAD_SHA, PR_TITLE, PR_BODY
 
 zero_commit='0000000000000000000000000000000000000000'
 error=0
@@ -30,8 +30,11 @@ if [[ $EVENT == pull_request ]]; then
   range="$BASE_SHA..$HEAD_SHA"
 elif [[ -n $BEFORE && $BEFORE != "$zero_commit" ]] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
   range="$BEFORE..$AFTER"
+elif [[ -n $DEFAULT_BRANCH && $REF_NAME != "$DEFAULT_BRANCH" ]] && git rev-parse -q --verify "refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null; then
+  # A new branch: only its commits that are not on the default branch (those were examined when they came to it).
+  range="origin/$DEFAULT_BRANCH..$AFTER"
 else
-  # New branch or force push: examine all the commits of the branch.
+  # A force push of the default branch (the ruleset blocks it), or no default branch: all the commits.
   range="$AFTER"
 fi
 
