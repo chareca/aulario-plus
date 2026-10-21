@@ -1140,7 +1140,8 @@ function recordSection() {
     h('p', { class: 'small', text: t('record.help') }),
     sum && recordGranted ? h('p', null, MAK.rankPill(sum)) : null,
     h('p', { class: 'small', text: state }),
-    h('div', { class: 'row' }, recordGranted ? [btn(t('record.refresh'), open), btn(t('record.stop'), stop)] : btn(t('record.start'), open)));
+    h('div', { class: 'row' }, recordGranted ? [btn(t('record.refresh'), open), btn(t('record.stop'), stop)] : btn(t('record.start'), open)),
+    recordGranted ? checkbox(t('record.bar'), t('record.barHelp'), settings().rankBar, (v) => send({ type: 'setSettings', patch: { rankBar: v } })) : null);
 }
 
 // A window over the popup: a title, its content and buttons [{ text, primary, click }]. A button closes it,
@@ -1163,7 +1164,8 @@ async function showRecordNews() {
   const sum = MAK.recordSummary(S.record);
   if (!recordNews || !sum) return;
   await area.remove('recordNews');
-  dialog(t('record.doneTitle'), h('div', null, MAK.rankView(sum)), [{ text: t('record.close'), primary: true }]);
+  dialog(t('record.doneTitle'), h('div', null, MAK.rankView(S.record, S.recordSeen)), [{ text: t('record.close'), primary: true }]);
+  send({ type: 'recordSeen' });
 }
 
 // A new issue on GitHub (kind: 'bug' or 'idea'), with the version, the browser and the language.

@@ -29,7 +29,8 @@
       teacherBody: '',
       theme: '', // the id of a theme (lib/themes.js); '' or an unknown id: the default theme
       colorMode: 'auto', // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
-      confetti: true // confetti after a submission of a task or an exam (lib/celebrate.js)
+      confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
+      rankBar: true // the rank of the average (lib/record.js) in the bar of MiAulario
     };
   };
 
@@ -158,7 +159,8 @@
       teacherBody: MAK.cleanText(s.teacherBody, 3000, true),
       theme: typeof s.theme === 'string' && /^[a-z0-9-]{1,32}$/.test(s.theme) ? s.theme : '',
       colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto',
-      confetti: 'confetti' in s ? !!s.confetti : d.confetti
+      confetti: 'confetti' in s ? !!s.confetti : d.confetti,
+      rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar
     };
   };
 
@@ -184,7 +186,7 @@
   // when the user logs out or when a different user logs in.
   MAK.DATA_KEYS = [
     'sites', 'pages', 'assignments', 'announcements', 'notifications', 'synoptic', 'forums',
-    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'dueNotified', 'lessons', 'record', 'recordTry', 'last', 'log' // "log": v1.1 data
+    'visits', 'forumSnap', 'readAnn', 'pendingMarkViewed', 'grades', 'gradesSeenAt', 'events', 'guides', 'degree', 'exams', 'dueNotified', 'lessons', 'record', 'recordTry', 'recordSeen', 'last', 'log' // "log": v1.1 data
   ];
   MAK.RESOURCE_PREFIX = 'res:';
 

@@ -88,40 +88,127 @@
     { id: 'legend', min: 9.5, color: '#d6336c' }
   ];
 
-  // The average of the record, as the official one: the passed subjects with a number (an annulled one does
-  // not count), each one with the weight of its credits; the best mark of a subject. And its rank.
-  // { count, credits, average (2 decimals), rank, next (the next rank or null), need (the points to it) }, or null.
-  MAK.recordSummary = function (record) {
+  // The passed subjects: the best row of each code with a pass (a mark from 5, or a grade in words such as
+  // "APTO" or "Reconocida"); an annulled one is not.
+  const PASS_RE = /aprobad|notable|sobresaliente|matr[ií]cula|apto|reconocid|convalidad|adaptad/i;
+  const FAIL_RE = /no apto|suspens|no presentad/i;
+  const passes = (r) => !/anulad/i.test(r.notes) && (r.mark !== null ? r.mark >= 5 : PASS_RE.test(r.grade) && !FAIL_RE.test(r.grade));
+  function passedRows(record) {
     const best = new Map();
     for (const r of (record && record.rows) || []) {
-      if (r.mark === null || r.mark < 5 || !(r.credits > 0) || /anulad/i.test(r.notes)) continue;
-      if (!best.has(r.code) || best.get(r.code).mark < r.mark) best.set(r.code, r);
+      if (!passes(r)) continue;
+      const kept = best.get(r.code);
+      if (!kept || (kept.mark ?? -1) < (r.mark ?? -1)) best.set(r.code, r);
     }
-    const rows = [...best.values()];
+    return [...best.values()];
+  }
+  const rankAt = (average) => MAK.RANKS.findLastIndex((k) => average >= k.min);
+
+  // The average of the record, as the official one: the passed subjects with a number, each one with the
+  // weight of its credits. And its rank. { count, credits, points (Σ mark · credits), average (2 decimals),
+  // rank, next (the next rank or null), need (the points to it) }, or null.
+  MAK.recordSummary = function (record) {
+    const rows = passedRows(record).filter((r) => r.mark !== null && r.credits > 0);
     const credits = rows.reduce((a, r) => a + r.credits, 0);
     if (!credits) return null;
-    const average = Math.round((rows.reduce((a, r) => a + r.mark * r.credits, 0) / credits) * 100) / 100;
-    const at = MAK.RANKS.findLastIndex((k) => average >= k.min);
+    const points = rows.reduce((a, r) => a + r.mark * r.credits, 0);
+    const average = Math.round((points / credits) * 100) / 100;
+    const at = rankAt(average);
     const next = MAK.RANKS[at + 1] || null;
-    return { count: rows.length, credits, average, rank: MAK.RANKS[Math.max(at, 0)], next, need: next ? Math.round((next.min - average) * 100) / 100 : 0 };
+    return { count: rows.length, credits, points, average, rank: MAK.RANKS[Math.max(at, 0)], next, need: next ? Math.round((next.min - average) * 100) / 100 : 0 };
+  };
+
+  // The credits of the degree: { passed, total } from the table of credits of SIGMA (its "Total" row, else the
+  // sum of its kinds; total: the minimum credits), else { passed, total: null } from the passed subjects; or null.
+  MAK.recordProgress = function (record) {
+    const table = (record && record.credits) || [];
+    const total = table.find((c) => /^total/i.test(c.kind));
+    const kinds = total ? [total] : table;
+    const add = (k) => kinds.reduce((a, c) => a + (c[k] || 0), 0);
+    if (add('min') > 0) return { passed: add('passed'), total: add('min') };
+    const passed = passedRows(record).reduce((a, r) => a + (r.credits || 0), 0);
+    return passed ? { passed, total: null } : null;
+  };
+
+  // A goal that the user can reach: the average for the next 30 credits (a term; else 60, a year) that gives
+  // the next rank. Too high (more than 10): what an average of 2 points more than now (at most 10) in the next
+  // 30 credits does to the average. Never more credits than the degree still has.
+  // { mark, credits, rank } or { mark, credits, avg }; null at the highest rank or at the end of the degree.
+  MAK.recordGoal = function (sum, progress) {
+    if (!sum || !sum.next) return null;
+    const left = progress && progress.total ? progress.total - progress.passed : Infinity;
+    if (left <= 0) return null;
+    const steps = [...new Set([30, 60].map((x) => Math.min(x, left)))];
+    for (const credits of steps) {
+      const mark = Math.ceil(((sum.next.min * (sum.credits + credits) - sum.points) / credits) * 10 - 1e-9) / 10;
+      if (mark <= 10) return { mark, credits, rank: sum.next };
+    }
+    const credits = steps[0];
+    const mark = Math.min(10, Math.floor(sum.average) + 2);
+    return { mark, credits, avg: Math.round(((sum.points + mark * credits) / (sum.credits + credits)) * 100) / 100 };
+  };
+
+  // What the user saw of the record (after a window with the rank): the passed subjects and the average.
+  MAK.recordSeenOf = function (record) {
+    const sum = MAK.recordSummary(record);
+    return { codes: passedRows(record).map((r) => r.code), average: sum ? sum.average : null };
+  };
+  // What went up since then: the new passed subjects, the average if it is higher (from: the old one), the rank
+  // if it is higher. Never what went down. null: nothing new, or nothing seen yet (the first reading).
+  MAK.recordGain = function (record, seen) {
+    if (!seen || !Array.isArray(seen.codes)) return null;
+    const sum = MAK.recordSummary(record);
+    const subjects = passedRows(record).filter((r) => !seen.codes.includes(r.code)).map((r) => ({ name: r.name, credits: r.credits }));
+    const from = sum && typeof seen.average === 'number' && sum.average > seen.average ? seen.average : null;
+    const rankUp = from !== null && rankAt(sum.average) > rankAt(from) ? sum.rank : null;
+    return subjects.length || from !== null ? { subjects, from, rankUp } : null;
   };
 
   // The rank and the average in a page (the popup, MiAulario; with lib/ui.js and lib/i18n.js): a pill in the
-  // color of the rank, and the text of a window.
+  // color of the rank (short: only its name, for the bar of MiAulario), and the content of a window.
   MAK.RANK_CSS = `
     .mak-rank { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px; white-space: nowrap;
       font-weight: 700; color: var(--ap-fg); background: var(--ap-surface); border: 2px solid var(--rank); }
     .mak-rank::before { content: ''; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--rank); }
+    .mak-rank.new { box-shadow: 0 0 0 3px color-mix(in srgb, var(--rank) 40%, transparent); }
     .rank-big { margin: 4px 0 12px; font-size: 1.25em; }
+    .rank-gain { margin: 10px 0; padding: 8px 12px; border-radius: var(--ap-radius-sm); background: var(--ap-green-bg); }
+    .rank-gain p { margin: 2px 0; }
+    .rank-gain strong { color: var(--ap-green); }
+    .rank-bar { height: 8px; margin: 4px 0 2px; border-radius: 4px; background: var(--ap-line); overflow: hidden; }
+    .rank-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--ap-green); }
   `;
   const avgText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  MAK.rankPill = (sum, tag) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } }, `${MAK.t(`rank.${sum.rank.id}`)} · ${avgText(sum.average)}`);
-  MAK.rankLine = (sum) => MAK.t('record.summary', { n: sum.count, avg: avgText(sum.average), rank: MAK.t(`rank.${sum.rank.id}`) });
-  MAK.rankView = (sum) => [
-    MAK.h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
-    MAK.h('p', { text: MAK.rankLine(sum) }),
-    MAK.h('p', { class: 'meta', text: sum.next ? MAK.t('record.next', { need: avgText(sum.need), rank: MAK.t(`rank.${sum.next.id}`) }) : MAK.t('record.top') })
-  ];
+  const markText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const rankName = (k) => MAK.t(`rank.${k.id}`);
+  MAK.rankPill = (sum, tag, short) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } }, short ? rankName(sum.rank) : `${rankName(sum.rank)} · ${avgText(sum.average)}`);
+  MAK.rankLine = (sum) => MAK.t('record.summary', { n: sum.count, avg: avgText(sum.average), rank: rankName(sum.rank) });
+  // The content of a window: the rank, what went up since seen, the credits of the degree, the next goal
+  // (also with lib/names.js: the names of SIGMA are in capital letters).
+  MAK.rankView = function (record, seen) {
+    const h = MAK.h;
+    const sum = MAK.recordSummary(record);
+    if (!sum) return [];
+    const gain = MAK.recordGain(record, seen);
+    const progress = MAK.recordProgress(record);
+    const goal = MAK.recordGoal(sum, progress);
+    const shown = gain ? gain.subjects.slice(0, 5) : [];
+    let next = MAK.t(sum.next ? 'record.end' : 'record.top');
+    if (goal && goal.rank) next = MAK.t('record.goal', { mark: markText(goal.mark), credits: goal.credits, rank: rankName(goal.rank) });
+    else if (goal) next = MAK.t('record.goalUp', { mark: markText(goal.mark), credits: goal.credits, avg: avgText(goal.avg) });
+    return [
+      h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
+      h('p', { text: MAK.rankLine(sum) }),
+      gain ? h('div', { class: 'rank-gain' },
+        gain.rankUp ? h('p', null, h('strong', { text: MAK.t('record.newRank', { rank: rankName(gain.rankUp) }) })) : null,
+        gain.from !== null ? h('p', { text: MAK.t('record.up', { from: avgText(gain.from), to: avgText(sum.average) }) }) : null,
+        shown.map((x) => h('p', { text: MAK.t(x.credits ? 'record.passed' : 'record.passedNoCredits', { name: MAK.shortTitle(x.name), credits: x.credits }) })),
+        gain.subjects.length > shown.length ? h('p', { text: MAK.t('record.passedMore', { n: gain.subjects.length - shown.length }) }) : null) : null,
+      progress ? h('p', { class: 'meta', text: progress.total ? MAK.t('record.progress', { passed: progress.passed, total: progress.total }) : MAK.t('record.progressPassed', { passed: progress.passed }) }) : null,
+      progress && progress.total ? h('div', { class: 'rank-bar' }, h('span', { attrs: { style: `width: ${Math.min(100, Math.round((progress.passed / progress.total) * 100))}%` } })) : null,
+      h('p', { class: 'meta', text: next })
+    ];
+  };
 
   // The record that the background script keeps: only these fields, short texts, numbers or null.
   MAK.cleanRecord = function (raw) {

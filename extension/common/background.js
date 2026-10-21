@@ -919,11 +919,20 @@ const handlers = {
       return readRecordNow(active ? active.id : null);
     }
   },
+  // The user saw the rank (a window of the popup or of MiAulario): what goes up from now is news.
+  recordSeen: {
+    content: true,
+    run: async () => {
+      const { record } = await store.get('record');
+      if (record) await store.set({ recordSeen: MAK.recordSeenOf(record) });
+      return { ok: true };
+    }
+  },
   recordOff: {
     run: async () => {
       await Promise.resolve(ext.permissions.remove(MAK.RECORD_PERMISSION)).catch(() => false);
       await endRecordRun('');
-      await store.remove(['record', 'recordTry']);
+      await store.remove(['record', 'recordTry', 'recordSeen']);
       return { ok: true };
     }
   },
