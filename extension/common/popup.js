@@ -1159,7 +1159,7 @@ function recordSection() {
 }
 
 // A window over the popup: a title, its content and buttons [{ text, primary, click }]. A button closes it,
-// and so does Escape.
+// and so do Escape and a click outside the window (as "Cancel": no button acts).
 function dialog(title, body, buttons) {
   const box = h('div', { class: 'dialog-backdrop' },
     h('div', { class: 'dialog', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
@@ -1167,6 +1167,7 @@ function dialog(title, body, buttons) {
       h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
         on: { click: () => { box.remove(); if (b.click) b.click(); } } })))));
   box.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.remove(); });
+  box.addEventListener('mousedown', (e) => { if (e.target === box) box.remove(); });
   document.body.append(box);
   box.querySelector('button').focus();
 }

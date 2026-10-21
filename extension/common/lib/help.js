@@ -44,12 +44,14 @@
       es: [
         'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.',
         'La ventana «Escribir a un profesor» se queda siempre dentro de la pantalla, también con las asignaturas del final de la lista.',
-        'En el calendario de una asignatura, los exámenes de las otras siguen en gris, pero al pasar el ratón dicen de qué asignatura son y cuándo.'
+        'En el calendario de una asignatura, los exámenes de las otras siguen en gris, pero al pasar el ratón dicen de qué asignatura son y cuándo.',
+        'Las ventanas dentro del popup también se cierran con un clic fuera, como al pulsar Cancelar.'
       ],
       en: [
         'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
         'The window "Write to a teacher" always stays inside the screen, also for the subjects at the end of the list.',
-        'In the calendar of a subject, the exams of the other subjects stay grey, but on hover they say which subject and when.'
+        'In the calendar of a subject, the exams of the other subjects stay grey, but on hover they say which subject and when.',
+        'The windows inside the popup also close with a click outside, as "Cancel" does.'
       ]
     },
     {
