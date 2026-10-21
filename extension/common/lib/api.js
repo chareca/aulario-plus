@@ -237,7 +237,10 @@
   function textParts(html) {
     const out = [];
     const re = /<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1\s*>|<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a\s*>/gi;
-    for (let m; (m = re.exec(String(html || '')));) {
+    // shortcut: a text block of more than 100000 characters is read up to there (a lazy pattern: a block with many
+    // "<a href>" without their end costs the square of its length); a block of a teacher is far smaller.
+    const text = String(html || '').slice(0, 100000);
+    for (let m; (m = re.exec(text));) {
       if (m[1]) out.push({ heading: oneLine(m[2]) });
       else out.push({ href: MAK.htmlToText(m[3] !== undefined ? m[3] : m[4]).trim(), text: oneLine(m[5]) });
     }

@@ -89,13 +89,39 @@
     });
   }
 
+  // Remove the comments and the elements script, style, head and title in one pass. A comment or an element
+  // without its end goes to the end of the text, as in a browser.
+  function dropBlocks(s) {
+    const open = /<!--|<(script|style|head|title)\b/gi;
+    let out = '';
+    let at = 0;
+    for (let m; (m = open.exec(s));) {
+      out += s.slice(at, m.index);
+      let stop = -1;
+      if (m[1]) {
+        const close = new RegExp(`</${m[1]}\\s*>`, 'gi');
+        close.lastIndex = open.lastIndex;
+        const c = close.exec(s);
+        if (c) stop = close.lastIndex;
+      } else {
+        const c = s.indexOf('-->', open.lastIndex);
+        if (c >= 0) stop = c + 3;
+      }
+      if (stop < 0) return out;
+      at = open.lastIndex = stop;
+    }
+    return out + s.slice(at);
+  }
+
   // Change HTML into plain text. This function does not use DOMParser, because the
-  // Chromium service worker does not have it.
+  // Chromium service worker does not have it. Linear in the length of the HTML, also with many "<" without an end
+  // (a post of a forum comes from anybody of the site).
   MAK.htmlToText = function (html) {
     if (!html) return '';
-    let s = String(html)
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<(script|style|head|title)\b[\s\S]*?<\/\1\s*>/gi, '')
+    let s = dropBlocks(String(html));
+    // A "<" after the last ">" starts no tag: it stays as text (else each one makes the patterns below read to the end).
+    const end = s.lastIndexOf('>') + 1;
+    s = (s.slice(0, end) + s.slice(end).replace(/</g, '&lt;'))
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<li\b[^>]*>/gi, '\n- ')
       .replace(/<\/(p|div|ul|ol|h[1-6]|tr|table|blockquote|section|article)\s*>/gi, '\n')

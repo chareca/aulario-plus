@@ -44,6 +44,18 @@ test('htmlToText removes tags and scripts and decodes entities', () => {
   assert.equal(MAK.htmlToText('&#0; &#xD800; ok'), 'ok');
 });
 
+test('htmlToText: no tag comes back from the parts of a removed one; a script without its end goes to the end; linear time', () => {
+  assert.equal(MAK.htmlToText('a<!<!--x-->--><scr<script>x</script>ipt>alert(1)</script> b'), 'aalert(1) b', 'plain text, no "<"');
+  assert.equal(MAK.htmlToText('<p>Hola</p><script>never ends'), 'Hola');
+  assert.equal(MAK.htmlToText('nota <b>bien</b>: 3 < 4'), 'nota bien: 3 < 4', 'a "<" after the last tag stays');
+  // A post of a forum with many "<" without an end (anybody of the site writes one): no "regular expression DoS".
+  for (const evil of ['<a'.repeat(100000), '<li'.repeat(100000), '<script'.repeat(50000), '<!--'.repeat(50000), `${'<p '.repeat(50000)}>${'<'.repeat(50000)}`]) {
+    const t0 = Date.now();
+    MAK.htmlToText(evil);
+    assert.ok(Date.now() - t0 < 500, `${evil.slice(0, 8)}…: ${Date.now() - t0} ms`);
+  }
+});
+
 test('search ignores case and accents', () => {
   assert.equal(MAK.normalizeText('Recuperación ÁRBOL'), 'recuperacion arbol');
   assert.ok(MAK.matchesQuery('Clase de recuperación', 'RECUPERACION clase'));

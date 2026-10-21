@@ -54,7 +54,7 @@
     let out = text;
     for (const [full, name] of pairs) if (out.includes(full)) out = out.split(full).join(name);
     // A title that MiAulario cuts: "26_0_240504_1 ANÁLISIS DE APLI..."
-    const cut = /^(\s*)(.{12,}?)(?:\.\.\.|…)(\s*)$/s.exec(out);
+    const cut = out.length <= 300 && /^(\s*)(\S[\s\S]{11,}?)(?:\.\.\.|…)(\s*)$/.exec(out);
     if (cut) {
       const hit = pairs.find(([full]) => full.startsWith(cut[2]));
       if (hit) out = cut[1] + hit[1] + cut[3];
