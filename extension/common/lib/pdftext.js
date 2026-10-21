@@ -9,11 +9,23 @@
 
   const MAX_STREAMS = 400;
   const MAX_CHARS = 2000000;
+  const MAX_INFLATE = 20000000; // the bytes of one stream after the decompression: a "zip bomb" stops here
+  const MAX_INFLATE_ALL = 50000000; // and of all the streams of a file
   const GAP = -200; // a move in a TJ array of less than -200 thousandths of an em is a space
 
   async function inflate(bytes) {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
+    const parts = [];
+    let size = 0;
+    for (let r; !(r = await reader.read()).done;) {
+      size += r.value.length;
+      if (size > MAX_INFLATE) {
+        reader.cancel().catch(() => {});
+        throw new Error('pdf: stream too large');
+      }
+      parts.push(r.value);
+    }
+    return new Uint8Array(await new Blob(parts).arrayBuffer());
   }
 
   // The characters of the bytes of a simple font (WinAnsi = windows-1252). Made at the first use.
@@ -84,9 +96,10 @@
     const lines = [];
     let chars = 0;
     let streams = 0;
+    let inflated = 0;
     const re = /stream\r?\n/g;
     let m;
-    while ((m = re.exec(s)) && streams < MAX_STREAMS && chars < MAX_CHARS) {
+    while ((m = re.exec(s)) && streams < MAX_STREAMS && chars < MAX_CHARS && inflated < MAX_INFLATE_ALL) {
       const start = m.index + m[0].length;
       const end = s.indexOf('endstream', start);
       if (end < 0) break;
@@ -96,7 +109,7 @@
       if (!/\/FlateDecode/.test(dict) || /\/Subtype\s*\/Image|\/Length[23]\b|\/Type\s*\/(XRef|ObjStm|Metadata)/.test(dict)) continue;
       streams++;
       // The length of the dictionary, if it is a number; else up to "endstream" without the end of line.
-      const len = /\/Length\s+(\d+)(?!\s+\d+\s+R)/.exec(dict);
+      const len = /\/Length\s+(\d+)(?!\d)(?!\s+\d+\s+R)/.exec(dict);
       let stop = len ? start + Number(len[1]) : end;
       if (stop > end) stop = end;
       if (!len) while (stop > start && (s[stop - 1] === '\n' || s[stop - 1] === '\r')) stop--;
@@ -106,6 +119,7 @@
       } catch {
         continue;
       }
+      inflated += raw.length;
       const text = dec().latin.decode(raw);
       if (!/T[Jj]/.test(text)) continue;
       for (const line of MAK.pdfStreamLines(text)) {

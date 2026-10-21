@@ -58,6 +58,20 @@ test('pdftext: not a PDF, a damaged stream or hex text: no error, no text', asyn
   assert.deepEqual(await MAK.pdfTextLines(pdf([{ content: 'BT [<00410042>]TJ ET' }])), [], 'hex strings need the font: no text');
 });
 
+test('pdftext: an indirect length ("/Length 41 0 R") reads up to "endstream"; a "zip bomb" stream is skipped', async () => {
+  const one = pdf([{ content: 'BT (indirect length)Tj ET' }]);
+  const indirect = Buffer.from(one.toString('latin1').replace(/\/Length \d+/, '/Length 41 0 R'), 'latin1'); // not 4
+  assert.deepEqual(await MAK.pdfTextLines(indirect), ['indirect length']);
+  // 30 MB of text in a small stream: more than the limit of one stream, no line of it. The next stream is still read.
+  const bomb = zlib.deflateSync(Buffer.from('BT (x)Tj ET\n'.repeat(2500000), 'latin1'));
+  const file = pdf([{ content: 'BT (after)Tj ET' }]);
+  const at = file.indexOf('1 0 obj');
+  const head = Buffer.from(`9 0 obj\r<</Length ${bomb.length}/Filter/FlateDecode>>stream\r\n`, 'latin1');
+  const t0 = Date.now();
+  assert.deepEqual(await MAK.pdfTextLines(Buffer.concat([file.subarray(0, at), head, bomb, Buffer.from('\r\nendstream\rendobj\r', 'latin1'), file.subarray(at)])), ['after']);
+  assert.ok(Date.now() - t0 < 3000);
+});
+
 test('exam rows: code, name, final and recovery; the parts of a row join; other lines go', async () => {
   const rows = MAK.parseExamRows(await MAK.pdfTextLines(pdf([{ content: CALENDAR }])));
   const at = (d, t) => { const [D, M, Y] = d.split('/').map(Number); const [h, m] = t.split(':').map(Number); return new Date(Y, M - 1, D, h, m).getTime(); };

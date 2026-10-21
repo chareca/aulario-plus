@@ -909,6 +909,7 @@ const handlers = {
       try {
         const r = await fetch(url, { credentials: 'omit', cache: 'no-store' });
         if (!r.ok) return { error: 'exams.http', status: r.status };
+        if (Number(r.headers.get('content-length')) > 5000000) return { error: 'exams.size' }; // before reading it
         const data = await r.arrayBuffer();
         if (data.byteLength > 5000000) return { error: 'exams.size' };
         const rows = MAK.parseExamRows(await MAK.pdfTextLines(data)).slice(0, 500);
