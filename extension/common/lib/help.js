@@ -40,9 +40,26 @@
   // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey).
   MAK.CHANGES = [
     {
+      version: '1.6.6',
+      es: [
+        'Notas oficiales de SIGMA (actívalo en Ajustes): tu media y tu rango junto a tu foto en MiAulario. Hay ocho rangos, de Bronce a Leyenda, uno por cada octavo de los créditos de tu carrera, cada uno con su gema; te dice qué te falta para el siguiente.',
+        'Las notas oficiales se leen cuando abres tu expediente y, cada pocos días, en una pestaña en segundo plano. Se quedan al cerrar sesión; se borran si entra otro usuario.',
+        'Un calendario de tus exámenes por meses en cada semestre de Mi sitio y junto a la guía de cada asignatura: finales y recuperaciones en dos colores. Su botón lo muestra u oculta.',
+        'Historial (en el menú de inicio): todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario. Los de antes de septiembre de 2025, pegando los correos de confirmación de MiAulario.',
+        'Entregas ya no cuenta las tutorías del calendario.'
+      ],
+      en: [
+        'Official grades of SIGMA (turn it on in the settings): your average and your rank next to your photo in MiAulario. There are eight ranks, from Bronze to Legend, one for each eighth of the credits of your degree, each one with its gem; it tells you what you need for the next one.',
+        'The extension reads the official grades when you open your record and, every few days, in a tab in the background. They stay when you log out; they go when another user logs in.',
+        'A calendar of your exams by month in each semester of Mi sitio and next to the guide of each subject: the finals and the recoveries in two colors. Its button shows or hides it.',
+        'History (in the main menu): all your tasks and exams, also of past years, with your submission, the grade and the comment. For the ones before September 2025, paste the confirmation emails of MiAulario.',
+        'The deliveries do not count the office hours (tutorías) of the calendar any more.'
+      ]
+    },
+    {
       version: '1.6.5',
       es: [
-        'El popup abre en un menú de inicio: tu sesión con un botón para pausarla, los avisos y el modo claro u oscuro en un clic, y lo que tienes pendiente.',
+        'El popup abre en un menú de inicio: tu sesión con un botón para pausarla, los avisos y el light o dark mode en un clic, y lo que tienes pendiente.',
         'Confeti al entregar una tarea o un examen, sin sonido. Se apaga en Ajustes.',
         'En los Recursos de Mi sitio: descarga todos tus archivos en un ZIP o envíalos todos a la Papelera, siempre con confirmación.',
         'El buscador da prioridad a las iniciales: «ip» encuentra primero Informática y Programación.',
@@ -59,10 +76,10 @@
     {
       version: '1.6.4',
       es: [
-        'Seis temas para elegir en Ajustes: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Cada uno en claro y en oscuro, o como MiAulario.',
+        'Seis temas para elegir en Ajustes: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Cada uno en light y dark mode, o como MiAulario.',
         'El triángulo de la esquina del bloque de Mi sitio lo pone a todo el ancho, con el calendario debajo.',
         'Mi sitio muestra tu próximo examen en grande, y los accesos a tu expediente, Wuolah y el correo interno en una fila.',
-        '{key} busca también en los «Contenidos» de las materias: títulos y enlaces a PDF.',
+        '{key} busca también en los «Contenidos» de las asignaturas: títulos y enlaces a PDF.',
         'Avisos antes de una entrega que no entregaste: 24 horas y 1 hora antes, configurables en Ajustes.',
         'Calculadora de notas en cada guía docente: te dice qué necesitas para aprobar, toma tus notas del Libro de evaluación y guarda las tuyas.',
         'Tus exámenes finales muestran la nota que te falta en cada uno, con los datos de la calculadora.',
