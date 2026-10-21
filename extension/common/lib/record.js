@@ -92,6 +92,7 @@
   ];
   const rankAt = (passed, total) => Math.min(MAK.RANKS.length - 1, Math.floor((passed * MAK.RANKS.length) / total));
   const rankIndex = (id) => MAK.RANKS.findIndex((k) => k.id === id);
+  const SUBJECT_CREDITS = 6; // most subjects of the UPNA: the credits to the next rank in subjects
   // The stages of the degree, for a message that fits each one (i18n "record.stage<Id><1-3>"), and the end.
   const STAGES = [[20, 'Start'], [45, 'Early'], [65, 'Half'], [90, 'Late'], [100, 'Last']];
 
@@ -113,7 +114,9 @@
   // The credits of the degree, from the table of credits of SIGMA (its row "Total", else the sum of its kinds,
   // not the other totals: "Total créditos reconocidos", "Total créditos matriculados"; total: the minimum
   // credits), and the rank and the stage of the user. { passed, total, pct (down: 99 % is not the end), left,
-  // rank, stage }, or null without the table.
+  // rank, stage, next: { rank, credits, subjects } (the next rank), reach: the rank with the enrolled credits that
+  // are not passed yet (a user who is behind, or who enrolled in more than 30 credits), if it is higher }, or
+  // null without the table.
   MAK.recordSummary = function (record) {
     const table = (record && record.credits) || [];
     const row = table.find((c) => /^total$/i.test(c.kind));
@@ -124,7 +127,12 @@
     const passed = add('passed');
     const done = passed >= total;
     const pct = done ? 100 : Math.floor((passed / total) * 100);
-    return { passed, total, pct, left: done ? 0 : total - passed, rank: MAK.RANKS[rankAt(passed, total)], stage: done ? 'Done' : STAGES.find(([max]) => pct < max)[1] };
+    const at = rankAt(passed, total);
+    const credits = Math.ceil(((at + 1) * total) / MAK.RANKS.length) - passed; // to the next rank
+    const reach = rankAt(passed + add('pending'), total);
+    return { passed, total, pct, left: done ? 0 : total - passed, rank: MAK.RANKS[at], stage: done ? 'Done' : STAGES.find(([max]) => pct < max)[1],
+      next: MAK.RANKS[at + 1] ? { rank: MAK.RANKS[at + 1], credits, subjects: Math.ceil(credits / SUBJECT_CREDITS) } : null,
+      reach: reach > at ? { rank: MAK.RANKS[reach], credits: add('pending') } : null };
   };
 
   // What the user saw of the record (after a window with the rank): the passed subjects and the rank.
@@ -164,8 +172,9 @@
   // The message of the stage of the degree: one of its three, another one each day (the end: one).
   MAK.stageText = (sum, now) => MAK.t(sum.stage === 'Done' ? 'record.stageDone' : `record.stage${sum.stage}${(Math.floor((now ?? Date.now()) / MAK.DAY) % 3) + 1}`,
     { pct: sum.pct, passed: sum.passed, left: sum.left, n: sum.left });
-  // The content of a window: the rank, the credits of the degree, what went up since seen, and the message of
-  // the stage (also with lib/names.js: the names of SIGMA are in capital letters).
+  // The content of a window: the rank, the credits of the degree, the next rank, the rank with what the user is
+  // enrolled in, what went up since seen, and the message of the stage (also with lib/names.js: the names of
+  // SIGMA are in capital letters).
   MAK.rankView = function (record, seen) {
     const h = MAK.h;
     const sum = MAK.recordSummary(record);
@@ -176,6 +185,8 @@
       h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
       h('p', { class: 'meta', text: MAK.rankLine(sum) }),
       h('div', { class: 'rank-bar' }, h('span', { attrs: { style: `width: ${sum.pct}%` } })),
+      sum.next ? h('p', { class: 'meta', text: MAK.t('record.next', { rank: rankName(sum.next.rank), n: sum.next.subjects, credits: sum.next.credits }) }) : null,
+      sum.reach ? h('p', { class: 'meta', text: MAK.t('record.reach', { rank: rankName(sum.reach.rank), credits: sum.reach.credits }) }) : null,
       gain ? h('div', { class: 'rank-gain' },
         gain.rankUp ? h('p', null, h('strong', { text: MAK.t('record.newRank', { rank: rankName(gain.rankUp) }) })) : null,
         shown.map((x) => h('p', { text: MAK.t(x.credits ? 'record.passed' : 'record.passedNoCredits', { name: MAK.shortTitle(x.name), credits: x.credits }) })),

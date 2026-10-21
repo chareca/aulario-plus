@@ -55,12 +55,18 @@ const OTHERS = [{ kind: 'Total créditos reconocidos', passed: 6, pending: null,
 
 test('recordSummary: the credits of the degree (the row "Total" of SIGMA, else its kinds), the rank by its part, the stage', () => {
   const sum = MAK.recordSummary({ rows: [], credits: [...CREDITS, { kind: 'Total', passed: 156, pending: 12, min: 240 }, ...OTHERS] });
-  assert.deepEqual(JSON.parse(JSON.stringify(sum)), { passed: 156, total: 240, pct: 65, left: 84, rank: MAK.RANKS[5], stage: 'Late' }, '5 terms and 1 subject: Maestro');
+  assert.deepEqual(JSON.parse(JSON.stringify(sum)), { passed: 156, total: 240, pct: 65, left: 84, rank: MAK.RANKS[5], stage: 'Late',
+    next: { rank: MAK.RANKS[6], credits: 24, subjects: 4 }, reach: null }, '5 terms and 1 subject: Maestro; Gran maestro at 180; 12 enrolled: not enough');
   assert.equal(MAK.recordSummary({ rows: [], credits: [...CREDITS, ...OTHERS] }).total, 240, 'no row "Total": the kinds, not the other totals');
   const at = (passed, min = 240) => MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed, min }] });
   assert.deepEqual([0, 30, 60, 90, 120, 150, 180, 210].map((p) => at(p).rank.id), ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster', 'legend'], 'one for each term of 30 credits');
   assert.deepEqual([at(24).rank.id, at(30).rank.id, at(240).rank.id], ['bronze', 'silver', 'legend'], '4 subjects: not yet; 5: a term; the end: Leyenda');
   assert.deepEqual([at(37, 300).rank.id, at(38, 300).rank.id], ['bronze', 'silver'], 'a degree of 300 credits: an eighth is 37,5');
+  assert.deepEqual(at(37, 300).next, { rank: MAK.RANKS[1], credits: 1, subjects: 1 });
+  assert.equal(at(210).next, null, 'Leyenda: no next rank');
+  // Behind, and enrolled in more than 30 credits: 48 passed, 48 enrolled and not passed.
+  const behind = MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed: 48, pending: 48, min: 240 }] });
+  assert.deepEqual(JSON.parse(JSON.stringify([behind.rank.id, behind.next, behind.reach])), ['silver', { rank: MAK.RANKS[2], credits: 12, subjects: 2 }, { rank: MAK.RANKS[3], credits: 48 }]);
   assert.deepEqual([12, 60, 120, 180, 228].map((p) => at(p).stage), ['Start', 'Early', 'Half', 'Late', 'Last'], '5, 25, 50, 75 and 95 %');
   assert.deepEqual([at(239).pct, at(239).stage, at(239).left], [99, 'Last', 1], '99,6 %: not the end');
   assert.deepEqual([at(246).pct, at(246).stage, at(246).left, at(246).rank.id], [100, 'Done', 0, 'legend'], 'more optional credits than the minimum');

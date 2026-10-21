@@ -239,7 +239,7 @@ ${siteTags}
     const r = (code, name, credits, mark, grade) => ({ year: '2024/25-0', code, name, credits, group: '1', call: 'Enero', callText: '1', grade, mark, kind: 'Obligatoria', course: '2', term: '1', notes: '' });
     // Seen before the last pass (Algoritmia): the rank went up. The user of the photo of the bar (fixtures: chareca.1).
     chrome.storage.local.get('meta').then(({ meta }) => chrome.storage.local.set({ meta: Object.assign({}, meta, { userEid: 'chareca.1' }) }));
-    chrome.storage.local.set({ recordSeen: { codes: ['240101', '240102', '240103'], rank: 'diamond' }, record: { at: Date.now(), credits: [{ kind: 'Total', passed: 156, pending: 12, min: 240 }],
+    chrome.storage.local.set({ recordSeen: { codes: ['240101', '240102', '240103'], rank: 'diamond' }, record: { at: Date.now(), credits: [{ kind: 'Total', passed: 156, pending: 30, min: 240 }],
       rows: [r('240101', 'MATEMÁTICAS I', 6, 7.5, 'NOTABLE'), r('240102', 'PROGRAMACIÓN', 6, 9.1, 'SOBRESALIENTE'), r('240103', 'ESTRUCTURAS DE DATOS', 12, 8.4, 'NOTABLE'), r('240104', 'ALGORITMIA', 6, 9.5, 'SOBRESALIENTE'), r('240702', 'PROCESADORES DEL LENGUAJE', 6, null, '')] } });
   }
 </script>
