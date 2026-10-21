@@ -351,6 +351,8 @@ async function runHistory() {
   const refresh = h('button', { class: 'btn', attrs: { type: 'button' }, text: t('history.refresh') });
   const kind = h('select', { attrs: { 'aria-label': t('history.filter') } }, ['all', 'task', 'exam'].map((k) => h('option', { attrs: { value: k }, text: t(`history.show.${k}`) })));
   const summary = h('p', { class: 'history-summary' });
+  // What is older than the update of MiAulario to Sakai 25 cannot come back (RESEARCH.md): the notice says it.
+  const before = h('p', { class: 'notice history-before' });
   const list = h('div', { class: 'history' });
   // Import the submission confirmation emails of MiAulario (the exams and tasks of before September 2025).
   const paste = h('textarea', { class: 'history-paste', attrs: { rows: 6, placeholder: t('history.importPlaceholder'), 'aria-label': t('history.import') } });
@@ -370,7 +372,7 @@ async function runHistory() {
       if (r.added) { paste.value = ''; await load(); }
     }
   });
-  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), h('div', { class: 'history-bar' }, kind, refresh), status, summary, importBox, list);
+  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh), status, summary, importBox, list);
 
   const when = (ms) => (ms ? MAK.formatDate(ms) : '–');
   const STATE = { submitted: 'ok', late: 'warn', missed: 'bad', pending: 'info', unknown: '', sent: 'ok', noRecord: '' };
@@ -378,28 +380,49 @@ async function runHistory() {
   function draw() {
     const now = Date.now();
     const items = Object.values((data.history && data.history.items) || {});
+    const grades = MAK.officialGrades(data.record);
     const mine = new Set((data.sites || []).map((s) => s.id)); // the sites of the user now: a link to the item
     const shown = items.filter((it) => kind.value === 'all' || it.kind === kind.value);
     const tasks = items.filter((it) => it.kind === 'task');
     const exams = items.filter((it) => it.kind === 'exam');
-    summary.textContent = items.length ? [
-      t('history.tasks', { n: tasks.length, submitted: tasks.filter((it) => ['submitted', 'late'].includes(MAK.historyStatus(it, now))).length }),
-      t('history.exams', { n: exams.length, sent: exams.filter((it) => it.complete).length })
-    ].join(' · ') : '';
-    if (!items.length) {
+    // The first item that MiAulario kept for this user (not one of a pasted email).
+    const first = Math.min(...items.filter((it) => it.source !== 'email').map((it) => it.starts || it.due || Infinity));
+    const firstDay = Number.isFinite(first) ? new Date(first).toLocaleDateString(MAK.locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+    before.textContent = [t('history.before'), firstDay ? t('history.firstSaved', { date: firstDay }) : null, t(data.record ? 'history.beforeGrades' : 'history.noRecord')].filter(Boolean).join(' ');
+    summary.textContent = items.length || grades.length ? [
+      items.length ? t('history.tasks', { n: tasks.length, submitted: tasks.filter((it) => ['submitted', 'late'].includes(MAK.historyStatus(it, now))).length }) : null,
+      items.length ? t('history.exams', { n: exams.length, sent: exams.filter((it) => it.complete).length }) : null,
+      grades.length ? t('history.officialCount', { n: grades.length }) : null
+    ].filter(Boolean).join(' · ') : '';
+    if (!items.length && !grades.length) {
       MAK.fill(list, data.history ? h('p', { class: 'empty', text: t('history.empty') }) : null);
       return;
     }
+    // By year and by subject: a subject of MiAulario and of SIGMA are one by the code of the subject
+    // ("2025_0_240610_1_G" in MiAulario, "240610" in SIGMA); a site without it, by its name.
+    const codeOf = (siteId) => (/^\d{4}_\d+_(\d+)_/.exec(siteId || '') || [])[1] || null;
     const years = new Map();
-    for (const it of shown) {
-      const y = MAK.academicYear(it);
-      const subject = MAK.shortTitle(it.siteTitle || it.siteId);
+    const subjectOf = (y, key, name) => {
       if (!years.has(y)) years.set(y, new Map());
       const subjects = years.get(y);
-      if (!subjects.has(subject)) subjects.set(subject, []);
-      subjects.get(subject).push(it);
+      if (!subjects.has(key)) subjects.set(key, { name, items: [], grade: null });
+      return subjects.get(key);
+    };
+    for (const it of shown) {
+      const name = MAK.shortTitle(it.siteTitle || it.siteId);
+      subjectOf(MAK.academicYear(it), codeOf(it.siteId) || name, name).items.push(it);
+    }
+    // The official grades: all of them with "Todo"; with a filter, only next to the subjects that it shows.
+    for (const g of grades) {
+      const s = kind.value === 'all' ? subjectOf(g.year, g.code, MAK.shortTitle(g.name)) : years.has(g.year) && years.get(g.year).get(g.code);
+      if (s) s.grade = g;
     }
     const current = MAK.academicYear({ due: now });
+    const word = (s) => s.charAt(0).toLocaleUpperCase('es') + s.slice(1).toLocaleLowerCase('es');
+    const gradeText = (g) => [g.grade ? word(g.grade) : null, g.mark !== null ? g.mark.toLocaleString(MAK.locale()) : null].filter(Boolean).join(' ');
+    const official = (g) => h('p', { class: 'history-official meta' },
+      h('strong', { text: t('history.official') }), ' ',
+      [gradeText(g), g.call || null, g.credits !== null ? t('history.credits', { n: g.credits.toLocaleString(MAK.locale()) }) : null].filter(Boolean).join(' · '));
     const row = (it) => {
       const state = MAK.historyStatus(it, now);
       const d = it.detail || {};
@@ -417,15 +440,18 @@ async function runHistory() {
     };
     MAK.fill(list, [...years.keys()].sort().reverse().map((y) => h('section', { class: 'history-year' },
       h('h2', { text: t('history.year', { year: y }) }),
-      [...years.get(y).keys()].sort((a, b) => a.localeCompare(b, 'es')).map((subject) => {
-        const its = years.get(y).get(subject).sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
+      [...years.get(y).values()].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((subject) => {
+        const its = subject.items.sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
+        const g = subject.grade;
         return h('details', { class: 'history-subject', attrs: { open: y === current } },
-          h('summary', null, h('strong', { text: subject }), h('span', { class: 'meta', text: ` · ${its.length}` })),
-          h('ul', { class: 'history-list' }, its.map(row)));
+          h('summary', null, h('strong', { text: subject.name }), its.length ? h('span', { class: 'meta', text: ` · ${its.length}` }) : null,
+            g ? [' ', h('span', { class: `tag ${g.passed ? 'ok' : /no presentad/i.test(g.grade) ? '' : 'bad'}`, text: gradeText(g) })] : null),
+          g ? official(g) : null,
+          its.length ? h('ul', { class: 'history-list' }, its.map(row)) : null);
       }))));
   }
   async function load() {
-    data = await ext.storage.local.get(['history', 'sites']);
+    data = await ext.storage.local.get(['history', 'sites', 'record']);
     status.textContent = data.history ? t('history.updated', { ago: MAK.ago(data.history.at, Date.now()) }) : '';
     draw();
   }

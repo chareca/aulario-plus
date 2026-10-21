@@ -111,6 +111,26 @@
     return [...best.values()];
   }
 
+  // The official grade of each subject of each academic year, for the history (tools.html?history):
+  // [{ year ("2024/25"), code, name, credits, grade, mark, call, passed }]. Of the calls of one year: the pass with
+  // the best mark, else the last call. A row without a grade (enrolled, not graded yet) or annulled is not one.
+  MAK.officialGrades = function (record) {
+    const out = new Map();
+    for (const r of (record && record.rows) || []) {
+      const year = (/^(\d{4}\/\d{2})/.exec(r.year) || [])[1];
+      if (!year || (!r.grade && r.mark === null) || /anulad/i.test(r.notes)) continue;
+      const passed = passes(r);
+      const key = `${year}|${r.code}`;
+      const kept = out.get(key);
+      if (!kept || (passed ? !kept.passed || (r.mark ?? -1) > (kept.mark ?? -1) : !kept.passed)) {
+        // The call in words ("Enero", "Ordinaria"), of the two columns of the call: not the one that is a number.
+        const call = [r.callText, r.call].find((c) => c && !/^\d+$/.test(c)) || '';
+        out.set(key, { year, code: r.code, name: r.name, credits: r.credits, grade: r.grade, mark: r.mark, call, passed });
+      }
+    }
+    return [...out.values()];
+  };
+
   // The credits of the degree, from the table of credits of SIGMA (its row "Total", else the sum of its kinds,
   // not the other totals: "Total créditos reconocidos", "Total créditos matriculados"; total: the minimum
   // credits), and the rank and the stage of the user. { passed, total, pct (down: 99 % is not the end), left,

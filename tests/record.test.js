@@ -9,6 +9,25 @@ const MAK = loadLib('core', 'record');
 const row = (o) => Object.assign({ year: '2025/26-1', code: '240101', name: 'Matemáticas I', credits: 6, group: '1', call: 'Enero', callText: '1', grade: 'NOTABLE', mark: 7.5,
   kind: 'Básica', course: '1', term: '1', notes: '' }, o);
 
+test('officialGrades: one grade for each subject of each year (the best pass, else the last call), for the history', () => {
+  const rows = [
+    row({ year: '2023/24-0', code: 'A', name: 'MATEMÁTICAS I', call: 'Enero', callText: '1', grade: 'SUSPENSO', mark: 3.5 }),
+    row({ year: '2023/24-0', code: 'A', name: 'MATEMÁTICAS I', call: 'Junio', callText: '2', grade: 'APROBADO', mark: 6 }),
+    row({ year: '2024/25-0', code: 'B', call: 'Enero', grade: 'NO PRESENTADO', mark: null }),
+    row({ year: '2024/25-0', code: 'B', call: 'Junio', grade: 'SUSPENSO', mark: 4 }),
+    row({ year: '2024/25-0', code: 'C', call: '1', callText: 'Ordinaria', grade: 'APTO', mark: null }),
+    row({ year: '2025/26-1', code: 'D', grade: '', mark: null }),
+    row({ year: '2025/26-1', code: 'E', notes: 'Anulada' })
+  ];
+  const g = MAK.officialGrades({ rows, credits: [] });
+  assert.deepEqual(g.map((x) => [x.year, x.code, x.grade, x.mark, x.call, x.passed]), [
+    ['2023/24', 'A', 'APROBADO', 6, 'Junio', true],
+    ['2024/25', 'B', 'SUSPENSO', 4, 'Junio', false],
+    ['2024/25', 'C', 'APTO', null, 'Ordinaria', true]
+  ], 'the pass of June over the fail of January; the last call of a subject not passed; no grade or annulled: left out');
+  assert.deepEqual(MAK.officialGrades(null), []);
+});
+
 test('cleanRecord: only the fields, short texts, numbers or null; no rows without a code', () => {
   const r = MAK.cleanRecord({ rows: [row({ mark: '7.5', name: 'x'.repeat(500), extra: 'no' }), { code: '' }, null], credits: [{ kind: 'Obligatoria', passed: 30, pending: 'a', min: 90 }, {}] });
   assert.equal(r.rows.length, 1);
