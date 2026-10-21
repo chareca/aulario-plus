@@ -37,6 +37,6 @@ Tus datos se quedan en tu navegador: sin analíticas ni servidores propios. [Pol
 
 Aulario Plus es gratis y de código abierto. Si te ahorra tiempo, puedes invitarme a un café.
 
-<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Invítame a un café" height="50"></a></p>
+<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff&amp;v=1.6.5" alt="Invítame a un café" height="50"></a></p>
 
 [Licencia MIT](LICENSE)
