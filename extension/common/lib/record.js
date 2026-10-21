@@ -81,14 +81,14 @@
   // The ranks of the degree: one for each eighth of its credits, so one for each term of a degree of 240 credits
   // (6 credits a subject, 30 a term, 60 a year). Their names: i18n "rank.<id>".
   MAK.RANKS = [
-    { id: 'bronze', color: '#b0703a' },
-    { id: 'silver', color: '#8a96a3' },
-    { id: 'gold', color: '#c9971c' },
-    { id: 'platinum', color: '#2a9d8f' },
-    { id: 'diamond', color: '#3a7bd5' },
-    { id: 'master', color: '#8e44ad' },
-    { id: 'grandmaster', color: '#c2410c' },
-    { id: 'legend', color: '#d6336c' }
+    { id: 'bronze', light: '#e2a26b', color: '#b0703a', dark: '#6e3f17' },
+    { id: 'silver', light: '#dfe5eb', color: '#8a96a3', dark: '#4a5561' },
+    { id: 'gold', light: '#ffe08a', color: '#c9971c', dark: '#7a5600' },
+    { id: 'platinum', light: '#9fe8dc', color: '#2a9d8f', dark: '#145a51' },
+    { id: 'diamond', light: '#a9cdff', color: '#3a7bd5', dark: '#1b4a8f' },
+    { id: 'master', light: '#d7a8f0', color: '#8e44ad', dark: '#4f1f66' },
+    { id: 'grandmaster', light: '#ffb48a', color: '#c2410c', dark: '#6e2306' },
+    { id: 'legend', light: '#ff9fc1', color: '#d6336c', dark: '#7a1239' }
   ];
   const rankAt = (passed, total) => Math.min(MAK.RANKS.length - 1, Math.floor((passed * MAK.RANKS.length) / total));
   const rankIndex = (id) => MAK.RANKS.findIndex((k) => k.id === id);
@@ -155,10 +155,10 @@
   MAK.RANK_CSS = `
     .mak-rank { display: inline-flex; align-items: center; gap: 6px; padding: 2px 11px 2px 4px; border-radius: 999px; white-space: nowrap;
       font-weight: 700; color: var(--ap-fg); background: var(--ap-surface); border: 2px solid var(--rank); }
-    .mak-rank .rank-badge { flex: none; width: 2.6em; height: 1.15em; margin: -0.1em 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)); }
+    .mak-rank .rank-badge { flex: none; width: 1.45em; height: 1.45em; margin: -0.25em 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)); }
     .mak-rank.new { box-shadow: 0 0 0 3px color-mix(in srgb, var(--rank) 40%, transparent); }
     .rank-hero { display: flex; align-items: center; gap: 14px; margin: 4px 0 12px; }
-    .rank-hero .rank-badge { flex: none; width: 132px; height: 58px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)); }
+    .rank-hero .rank-badge { flex: none; width: 64px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35)); }
     .rank-hero strong { display: block; font-size: 1.45em; line-height: 1.15; }
     .rank-gain { margin: 10px 0; padding: 8px 12px; border-radius: var(--ap-radius-sm); background: var(--ap-green-bg); }
     .rank-gain p { margin: 2px 0; }
@@ -167,117 +167,44 @@
     .rank-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--ap-green); }
     .stage { margin: 12px 0 0; font-style: italic; }
   `;
-  // The insignia of each rank (SVG, viewBox 0 0 100 44), in the style of the ranks of a game: plates with more
-  // and more ornaments. Grey and silver plates with chevrons, blue plates with gold laurels and stars, black plates
-  // with a gold edge and gold emblems (a seal, an eagle, wings and a globe with a cap of graduation).
-  const grad = (id, a, b, x2 = 0, y2 = 1) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
-  // The camouflage of a plate: soft patches (the same on each plate of a kind).
-  const CAMO = [[18, 12, 14, 7, -20], [46, 32, 18, 8, 15], [78, 14, 15, 6, 25], [64, 36, 10, 5, -10], [30, 34, 9, 5, 30], [88, 33, 8, 6, 0], [8, 32, 7, 6, 0], [55, 9, 9, 4, -5]];
-  const camo = (color, op) => `<g fill="${color}" opacity="${op}">${CAMO.map(([x, y, rx, ry, a]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${a} ${x} ${y})"/>`).join('')}</g>`;
-  const PLATES = {
-    grey: { a: '#5e646b', b: '#2b2f34', edge: '#aeb6bd', camo: ['#ffffff', 0.07] },
-    silver: { a: '#7b828a', b: '#3a3f45', edge: '#e6ebef', camo: ['#ffffff', 0.08] },
-    blue: { a: '#5d92c9', b: '#2a5585', edge: '#d9e7f5', camo: ['#0d2a4d', 0.18] },
-    black: { a: '#2b2d33', b: '#0b0c0f', edge: '#e9b949', camo: ['#ffffff', 0.04] }
-  };
-  const plate = (k, kind) => {
-    const p = PLATES[kind];
-    return `<defs>${grad(`${k}p`, p.a, p.b)}<clipPath id="${k}clip"><rect x="2" y="2" width="96" height="40" rx="5"/></clipPath></defs>
-      <rect x="2" y="2" width="96" height="40" rx="5" fill="url(#${k}p)"/>
-      <g clip-path="url(#${k}clip)">${camo(...p.camo)}</g>
-      <rect x="2" y="2" width="96" height="40" rx="5" fill="none" stroke="${p.edge}" stroke-width="2.4"/>
-      ${kind === 'black' ? `<rect x="5" y="5" width="90" height="34" rx="3" fill="none" stroke="${p.edge}" stroke-opacity="0.45" stroke-width="0.9"/>` : ''}`;
-  };
-  // A gold (or another metal) fill for the emblems.
-  const metal = (k, name, a, b) => `<defs>${grad(`${k}${name}`, a, b)}</defs>`;
-  const GOLD = (k) => metal(k, 'g', '#fff4b0', '#d79b00');
-  const g = (k) => `url(#${k}g)`;
-  const INK = '#4a3300';
-  // A chevron to the right, at x (its point at x + 15).
-  const chevron = (x) => `M${x} 10 H${x + 7} L${x + 15} 22 L${x + 7} 34 H${x} L${x + 8} 22 Z`;
-  const STAR = (cx, cy, r) => `M${Array.from({ length: 10 }, (_, i) => {
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    const d = i % 2 ? r * 0.45 : r;
-    return `${(cx + d * Math.cos(a)).toFixed(1)} ${(cy + d * Math.sin(a)).toFixed(1)}`;
-  }).join(' L')} Z`;
-  const star = (k, cx, cy, r) => `<path d="${STAR(cx, cy, r)}" fill="${g(k)}" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round"/>`;
-  // A laurel on the left of the center (cx), and the same one mirrored: a branch from the bottom, near the center,
-  // up the side (open at the top), with leaves along it. rx: its distance from the center.
-  const laurel = (k, cx, rx = 15, ry = 14) => {
-    const at = (a) => [cx + Math.cos(a) * rx, 22 - Math.sin(a) * ry];
-    const from = Math.PI * 1.36;
-    const to = Math.PI * 0.76;
-    const leaves = [];
-    for (let i = 0; i < 6; i++) {
-      const a = from + ((to - from) * i) / 5;
-      const [x, y] = at(a);
-      // The leaf along the branch, a little out of it.
-      const deg = (-a * 180) / Math.PI - 90 + 25;
-      leaves.push(`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.4" ry="1.6" transform="rotate(${deg.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`);
+  // The gem of each rank (SVG, viewBox 0 0 64 64): a faceted stone with more sides for a higher rank (a triangle, a
+  // rhombus, a pentagon, a hexagon, a cut diamond, stars of 6 and 8 points), in the colors of the rank (light, base,
+  // dark); a sparkle from Oro, a halo for Leyenda.
+  const grad = (id, a, b) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+  const ring = (n, r, rot = -90, cy = 32) => Array.from({ length: n }, (_, i) => {
+    const a = ((rot + (i * 360) / n) * Math.PI) / 180;
+    return [32 + r * Math.cos(a), cy + r * Math.sin(a)];
+  });
+  const starRing = (n, r, inner) => Array.from({ length: n * 2 }, (_, i) => {
+    const a = ((-90 + (i * 180) / n) * Math.PI) / 180;
+    const d = i % 2 ? inner : r;
+    return [32 + d * Math.cos(a), 32 + d * Math.sin(a)];
+  });
+  const poly = (p) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const SPARKLE = '<path d="M17 11 l1.6 -4 l1.6 4 l4 1.6 l-4 1.6 l-1.6 4 l-1.6 -4 l-4 -1.6 Z" fill="#ffffff"/>';
+  const SHAPES = { bronze: ring(3, 28, -90, 36), silver: ring(4, 28), gold: ring(5, 27), platinum: ring(6, 27), master: starRing(6, 28, 17), grandmaster: starRing(8, 29, 17), legend: starRing(8, 27, 16) };
+  function gem(k, i) {
+    const { id, light, color, dark } = MAK.RANKS[i];
+    if (id === 'diamond') {
+      return `<defs>${grad(`${k}f`, light, color)}</defs>
+        <polygon points="12,24 22,10 42,10 52,24 32,56" fill="url(#${k}f)" stroke="${dark}" stroke-width="2.5" stroke-linejoin="round"/>
+        <polygon points="22,10 27,24 12,24" fill="#ffffff" fill-opacity="0.55"/><polygon points="32,10 37,24 27,24" fill="#ffffff" fill-opacity="0.3"/>
+        <polygon points="12,24 52,24 32,56" fill="${dark}" fill-opacity="0.12"/>
+        <path d="M12 24 H52 M22 10 L27 24 L32 56 M42 10 L37 24 L32 56 M27 24 L32 10 L37 24" fill="none" stroke="${dark}" stroke-opacity="0.5" stroke-width="1.2"/>${SPARKLE}`;
     }
-    const [x0, y0] = at(from);
-    const [x1, y1] = at(to);
-    const stem = `<path d="M${x0.toFixed(1)} ${(y0 + 2).toFixed(1)} A${rx} ${ry} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${INK}" stroke-width="2.4"/><path d="M${x0.toFixed(1)} ${(y0 + 2).toFixed(1)} A${rx} ${ry} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${g(k)}" stroke-width="1.2"/>`;
-    const side = `${stem}<g fill="${g(k)}" stroke="${INK}" stroke-width="0.6">${leaves.join('')}</g>`;
-    return `${side}<g transform="translate(${2 * cx} 0) scale(-1 1)">${side}</g>`;
-  };
-  // The wings of the plates of the top (to the left of x; mirrored around the center).
-  const WING = 'M38 20 C30 12 18 9 6 12 C12 14 16 15 19 17 C12 17 8 19 5 22 C12 22 17 22 21 23.5 C15 25 12 27 10 30 C17 28 23 27.5 29 27.5 C31 25 34 22 38 20 Z';
-  const wing = (k) => `<g fill="${g(k)}" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round"><path d="${WING}"/><path d="${WING}" transform="translate(100 0) scale(-1 1)"/></g>`;
-
-  const BADGES = {
-    // One chevron (S1), bronze on grey.
-    bronze: (k) => `${plate(k, 'grey')}${metal(k, 'b', '#ffd9b0', '#a8642c')}
-      <path d="${chevron(43)}" fill="url(#${k}b)" stroke="#2a1606" stroke-width="1.2" stroke-linejoin="round"/>`,
-    // Four chevrons and a bracket (SE), silver.
-    silver: (k) => `${plate(k, 'silver')}${metal(k, 's', '#ffffff', '#a3adb6')}
-      <g fill="url(#${k}s)" stroke="#20252b" stroke-width="1.1" stroke-linejoin="round">
-        <path d="M30 9 C24 15 24 29 30 35 L33 35 C28.5 29 28.5 15 33 9 Z"/>
-        <path d="${chevron(36)}"/><path d="${chevron(46)}"/><path d="${chevron(56)}"/><path d="${chevron(66)}"/></g>`,
-    // Laurels and one star (GN1).
-    gold: (k) => `${plate(k, 'blue')}${GOLD(k)}${laurel(k, 50, 14)}${star(k, 50, 22, 7)}`,
-    // Laurels and three stars (GN3).
-    platinum: (k) => `${plate(k, 'blue')}${GOLD(k)}${laurel(k, 50, 21)}${star(k, 40, 23, 5)}${star(k, 50, 21, 6)}${star(k, 60, 23, 5)}`,
-    // Laurels and a diamond in a ring (MG).
-    diamond: (k) => `${plate(k, 'blue')}${GOLD(k)}${laurel(k, 50, 18, 15)}${metal(k, 'd', '#e8f6ff', '#3d8bff')}
-      <circle cx="50" cy="22" r="11" fill="none" stroke="${g(k)}" stroke-width="2.6"/><circle cx="50" cy="22" r="11" fill="none" stroke="${INK}" stroke-width="0.6"/>
-      <path d="M43 19 L46.5 14 H53.5 L57 19 L50 30 Z" fill="url(#${k}d)" stroke="#0a2a66" stroke-width="1" stroke-linejoin="round"/>
-      <path d="M43 19 H57 M46.5 14 L48 19 L50 30 M53.5 14 L52 19 L50 30" fill="none" stroke="#0a2a66" stroke-opacity="0.6" stroke-width="0.6"/>`,
-    // A star in a seal (DMG).
-    master: (k) => {
-      const seal = Array.from({ length: 32 }, (_, i) => {
-        const a = (i * Math.PI) / 16;
-        const r = i % 2 ? 11.5 : 13.5;
-        return `${(50 + r * Math.cos(a)).toFixed(1)} ${(22 + r * Math.sin(a)).toFixed(1)}`;
-      }).join(' L');
-      return `${plate(k, 'black')}${GOLD(k)}<path d="M${seal} Z" fill="none" stroke="${g(k)}" stroke-width="1.8" stroke-linejoin="round"/>
-        <circle cx="50" cy="22" r="9" fill="#14161b" stroke="${g(k)}" stroke-width="1.2"/>${star(k, 50, 22.5, 8)}
-        ${star(k, 22, 22, 3)}${star(k, 78, 22, 3)}`;
-    },
-    // An eagle with its wings up, its head to the side, and stars (LE).
-    grandmaster: (k) => {
-      const WING_UP = 'M47.5 21 C43 17 36 11 29 3.5 C29.5 7 30.5 9.5 32 11.5 C28 10.5 25 10.5 22.5 11.5 C26.5 14.5 30.5 16 34 17 C30 17.5 27 18.5 25 20.5 C30 21.5 35 21.5 39 22 C40.5 24.5 43.5 26.5 47.5 26.5 Z';
-      return `${plate(k, 'black')}${GOLD(k)}
-      <g fill="${g(k)}" stroke="${INK}" stroke-width="0.9" stroke-linejoin="round">
-        <path d="${WING_UP}"/><path d="${WING_UP}" transform="translate(100 0) scale(-1 1)"/>
-        <path d="M47 32.5 L44.5 39 L48.5 37 L50 40.5 L51.5 37 L55.5 39 L53 32.5 Z"/>
-        <path d="M50 14.5 C53.5 14.5 55 17.5 55 20.5 C55 26.5 53.5 31 50 35 C46.5 31 45 26.5 45 20.5 C45 17.5 46.5 14.5 50 14.5 Z"/>
-        <path d="M49.5 7 C52.5 7 54.5 9 54.8 11.3 L59 12.8 L54.6 14.4 C53.6 16.2 51.8 17 49.6 17 C46.8 17 45 15 45 12.2 C45 9.2 47 7 49.5 7 Z"/></g>
-      <circle cx="51.6" cy="11.2" r="1.1" fill="#14161b"/>${star(k, 20, 25, 3.2)}${star(k, 80, 25, 3.2)}${star(k, 13, 25, 2.2)}${star(k, 87, 25, 2.2)}`;
-    },
-    // Wings, a globe with a cap of graduation, and stars (GE).
-    legend: (k) => `${plate(k, 'black')}${GOLD(k)}<defs><radialGradient id="${k}e" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#9ff5ff"/><stop offset="1" stop-color="#127a8a"/></radialGradient></defs>
-      ${wing(k)}
-      <circle cx="50" cy="23" r="9.5" fill="url(#${k}e)" stroke="${g(k)}" stroke-width="2"/>
-      <path d="M40.5 23 H59.5 M50 13.5 C45 17 45 29 50 32.5 C55 29 55 17 50 13.5 M42 18 H58 M42 28 H58" fill="none" stroke="#0b4752" stroke-width="0.8" opacity="0.8"/>
-      <path d="M41 13 L50 9 L59 13 L50 17 Z" fill="${g(k)}" stroke="${INK}" stroke-width="0.8" stroke-linejoin="round"/>
-      <path d="M45 15 V18 C48 20 52 20 55 18 V15" fill="${g(k)}" stroke="${INK}" stroke-width="0.8"/>
-      <path d="M57 13.8 V18.5" stroke="${INK}" stroke-width="0.8"/><circle cx="57" cy="19" r="1" fill="${g(k)}" stroke="${INK}" stroke-width="0.5"/>
-      ${star(k, 14, 34, 2.6)}${star(k, 22, 36.5, 2.2)}${star(k, 86, 34, 2.6)}${star(k, 78, 36.5, 2.2)}`
-  };
+    const p = SHAPES[id];
+    const c = id === 'bronze' ? [32, 38] : [32, 32];
+    // The facets: a triangle from the center to each side, light and dark in turn (the top ones lighter).
+    const facets = p.map((v, j) => `<polygon points="${poly([c, v, p[(j + 1) % p.length]])}" ${j % 2 ? `fill="${dark}" fill-opacity="0.18"` : `fill="#ffffff" fill-opacity="${j === 0 ? 0.45 : 0.18}"`}/>`).join('');
+    const halo = id === 'legend'
+      ? `<circle cx="32" cy="32" r="31" fill="none" stroke="${color}" stroke-opacity="0.35" stroke-width="2"/>${ring(12, 31).map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.4" fill="${color}"/>`).join('')}`
+      : '';
+    return `<defs>${grad(`${k}f`, light, color)}</defs>${halo}<polygon points="${poly(p)}" fill="url(#${k}f)"/>${facets}
+      <polygon points="${poly(p)}" fill="none" stroke="${dark}" stroke-width="2.5" stroke-linejoin="round"/>${i >= 5 ? '<circle cx="32" cy="32" r="5" fill="#ffffff" fill-opacity="0.8"/>' : ''}${i >= 2 ? SPARKLE : ''}`;
+  }
   // The badge of a rank: an <svg> (the ids of its gradients have the rank: the same badge twice in a page is the same).
   MAK.rankBadge = function (id) {
-    const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 44" class="rank-badge" aria-hidden="true">${BADGES[id](`mak-${id}-`)}</svg>`.replace(/>\s+</g, '><');
+    const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" overflow="visible" class="rank-badge" aria-hidden="true">${gem(`mak-${id}-`, MAK.RANKS.findIndex((k) => k.id === id))}</svg>`.replace(/>\s+</g, '><');
     return document.importNode(new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement, true);
   };
   const rankName = (k) => MAK.t(`rank.${k.id}`);
