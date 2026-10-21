@@ -177,6 +177,13 @@
       }
     });
     backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });
+    // The focus stays in the field while the palette is open. A click in the panel does not take it (the
+    // buttons and the results still get their click), so no key is lost; when the page takes it (MiAulario
+    // does it while a page loads), it comes back. A click outside closes.
+    panel.addEventListener('mousedown', (e) => { if (e.target !== input) e.preventDefault(); });
+    input.addEventListener('blur', () => setTimeout(() => {
+      if (input.isConnected && shadow.activeElement !== input) input.focus();
+    }));
     shadow.append(style, backdrop);
     document.documentElement.append(host);
     draw();
