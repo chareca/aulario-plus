@@ -142,7 +142,7 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
       clearAll: async () => { alarms.clear(); return true; },
       onAlarm: on(listeners.alarm)
     },
-    cookies: { onChanged: on([]), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },
+    cookies: { onChanged: on([]), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {}, getAllCookieStores: async () => [{ id: '0' }] },
     action: {
       setBadgeText: async ({ text }) => { window.__badge.text = text; },
       setBadgeBackgroundColor: async ({ color }) => { window.__badge.color = color; },

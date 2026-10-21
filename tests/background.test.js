@@ -70,11 +70,14 @@ test('"Danger zone": wipeAll deletes all the data, the alarms, the notifications
   await bg.ext.permissions.request({ origins: ['https://www2.unavarra.es/*', 'https://academicos.unavarra.es/*'] });
   await bg.ext.alarms.create('miaulario-ping', { when: Date.now() + 60000 });
   await bg.ext.notifications.create('grade-1', {});
-  await bg.ext.storage.session.set({ lock: 1 });
+  await bg.ext.storage.session.set({ lock: 1, recordRun: { tabId: 7, at: Date.now(), shown: false } }); // a reading of SIGMA is open
   assert.equal(await bg.send({ type: 'wipeAll' }, CONTENT()), null, 'not from a page of MiAulario');
   assert.deepEqual(await bg.send({ type: 'wipeAll' }), { ok: true });
   assert.deepEqual(bg.ext.storage.local.data, { paused: 'reset' });
   assert.deepEqual([bg.ext._alarms.size, bg.ext._notes.size, bg.ext._granted.size, Object.keys(bg.ext.storage.session.data).length], [0, 0, 0, 0]);
+  assert.deepEqual(bg.ext._tabs.removed, [7], 'the tab of the reading closes');
+  await bg.ext.permissions.request({ origins: ['https://www2.unavarra.es/*', 'https://academicos.unavarra.es/*'] });
+  assert.deepEqual(await bg.send({ type: 'recordOpen' }), { error: 'record.paused' }, 'no reading of SIGMA while empty');
   // Empty until the user starts again: no message of the pages, no ping, no alarm at a start of the browser.
   assert.equal(await bg.send({ type: 'getStatus' }, CONTENT()), null);
   assert.equal(await bg.send({ type: 'pingNow' }), null);

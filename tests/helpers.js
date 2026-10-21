@@ -119,7 +119,7 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
       clearAll: async () => { alarms.clear(); return true; },
       onAlarm: on(listeners.alarm)
     },
-    cookies: { onChanged: on(listeners.cookies), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {} },
+    cookies: { onChanged: on(listeners.cookies), get: async () => null, getAll: async () => [], set: async () => {}, remove: async () => {}, getAllCookieStores: async () => [{ id: '0' }] },
     action: {
       setBadgeText: async ({ text }) => { badge.text = text; },
       setBadgeBackgroundColor: async ({ color }) => { badge.color = color; },

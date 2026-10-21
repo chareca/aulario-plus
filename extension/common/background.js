@@ -109,6 +109,7 @@ async function endStaleRun() {
 // shown: a small window, which the user sees ("Abrir expediente"), else a tab in the background.
 // from: the tab that shows the average and the rank at the end (MiAulario), or null.
 async function refreshRecord(shown, from) {
+  if ((await store.get('paused')).paused === 'reset') return { error: 'record.paused' }; // all the data deleted
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const run = await recordRun();
   if (run && Date.now() - run.at < runLimit(run)) { // a reading is open: show its window
@@ -135,6 +136,7 @@ async function refreshRecord(shown, from) {
 
 // "Abrir expediente": the pages of SIGMA that are open now, and a reading in a small window. from: as above.
 async function readRecordNow(from) {
+  if ((await store.get('paused')).paused === 'reset') return { error: 'record.paused' }; // all the data deleted
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const open = await Promise.resolve(ext.tabs.query({ url: `${MAK.SIGMA_ORIGIN}/*` })).catch(() => []);
   for (const t of open || []) await injectRecord(t.id);
@@ -191,8 +193,6 @@ let historyRunning = null;
 function refreshHistory() {
   if (historyRunning) return historyRunning;
   historyRunning = (async () => {
-    let raw;
-    try {
     // Not while paused, nor after "delete all the data" (the page of the history asks at each opening). After a
     // logout, a ping first sees if the user logged in again (as the alarm does).
     let { paused } = await store.get('paused');
@@ -207,6 +207,8 @@ function refreshHistory() {
     if (!session || !session.userId) return { error: 'history.login' };
     const { meta } = await store.get('meta');
     if (meta && meta.userId && meta.userId !== session.userId) await sync.run({ force: true }).catch(() => {});
+    let raw;
+    try {
       raw = await courseApi.tasks();
     } catch (e) {
       // Without a session MiAulario answers with the page of the login.
@@ -379,10 +381,11 @@ async function persistExisting() {
 // Without MAK.KEEP_SESSION: the persistent copies of an older version become session cookies again (the same
 // cookie without its expiration date), so the session ends with the browser, as without the extension.
 async function unpersistExisting() {
+  const stores = (await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => [])).map((s) => s.id);
   for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
     for (const name of names) {
       await queueCookie(async () => {
-        for (const c of await cookieCopies(host, name)) {
+        for (const c of (await Promise.all((stores.length ? stores : [undefined]).map((id) => cookieCopies(host, name, id)))).flat()) {
           if (!c.expirationDate) continue;
           const d = cookieDetails(c, host, c.value);
           delete d.expirationDate;
@@ -1205,6 +1208,7 @@ ext.alarms.onAlarm.addListener((alarm) => {
 // the user starts it again in the popup ("resume").
 async function wipeAll() {
   await store.set({ paused: 'reset' }); // first: no new work starts
+  await endRecordRun(''); // an open reading of SIGMA: its tab or window closes
   await sync.run().catch(() => {}); // the sync that is running ends
   if (historyRunning) await historyRunning.catch(() => {});
   await ext.alarms.clearAll();
