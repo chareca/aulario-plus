@@ -369,8 +369,10 @@
       return result;
     }
 
-    // Record that the user used the extension (the sync is faster after this).
+    // Record that the user used the extension (the sync is faster after this). Not after "delete all the data"
+    // (paused: 'reset'): then the extension keeps nothing until the user starts it again.
     async function touch() {
+      if ((await store.get('paused')).paused === 'reset') return;
       await store.update('meta', (m) => Object.assign({}, m, { lastUse: now() }));
     }
 

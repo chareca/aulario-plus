@@ -823,9 +823,10 @@ const handlers = {
       return { ok: true };
     }
   },
-  // The user opened the Grades tab: the grades until now are seen.
+  // The user opened the Grades tab: the grades until now are seen (nothing to keep after "delete all the data").
   markGradesSeen: {
     run: async () => {
+      if ((await store.get('paused')).paused === 'reset') return { ok: true };
       await store.set({ gradesSeenAt: Date.now() });
       return { ok: true };
     }

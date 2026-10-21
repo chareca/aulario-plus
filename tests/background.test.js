@@ -78,6 +78,10 @@ test('"Danger zone": wipeAll deletes all the data, the alarms, the notifications
   // Empty until the user starts again: no message of the pages, no ping, no alarm at a start of the browser.
   assert.equal(await bg.send({ type: 'getStatus' }, CONTENT()), null);
   assert.equal(await bg.send({ type: 'pingNow' }), null);
+  // The popup opens (touch) and shows the grades: nothing is kept.
+  await bg.send({ type: 'touch' });
+  await bg.send({ type: 'markGradesSeen' });
+  assert.deepEqual(bg.ext.storage.local.data, { paused: 'reset' }, 'only the mark of the reset');
   for (const f of bg.ext._listeners.startup) await f();
   assert.equal(bg.ext._alarms.size, 0);
   assert.deepEqual(await bg.send({ type: 'resume' }), { ok: true });
