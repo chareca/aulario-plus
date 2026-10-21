@@ -4,7 +4,8 @@ name: Publish to the stores
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
 # AMO is paused: see the job "firefox".
 # A store without its secrets is skipped. To examine the keys without an upload, run the
-# workflow by hand with "check".
+# workflow by hand with "check". The keys are secrets of the environment "stores": only the branch
+# main and the tags v* reach it. The actions are pinned to a commit (Dependabot updates them).
 on:
   release:
     types: [published]
@@ -32,8 +33,12 @@ jobs:
   check:
     if: ${{ inputs.check }}
     runs-on: ubuntu-latest
+    environment: stores
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Examine the keys of the Chrome Web Store
         env:
@@ -75,12 +80,28 @@ jobs:
   build:
     if: ${{ !inputs.check }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
+      - name: Examine the tag
+        run: |
+          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The tag is not of the form vX.Y.Z."
+            exit 1
+          fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false
+
+      # The commit of the tag: the job "chrome" uses the same one, also if the tag changes meanwhile.
+      - name: The commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -100,7 +121,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: |
@@ -112,12 +133,15 @@ jobs:
   chrome:
     needs: build
     runs-on: ubuntu-latest
+    environment: stores
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ needs.build.outputs.sha }}
+          persist-credentials: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
@@ -136,15 +160,22 @@ jobs:
     if: false
     needs: build
     runs-on: ubuntu-latest
+    environment: stores
+    timeout-minutes: 20
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+
+      # In a step without the keys, and without the install scripts of the packages. An exact version: a new
+      # release of web-ext does not run here unseen.
+      - name: Install web-ext
+        run: npm install --global --ignore-scripts web-ext@8.10.0
 
       - name: Publish to Firefox Add-ons
         env:
@@ -157,7 +188,6 @@ jobs:
             exit 0
           fi
           # Listed version: AMO does the review and then signs and publishes it. The job does not wait.
-          # An exact version: this step has the keys of AMO, so a new release of web-ext does not run here unseen.
-          npx --yes web-ext@8.10.0 sign --source-dir dist/firefox --artifacts-dir web-ext-artifacts \
+          web-ext sign --source-dir dist/firefox --artifacts-dir web-ext-artifacts \
             --channel listed --approval-timeout 0
           echo "::notice::$TAG is in the review of Firefox Add-ons."
