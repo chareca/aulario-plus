@@ -30,11 +30,14 @@
     assert.equal(MAK.submissionKind(group).kind, 'task', 'a group task');
     const eu = taskPage('Bidalketaren berrespena', 'Zure zeregina behar bezala bidali duzu.', ROWS('Praktika'));
     assert.equal(MAK.submissionKind(eu).kind, 'task', 'in Basque');
+    const other = taskPage('Confirmación del envío de la tarea', 'Se ha enviado su trabajo con éxito.', ROWS('Práctica 4'));
+    assert.equal(MAK.submissionKind(other).kind, 'task', 'another title: the banner says "enviado"');
   });
 
   test('a task that is only saved, or another page: no confetti', () => {
     assert.equal(MAK.submissionKind(taskPage('Confirmación de envío guardado', 'Se ha guardado su trabajo con éxito', ROWS('Práctica 3'))), null);
     assert.equal(MAK.submissionKind(taskPage('Saved Assignment Confirmation', 'You have successfully saved your work but NOT submitted yet.', ROWS('Lab 3'))), null);
+    assert.equal(MAK.submissionKind(taskPage('Confirmación del borrador', 'Se ha guardado su trabajo con éxito', ROWS('Práctica 4'))), null, 'another title, the banner says "guardado"');
     assert.equal(MAK.submissionKind(parse('<div class="portletBody"><h3>Tareas</h3><form name="addSubmissionForm"></form></div>')), null);
     assert.equal(MAK.submissionKind(parse('<main><h1>Mi sitio</h1></main>')), null);
   });

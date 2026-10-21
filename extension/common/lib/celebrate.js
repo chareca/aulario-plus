@@ -13,6 +13,9 @@
   // A task that is only saved has its own title: no confetti.
   const SUBMITTED = ['confirmación de envío', 'bidalketaren berrespena', 'submission confirmation'];
   const SAVED = ['confirmación de envío guardado', 'gorde da zereginaren berrespena', 'saved assignment confirmation'];
+  // Another title (a text changed by the university): the green banner says "sent" or "saved".
+  const SENT_WORD = /\b(enviad|submitted|bidal)/i;
+  const SAVED_WORD = /\b(guardad|saved|gorde)/i;
   const EXAM = /\b(examen|exam|azterketa)/i;
   // A short key of a text (the confetti of a submission fires once).
   const hash = (s) => {
@@ -34,7 +37,9 @@
     const head = doc.querySelector('.portletBody > h3');
     if (!table || !head || !doc.querySelector('.portletBody > .sak-banner-success')) return null;
     const text = lower(head.textContent);
-    if (SAVED.some((t) => text.endsWith(t)) || !SUBMITTED.some((t) => text.endsWith(t))) return null;
+    const banner = words(doc.querySelector('.portletBody > .sak-banner-success').textContent);
+    if (SAVED.some((t) => text.endsWith(t))) return null;
+    if (!SUBMITTED.some((t) => text.endsWith(t)) && !(SENT_WORD.test(banner) && !SAVED_WORD.test(banner))) return null;
     const id = table.querySelector('td.highlight');
     const row = id && id.closest('tr').previousElementSibling;
     const title = words(row && row.querySelector('td') ? row.querySelector('td').textContent : '');
