@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadBackground, fakeFetch } = require('./helpers');
+const { loadBackground, fakeFetch, response } = require('./helpers');
 const F = require('./fixtures/miaulario');
 
 const CONTENT = (o = {}) => Object.assign({ id: 'ext-id', tab: { id: 1 }, frameId: 0, url: 'https://miaulario.unavarra.es/portal/site/x' }, o);
@@ -131,6 +131,22 @@ test('keeping the session off (MAK.KEEP_SESSION): the ping only reads the sessio
   assert.deepEqual(shown.map((r) => r.show).sort(), [false, true], 'two tabs at once: one window');
   assert.equal((await bg.send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'only once');
   assert.equal((await loadBackground({ keepSession: true }).send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'with the session kept: no notice');
+});
+
+test('the popup reads the session when it opens and with ↻, not only at the next alarm', async () => {
+  const routes = F.routes();
+  const session = routes['/direct/session/current.json'];
+  const loggedOut = () => fakeFetch.raw(response('<html>login</html>', { type: 'text/html' }));
+  routes['/direct/session/current.json'] = loggedOut;
+  const bg = loadBackground({ fetch: fakeFetch(routes) });
+  await bg.send({ type: 'pingNow' }); // the ping of the install, before the login
+  assert.equal(bg.ext.storage.local.data.last.loggedIn, false);
+  routes['/direct/session/current.json'] = session; // the user logs in
+  await bg.send({ type: 'touch' });
+  assert.equal(bg.ext.storage.local.data.last.loggedIn, true, 'the popup opens: no "Sin sesión"');
+  routes['/direct/session/current.json'] = loggedOut; // the session ends
+  await bg.send({ type: 'syncNow' });
+  assert.equal(bg.ext.storage.local.data.last.loggedIn, false, 'the button ↻');
 });
 
 test('a paused extension resumes when the user logs in again, and only then pings', async () => {

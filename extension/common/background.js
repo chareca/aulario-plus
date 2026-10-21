@@ -695,10 +695,12 @@ const handlers = {
       return { ok: true };
     }
   },
-  // The popup opened: record the use, and sync if the data is older than 2 minutes.
+  // The popup opened: record the use, read the session, and sync if the data is older than 2 minutes.
+  // The last ping can be 10 minutes old (for example, from before the login): the popup shows its state.
   touch: {
     run: async () => {
       await sync.touch();
+      await ping();
       const { meta } = await store.get('meta');
       // A last sync in the future: the clock went back. Sync.
       if (!meta || !meta.lastSync || Date.now() - meta.lastSync > SYNC_FRESH_MS || meta.lastSync > Date.now()) {
@@ -710,6 +712,7 @@ const handlers = {
   syncNow: {
     run: async (msg) => {
       await sync.touch();
+      await ping(); // the button ↻ also reads the session again
       return sync.run({ force: true, full: !!msg.full });
     }
   },
