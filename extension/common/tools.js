@@ -354,13 +354,29 @@ async function runHistory() {
   // What is older than the update of MiAulario to Sakai 25 cannot come back (RESEARCH.md): the notice says it.
   const before = h('p', { class: 'notice history-before' });
   const list = h('div', { class: 'history' });
-  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh), status, summary, list);
+  // One button for all the subjects: "Expandir todo" when all of them are closed, else "Colapsar todo".
+  const fold = h('button', { class: 'btn', attrs: { type: 'button' } });
+  const subjectBoxes = () => [...list.querySelectorAll('details.history-subject')];
+  const foldLabel = () => {
+    const boxes = subjectBoxes();
+    fold.hidden = !boxes.length;
+    fold.textContent = t(boxes.some((d) => d.open) ? 'history.collapseAll' : 'history.expandAll');
+  };
+  fold.addEventListener('click', () => {
+    const open = !subjectBoxes().some((d) => d.open);
+    for (const d of subjectBoxes()) d.open = open;
+    foldLabel();
+  });
+  list.addEventListener('toggle', foldLabel, true); // "toggle" does not bubble: in the capture
+  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh, fold), status, summary, list);
 
   const when = (ms) => (ms ? MAK.formatDate(ms) : '–');
   const STATE = { submitted: 'ok', late: 'warn', missed: 'bad', pending: 'info', unknown: '', sent: 'ok', noRecord: '' };
   let data = {};
   function draw() {
     const now = Date.now();
+    // All closed at the start; a new drawing (the reading of MiAulario, the filter) keeps the ones that the user opened.
+    const wasOpen = new Set(subjectBoxes().filter((d) => d.open).map((d) => d.dataset.key));
     const items = Object.values((data.history && data.history.items) || {});
     const grades = MAK.officialGrades(data.record);
     const mine = new Set((data.sites || []).map((s) => s.id)); // the sites of the user now: a link to the item
@@ -378,6 +394,7 @@ async function runHistory() {
     ].filter(Boolean).join(' · ') : '';
     if (!items.length && !grades.length) {
       MAK.fill(list, data.history ? h('p', { class: 'empty', text: t('history.empty') }) : null);
+      foldLabel();
       return;
     }
     // By year and by subject: a subject of MiAulario and of SIGMA are one by the code of the subject
@@ -399,7 +416,6 @@ async function runHistory() {
       const s = kind.value === 'all' ? subjectOf(g.year, g.code, MAK.shortTitle(g.name)) : years.has(g.year) && years.get(g.year).get(g.code);
       if (s) s.grade = g;
     }
-    const current = MAK.academicYear({ due: now });
     const word = (s) => s.charAt(0).toLocaleUpperCase('es') + s.slice(1).toLocaleLowerCase('es');
     const gradeText = (g) => [g.grade ? word(g.grade) : null, g.mark !== null ? g.mark.toLocaleString(MAK.locale()) : null].filter(Boolean).join(' ');
     const official = (g) => h('p', { class: 'history-official meta' },
@@ -422,15 +438,16 @@ async function runHistory() {
     };
     MAK.fill(list, [...years.keys()].sort().reverse().map((y) => h('section', { class: 'history-year' },
       h('h2', { text: t('history.year', { year: y }) }),
-      [...years.get(y).values()].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((subject) => {
+      [...years.get(y).entries()].sort(([, a], [, b]) => a.name.localeCompare(b.name, 'es')).map(([key, subject]) => {
         const its = subject.items.sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
         const g = subject.grade;
-        return h('details', { class: 'history-subject', attrs: { open: y === current } },
+        return h('details', { class: 'history-subject', attrs: { 'data-key': `${y}|${key}`, open: wasOpen.has(`${y}|${key}`) } },
           h('summary', null, h('strong', { text: subject.name }), its.length ? h('span', { class: 'meta', text: ` · ${its.length}` }) : null,
             g ? [' ', h('span', { class: `tag ${g.passed ? 'ok' : /no presentad/i.test(g.grade) ? '' : 'bad'}`, text: gradeText(g) })] : null),
           g ? official(g) : null,
           its.length ? h('ul', { class: 'history-list' }, its.map(row)) : null);
       }))));
+    foldLabel();
   }
   async function load() {
     data = await ext.storage.local.get(['history', 'sites', 'record']);
