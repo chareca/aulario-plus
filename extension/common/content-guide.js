@@ -25,7 +25,14 @@
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
     .content { max-width: 1400px; }
-    .content.one { max-width: 900px; }
+    /* The home page of a site: the guide keeps its width (900px at most), and the calendar goes in the free space
+       to its right, centered, when one month fits there (the months one below the other when two do not); else on
+       its own line below, centered. */
+    .content.one { max-width: none; }
+    .guide-flow { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; }
+    .guide-main { flex: 0 1 900px; min-width: 0; }
+    .guide-flow > .cal-wrap { flex: 1 1 0; min-width: min-content; margin: 0; display: flex; justify-content: center; }
+    .guide-flow .cal-grid { grid-template-columns: repeat(7, 32px); } /* a month does not shrink: its width is the least of the calendar */
     /* "Mi sitio": one card for each site, in 1, 2 or 3 columns. */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 12px; margin-top: 4px; align-items: start; }
     .guide-card { min-width: 0; padding: 10px 12px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
@@ -248,7 +255,8 @@
       if (!guide) return;
       const calPlace = h('div', { class: 'cal-wrap', hidden: !settings.examCalendar });
       const calButton = h('span');
-      show(MAK.t('guide.title'), [guideBody(guide), calPlace], [calButton, calcButton(site, MAK.publicSiteName(site), guide.evaluation.rows, true)]);
+      const flow = h('div', { class: 'guide-flow' }, h('div', { class: 'guide-main' }, guideBody(guide)), calPlace);
+      show(MAK.t('guide.title'), flow, [calButton, calcButton(site, MAK.publicSiteName(site), guide.evaluation.rows, true)]);
       siteCalendar(data, settings, calPlace, calButton);
       return;
     }
