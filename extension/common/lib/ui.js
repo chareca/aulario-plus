@@ -75,6 +75,7 @@
     pencil: [['path', { d: 'M4 20l1.2-4.6L15.6 5a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L8.6 18.8z' }], ['path', { d: 'M13.5 7l3.5 3.5' }]],
     mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
     chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
+    calendar: [['rect', { x: 4, y: 5.5, width: 16, height: 14.5, rx: 2 }], ['path', { d: 'M4 10h16' }], ['path', { d: 'M8.5 3.5v4' }], ['path', { d: 'M15.5 3.5v4' }]],
     calc: [['rect', { x: 5, y: 3, width: 14, height: 18, rx: 2 }], ['path', { d: 'M8 7h8' }], ['path', { d: 'M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01M8.5 18h.01M12 18h.01M15.5 18h.01' }]],
     arrow: [['path', { d: 'M7 17L17 7' }], ['path', { d: 'M8 7h9v9' }]],
     // The main menu of the popup (Inicio)
@@ -173,6 +174,108 @@
     }
     layout();
     return MAK.h('div', { class: 'sems-wrap' }, sems);
+  };
+
+  // ---- The calendar of the exams (Mi sitio: each semester; the home page of a site: its subject) ----
+  // The months of the exams, from Monday to Sunday: the finals in the color of the exams of the guides, the
+  // recoveries in another one. A day of an exam has a tooltip (on hover and on focus): the subject, the kind and
+  // the date. focus: the site of a subject; then the days of the other subjects are grey, without a tooltip.
+
+  // The exams as days: [{ ms, kind: 'final' | 'rec', room, siteId, name }]. mine: MAK.myExams; nameOf(row).
+  MAK.examDays = (mine, nameOf) => mine.flatMap((r) => [['final', r.final, r.finalRoom], ['rec', r.recovery, r.recoveryRoom]]
+    .filter(([, ms]) => ms).map(([kind, ms, room]) => ({ ms, kind, room: room || '', siteId: r.siteId, name: nameOf(r) })));
+
+  // The weeks of a month, Monday first: [[null, 1, 2, …], …] (null: a day of another month).
+  MAK.monthWeeks = function (year, month) {
+    const first = (new Date(year, month, 1).getDay() + 6) % 7;
+    const days = new Date(year, month + 1, 0).getDate();
+    const cells = [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+    while (cells.length % 7) cells.push(null);
+    return Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
+  };
+
+  MAK.EXAM_CAL_CSS = `
+    .cal-wrap { margin: 10px 0 4px; }
+    .cal-months { display: flex; flex-wrap: wrap; gap: 14px 22px; }
+    .cal-month { min-width: 0; max-width: 100%; }
+    .cal-title { font-weight: 700; margin: 0 0 6px; }
+    .cal-title::first-letter { text-transform: uppercase; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 32px)); gap: 3px; }
+    .cal-wd { text-align: center; font-size: 11px; font-weight: 700; color: var(--ap-muted); }
+    .cal-day { position: relative; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--ap-radius-sm);
+      font-size: 12.5px; font-variant-numeric: tabular-nums; }
+    .cal-day.out { visibility: hidden; }
+    .cal-day.today { box-shadow: inset 0 0 0 2px var(--ap-fg); }
+    .cal-day.final { background: var(--ap-k-exam); color: var(--ap-k-exam-fg); font-weight: 800; }
+    .cal-day.rec { background: var(--ap-k-participation); color: var(--ap-k-participation-fg); font-weight: 800; }
+    .cal-day.final.rec { background: linear-gradient(135deg, var(--ap-k-exam) 50%, var(--ap-k-participation) 50%); }
+    .cal-day.dim { opacity: 0.35; filter: grayscale(0.6); font-weight: 400; }
+    .cal.focus .cal-day[data-tip] { box-shadow: 0 0 0 2px var(--ap-surface), 0 0 0 4px var(--ap-fg); z-index: 1; }
+    .cal-day[data-tip]:hover::after, .cal-day[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; z-index: 3;
+      bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 260px; white-space: pre-line;
+      text-align: left; padding: 6px 9px; border-radius: var(--ap-radius-sm); font: 600 12px/1.35 var(--ap-font);
+      color: var(--ap-surface); background: var(--ap-fg); box-shadow: var(--ap-shadow-sm); pointer-events: none; }
+    .cal-day[data-tip]:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
+    .cal-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 8px; font-size: 0.86em; }
+    .cal-key { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+    .cal-key.final { background: var(--ap-k-exam); }
+    .cal-key.rec { background: var(--ap-k-participation); }
+    .cal-toggle { display: inline-flex; align-items: center; gap: 5px; }
+    .cal-toggle svg { width: 16px; height: 16px; }
+    .cal-toggle[aria-pressed="false"] { color: var(--ap-btn-fg); background: var(--ap-btn-bg); border-color: var(--ap-btn-edge); }
+    .cal-toggle[aria-pressed="true"] { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); }
+  `;
+
+  // The calendar: days (MAK.examDays), the months of the days (of the focus: its exams). null without a day.
+  MAK.examCalendar = function (days, { focus, now } = {}) {
+    const h = MAK.h;
+    const keyOf = (ms) => new Date(ms).toDateString();
+    const months = [...new Set((focus ? days.filter((d) => d.siteId === focus) : days).map((d) => {
+      const x = new Date(d.ms);
+      return x.getFullYear() * 12 + x.getMonth();
+    }))].sort((a, b) => a - b);
+    if (!months.length) return null;
+    const byDay = new Map();
+    for (const d of days) byDay.set(keyOf(d.ms), (byDay.get(keyOf(d.ms)) || []).concat(d));
+    const today = keyOf(now ?? Date.now());
+    const weekday = new Intl.DateTimeFormat(MAK.locale(), { weekday: 'narrow' });
+    const weekdays = Array.from({ length: 7 }, (_, i) => weekday.format(new Date(2024, 0, 1 + i))); // 1 January 2024: a Monday
+    const kindName = (k) => MAK.t(k === 'final' ? 'cal.final' : 'cal.rec');
+    const cell = (year, month, day) => {
+      if (!day) return h('span', { class: 'cal-day out' });
+      const key = new Date(year, month, day).toDateString();
+      const list = byDay.get(key) || [];
+      const mine = focus ? list.filter((d) => d.siteId === focus) : list;
+      const shown = mine.length ? mine : list; // the days of the other subjects: grey, no tooltip
+      const cls = ['cal-day', ...new Set(shown.map((d) => d.kind)), !mine.length && list.length ? 'dim' : '', key === today ? 'today' : ''];
+      if (!mine.length) return h('span', { class: cls.filter(Boolean).join(' '), text: String(day) });
+      const tip = mine.map((d) => `${d.name} · ${kindName(d.kind)} · ${MAK.formatDate(d.ms)}${d.room ? ` · ${d.room}` : ''}`).join('\n');
+      return h('span', { class: cls.filter(Boolean).join(' '), text: String(day), data: { tip }, attrs: { tabindex: '0', 'aria-label': `${day}: ${tip}` } });
+    };
+    const month = (k) => {
+      const [year, m] = [Math.floor(k / 12), k % 12];
+      const title = new Intl.DateTimeFormat(MAK.locale(), { month: 'long', year: 'numeric' }).format(new Date(year, m, 1));
+      return h('div', { class: 'cal-month' }, h('div', { class: 'cal-title', text: title }),
+        h('div', { class: 'cal-grid', attrs: { 'aria-label': title } }, weekdays.map((w) => h('span', { class: 'cal-wd', text: w, attrs: { 'aria-hidden': 'true' } })),
+          MAK.monthWeeks(year, m).flat().map((day) => cell(year, m, day))));
+    };
+    return h('div', { class: `cal${focus ? ' focus' : ''}` }, h('div', { class: 'cal-months' }, months.map(month)),
+      h('div', { class: 'cal-legend meta' }, h('span', null, h('span', { class: 'cal-key final' }), kindName('final')), h('span', null, h('span', { class: 'cal-key rec' }), kindName('rec'))));
+  };
+
+  // The button that shows or hides the calendars (the setting "examCalendar": the same in Mi sitio and in the
+  // sites). wraps: the elements of the calendars; save(on). icon: only the icon (the head of a box).
+  MAK.calendarButton = function (on, wraps, save, icon) {
+    const label = MAK.t('cal.button');
+    const b = MAK.h('button', { class: `${icon ? 'mak-fold' : MAK.extButtonClass('btn')} cal-toggle`, attrs: { type: 'button', 'aria-pressed': String(!!on), title: MAK.t('cal.help'), 'aria-label': label } },
+      MAK.icon('calendar'), icon ? null : MAK.h('span', { text: label }));
+    b.addEventListener('click', () => {
+      on = !on;
+      b.setAttribute('aria-pressed', String(on));
+      for (const w of wraps) w.hidden = !on;
+      save(on);
+    });
+    return b;
   };
 
   // The arrow that folds a box of the extension (the block "Aulario Plus" of "Mi sitio" and the boxes in

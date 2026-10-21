@@ -1,0 +1,59 @@
+// The calendar of the exams (lib/ui.js, MAK.examCalendar): the months of the exams from Monday to Sunday,
+// the finals and the recoveries in two colors, a tooltip on each day of an exam; the focus of a subject.
+(function () {
+  'use strict';
+  const at = (y, m, d, h = 9) => new Date(y, m, d, h).getTime();
+  const MINE = [
+    { siteId: 'pl', name: 'PROCESADORES', final: at(2026, 11, 15, 12), recovery: at(2027, 0, 15, 8), finalRoom: 'A1', recoveryRoom: '' },
+    { siteId: 'si', name: 'SEGURIDAD', final: at(2026, 11, 16, 12), recovery: at(2027, 0, 18), finalRoom: '', recoveryRoom: '' },
+    { siteId: 'cc', name: 'COMPLEJIDAD', final: at(2027, 0, 11, 12), recovery: at(2027, 0, 15, 12), finalRoom: '', recoveryRoom: '' }
+  ];
+  const days = () => MAK.examDays(MINE, (r) => r.name.charAt(0) + r.name.slice(1).toLowerCase());
+  const day = (cal, title, n) => [...[...cal.querySelectorAll('.cal-month')].find((m) => m.querySelector('.cal-title').textContent.startsWith(title)).querySelectorAll('.cal-day')]
+    .find((d) => d.textContent === String(n));
+
+  test('a semester: the months of its exams, from Monday; the finals and the recoveries; a tooltip with the subject, the kind and the date', () => {
+    MAK.setLang('es');
+    const cal = MAK.examCalendar(days(), { now: at(2026, 9, 21) });
+    assert.deepEqual([...cal.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026', 'enero de 2027']);
+    assert.deepEqual([...cal.querySelectorAll('.cal-month')[0].querySelectorAll('.cal-wd')].map((w) => w.textContent), ['L', 'M', 'X', 'J', 'V', 'S', 'D']);
+    const dec = [...cal.querySelectorAll('.cal-month')[0].querySelectorAll('.cal-day')];
+    assert.equal(dec.findIndex((d) => d.textContent === '1'), 1, '1 December 2026: a Tuesday');
+    assert.ok(day(cal, 'diciembre', 15).classList.contains('final'));
+    assert.ok(day(cal, 'enero', 18).classList.contains('rec'));
+    const both = day(cal, 'enero', 15);
+    assert.ok(both.classList.contains('final') === false && both.classList.contains('rec'), 'two recoveries on one day');
+    assert.equal(both.dataset.tip.split('\n').length, 2, 'both in the tooltip');
+    const tip = day(cal, 'diciembre', 15).dataset.tip;
+    assert.ok(/^Procesadores · Final · .*15.* · A1$/.test(tip), tip);
+    assert.equal(day(cal, 'diciembre', 15).getAttribute('tabindex'), '0', 'the tooltip also with the keyboard');
+    assert.equal(day(cal, 'diciembre', 3).dataset.tip, undefined, 'a day without an exam');
+    assert.equal(MAK.examCalendar([], {}), null);
+  });
+
+  test('a subject: the months of its exams; its days stand out, the days of the others are grey, without a tooltip', () => {
+    const cal = MAK.examCalendar(days(), { focus: 'si', now: at(2026, 9, 21) });
+    assert.ok(cal.classList.contains('focus'));
+    assert.deepEqual([...cal.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026', 'enero de 2027']);
+    const mine = day(cal, 'diciembre', 16);
+    assert.ok(mine.dataset.tip && !mine.classList.contains('dim'));
+    const other = day(cal, 'diciembre', 15);
+    assert.ok(other.classList.contains('dim') && other.classList.contains('final'), 'another subject: its color, grey');
+    assert.equal(other.dataset.tip, undefined);
+    assert.equal(other.getAttribute('tabindex'), null);
+    const only = MAK.examCalendar(days().filter((d) => d.siteId !== 'si').concat({ ms: at(2026, 11, 16), kind: 'final', siteId: 'si', name: 'S' }), { focus: 'si' });
+    assert.deepEqual([...only.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026'], 'only the months of the subject');
+  });
+
+  test('the button shows and hides the calendars, and saves the setting', () => {
+    const wraps = [document.createElement('div'), document.createElement('div')];
+    wraps.forEach((w) => { w.hidden = true; });
+    const saved = [];
+    const b = MAK.calendarButton(false, wraps, (on) => saved.push(on));
+    assert.equal(b.getAttribute('aria-pressed'), 'false');
+    b.click();
+    assert.deepEqual([b.getAttribute('aria-pressed'), wraps.map((w) => w.hidden), saved], ['true', [false, false], [true]]);
+    b.click();
+    assert.deepEqual([wraps.every((w) => w.hidden), saved], [true, [true, false]]);
+  });
+})();

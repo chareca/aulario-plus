@@ -30,7 +30,8 @@
       theme: '', // the id of a theme (lib/themes.js); '' or an unknown id: the default theme
       colorMode: 'auto', // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
       confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
-      rankBar: true // the rank of the average (lib/record.js) in the bar of MiAulario
+      rankBar: true, // the rank of the degree (lib/record.js) in the bar of MiAulario
+      examCalendar: false // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
     };
   };
 
@@ -160,7 +161,8 @@
       theme: typeof s.theme === 'string' && /^[a-z0-9-]{1,32}$/.test(s.theme) ? s.theme : '',
       colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto',
       confetti: 'confetti' in s ? !!s.confetti : d.confetti,
-      rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar
+      rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar,
+      examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar
     };
   };
 

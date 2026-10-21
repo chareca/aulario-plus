@@ -335,6 +335,31 @@
     return out.sort((a, b) => next(a) - next(b) || (a.final || 0) - (b.final || 0));
   };
 
+  // The guides of the user for the exams: the sites that the user did not hide (the old subjects are often
+  // hidden), of the last academic year. data: the storage (guides, sites); hidden: MAK.hiddenEverywhere.
+  MAK.userGuides = (data, hidden) => MAK.lastYearGuides(Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide }))
+    .filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId)), data.sites);
+
+  // The exams of the user from the exam calendars of the degree (the background script reads them: "examRows").
+  // show(season): the calendars and the subjects of a semester to read. { mine (MAK.myExams, each with its
+  // semester: the one of its calendar, else of its guide), permission (no access to the calendars), failed, read }.
+  MAK.loadMyExams = async function ({ degree, guides, now, send, show }) {
+    const pdfs = ((degree && degree.pdfs) || []).filter((p) => !p.season || show(p.season));
+    const rows = [];
+    let permission = false;
+    let failed = 0;
+    for (const p of pdfs) {
+      const r = await send({ type: 'examRows', url: p.url });
+      if (r && Array.isArray(r.rows)) rows.push(...r.rows.map((x) => Object.assign({}, x, { season: p.season || null })));
+      else if (r && r.error === 'exams.permission') permission = true;
+      else failed++;
+    }
+    const season = new Map(guides.map((g) => [g.guide.code, MAK.guideSeason(g.guide)]));
+    const subjects = guides.map((g) => ({ code: g.guide.code, siteId: g.siteId }));
+    const mine = MAK.myExams(rows, subjects, now).map((r) => Object.assign(r, { season: r.season || season.get(r.code) || MAK.currentSeason(now) }));
+    return { mine: mine.filter((r) => show(r.season)), permission, failed, read: rows.length };
+  };
+
   // ---- Wuolah: the community of the degree (notes and exams that the students share) --------
   // The addresses of Wuolah do not come from the names (for example "grado-biotecnologia-2"), so a
   // table gives the community of each degree of the UPNA (wuolah.com/university/universidad-publica-

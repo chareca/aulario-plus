@@ -66,6 +66,9 @@
     @media (prefers-reduced-motion: reduce) { .action .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font-size: 0.93em; max-width: 100%; }
+    .exams-head { display: flex; align-items: center; gap: 8px; }
+    .exams-head > span { flex: 1; min-width: 0; }
+    ${MAK.EXAM_CAL_CSS}
     .mak-btn { padding: 4px 12px; }
   `;
 
@@ -189,16 +192,18 @@
     return { text: t('short.calcNeed', { n: fmtGrade(Math.min(10, exam.plan)) }), cls: exam.plan > 7 ? 'low' : '' };
   }
 
+  // The name of the subject of an exam: the short name of its site, else the name of the calendar.
+  const siteName = (sites, r) => {
+    const s = (sites || []).find((x) => x.id === r.siteId);
+    return (s && MAK.publicSiteName(s)) || r.name;
+  };
+
   function examList(mine, sites, now, need) {
-    const siteName = (id) => {
-      const s = (sites || []).find((x) => x.id === id);
-      return s ? MAK.publicSiteName(s) : '';
-    };
     const today = new Date(new Date(now).toDateString()).getTime(); // the same "from today" as nextExam and MAK.myExams
     return h('ul', { class: 'exams' }, mine.map((r) => {
       const next = [r.final, r.recovery].filter((x) => x && x >= today).sort((a, b) => a - b)[0];
       const days = next ? daysTo(next, now) : -1;
-      const name = siteName(r.siteId) || r.name;
+      const name = siteName(sites, r);
       const line = (label, ms, room) => {
         if (!ms) return null;
         const text = `${MAK.formatDate(ms)}${room ? ` · ${room}` : ''}`;
@@ -224,8 +229,7 @@
       }
     }
     if (!best) return null;
-    const s = (sites || []).find((x) => x.id === best.r.siteId);
-    const name = (s && MAK.publicSiteName(s)) || best.r.name;
+    const name = siteName(sites, best.r);
     const days = daysTo(best.ms, now);
     // The date is on the right: here only the weekday and the time ("Final · martes, 12:00").
     const day = new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(best.ms);
@@ -239,38 +243,29 @@
   // The dates of the subjects of the user, from the exam calendars of the degree: { mine (each
   // with its semester: the one of its calendar), note (a message instead of the dates) }.
   async function examData(degree, guides, now, show) {
-    const pdfs = (degree.pdfs || []).filter((p) => !p.season || show(p.season));
-    if (!pdfs.length) return { mine: [], note: null };
-    const rows = [];
-    let permission = false;
-    let failed = 0;
-    for (const p of pdfs) {
-      const r = await send({ type: 'examRows', url: p.url });
-      if (r && Array.isArray(r.rows)) rows.push(...r.rows.map((x) => Object.assign({}, x, { season: p.season || null })));
-      else if (r && r.error === 'exams.permission') permission = true;
-      else failed++;
-    }
-    if (permission) {
+    if (!(degree.pdfs || []).some((p) => !p.season || show(p.season))) return { mine: [], note: null };
+    const ex = await MAK.loadMyExams({ degree, guides, now, send, show });
+    if (ex.permission) {
       const ask = h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: t('short.showDates') });
       ask.addEventListener('click', () => send({ type: 'openExamPermission' }));
       return { mine: [], note: h('div', null, h('p', { class: 'note meta', text: t('short.permHelp') }), ask) };
     }
-    if (!rows.length) return { mine: [], note: h('p', { class: 'note meta', text: t(failed ? 'short.readError' : 'short.noRows') }) };
-    const season = new Map(guides.map((g) => [g.guide.code, MAK.guideSeason(g.guide)]));
-    const subjects = guides.map((g) => ({ code: g.guide.code, siteId: g.siteId }));
-    const mine = MAK.myExams(rows, subjects, now).map((r) => Object.assign(r, { season: r.season || season.get(r.code) || MAK.currentSeason(now) }));
-    return { mine: mine.filter((r) => show(r.season)), note: mine.length ? null : h('p', { class: 'note meta', text: t('short.noneMine') }) };
+    if (!ex.read) return { mine: [], note: h('p', { class: 'note meta', text: t(ex.failed ? 'short.readError' : 'short.noRows') }) };
+    return { mine: ex.mine, note: ex.mine.length ? null : h('p', { class: 'note meta', text: t('short.noneMine') }) };
   }
 
-  // The parts of the two semesters: the periods and the dates of the user (MAK.semesterSections).
-  function examSections(degree, ex, sites, now, need) {
+  // The parts of the two semesters: the periods, the dates of the user and the calendar of its exams
+  // (MAK.semesterSections). cals: the calendars go in this list (the button shows or hides them).
+  function examSections(degree, ex, sites, now, need, cals, calOn) {
     const parts = {};
     for (const season of ['autumn', 'spring']) {
       const period = (degree.periods || []).find((p) => p.season === season);
       const mine = ex.mine.filter((r) => r.season === season);
       if (!period && !mine.length) continue;
+      const cal = MAK.examCalendar(MAK.examDays(mine, (r) => siteName(sites, r)), { now });
+      if (cal) cals.push(h('div', { class: 'cal-wrap', hidden: !calOn }, cal));
       parts[season] = {
-        body: [period ? periodLine(period) : null, mine.length ? examList(mine, sites, now, need) : null]
+        body: [period ? periodLine(period) : null, mine.length ? examList(mine, sites, now, need) : null, cal ? cals[cals.length - 1] : null]
       };
     }
     return MAK.semesterSections({ key: 'exams', now, parts, title: (s) => t(`short.semester.${s}`) });
@@ -342,9 +337,7 @@
     const data = (await MAK.safeCall(() => ext.storage.local.get(['guides', 'sites', 'settings', 'degree', 'degreeList']), null)) || {};
     const settings = MAK.withDefaults(data.settings);
     MAK.setLang(settings.lang);
-    // The guides of the sites that the user did not hide (the old subjects are often hidden).
-    const hidden = MAK.hiddenEverywhere(settings);
-    const guides = MAK.lastYearGuides(Object.entries(data.guides || {}).map(([siteId, v]) => ({ siteId, guide: v && v.guide })).filter((g) => g.guide && g.guide.url && !hidden.has(g.siteId)), data.sites);
+    const guides = MAK.userGuides(data, MAK.hiddenEverywhere(settings));
     const now = Date.now();
     const examTile = h('section', { class: 'tile' }, h('h4', { text: t('short.exams') }), h('p', { class: 'meta', text: t('short.loading') }));
     const actions = h('div', { class: 'actions' });
@@ -368,14 +361,17 @@
     const pdfLinks = (degree.pdfs || []).filter((p) => !p.season || show(p.season))
       .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
     const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
+    const head = h('h4', { class: 'exams-head' }, h('span', { text: t('short.exams') }));
     MAK.fill(examTile,
-      h('h4', { text: t('short.exams') }),
+      head,
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
       place,
       h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
       degreeLine(degree, data, settings, degree.list));
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
-    const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings));
+    const cals = [];
+    const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings), cals, settings.examCalendar);
+    if (cals.length) head.append(MAK.calendarButton(settings.examCalendar, cals, (on) => send({ type: 'setSettings', patch: { examCalendar: on } })));
     const next = nextExam(ex.mine, data.sites, now);
     if (sections || ex.note) MAK.fill(place, next, sections, ex.note);
     else place.remove();

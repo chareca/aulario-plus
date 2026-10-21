@@ -232,3 +232,28 @@ test('shortPeriod: the periods of the evaluation page in short', () => {
   assert.equal(MAK.shortPeriod('semana 20'), 'semana 20', 'another text stays');
   assert.equal(MAK.shortPeriod(''), '');
 });
+
+test('loadMyExams: the rows of the calendars of the degree (the background reads them), the subjects of the user; no access', async () => {
+  const at = (y, m, d) => new Date(y, m, d, 9).getTime();
+  const degree = { pdfs: [{ url: 'https://x/otono.pdf', season: 'autumn' }, { url: 'https://x/primavera.pdf', season: 'spring' }] };
+  const guides = [{ siteId: 'a', guide: { code: '1', semester: '1' } }, { siteId: 'b', guide: { code: '2', semester: '2' } }];
+  const asked = [];
+  const send = async (m) => {
+    asked.push(m.url);
+    return { rows: m.url.includes('otono') ? [{ code: '1', name: 'A', final: at(2026, 11, 15), recovery: at(2027, 0, 15) }] : [{ code: '2', name: 'B', final: at(2027, 4, 20), recovery: null }] };
+  };
+  const ex = await MAK.loadMyExams({ degree, guides, now: at(2026, 9, 21), send, show: () => true });
+  assert.deepEqual([ex.mine.map((r) => `${r.siteId}:${r.season}`), ex.read, ex.permission], [['a:autumn', 'b:spring'], 2, false]);
+  const autumn = await MAK.loadMyExams({ degree, guides, now: at(2026, 9, 21), send, show: (s) => s === 'autumn' });
+  assert.deepEqual(autumn.mine.map((r) => r.siteId), ['a'], 'only the semesters to show');
+  const no = await MAK.loadMyExams({ degree, guides, now: at(2026, 9, 21), send: async () => ({ error: 'exams.permission' }), show: () => true });
+  assert.deepEqual([no.mine, no.permission], [[], true]);
+});
+
+test('monthWeeks: the weeks of a month from Monday', () => {
+  const M = loadLib('core', 'ui');
+  assert.deepEqual(M.monthWeeks(2026, 11)[0], [null, 1, 2, 3, 4, 5, 6], 'December 2026 starts on a Tuesday');
+  assert.deepEqual(M.monthWeeks(2027, 0)[0], [null, null, null, null, 1, 2, 3], 'January 2027 starts on a Friday');
+  assert.deepEqual(M.monthWeeks(2027, 1).length, 4, 'February 2027: 28 days from a Monday');
+  assert.deepEqual(M.monthWeeks(2027, 0).at(-1), [25, 26, 27, 28, 29, 30, 31]);
+});

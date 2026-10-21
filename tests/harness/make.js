@@ -77,6 +77,8 @@ const mock = `// Mock extension API for the test harness. Do not ship this file.
   const listeners = { message: [], storage: [], installed: [], startup: [], alarm: [] };
   const on = (list) => ({ addListener: (f) => list.push(f), removeListener: () => {} });
   const data = {};
+  // ?seed: the storage that a page of the harness kept for the next one (localStorage "mak-harness-seed").
+  try { if (new URLSearchParams(location.search).has('seed')) Object.assign(data, JSON.parse(localStorage.getItem('mak-harness-seed') || '{}')); } catch {}
   const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
   function area(store, emit) {
     return {

@@ -1,5 +1,6 @@
 // Aulario Plus: the table of the assessment of the course guide ("Guía docente", lib/guide.js).
-// - On the home page ("Inicio") of a site with a guide: the table of that site.
+// - On the home page ("Inicio") of a site with a guide: the table of that site, and the calendar of the exams of
+//   the subject (a button shows it: the setting "examCalendar", also in "Mi sitio"; MAK.examCalendar).
 // - On the home page of "Mi sitio" (the workspace of the user, or /portal): one short card for each
 //   site with a guide (the name, the responsible teacher and the weights). The arrow of a card shows
 //   the table. Not on the page /portal without a session (the page of the login).
@@ -58,6 +59,7 @@
     .notes p { margin: 4px 0; font-size: 0.93em; }
     .teacher { margin-top: 2px; }
     .mak-btn { padding: 2px 12px; }
+    ${MAK.EXAM_CAL_CSS}
   `;
 
   // The same form for all the guides: "60" -> "60 %", "NO" -> "No", "sí" -> "Sí".
@@ -217,8 +219,23 @@
 
   const guideOf = (id, data) => MAK.pageGuide(id, data, send);
 
+  // The calendar of the exams of this subject (its days stand out; the days of the other subjects are grey),
+  // from the exam calendars of the degree that "Mi sitio" found (data.degree). Nothing without them or
+  // without an exam of the subject. place: the place of the calendar; button: the place of its button.
+  async function siteCalendar(data, settings, place, button) {
+    if (!data.degree || !(data.degree.pdfs || []).length) return;
+    const now = Date.now();
+    const guides = MAK.userGuides(data, MAK.hiddenEverywhere(settings));
+    const ex = await MAK.loadMyExams({ degree: data.degree, guides, now, send, show: () => true }).catch(() => null);
+    const names = new Map((data.sites || []).map((s) => [s.id, MAK.publicSiteName(s)]));
+    const cal = ex && MAK.examCalendar(MAK.examDays(ex.mine, (r) => names.get(r.siteId) || r.name), { focus: siteId, now });
+    if (!cal) return;
+    place.append(cal);
+    button.replaceWith(MAK.calendarButton(settings.examCalendar, [place], (on) => send({ type: 'setSettings', patch: { examCalendar: on } }), true));
+  }
+
   async function run() {
-    const data = (await MAK.safeCall(() => ext.storage.local.get(['pages', 'sites', 'settings', 'guides']), null)) || {};
+    const data = (await MAK.safeCall(() => ext.storage.local.get(['pages', 'sites', 'settings', 'guides', 'degree']), null)) || {};
     const settings = MAK.withDefaults(data.settings);
     MAK.setLang(settings.lang);
     const sites = data.sites || [];
@@ -228,7 +245,11 @@
       if (!p || !p.guide || (where.pageOrTool && where.pageOrTool !== p.home)) return;
       const guide = await guideOf(siteId, data).catch(() => null);
       const site = sites.find((s) => s.id === siteId) || { id: siteId, title: siteId };
-      if (guide) show(MAK.t('guide.title'), guideBody(guide), calcButton(site, MAK.publicSiteName(site), guide.evaluation.rows, true));
+      if (!guide) return;
+      const calPlace = h('div', { class: 'cal-wrap', hidden: !settings.examCalendar });
+      const calButton = h('span');
+      show(MAK.t('guide.title'), [guideBody(guide), calPlace], [calButton, calcButton(site, MAK.publicSiteName(site), guide.evaluation.rows, true)]);
+      siteCalendar(data, settings, calPlace, calButton);
       return;
     }
     // "Mi sitio": only its home page.
