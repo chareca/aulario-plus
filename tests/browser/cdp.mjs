@@ -44,7 +44,9 @@ export async function launch({ chrome, headless = true, profile, extension, args
   for (let i = 0; i < 100 && !port; i++) {
     await sleep(100);
     try {
-      port = readFileSync(join(userDir, 'DevToolsActivePort'), 'utf8').split('\n')[0];
+      // Only a port number: the request below goes to this browser on this computer, nowhere else.
+      const n = Number(readFileSync(join(userDir, 'DevToolsActivePort'), 'utf8').split('\n')[0]);
+      if (Number.isInteger(n) && n > 0 && n < 65536) port = n;
     } catch {}
   }
   if (!port) {

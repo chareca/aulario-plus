@@ -181,9 +181,14 @@ fs.writeFileSync(path.join(OUT, 'send-harness.js'), `MAK.sendLink = async (o) =>
 
 for (const page of ['popup.html', 'tools.html']) {
   const file = path.join(OUT, page);
-  if (!fs.existsSync(file)) continue;
+  let html;
+  try {
+    html = fs.readFileSync(file, 'utf8');
+  } catch {
+    continue; // no such page
+  }
   const tags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js'].map((s) => `<script src="${s}"></script>`).join('\n  ');
-  const html = fs.readFileSync(file, 'utf8').replace(/<script src="/, `${tags}\n  <script src="`);
+  html = html.replace(/<script src="/, `${tags}\n  <script src="`);
   fs.writeFileSync(file, html);
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
