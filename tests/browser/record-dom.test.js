@@ -38,4 +38,16 @@
     const sigma = new DOMParser().parseFromString(`<base href="https://academicos.unavarra.es/exps-war/Controlador/">${SIGMA_PAGE}`, 'text/html');
     assert.equal(MAK.recordMenuLink(sigma), 'https://academicos.unavarra.es/exps-war/Controlador/?apl=EXPS&idNav=menu&logica=completo');
   });
+
+  test('the badges of the ranks: one for each rank, different, with the ids of its rank; in the pill in place of the dot', () => {
+    const badges = MAK.RANKS.map((k) => MAK.rankBadge(k.id));
+    assert.ok(badges.every((b) => b.namespaceURI === 'http://www.w3.org/2000/svg' && b.classList.contains('rank-badge') && b.querySelector('path')), 'an SVG');
+    assert.equal(new Set(badges.map((b) => b.innerHTML)).size, MAK.RANKS.length, 'all different');
+    badges.forEach((b, i) => assert.ok([...b.querySelectorAll('[id]')].every((x) => x.id.startsWith(`mak-${MAK.RANKS[i].id}-`)), MAK.RANKS[i].id));
+    assert.ok(badges.at(-1).querySelectorAll('path').length > badges[0].querySelectorAll('path').length, 'a higher rank: more ornaments');
+    MAK.setLang('es');
+    const sum = MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed: 186, min: 240 }] });
+    const pill = MAK.rankPill(sum, 'button', true);
+    assert.deepEqual([pill.firstElementChild.getAttribute('class'), pill.textContent], ['rank-badge', 'Gran maestro']);
+  });
 })();
