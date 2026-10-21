@@ -52,6 +52,7 @@
         'Las tareas corregidas muestran la nota, el comentario del profesor y los archivos de la corrección.',
         'Mi sitio separa los exámenes y las guías por semestre; desde el 25 de enero desaparece el primero.',
         'Una tarea no se da por entregada al aceptar la cláusula de veracidad.',
+        'Al cerrar sesión o al entrar otro usuario se borra también lo que escribiste: las notas y los pesos de la calculadora, los objetivos y la dirección de reenvío.',
         'Bienvenida, esta página de novedades, y en Ajustes: reportar un problema e invitarme a un café.'
       ],
       en: [
@@ -65,6 +66,7 @@
         'The returned tasks show the grade, the comment of the teacher and the files of the correction.',
         'Mi sitio shows the exams and the guides by semester; from 25 January the first one goes away.',
         'A task is not "submitted" when you accept its honor pledge.',
+        'When you log out or another user logs in, the extension also removes what you wrote: the grades and the weights of the calculator, the targets and the forward address.',
         'A welcome page, this page of changes, and in the settings: report a problem and buy me a coffee.'
       ]
     }
