@@ -80,3 +80,26 @@ test('toolUrl: the page of the tool, or the site', () => {
   assert.equal(MAK.toolUrl(pages, 's2', 'sakai.forums'), 'https://miaulario.unavarra.es/portal/site/s2');
   assert.equal(MAK.toolUrl(null, 's 3', 'x'), 'https://miaulario.unavarra.es/portal/site/s%203');
 });
+
+test('Mi sitio → Recursos: the root of the files of the user, and the files and folders of its first level', () => {
+  assert.equal(MAK.driveRoot('/user/0a1b-2c/AyDS/Tema 1/'), '/user/0a1b-2c/');
+  assert.equal(MAK.driveRoot('/user/0a1b-2c/'), '/user/0a1b-2c/');
+  assert.equal(MAK.driveRoot('/group/2026_0_1_G/'), null, 'a course site: not the files of the user');
+  assert.equal(MAK.driveRoot(''), null);
+  const root = '/user/0a1b-2c/';
+  const at = (path) => ({ url: `https://miaulario.unavarra.es/access/content${path}` });
+  const items = [
+    at('/user/0a1b-2c/'),
+    at('/user/0a1b-2c/AyDS/'),
+    at('/user/0a1b-2c/AyDS/tema%201.pdf'),
+    at('/user/0a1b-2c/Ingenieria%20del%20Conocimiento/'),
+    at('/user/0a1b-2c/pr%C3%A1ctica1.sql'),
+    at('/user/0a1b-2c/AyDS/'),
+    at('/user/other/x.pdf'),
+    { url: 'https://evil.example/access/content/user/0a1b-2c/y.pdf' },
+    null
+  ];
+  assert.deepEqual(MAK.driveTopIds(items, root), ['/user/0a1b-2c/AyDS/', '/user/0a1b-2c/Ingenieria del Conocimiento/', '/user/0a1b-2c/práctica1.sql'],
+    'only the first level, each one once, the names decoded; not the root, other users or other servers');
+  assert.deepEqual(MAK.driveTopIds(undefined, root), []);
+});

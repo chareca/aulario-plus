@@ -98,11 +98,43 @@
   async function reportToolVisit() {
     const here = await currentTool();
     if (here && here.toolIds.includes('sakai.announcements')) send({ type: 'toolVisit', siteId: here.siteId, toolId: 'sakai.announcements' });
-    if (here && here.toolIds.includes('sakai.resources') && !MAK.isSpecialSite(here.siteId)) {
-      const { settings } = await MAK.safeCall(() => ext.storage.local.get('settings'), {});
-      MAK.setLang(settings && settings.lang);
-      MAK.showZipButton(() => send({ type: 'openZip', siteId: here.siteId }));
+    const course = here && here.toolIds.includes('sakai.resources') && !MAK.isSpecialSite(here.siteId);
+    const form = document.getElementById('showForm');
+    const id = form && form.querySelector('#collectionId');
+    const root = id && form.querySelector('#sakai_action') && form.querySelector('#rt_action') ? MAK.driveRoot(id.value) : null;
+    if (!course && !root) return;
+    const { settings } = await MAK.safeCall(() => ext.storage.local.get('settings'), {});
+    MAK.setLang(settings && settings.lang);
+    if (course) MAK.showResourceButtons([{ text: MAK.t('zip.button'), onClick: () => send({ type: 'openZip', siteId: here.siteId }) }]);
+    else {
+      MAK.showResourceButtons([
+        { text: MAK.t('zip.button'), title: MAK.t('drive.zipHelp'), onClick: (say) => driveAction(form, root, 'zipDownload', say) },
+        { text: MAK.t('drive.trash'), title: MAK.t('drive.trashHelp'), onClick: (say) => driveAction(form, root, 'delete', say) }
+      ]);
     }
+  }
+
+  // "Mi sitio" → Recursos: the files of the user, as a personal drive. Download all of them as one ZIP, or
+  // send all of them to the trash: the form of the list gets all the files and folders of the first level
+  // (also the ones of other pages of the list), and MiAulario asks to confirm. The trash keeps them
+  // (Recursos → Papelera). action: 'zipDownload' or 'delete' (the actions of the list of MiAulario).
+  async function driveAction(form, root, action, say) {
+    say(MAK.t('drive.reading'));
+    let ids;
+    try {
+      const r = await pageFetch('/direct/content/my.json', { credentials: 'include', cache: 'no-store' }); // the files of Mi sitio of the user
+      if (!r.ok) throw new Error(String(r.status));
+      ids = MAK.driveTopIds(((await r.json()) || {}).content_collection, root);
+    } catch {
+      return say(MAK.t('drive.error'));
+    }
+    if (!ids.length) return say(MAK.t('drive.empty'));
+    say('');
+    for (const box of form.querySelectorAll('input[name="selectedMembers"]')) box.checked = false;
+    form.append(...ids.map((value) => MAK.h('input', { attrs: { type: 'hidden', name: 'selectedMembers', value } })));
+    form.querySelector('#sakai_action').value = 'doMultiItemDispatch';
+    form.querySelector('#rt_action').value = action;
+    form.submit();
   }
 
   async function flushPendingMarkViewed() {

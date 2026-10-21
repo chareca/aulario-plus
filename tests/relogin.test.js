@@ -24,7 +24,7 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, storage
     location: { pathname, search: '', href: `https://miaulario.unavarra.es${pathname}`, origin: 'https://miaulario.unavarra.es', assign: (u) => { assigned.push(u); messages.push('navigate'); } },
     sessionStorage: { getItem: (k) => (session.has(k) ? session.get(k) : null), setItem: (k, v) => session.set(k, String(v)) },
     localStorage: { getItem: () => null, setItem: noop },
-    document: { addEventListener: noop, visibilityState: 'hidden', title: '', querySelector: () => null, querySelectorAll: () => [], documentElement: { classList: { contains: () => false } } },
+    document: { addEventListener: noop, visibilityState: 'hidden', title: '', getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], documentElement: { classList: { contains: () => false } } },
     addEventListener: noop,
     fetch: async () => ({ ok: true, json: async () => ({ userId: loggedIn ? 'user-1' : null }) }),
     chrome: {

@@ -166,15 +166,18 @@
     return MAK.h('div', null, MAK.h('h3', { text: MAK.t(titleKey) }), MAK.h('ul', null, items.map(render)));
   }
 
-  // A small button above the Resources tool: "Download all (ZIP)".
-  MAK.showZipButton = function (onClick) {
+  // Small buttons above the Resources tool ("Download all (ZIP)"; in "Mi sitio" also "Delete all").
+  // buttons: [{ text, title, onClick(say) }]; say(text) shows a short message next to them.
+  MAK.showResourceButtons = function (buttons) {
     if (document.getElementById('mak-zip-host')) return;
     const host = document.createElement('div');
     host.id = 'mak-zip-host';
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = MAK.themedStyle(`:host { all: initial; display: block; margin: 0 0 10px; } ${MAK.EXT_BUTTON_CSS}`);
-    const btn = MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button' }, text: MAK.t('zip.button'), on: { click: onClick } });
-    shadow.append(style, btn);
+    const style = MAK.themedStyle(`:host { all: initial; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
+      .note { font: var(--ap-weight) calc(13px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-muted); } ${MAK.EXT_BUTTON_CSS}`);
+    const note = MAK.h('span', { class: 'note', attrs: { role: 'status' } });
+    const say = (text) => { note.textContent = text; };
+    shadow.append(style, ...buttons.map((b) => MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button', title: b.title }, text: b.text, on: { click: () => b.onClick(say) } })), note);
     insertAtTop(host);
   };
 

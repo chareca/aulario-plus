@@ -173,6 +173,30 @@
     return !id || id[0] === '~' || id[0] === '!';
   };
 
+  // "Mi sitio" → Recursos: the files of the user ("/user/<id>/"). The root of a folder of it, else null.
+  MAK.driveRoot = function (collectionId) {
+    const m = /^\/user\/([^/]+)\//.exec(String(collectionId || ''));
+    return m ? `/user/${m[1]}/` : null;
+  };
+
+  // The ids of the files and folders of the first level of root, from the list of /direct/content (all
+  // the levels; an item has the address /access/content<id>).
+  MAK.driveTopIds = function (items, root) {
+    const ids = new Set();
+    for (const item of Array.isArray(items) ? items : []) {
+      const url = MAK.safeSiteUrl(item && item.url);
+      if (!url) continue;
+      let id;
+      try {
+        id = decodeURIComponent(new URL(url).pathname).replace(/^\/access\/content(?=\/)/, '');
+      } catch {
+        continue;
+      }
+      if (id.startsWith(root) && /^[^/]+\/?$/.test(id.slice(root.length))) ids.add(id);
+    }
+    return [...ids];
+  };
+
   // Find the site id or the tool placement in a portal path.
   MAK.parsePortalPath = function (pathname) {
     let m = /^\/portal\/site\/([^/?#]+)(?:\/(?:page|page-reset|tool|tool-reset)\/([^/?#]+))?/.exec(pathname || '');
