@@ -56,27 +56,27 @@ test('recordSummary: the passed subjects with a number, weighted by credits, the
     row({ code: 'E', credits: null, mark: 8 }) // no credits: no
   ] });
   assert.deepEqual([sum.count, sum.credits, sum.average], [2, 18, 8]); // (6·6 + 12·9) / 18
-  assert.deepEqual([sum.rank.id, sum.next.id, sum.need], ['platinum', 'diamond', 0.5]);
+  assert.equal(sum.rank.id, 'platinum');
   const top = MAK.recordSummary({ rows: [row({ mark: 9.75 })] });
-  assert.deepEqual([top.rank.id, top.next, top.need], ['legend', null, 0]);
+  assert.equal(top.rank.id, 'legend');
   assert.equal(MAK.recordSummary({ rows: [row({ mark: 6.999 })] }).rank.id, 'gold', 'the rank of the average that the user sees: 7,00');
   assert.equal(MAK.recordSummary({ rows: [row({ mark: 3 })] }), null, 'nothing passed');
   assert.equal(MAK.recordSummary(null), null);
 });
 
-test('recordGoal: the average for the next 30 credits (else 60) that gives the next rank; too high: what a good term does', () => {
-  const rows = (n, mark) => Array.from({ length: n }, (_, i) => row({ code: `${mark}-${i}`, credits: 6, mark }));
-  const sum = (r) => MAK.recordSummary({ rows: r });
-  // 6,00 with 120 credits → 7 (Oro) needs 7·150 − 720 = 330 in 30 credits: 11 (no); in 60: (7·180 − 720) / 60 = 9.
-  assert.deepEqual(MAK.recordGoal(sum(rows(20, 6)), null), { mark: 9, credits: 60, rank: MAK.RANKS[2] });
-  // 6,50 → 7 in 30 credits: (7·150 − 780) / 30 = 9.
-  assert.deepEqual(MAK.recordGoal(sum([...rows(10, 6), ...rows(10, 7)]), null), { mark: 9, credits: 30, rank: MAK.RANKS[2] });
-  // 9,20 with 150 credits → 9,5: 11 and 10,25: too high; an average of 10 in 30 credits: (1380 + 300) / 180 = 9,33.
-  assert.deepEqual(MAK.recordGoal(sum(rows(25, 9.2)), null), { mark: 10, credits: 30, avg: 9.33 });
-  // 5,10 → 6 with only 12 credits left of 132: (6·132 − 612) / 12 = 15, too high; 7 in 12 credits: (612 + 84) / 132 = 5,27.
-  assert.deepEqual(MAK.recordGoal(sum(rows(20, 5.1)), { passed: 120, total: 132 }), { mark: 7, credits: 12, avg: 5.27 });
-  assert.equal(MAK.recordGoal(sum(rows(20, 6)), { passed: 240, total: 240 }), null, 'the end of the degree');
-  assert.equal(MAK.recordGoal(sum(rows(2, 9.8)), null), null, 'the highest rank');
+test('recordStage: five stages of the degree (by the credits done), and the end; none without the total', () => {
+  const at = (passed, total) => MAK.recordStage({ passed, total });
+  assert.deepEqual(at(12, 240), { id: 'Start', pct: 5, left: 228 });
+  assert.equal(at(60, 240).id, 'Early', '25 %');
+  assert.equal(at(120, 240).id, 'Half', '50 %');
+  assert.equal(at(180, 240).id, 'Late', '75 %');
+  assert.deepEqual(at(228, 240), { id: 'Last', pct: 95, left: 12 });
+  assert.deepEqual(at(239, 240), { id: 'Last', pct: 99, left: 1 }, '99,6 %: not the end');
+  assert.deepEqual(at(246, 240), { id: 'Done', pct: 100, left: 0 }, 'more optional credits than the minimum');
+  assert.equal(MAK.recordStage({ passed: 30, total: null }), null);
+  assert.equal(MAK.recordStage(null), null);
+  const MAK2 = loadLib('core', 'i18n');
+  for (const id of ['Start', 'Early', 'Half', 'Late', 'Last', 'Done']) for (const lang of ['es', 'en']) assert.ok(MAK2.STRINGS[lang][`record.stage${id}`], `${lang}: record.stage${id}`);
 });
 
 test('recordProgress: the credits of the degree from the table of SIGMA (a "Total" row, else its kinds), else the passed subjects', () => {

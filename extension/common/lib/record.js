@@ -105,17 +105,14 @@
   const rankAt = (average) => MAK.RANKS.findLastIndex((k) => average >= k.min);
 
   // The average of the record, as the official one: the passed subjects with a number, each one with the
-  // weight of its credits. And its rank. { count, credits, points (Σ mark · credits), average (2 decimals),
-  // rank, next (the next rank or null), need (the points to it) }, or null.
+  // weight of its credits. And its rank. { count, credits, points (Σ mark · credits), average (2 decimals), rank }, or null.
   MAK.recordSummary = function (record) {
     const rows = passedRows(record).filter((r) => r.mark !== null && r.credits > 0);
     const credits = rows.reduce((a, r) => a + r.credits, 0);
     if (!credits) return null;
     const points = rows.reduce((a, r) => a + r.mark * r.credits, 0);
     const average = Math.round((points / credits) * 100) / 100;
-    const at = rankAt(average);
-    const next = MAK.RANKS[at + 1] || null;
-    return { count: rows.length, credits, points, average, rank: MAK.RANKS[Math.max(at, 0)], next, need: next ? Math.round((next.min - average) * 100) / 100 : 0 };
+    return { count: rows.length, credits, points, average, rank: MAK.RANKS[Math.max(rankAt(average), 0)] };
   };
 
   // The credits of the degree: { passed, total } from the table of credits of SIGMA (its "Total" row, else the
@@ -130,22 +127,14 @@
     return passed ? { passed, total: null } : null;
   };
 
-  // A goal that the user can reach: the average for the next 30 credits (a term; else 60, a year) that gives
-  // the next rank. Too high (more than 10): what an average of 2 points more than now (at most 10) in the next
-  // 30 credits does to the average. Never more credits than the degree still has.
-  // { mark, credits, rank } or { mark, credits, avg }; null at the highest rank or at the end of the degree.
-  MAK.recordGoal = function (sum, progress) {
-    if (!sum || !sum.next) return null;
-    const left = progress && progress.total ? progress.total - progress.passed : Infinity;
-    if (left <= 0) return null;
-    const steps = [...new Set([30, 60].map((x) => Math.min(x, left)))];
-    for (const credits of steps) {
-      const mark = Math.ceil(((sum.next.min * (sum.credits + credits) - sum.points) / credits) * 10 - 1e-9) / 10;
-      if (mark <= 10) return { mark, credits, rank: sum.next };
-    }
-    const credits = steps[0];
-    const mark = Math.min(10, Math.floor(sum.average) + 2);
-    return { mark, credits, avg: Math.round(((sum.points + mark * credits) / (sum.credits + credits)) * 100) / 100 };
+  // The part of the degree that the user has done (MAK.recordProgress with a total): one of five stages, for a
+  // message that fits it (i18n "record.stage<Id>"), or the end. { id, pct (down: 99 % is not the end), left }, or null.
+  const STAGES = [[20, 'Start'], [45, 'Early'], [65, 'Half'], [90, 'Late'], [100, 'Last']];
+  MAK.recordStage = function (progress) {
+    if (!progress || !progress.total) return null;
+    if (progress.passed >= progress.total) return { id: 'Done', pct: 100, left: 0 };
+    const pct = Math.floor((progress.passed / progress.total) * 100);
+    return { id: STAGES.find(([max]) => pct < max)[1], pct, left: progress.total - progress.passed };
   };
 
   // What the user saw of the record (after a window with the rank): the passed subjects and the average.
@@ -177,25 +166,22 @@
     .rank-gain strong { color: var(--ap-green); }
     .rank-bar { height: 8px; margin: 4px 0 2px; border-radius: 4px; background: var(--ap-line); overflow: hidden; }
     .rank-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--ap-green); }
+    .stage { margin: 10px 0 0; font-style: italic; }
   `;
   const avgText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const markText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const rankName = (k) => MAK.t(`rank.${k.id}`);
   MAK.rankPill = (sum, tag, short) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } }, short ? rankName(sum.rank) : `${rankName(sum.rank)} · ${avgText(sum.average)}`);
   MAK.rankLine = (sum) => MAK.t('record.summary', { n: sum.count, avg: avgText(sum.average), rank: rankName(sum.rank) });
-  // The content of a window: the rank, what went up since seen, the credits of the degree, the next goal
-  // (also with lib/names.js: the names of SIGMA are in capital letters).
+  // The content of a window: the rank, what went up since seen, the credits of the degree and a message for
+  // that part of the degree (also with lib/names.js: the names of SIGMA are in capital letters).
   MAK.rankView = function (record, seen) {
     const h = MAK.h;
     const sum = MAK.recordSummary(record);
     if (!sum) return [];
     const gain = MAK.recordGain(record, seen);
     const progress = MAK.recordProgress(record);
-    const goal = MAK.recordGoal(sum, progress);
+    const stage = MAK.recordStage(progress);
     const shown = gain ? gain.subjects.slice(0, 5) : [];
-    let next = MAK.t(sum.next ? 'record.end' : 'record.top');
-    if (goal && goal.rank) next = MAK.t('record.goal', { mark: markText(goal.mark), credits: goal.credits, rank: rankName(goal.rank) });
-    else if (goal) next = MAK.t('record.goalUp', { mark: markText(goal.mark), credits: goal.credits, avg: avgText(goal.avg) });
     return [
       h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
       h('p', { text: MAK.rankLine(sum) }),
@@ -206,7 +192,7 @@
         gain.subjects.length > shown.length ? h('p', { text: MAK.t('record.passedMore', { n: gain.subjects.length - shown.length }) }) : null) : null,
       progress ? h('p', { class: 'meta', text: progress.total ? MAK.t('record.progress', { passed: progress.passed, total: progress.total }) : MAK.t('record.progressPassed', { passed: progress.passed }) }) : null,
       progress && progress.total ? h('div', { class: 'rank-bar' }, h('span', { attrs: { style: `width: ${Math.min(100, Math.round((progress.passed / progress.total) * 100))}%` } })) : null,
-      h('p', { class: 'meta', text: next })
+      stage ? h('p', { class: 'stage', text: MAK.t(`record.stage${stage.id}`, { pct: stage.pct, left: stage.left, n: stage.left }) }) : null
     ];
   };
 
