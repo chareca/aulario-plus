@@ -179,7 +179,8 @@
   // ---- The calendar of the exams (Mi sitio: each semester; the home page of a site: its subject) ----
   // The months of the exams, from Monday to Sunday: the finals in the color of the exams of the guides, the
   // recoveries in another one. A day of an exam has a tooltip (on hover and on focus): the subject, the kind and
-  // the date. focus: the site of a subject; then the days of the other subjects are grey, without a tooltip.
+  // the date; it stays inside the calendar (the sidebar of MiAulario covers what goes out of the box). focus:
+  // the site of a subject; then the days of the other subjects are grey, without a tooltip.
 
   // The exams as days: [{ ms, kind: 'final' | 'rec', room, siteId, name }]. mine: MAK.myExams; nameOf(row).
   MAK.examDays = (mine, nameOf) => mine.flatMap((r) => [['final', r.final, r.finalRoom], ['rec', r.recovery, r.recoveryRoom]]
@@ -196,7 +197,7 @@
 
   MAK.EXAM_CAL_CSS = `
     .cal-wrap { margin: 10px 0 4px; }
-    .cal-months { display: flex; flex-wrap: wrap; gap: 14px 22px; }
+    .cal-months { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 14px 22px; }
     .cal-month { min-width: 0; max-width: 100%; }
     .cal-title { font-weight: 700; margin: 0 0 6px; }
     .cal-title::first-letter { text-transform: uppercase; }
@@ -211,12 +212,12 @@
     .cal-day.final.rec { background: linear-gradient(135deg, var(--ap-k-exam) 50%, var(--ap-k-participation) 50%); }
     .cal-day.dim { opacity: 0.35; filter: grayscale(0.6); font-weight: 400; }
     .cal.focus .cal-day[data-tip] { box-shadow: 0 0 0 2px var(--ap-surface), 0 0 0 4px var(--ap-fg); z-index: 1; }
-    .cal-day[data-tip]:hover::after, .cal-day[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; z-index: 3;
-      bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 260px; white-space: pre-line;
-      text-align: left; padding: 6px 9px; border-radius: var(--ap-radius-sm); font: 600 12px/1.35 var(--ap-font);
+    .cal { position: relative; }
+    .cal-tip { position: absolute; z-index: 3; width: max-content; max-width: min(260px, 100%); white-space: pre-line; text-align: left;
+      padding: 6px 9px; border-radius: var(--ap-radius-sm); font: 600 12px/1.35 var(--ap-font);
       color: var(--ap-surface); background: var(--ap-fg); box-shadow: var(--ap-shadow-sm); pointer-events: none; }
     .cal-day[data-tip]:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
-    .cal-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 8px; font-size: 0.86em; }
+    .cal-legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 14px; margin-top: 8px; font-size: 0.86em; }
     .cal-key { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
     .cal-key.final { background: var(--ap-k-exam); }
     .cal-key.rec { background: var(--ap-k-participation); }
@@ -259,8 +260,26 @@
         h('div', { class: 'cal-grid', attrs: { 'aria-label': title } }, weekdays.map((w) => h('span', { class: 'cal-wd', text: w, attrs: { 'aria-hidden': 'true' } })),
           MAK.monthWeeks(year, m).flat().map((day) => cell(year, m, day))));
     };
-    return h('div', { class: `cal${focus ? ' focus' : ''}` }, h('div', { class: 'cal-months' }, months.map(month)),
-      h('div', { class: 'cal-legend meta' }, h('span', null, h('span', { class: 'cal-key final' }), kindName('final')), h('span', null, h('span', { class: 'cal-key rec' }), kindName('rec'))));
+    const tip = h('div', { class: 'cal-tip', hidden: true, attrs: { 'aria-hidden': 'true' } });
+    const cal = h('div', { class: `cal${focus ? ' focus' : ''}` }, h('div', { class: 'cal-months' }, months.map(month)),
+      h('div', { class: 'cal-legend meta' }, h('span', null, h('span', { class: 'cal-key final' }), kindName('final')), h('span', null, h('span', { class: 'cal-key rec' }), kindName('rec'))), tip);
+    // The tooltip above the day, moved to the side when it would go out of the calendar.
+    const show = (e) => {
+      const day = e.target instanceof Element ? e.target.closest('.cal-day[data-tip]') : null;
+      tip.hidden = !day;
+      if (!day) return;
+      tip.textContent = day.dataset.tip;
+      const box = cal.getBoundingClientRect();
+      const r = day.getBoundingClientRect();
+      tip.style.left = `${Math.max(0, Math.min(box.width - tip.offsetWidth, r.left - box.left + (r.width - tip.offsetWidth) / 2))}px`;
+      tip.style.top = `${r.top - box.top - tip.offsetHeight - 6}px`;
+    };
+    const hide = () => { tip.hidden = true; };
+    cal.addEventListener('mouseover', show);
+    cal.addEventListener('focusin', show);
+    cal.addEventListener('mouseleave', hide);
+    cal.addEventListener('focusout', hide);
+    return cal;
   };
 
   // The button that shows or hides the calendars (the setting "examCalendar": the same in Mi sitio and in the

@@ -45,6 +45,37 @@
     assert.deepEqual([...only.querySelectorAll('.cal-title')].map((t) => t.textContent), ['diciembre de 2026'], 'only the months of the subject');
   });
 
+  test('the tooltip: on hover and on focus, inside the calendar (not under the sidebar of MiAulario), also for a day at an edge', () => {
+    const cal = MAK.examCalendar(days(), { now: at(2026, 9, 21) });
+    cal.style.width = '520px';
+    const style = document.createElement('style');
+    style.textContent = MAK.EXAM_CAL_CSS;
+    document.head.append(style);
+    document.body.append(cal);
+    const tip = cal.querySelector('.cal-tip');
+    const inside = () => {
+      const b = cal.getBoundingClientRect();
+      const r = tip.getBoundingClientRect();
+      return r.left >= b.left - 0.5 && r.right <= b.right + 0.5;
+    };
+    const edge = day(cal, 'diciembre', 15); // Tuesday: the second column, at the left edge
+    edge.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    assert.equal(tip.hidden, false);
+    assert.ok(tip.textContent.startsWith('Procesadores · Final'), tip.textContent);
+    assert.ok(inside(), 'at the left edge');
+    assert.ok(tip.getBoundingClientRect().bottom <= edge.getBoundingClientRect().top, 'above the day');
+    day(cal, 'enero', 18).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    assert.ok(inside() && tip.textContent.startsWith('Seguridad'), 'another day');
+    day(cal, 'enero', 3).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    assert.equal(tip.hidden, true, 'a day without an exam');
+    day(cal, 'enero', 11).focus();
+    assert.equal(tip.hidden, false, 'the keyboard');
+    cal.dispatchEvent(new MouseEvent('mouseleave'));
+    assert.equal(tip.hidden, true);
+    cal.remove();
+    style.remove();
+  });
+
   test('the button shows and hides the calendars, and saves the setting', () => {
     const wraps = [document.createElement('div'), document.createElement('div')];
     wraps.forEach((w) => { w.hidden = true; });
