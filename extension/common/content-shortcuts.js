@@ -371,7 +371,7 @@
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
     const cals = [];
     const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings), cals, settings.examCalendar);
-    if (cals.length) head.append(MAK.calendarButton(settings.examCalendar, cals, (on) => send({ type: 'setSettings', patch: { examCalendar: on } })));
+    if (cals.length) head.append(MAK.calendarButton(settings.examCalendar, cals, (on) => send({ type: 'setExamCalendar', on })));
     const next = nextExam(ex.mine, data.sites, now);
     if (sections || ex.note) MAK.fill(place, next, sections, ex.note);
     else place.remove();

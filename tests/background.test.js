@@ -22,6 +22,16 @@ test('a content script can send only the messages that it is permitted to send',
   assert.equal(bg.ext.storage.local.data.paused, 'user');
 });
 
+test('the calendar button of MiAulario saves only its setting; the other settings stay closed to a content script', async () => {
+  const bg = loadBackground();
+  assert.equal(await bg.send({ type: 'setSettings', patch: { examCalendar: true } }, CONTENT()), null);
+  assert.deepEqual(await bg.send({ type: 'setExamCalendar', on: true }, CONTENT()), { ok: true });
+  assert.equal(bg.ext.storage.local.data.settings.examCalendar, true);
+  await bg.send({ type: 'setExamCalendar', on: false, lang: 'en', hiddenSites: ['x'] }, CONTENT());
+  const s = bg.ext.storage.local.data.settings;
+  assert.deepEqual([s.examCalendar, s.lang === 'en', s.hiddenSites.length], [false, false, 0], 'nothing else of the message');
+});
+
 test('"Pausar" stays until "Reanudar": a ping does not continue it, not even with a session', async () => {
   const log = [];
   const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' } });

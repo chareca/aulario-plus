@@ -686,6 +686,15 @@ const handlers = {
       return next;
     }
   },
+  // The button of the exam calendar in MiAulario (content-guide.js, content-shortcuts.js): only this setting
+  // (setSettings is for the pages of the extension).
+  setExamCalendar: {
+    content: true,
+    run: async (msg) => {
+      await store.update('settings', (cur) => MAK.withDefaults(Object.assign({}, MAK.withDefaults(cur), { examCalendar: !!(msg && msg.on) })));
+      return { ok: true };
+    }
+  },
   // The popup: the notice of the changes of the new version is closed.
   // The light or dark theme of MiAulario (content-theme.js): 'dark', 'light' or 'system'. The popup and the
   // pages of the extension follow it with the setting colorMode 'auto'.

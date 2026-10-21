@@ -238,7 +238,7 @@
     const cal = ex && MAK.examCalendar(MAK.examDays(ex.mine, (r) => names.get(r.siteId) || r.name), { focus: siteId, now });
     if (!cal) return;
     place.append(cal);
-    button.replaceWith(MAK.calendarButton(settings.examCalendar, [place], (on) => send({ type: 'setSettings', patch: { examCalendar: on } }), true));
+    button.replaceWith(MAK.calendarButton(settings.examCalendar, [place], (on) => send({ type: 'setExamCalendar', on }), true));
   }
 
   async function run() {
