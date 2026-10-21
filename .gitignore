@@ -8,3 +8,5 @@ tests/live/.profile/
 # Files of the developer: they stay on the computer, not in the repository.
 store/
 RESEARCH.md
+# The landing page: it is published from the branch gh-pages, not from main.
+site/
