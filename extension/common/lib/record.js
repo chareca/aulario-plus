@@ -3,7 +3,8 @@
 // reads the table "Expediente completo" when the user opens it, and every few days in a tab in the
 // background: MiUPNA (portal.unavarra.es; the login of the UPNA with its session, no password) → the link
 // of "Consulta tu Expediente" (with a pass of the portal that the extension never keeps) → SIGMA →
-// "Expediente completo". The grades stay in the browser. Their average gives a rank (MAK.recordSummary).
+// "Expediente completo". The grades stay in the browser. The part of the credits of the degree that the user
+// passed gives a rank (MAK.recordSummary).
 (function (root) {
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
@@ -77,16 +78,19 @@
     return { rows: [...rows.values()], credits: next.credits.length ? next.credits : (kept && kept.credits) || [] };
   };
 
-  // The ranks of the average, from 5 (the average of passed subjects is never lower). Their names: i18n "rank.<id>".
+  // The ranks of the degree, by the part of its credits that the user passed (%). Their names: i18n "rank.<id>".
   MAK.RANKS = [
-    { id: 'bronze', min: 5, color: '#b0703a' },
-    { id: 'silver', min: 6, color: '#8a96a3' },
-    { id: 'gold', min: 7, color: '#c9971c' },
-    { id: 'platinum', min: 8, color: '#2a9d8f' },
-    { id: 'diamond', min: 8.5, color: '#3a7bd5' },
-    { id: 'master', min: 9, color: '#8e44ad' },
-    { id: 'legend', min: 9.5, color: '#d6336c' }
+    { id: 'bronze', min: 0, color: '#b0703a' },
+    { id: 'silver', min: 15, color: '#8a96a3' },
+    { id: 'gold', min: 30, color: '#c9971c' },
+    { id: 'platinum', min: 45, color: '#2a9d8f' },
+    { id: 'diamond', min: 60, color: '#3a7bd5' },
+    { id: 'master', min: 75, color: '#8e44ad' },
+    { id: 'legend', min: 90, color: '#d6336c' }
   ];
+  const rankAt = (pct) => Math.max(0, MAK.RANKS.findLastIndex((k) => pct >= k.min));
+  // The stages of the degree, for a message that fits each one (i18n "record.stage<Id><1-3>"), and the end.
+  const STAGES = [[20, 'Start'], [45, 'Early'], [65, 'Half'], [90, 'Late'], [100, 'Last']];
 
   // The passed subjects: the best row of each code with a pass (a mark from 5, or a grade in words such as
   // "APTO" or "Reconocida"); an annulled one is not.
@@ -102,60 +106,41 @@
     }
     return [...best.values()];
   }
-  const rankAt = (average) => MAK.RANKS.findLastIndex((k) => average >= k.min);
 
-  // The average of the record, as the official one: the passed subjects with a number, each one with the
-  // weight of its credits. And its rank. { count, credits, points (Σ mark · credits), average (2 decimals), rank }, or null.
+  // The credits of the degree, from the table of credits of SIGMA (its row "Total", else the sum of its kinds,
+  // not the other totals: "Total créditos reconocidos", "Total créditos matriculados"; total: the minimum
+  // credits), and the rank and the stage of the user. { passed, total, pct (down: 99 % is not the end), left,
+  // rank, stage }, or null without the table.
   MAK.recordSummary = function (record) {
-    const rows = passedRows(record).filter((r) => r.mark !== null && r.credits > 0);
-    const credits = rows.reduce((a, r) => a + r.credits, 0);
-    if (!credits) return null;
-    const points = rows.reduce((a, r) => a + r.mark * r.credits, 0);
-    const average = Math.round((points / credits) * 100) / 100;
-    return { count: rows.length, credits, points, average, rank: MAK.RANKS[Math.max(rankAt(average), 0)] };
-  };
-
-  // The credits of the degree: { passed, total } from the table of credits of SIGMA (its row "Total", else the
-  // sum of its kinds, not the other totals: "Total créditos reconocidos", "Total créditos matriculados"; total:
-  // the minimum credits), else { passed, total: null } from the passed subjects; or null.
-  MAK.recordProgress = function (record) {
     const table = (record && record.credits) || [];
-    const total = table.find((c) => /^total$/i.test(c.kind));
-    const kinds = total ? [total] : table.filter((c) => !/^total/i.test(c.kind));
+    const row = table.find((c) => /^total$/i.test(c.kind));
+    const kinds = row ? [row] : table.filter((c) => !/^total/i.test(c.kind));
     const add = (k) => kinds.reduce((a, c) => a + (c[k] || 0), 0);
-    if (add('min') > 0) return { passed: add('passed'), total: add('min') };
-    const passed = passedRows(record).reduce((a, r) => a + (r.credits || 0), 0);
-    return passed ? { passed, total: null } : null;
+    const total = add('min');
+    if (!(total > 0)) return null;
+    const passed = add('passed');
+    const done = passed >= total;
+    const pct = done ? 100 : Math.floor((passed / total) * 100);
+    return { passed, total, pct, left: done ? 0 : total - passed, rank: MAK.RANKS[rankAt(pct)], stage: done ? 'Done' : STAGES.find(([max]) => pct < max)[1] };
   };
 
-  // The part of the degree that the user has done (MAK.recordProgress with a total): one of five stages, for a
-  // message that fits it (i18n "record.stage<Id>"), or the end. { id, pct (down: 99 % is not the end), left }, or null.
-  const STAGES = [[20, 'Start'], [45, 'Early'], [65, 'Half'], [90, 'Late'], [100, 'Last']];
-  MAK.recordStage = function (progress) {
-    if (!progress || !progress.total) return null;
-    if (progress.passed >= progress.total) return { id: 'Done', pct: 100, left: 0 };
-    const pct = Math.floor((progress.passed / progress.total) * 100);
-    return { id: STAGES.find(([max]) => pct < max)[1], pct, left: progress.total - progress.passed };
-  };
-
-  // What the user saw of the record (after a window with the rank): the passed subjects and the average.
+  // What the user saw of the record (after a window with the rank): the passed subjects and the part of the degree.
   MAK.recordSeenOf = function (record) {
     const sum = MAK.recordSummary(record);
-    return { codes: passedRows(record).map((r) => r.code), average: sum ? sum.average : null };
+    return { codes: passedRows(record).map((r) => r.code), pct: sum ? sum.pct : null };
   };
-  // What went up since then: the new passed subjects, the average if it is higher (from: the old one), the rank
-  // if it is higher. Never what went down. null: nothing new, or nothing seen yet (the first reading).
+  // What went up since then: the new passed subjects, and the rank if it is higher. null: nothing new, or nothing
+  // seen yet (the first reading).
   MAK.recordGain = function (record, seen) {
     if (!seen || !Array.isArray(seen.codes)) return null;
     const sum = MAK.recordSummary(record);
     const subjects = passedRows(record).filter((r) => !seen.codes.includes(r.code)).map((r) => ({ name: r.name, credits: r.credits }));
-    const from = sum && typeof seen.average === 'number' && sum.average > seen.average ? seen.average : null;
-    const rankUp = from !== null && rankAt(sum.average) > rankAt(from) ? sum.rank : null;
-    return subjects.length || from !== null ? { subjects, from, rankUp } : null;
+    const rankUp = sum && typeof seen.pct === 'number' && rankAt(sum.pct) > rankAt(seen.pct) ? sum.rank : null;
+    return subjects.length || rankUp ? { subjects, rankUp } : null;
   };
 
-  // The rank and the average in a page (the popup, MiAulario; with lib/ui.js and lib/i18n.js): a pill in the
-  // color of the rank (short: only its name, for the bar of MiAulario), and the content of a window.
+  // The rank in a page (the popup, MiAulario; with lib/ui.js and lib/i18n.js): a pill in the color of the rank
+  // (short: only its name, for the bar of MiAulario), and the content of a window.
   MAK.RANK_CSS = `
     .mak-rank { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px; white-space: nowrap;
       font-weight: 700; color: var(--ap-fg); background: var(--ap-surface); border: 2px solid var(--rank); }
@@ -167,33 +152,32 @@
     .rank-gain strong { color: var(--ap-green); }
     .rank-bar { height: 8px; margin: 4px 0 2px; border-radius: 4px; background: var(--ap-line); overflow: hidden; }
     .rank-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--ap-green); }
-    .stage { margin: 10px 0 0; font-style: italic; }
+    .stage { margin: 12px 0 0; font-style: italic; }
   `;
-  const avgText = (n) => n.toLocaleString(MAK.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const rankName = (k) => MAK.t(`rank.${k.id}`);
-  MAK.rankPill = (sum, tag, short) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } }, short ? rankName(sum.rank) : `${rankName(sum.rank)} · ${avgText(sum.average)}`);
-  MAK.rankLine = (sum) => MAK.t('record.summary', { n: sum.count, avg: avgText(sum.average), rank: rankName(sum.rank) });
-  // The content of a window: the rank, what went up since seen, the credits of the degree and a message for
-  // that part of the degree (also with lib/names.js: the names of SIGMA are in capital letters).
+  MAK.rankPill = (sum, tag, short) => MAK.h(tag || 'span', { class: 'mak-rank', attrs: { style: `--rank: ${sum.rank.color}` } },
+    short ? rankName(sum.rank) : `${rankName(sum.rank)} · ${MAK.t('record.pct', { pct: sum.pct })}`);
+  MAK.rankLine = (sum) => MAK.t('record.progress', { passed: sum.passed, total: sum.total });
+  // The message of the stage of the degree: one of its three, another one each day (the end: one).
+  MAK.stageText = (sum, now) => MAK.t(sum.stage === 'Done' ? 'record.stageDone' : `record.stage${sum.stage}${(Math.floor((now ?? Date.now()) / MAK.DAY) % 3) + 1}`,
+    { pct: sum.pct, passed: sum.passed, left: sum.left, n: sum.left });
+  // The content of a window: the rank, the credits of the degree, what went up since seen, and the message of
+  // the stage (also with lib/names.js: the names of SIGMA are in capital letters).
   MAK.rankView = function (record, seen) {
     const h = MAK.h;
     const sum = MAK.recordSummary(record);
     if (!sum) return [];
     const gain = MAK.recordGain(record, seen);
-    const progress = MAK.recordProgress(record);
-    const stage = MAK.recordStage(progress);
     const shown = gain ? gain.subjects.slice(0, 5) : [];
     return [
       h('p', { class: 'rank-big' }, MAK.rankPill(sum)),
-      h('p', { text: MAK.rankLine(sum) }),
+      h('p', { class: 'meta', text: MAK.rankLine(sum) }),
+      h('div', { class: 'rank-bar' }, h('span', { attrs: { style: `width: ${sum.pct}%` } })),
       gain ? h('div', { class: 'rank-gain' },
         gain.rankUp ? h('p', null, h('strong', { text: MAK.t('record.newRank', { rank: rankName(gain.rankUp) }) })) : null,
-        gain.from !== null ? h('p', { text: MAK.t('record.up', { from: avgText(gain.from), to: avgText(sum.average) }) }) : null,
         shown.map((x) => h('p', { text: MAK.t(x.credits ? 'record.passed' : 'record.passedNoCredits', { name: MAK.shortTitle(x.name), credits: x.credits }) })),
         gain.subjects.length > shown.length ? h('p', { text: MAK.t('record.passedMore', { n: gain.subjects.length - shown.length }) }) : null) : null,
-      progress ? h('p', { class: 'meta', text: progress.total ? MAK.t('record.progress', { passed: progress.passed, total: progress.total }) : MAK.t('record.progressPassed', { passed: progress.passed }) }) : null,
-      progress && progress.total ? h('div', { class: 'rank-bar' }, h('span', { attrs: { style: `width: ${Math.min(100, Math.round((progress.passed / progress.total) * 100))}%` } })) : null,
-      stage ? h('p', { class: 'stage', text: MAK.t(`record.stage${stage.id}`, { pct: stage.pct, left: stage.left, n: stage.left }) }) : null
+      h('p', { class: 'stage', text: MAK.stageText(sum) })
     ];
   };
 

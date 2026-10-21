@@ -43,64 +43,55 @@ test('the background keeps the grades only from SIGMA, and only with rows', asyn
   const { record: kept } = await bg.ext.storage.local.get('record');
   assert.equal(kept.rows[0].grade, 'NOTABLE');
   assert.ok(kept.at > 0);
-  assert.ok(bg.MAK.DATA_KEYS.includes('record'), 'a logout removes them');
+  assert.ok(!bg.MAK.DATA_KEYS.includes('record') && bg.MAK.RECORD_KEYS.includes('record'), 'not with the course data');
+  await bg.send({ type: 'logout' }, MIAULARIO);
+  assert.ok((await bg.ext.storage.local.get('record')).record, 'a logout keeps them (the same user comes back; another user: sync.test.js)');
   assert.equal(await bg.send({ type: 'recordTab', sigma: true }, SIGMA), false, 'no reading: the script does not follow links');
 });
 
-test('recordSummary: the passed subjects with a number, weighted by credits, the best mark of each; the rank and the next one', () => {
-  const sum = MAK.recordSummary({ rows: [
-    row({ code: 'A', credits: 6, mark: 4 }), row({ code: 'A', credits: 6, call: 'Junio', mark: 6 }), // failed, then passed: 6
-    row({ code: 'B', credits: 12, mark: 9 }),
-    row({ code: 'C', credits: 6, mark: 10, notes: 'Anulada' }), // annulled: no
-    row({ code: 'D', credits: 6, mark: null, grade: 'APTO' }), // no number: no
-    row({ code: 'E', credits: null, mark: 8 }) // no credits: no
-  ] });
-  assert.deepEqual([sum.count, sum.credits, sum.average], [2, 18, 8]); // (6·6 + 12·9) / 18
-  assert.equal(sum.rank.id, 'platinum');
-  const top = MAK.recordSummary({ rows: [row({ mark: 9.75 })] });
-  assert.equal(top.rank.id, 'legend');
-  assert.equal(MAK.recordSummary({ rows: [row({ mark: 6.999 })] }).rank.id, 'gold', 'the rank of the average that the user sees: 7,00');
-  assert.equal(MAK.recordSummary({ rows: [row({ mark: 3 })] }), null, 'nothing passed');
+const CREDITS = [{ kind: 'Formación básica', passed: 60, pending: 0, min: 60 }, { kind: 'Obligatoria', passed: 96, pending: 12, min: 168 }, { kind: 'Trabajo fin de Grado', passed: 0, pending: 0, min: 12 }];
+// As SIGMA: after "Total", two other totals.
+const OTHERS = [{ kind: 'Total créditos reconocidos', passed: 6, pending: null, min: null }, { kind: 'Total créditos matriculados', passed: 168, pending: null, min: 240 }];
+
+test('recordSummary: the credits of the degree (the row "Total" of SIGMA, else its kinds), the rank by its part, the stage', () => {
+  const sum = MAK.recordSummary({ rows: [], credits: [...CREDITS, { kind: 'Total', passed: 156, pending: 12, min: 240 }, ...OTHERS] });
+  assert.deepEqual(JSON.parse(JSON.stringify(sum)), { passed: 156, total: 240, pct: 65, left: 84, rank: MAK.RANKS[4], stage: 'Late' });
+  assert.equal(MAK.recordSummary({ rows: [], credits: [...CREDITS, ...OTHERS] }).total, 240, 'no row "Total": the kinds, not the other totals');
+  const at = (passed) => MAK.recordSummary({ rows: [], credits: [{ kind: 'Total', passed, min: 240 }] });
+  assert.deepEqual([0, 36, 72, 108, 144, 180, 216].map((p) => at(p).rank.id), ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'legend'], 'every 15 %');
+  assert.deepEqual([12, 60, 120, 180, 228].map((p) => at(p).stage), ['Start', 'Early', 'Half', 'Late', 'Last'], '5, 25, 50, 75 and 95 %');
+  assert.deepEqual([at(239).pct, at(239).stage, at(239).left], [99, 'Last', 1], '99,6 %: not the end');
+  assert.deepEqual([at(246).pct, at(246).stage, at(246).left, at(246).rank.id], [100, 'Done', 0, 'legend'], 'more optional credits than the minimum');
+  assert.equal(MAK.recordSummary({ rows: [row()], credits: [] }), null, 'no table of credits: no rank');
   assert.equal(MAK.recordSummary(null), null);
 });
 
-test('recordStage: five stages of the degree (by the credits done), and the end; none without the total', () => {
-  const at = (passed, total) => MAK.recordStage({ passed, total });
-  assert.deepEqual(at(12, 240), { id: 'Start', pct: 5, left: 228 });
-  assert.equal(at(60, 240).id, 'Early', '25 %');
-  assert.equal(at(120, 240).id, 'Half', '50 %');
-  assert.equal(at(180, 240).id, 'Late', '75 %');
-  assert.deepEqual(at(228, 240), { id: 'Last', pct: 95, left: 12 });
-  assert.deepEqual(at(239, 240), { id: 'Last', pct: 99, left: 1 }, '99,6 %: not the end');
-  assert.deepEqual(at(246, 240), { id: 'Done', pct: 100, left: 0 }, 'more optional credits than the minimum');
-  assert.equal(MAK.recordStage({ passed: 30, total: null }), null);
-  assert.equal(MAK.recordStage(null), null);
-  const MAK2 = loadLib('core', 'i18n');
-  for (const id of ['Start', 'Early', 'Half', 'Late', 'Last', 'Done']) for (const lang of ['es', 'en']) assert.ok(MAK2.STRINGS[lang][`record.stage${id}`], `${lang}: record.stage${id}`);
+test('stageText: three messages for each stage, another one each day; all in Spanish and English', () => {
+  const M = loadLib('core', 'i18n', 'names', 'record');
+  const sum = (passed) => M.recordSummary({ rows: [], credits: [{ kind: 'Total', passed, min: 240 }] });
+  const days = [0, 1, 2, 3].map((d) => M.stageText(sum(120), d * M.DAY));
+  assert.equal(new Set(days.slice(0, 3)).size, 3, 'three days, three messages');
+  assert.equal(days[3], days[0], 'then again');
+  for (const lang of ['es', 'en']) {
+    for (const id of ['Start', 'Early', 'Half', 'Late', 'Last']) for (const n of [1, 2, 3]) assert.ok(M.STRINGS[lang][`record.stage${id}${n}`], `${lang}: record.stage${id}${n}`);
+    assert.ok(M.STRINGS[lang]['record.stageDone']);
+  }
+  assert.match(M.stageText(sum(239), 0), /1 crédito\b/, 'one credit left: not "1 créditos"');
+  assert.doesNotMatch(M.stageText(sum(0), 0), /0 %/, 'the start: no "0 %"');
 });
 
-test('recordProgress: the credits of the degree from the table of SIGMA (a "Total" row, else its kinds), else the passed subjects', () => {
-  const credits = [{ kind: 'Formación básica', passed: 60, pending: 0, min: 60 }, { kind: 'Obligatoria', passed: 96, pending: 12, min: 168 }, { kind: 'Trabajo Fin de Grado', passed: 0, pending: 0, min: 12 }];
-  assert.deepEqual(MAK.recordProgress({ rows: [], credits }), { passed: 156, total: 240 });
-  // As SIGMA: the kinds, "Total", and two other totals after it.
-  const others = [{ kind: 'Total créditos reconocidos', passed: 6, pending: null, min: null }, { kind: 'Total créditos matriculados', passed: 168, pending: null, min: 240 }];
-  assert.deepEqual(MAK.recordProgress({ rows: [], credits: [...others, ...credits, { kind: 'Total', passed: 156, pending: 12, min: 240 }] }), { passed: 156, total: 240 }, 'the row "Total", not twice');
-  assert.deepEqual(MAK.recordProgress({ rows: [], credits: [...credits, ...others] }), { passed: 156, total: 240 }, 'no row "Total": the kinds only');
-  const rows = [row({ code: 'A' }), row({ code: 'B', mark: null, grade: 'APTO', credits: 3 }), row({ code: 'C', mark: null, grade: 'NO APTO' }), row({ code: 'D', mark: 3 })];
-  assert.deepEqual(MAK.recordProgress({ rows, credits: [] }), { passed: 9, total: null }, 'A and B (APTO); not "NO APTO" nor a 3');
-  assert.equal(MAK.recordProgress({ rows: [], credits: [] }), null);
-});
-
-test('recordGain: only what went up since the user saw it (new passed subjects, a higher average and rank); never what went down', () => {
-  const before = { rows: [row({ code: 'A', mark: 6.8 }), row({ code: 'B', mark: 4 })] };
+test('recordGain: only what went up since the user saw it (new passed subjects, a higher rank)', () => {
+  const credits = (passed) => [{ kind: 'Total', passed, min: 240 }];
+  const before = { rows: [row({ code: 'A', mark: 6.8 }), row({ code: 'B', mark: 4 })], credits: credits(66) };
   const seen = MAK.recordSeenOf(before);
-  assert.deepEqual(seen, { codes: ['A'], average: 6.8 });
+  assert.deepEqual(seen, { codes: ['A'], pct: 27 });
   assert.equal(MAK.recordGain(before, null), null, 'the first reading: nothing is news');
   assert.equal(MAK.recordGain(before, seen), null, 'nothing new');
-  const up = MAK.recordGain({ rows: [...before.rows, row({ code: 'B', call: 'Junio', mark: 8, name: 'Redes' })] }, seen);
-  assert.deepEqual(JSON.parse(JSON.stringify(up)), { subjects: [{ name: 'Redes', credits: 6 }], from: 6.8, rankUp: MAK.RANKS[2] }, 'B passed in June: 7,40, Oro');
-  const down = MAK.recordGain({ rows: [...before.rows, row({ code: 'C', mark: 5, name: 'Física' })] }, seen);
-  assert.deepEqual(JSON.parse(JSON.stringify(down)), { subjects: [{ name: 'Física', credits: 6 }], from: null, rankUp: null }, 'a new pass with a lower average: the pass only');
+  const up = MAK.recordGain({ rows: [...before.rows, row({ code: 'B', call: 'Junio', mark: 8, name: 'Redes' })], credits: credits(72) }, seen);
+  assert.deepEqual(JSON.parse(JSON.stringify(up)), { subjects: [{ name: 'Redes', credits: 6 }], rankUp: MAK.RANKS[2] }, 'B passed in June: 30 %, Oro');
+  const same = MAK.recordGain({ rows: [...before.rows, row({ code: 'C', mark: 5, name: 'Física' })], credits: credits(66) }, seen);
+  assert.deepEqual(JSON.parse(JSON.stringify(same)), { subjects: [{ name: 'Física', credits: 6 }], rankUp: null });
+  assert.equal(MAK.recordGain(before, { codes: ['A'], average: 6.8 }), null, 'a seen state of a version before (an average, no part): no rank up');
 });
 
 test('the reading: in the background (every 3 days) or in a small window ("Abrir expediente"); it ends after "Expediente completo"', async () => {

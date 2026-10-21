@@ -932,7 +932,7 @@ const handlers = {
     run: async () => {
       await Promise.resolve(ext.permissions.remove(MAK.RECORD_PERMISSION)).catch(() => false);
       await endRecordRun('');
-      await store.remove(['record', 'recordTry', 'recordSeen']);
+      await store.remove(MAK.RECORD_KEYS);
       return { ok: true };
     }
   },

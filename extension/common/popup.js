@@ -1117,7 +1117,7 @@ function recordSection() {
   const sum = MAK.recordSummary(r);
   const tried = S.recordTry;
   let state = t('record.off');
-  if (recordGranted && r) state = sum ? t('record.read', { line: MAK.rankLine(sum), ago: MAK.ago(r.at, Date.now()) }) : t('record.readNone', { ago: MAK.ago(r.at, Date.now()) });
+  if (recordGranted && r) state = sum ? t('record.read', { line: MAK.rankLine(sum), ago: MAK.ago(r.at, Date.now()) }) : t('record.readAt', { ago: MAK.ago(r.at, Date.now()) });
   else if (recordGranted) state = t('record.none');
   if (recordGranted && tried && tried.error === 'login') state += ` ${t('record.login')}`;
   const btn = (text, click) => h('button', { class: 'btn', attrs: { type: 'button' }, text, on: { click } });

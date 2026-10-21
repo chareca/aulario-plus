@@ -148,15 +148,30 @@ test('mergeAnnouncements: a full fetch replaces; a small fetch adds and changes;
   assert.deepEqual(MAK.mergeAnnouncements(prev, small, false, 5 * D).map((x) => x.id), ['c', 'a']);
 });
 
-test('a different user removes all the data of the previous user', async () => {
-  const s = setup({ local: { settings: { hiddenSites: [F.COORD] }, readAnn: { x: 1 } } });
+test('a logout keeps the official grades and who the user was: another user after it removes them', async () => {
+  const s = setup({ local: { record: { rows: [], credits: [] }, recordSeen: { codes: [] } } });
   await s.sync.run({ force: true });
+  await s.sync.clearData(); // the logout
+  assert.ok(s.area.data.record && s.area.data.recordSeen, 'the grades stay');
+  assert.deepEqual([s.area.data.meta.userId, s.area.data.meta.userEid], ['user-1', 'chareca.1'], 'and who the user was');
+  assert.equal(s.area.data.announcements, undefined, 'the course data goes');
+  s.routes['/direct/session/current.json'] = { userId: 'user-2', userEid: 'otra.2' };
+  await s.sync.run({ force: true });
+  assert.deepEqual([s.area.data.record, s.area.data.recordSeen, s.area.data.meta.userEid], [undefined, undefined, 'otra.2'], 'another user: the grades go');
+});
+
+test('a different user removes all the data of the previous user', async () => {
+  const s = setup({ local: { settings: { hiddenSites: [F.COORD] }, readAnn: { x: 1 }, record: { rows: [], credits: [] }, recordSeen: { codes: [] } } });
+  await s.sync.run({ force: true });
+  assert.ok(s.area.data.record && s.area.data.recordSeen, 'the same user: the official grades stay');
+  assert.equal(s.area.data.meta.userEid, 'chareca.1', 'the user of the photo of the bar (content-rank.js)');
   s.routes['/direct/session/current.json'] = { userId: 'user-2' };
   s.clock.t += MAK.HOUR;
   const r = await s.sync.run({ force: true });
   assert.equal(r.full, true, 'a new user gets a full sync');
   assert.equal(s.area.data.meta.userId, 'user-2');
   assert.deepEqual(s.area.data.readAnn || {}, {});
+  assert.deepEqual([s.area.data.record, s.area.data.recordSeen], [undefined, undefined], 'the official grades of the other user go');
   assert.ok(s.area.data.announcements.every((a) => a.seen === 0), 'the data of the new user is the baseline');
   assert.deepEqual(s.area.data.settings, { hiddenSites: [F.COORD], targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '' }, 'settings stay, without what the user wrote');
 });

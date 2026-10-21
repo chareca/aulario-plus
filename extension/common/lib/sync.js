@@ -105,14 +105,16 @@
 
     // Remove all the course data and the reading state, and from the settings what the user wrote about
     // their studies (the targets, grades and weights of the calculators, the address of the forward): not for
-    // the next user of this browser. Keep the other settings.
-    async function clearData() {
+    // the next user of this browser. Keep the other settings. otherUser: a different user logged in; then
+    // the official grades go too (a logout keeps them).
+    async function clearData(otherUser) {
       await store.transaction(async (tx) => {
         const all = await tx.get(null);
-        const keys = Object.keys(all).filter((k) => MAK.DATA_KEYS.includes(k) || k.startsWith(MAK.RESOURCE_PREFIX));
+        const keys = Object.keys(all).filter((k) => MAK.DATA_KEYS.includes(k) || (otherUser && MAK.RECORD_KEYS.includes(k)) || k.startsWith(MAK.RESOURCE_PREFIX));
         if (keys.length) await tx.remove(keys);
         const meta = all.meta || {};
-        await tx.set({ meta: { installedAt: meta.installedAt || now() } });
+        // A logout keeps who the user was: then the login of another user removes the official grades.
+        await tx.set({ meta: Object.assign({ installedAt: meta.installedAt || now() }, otherUser ? {} : { userId: meta.userId, userEid: meta.userEid }) });
         if (all.settings) await tx.set({ settings: Object.assign({}, all.settings, { targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '' }) });
       });
     }
@@ -192,11 +194,12 @@
           return { skipped: 'logged-out' };
         }
         if (meta.userId && meta.userId !== session.userId) {
-          await clearData();
+          await clearData(true);
           meta = { installedAt: meta.installedAt, stale: {}, baselined: {} };
           full = true; // Get all the data of the new user.
         }
         meta.userId = session.userId;
+        meta.userEid = session.userEid; // the user of the photo in the bar of MiAulario (content-rank.js)
         meta.loggedIn = true;
         if (pauseMs) await sleep(pauseMs);
 
