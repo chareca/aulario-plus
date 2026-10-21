@@ -276,8 +276,11 @@ function renderHome(el) {
   const said = (name, v) => `${name}: ${t(v ? 'home.on' : 'home.off')}`;
   const set = (patch) => () => send({ type: 'setSettings', patch });
   const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
+  // Keeping the session off for now (MAK.KEEP_SESSION): the button is grey, does nothing, and its tooltip says why.
+  const keep = MAK.KEEP_SESSION;
   const top = h('div', { class: 'home-top' },
-    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t(MAK.KEEP_SESSION ? 'set.keepAlive' : 'home.power'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
+    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': keep ? String(!S.paused) : undefined, 'aria-disabled': keep ? undefined : 'true', 'aria-label': t('set.keepAlive'),
+      title: t(!keep ? 'home.powerOff' : S.paused ? 'set.resume' : 'set.pause') }, on: keep ? { click: togglePause } : null }, MAK.icon('power')),
     session);
   const switches = h('div', { class: 'switches' },
     homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),

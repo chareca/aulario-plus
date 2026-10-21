@@ -78,6 +78,7 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .power.off, .power.wait { color: var(--ap-muted); background: var(--ap-grey-bg); border-color: var(--ap-line); }
 .power.bad { color: var(--ap-red); background: var(--ap-red-bg); border-color: var(--ap-red); }
 .power:hover, .power:focus-visible { filter: brightness(0.96); }
+.power[aria-disabled="true"] { color: var(--ap-muted); background: var(--ap-grey-bg); border-color: var(--ap-line); opacity: 0.55; cursor: not-allowed; filter: none; }
 /* The quick switches: on in the color of the theme, off in grey */
 .switches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .switch { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 7px 2px 6px; color: var(--ap-muted); background: none;
