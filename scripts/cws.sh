@@ -27,14 +27,14 @@ if [ -n "$missing" ]; then
   exit 0
 fi
 
-# Send a request (the URL is the last argument) and write the body. If the HTTP status is an
-# error, show the status and the body, and stop.
+# Send a request (the URL is the last argument) and write the body. If the HTTP status is not a
+# success (also 000: no connection, and a redirect), show the status and the body, and stop.
 request() {
   local out code
-  out=$(curl -sS -w '\n%{http_code}' "$@")
+  out=$(curl -sS -w '\n%{http_code}' "$@") || true
   code=${out##*$'\n'}
   out=${out%$'\n'*}
-  if [ "$code" -ge 400 ]; then
+  if [[ ! $code =~ ^2[0-9][0-9]$ ]]; then
     echo "::error::HTTP $code from ${*: -1}: $out" >&2
     return 1
   fi

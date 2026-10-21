@@ -35,8 +35,14 @@ else
   range="$AFTER"
 fi
 
+# Stop if the commits cannot be listed: a check without commits must not pass.
+if ! commits=$(git rev-list "$range"); then
+  echo "::error::The commits of $range cannot be listed."
+  exit 1
+fi
+
 message_file=$(mktemp)
-for commit in $(git rev-list "$range"); do
+for commit in $commits; do
   git show -s --format=%B "$commit" > "$message_file"
   IFS=$'\t' read -r an ae cn ce < <(git show -s --format='%an%x09%ae%x09%cn%x09%ce' "$commit")
   if ! GIT_AUTHOR_NAME="$an" GIT_AUTHOR_EMAIL="$ae" GIT_COMMITTER_NAME="$cn" GIT_COMMITTER_EMAIL="$ce" \
