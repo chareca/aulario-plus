@@ -312,7 +312,7 @@ function runWelcome() {
     list(['welcome.step1', 'welcome.step2', 'welcome.step3', 'welcome.step4'], 'ol'),
     h('div', { class: 'row' }, h('a', { class: 'btn primary', text: t('welcome.open'), href: `${MAK.BASE}/portal` })),
     h('h2', { text: t('welcome.does') }),
-    list(['welcome.f1', 'welcome.f2', 'welcome.f3', 'welcome.f4', 'welcome.f5', 'welcome.f6']),
+    list(['welcome.f1', 'welcome.f2', 'welcome.f3', 'welcome.f4', 'welcome.f5', 'welcome.f6', 'welcome.f7', 'welcome.f8', 'welcome.f9']),
     h('h2', { text: t('welcome.perms') }),
     h('dl', { class: 'perm' }, perms.map(([k, why]) => [h('dt', { text: t(k) }), h('dd', { text: t(why) })])),
     h('h2', { text: t('privacy.title') }),

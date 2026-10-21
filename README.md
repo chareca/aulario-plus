@@ -2,7 +2,7 @@
 
 <h1 align="center">Aulario Plus</h1>
 
-<p align="center">MiAulario (UPNA) sin cierres de sesión y con todas tus materias en un solo lugar.</p>
+<p align="center">MiAulario (UPNA) sin cierres de sesión y con todas tus asignaturas en un solo lugar.</p>
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/aulario-plus/gghfebogpkdlclffafmcobjlajhahphp"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/iNEddTyWiMfLSwFD6qGq.png" alt="Disponible en Chrome Web Store" height="58"></a>
@@ -19,12 +19,15 @@
 ## Qué hace
 
 - **Sesión siempre activa:** MiAulario no te echa.
-- **Todo en un clic:** un menú de inicio con tu sesión y lo pendiente; entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus materias, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
-- **Ctrl+K / ⌘K:** encuentra cualquier materia, contenido, archivo o entrega con unas letras.
+- **Todo en un clic:** un menú de inicio con tu sesión y lo pendiente; entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus asignaturas, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
+- **Ctrl+K / ⌘K:** encuentra cualquier asignatura, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno, en una columna o a todo el ancho.
-- **Guías docentes:** cómo se evalúa cada materia, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
-- **Archivos:** descarga una materia en ZIP o envía sus archivos por el correo interno; en los Recursos de Mi sitio, descarga o borra todos tus archivos de una vez.
-- **Temas:** igual que MiAulario (por defecto) o uno de cinco estilos (Cómic, Malvavisco, Aurora, AulaXP y Folio), en claro u oscuro.
+- **Calendario de exámenes:** tus finales y recuperaciones en un calendario por meses, en cada semestre de Mi sitio y junto a la guía de cada asignatura.
+- **Notas oficiales (SIGMA):** si lo activas, tu media y tu rango junto a tu foto: ocho rangos con su gema según tus créditos aprobados, y lo que te falta para el siguiente.
+- **Historial:** todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario del profesor.
+- **Guías docentes:** cómo se evalúa cada asignatura, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
+- **Archivos:** descarga una asignatura en ZIP o envía sus archivos por el correo interno; en los Recursos de Mi sitio, descarga o borra todos tus archivos de una vez.
+- **Temas:** igual que MiAulario (por defecto) o uno de cinco estilos (Cómic, Malvavisco, Aurora, AulaXP y Folio), en light o dark mode.
 - **Confeti:** cuando entregas una tarea o un examen, sin sonido (se puede apagar).
 
 ## Privacidad

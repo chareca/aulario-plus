@@ -1,6 +1,6 @@
 # Privacy policy of Aulario Plus
 
-Last change: 2026-10-19 (version 1.6.2). [Español más abajo](#política-de-privacidad-de-aulario-plus-español).
+Last change: 2026-10-21 (version 1.6.6). [Español más abajo](#política-de-privacidad-de-aulario-plus-español).
 
 Aulario Plus is a browser extension for MiAulario, the virtual campus of the Universidad Pública de Navarra (UPNA). The UPNA did not make this extension and does not support it.
 
@@ -58,7 +58,7 @@ Open an issue at <https://github.com/chareca/aulario-plus/issues>.
 
 # Política de privacidad de Aulario Plus (español)
 
-Último cambio: 19-10-2026 (versión 1.6.2).
+Último cambio: 21-10-2026 (versión 1.6.6).
 
 Aulario Plus es una extensión del navegador para MiAulario, el campus virtual de la Universidad Pública de Navarra (UPNA). La UPNA no hizo esta extensión y no le da soporte.
 
@@ -72,9 +72,9 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 | Datos | Dónde están | Quién los recibe |
 |---|---|---|
-| Tus ajustes (nombres de materias, materias ocultas, idioma, ajustes de los enlaces de descarga) | El almacenamiento de la extensión en tu navegador | Nadie |
+| Tus ajustes (nombres de asignaturas, asignaturas ocultas, idioma, ajustes de los enlaces de descarga) | El almacenamiento de la extensión en tu navegador | Nadie |
 | Una copia de tus datos de las asignaturas: sitios, páginas, entregas, anuncios, notificaciones, eventos del calendario, foros, notas, recursos y lo que has leído; y lo que escribes: los objetivos, las notas y los pesos de las calculadoras, la dirección de reenvío del Correo interno | El almacenamiento de la extensión en tu navegador | Nadie. La extensión la borra al cerrar sesión en MiAulario o si entra otro usuario |
-| Las guías docentes de tus materias (evaluación, profesorado) | El almacenamiento de la extensión, durante 7 días | Nadie |
+| Las guías docentes de tus asignaturas (evaluación, profesorado) | El almacenamiento de la extensión, durante 7 días | Nadie |
 | Tu historial de tareas y exámenes (la página «Historial»): las tareas y los exámenes del panel «Tareas» de MiAulario, también de años pasados, y de cada tarea tu entrega (su fecha, tus archivos, la nota y el comentario cuando el profesor la devuelve) | El almacenamiento de la extensión en tu navegador | Nadie. Se queda al cerrar sesión en MiAulario (vuelves tú). La extensión lo borra si entra otro usuario |
 | Tus notas oficiales (solo si activas «Notas oficiales (SIGMA)»): las asignaturas, créditos, convocatorias y notas de tu expediente de SIGMA, y sus créditos | El almacenamiento de la extensión en tu navegador | Nadie. Se quedan al cerrar sesión en MiAulario (vuelves tú). La extensión las borra si entra otro usuario o si lo desactivas |
 | Tu carrera (de las guías), sus periodos de exámenes y las fechas del calendario de exámenes (datos públicos) | El almacenamiento de la extensión, durante 7 días (1 día para un calendario de exámenes) | Nadie. La extensión los borra al cerrar sesión |
@@ -82,12 +82,12 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 
 ## Peticiones
 
-- **MiAulario (`miaulario.unavarra.es`):** la extensión lee tus datos de las asignaturas, envía una petición cada 3 a 10 minutos para mantener la sesión activa y, cuando usas esas funciones, envía mensajes por el Correo interno, cambia el reenvío del Correo interno de tus materias a la dirección que escribas (solo cuando pulsas los botones) y abre sus páginas. Son las mismas peticiones que cuando usas MiAulario.
+- **MiAulario (`miaulario.unavarra.es`):** la extensión lee tus datos de las asignaturas, envía una petición cada 3 a 10 minutos para mantener la sesión activa y, cuando usas esas funciones, envía mensajes por el Correo interno, cambia el reenvío del Correo interno de tus asignaturas a la dirección que escribas (solo cuando pulsas los botones) y abre sus páginas. Son las mismas peticiones que cuando usas MiAulario.
 - **Página de inicio de sesión de la UPNA (`sso.unavarra.es`):** la extensión no le hace peticiones. Solo alarga la duración de su cookie.
-- **Guías docentes públicas (`www.unavarra.es/ficha-asignaturaDOA/`):** la extensión lee la guía pública de cada materia. La petición solo lleva el código de la asignatura, no tus datos.
+- **Guías docentes públicas (`www.unavarra.es/ficha-asignaturaDOA/`):** la extensión lee la guía pública de cada asignatura. La petición solo lleva el código de la asignatura, no tus datos.
 - **Páginas públicas de las carreras (`www.unavarra.es/sites/grados/`):** la extensión lee la lista de carreras y la página «Evaluación» de tu carrera, para los accesos directos de Mi sitio. Las peticiones no llevan tus datos.
 - **Notas oficiales (`portal.unavarra.es` y `academicos.unavarra.es`, solo si las activas):** la extensión lee tu expediente de SIGMA cuando lo abres, en una ventana pequeña cuando pulsas «Abrir expediente» (ahí puedes iniciar sesión) y, cada 3 días, en una pestaña de fondo que se cierra sola (MiUPNA → «Consulta tu Expediente» → «Expediente completo»). Usa tu sesión de la UPNA: nunca pide, guarda ni envía tu contraseña, y no guarda el enlace de MiUPNA a SIGMA. Si el inicio de sesión de la UPNA pide la contraseña en la pestaña de fondo, la pestaña se cierra. La extensión calcula los créditos de tu carrera y tu rango en tu navegador. Las notas quedan en tu navegador.
-- **Calendarios de exámenes (`www2.unavarra.es`, solo con tu permiso):** si pulsas «Ver mis fechas» y das el permiso, la extensión lee los calendarios de exámenes públicos (PDF) de tu carrera. La petición no lleva tus datos. La extensión compara el calendario con tus materias en tu navegador.
+- **Calendarios de exámenes (`www2.unavarra.es`, solo con tu permiso):** si pulsas «Ver mis fechas» y das el permiso, la extensión lee los calendarios de exámenes públicos (PDF) de tu carrera. La petición no lleva tus datos. La extensión compara el calendario con tus asignaturas en tu navegador.
 - **Enlaces de descarga (desactivados por defecto):** si los activas y creas un enlace, tu navegador cifra el archivo y la extensión envía el archivo cifrado al servidor de Send que elijas (`send.vis.ee`, `send.artemislena.eu` o `send.monks.tools`). La clave solo va en el enlace. Después, la extensión envía la dirección del enlace a un acortador (`is.gd`, `spoo.me` o `tinyurl.com`). Con «Muy corto + contraseña», el acortador recibe la clave pero no la contraseña. Con «Corto, sin contraseña», solo recibe la dirección sin la clave. Con «Largo», ningún acortador recibe el enlace. Estos servicios tienen sus propias políticas de privacidad.
 
 ## Permisos
@@ -95,7 +95,7 @@ Aulario Plus es una extensión del navegador para MiAulario, el campus virtual d
 - `storage`: guardar los ajustes y la copia de tus datos de las asignaturas.
 - `cookies`: hacer persistentes las cookies de sesión de MiAulario y de la página de inicio de sesión de la UPNA, y borrarlas al cerrar sesión.
 - `alarms`: enviar la petición que mantiene la sesión y leer los datos de las asignaturas cada cierto tiempo.
-- `notifications`: avisarte de una nota nueva (muestra la materia y el ítem, no la nota).
+- `notifications`: avisarte de una nota nueva (muestra la asignatura y el ítem, no la nota).
 - `scripting`: leer tu expediente de SIGMA, solo después de que des el acceso opcional a MiUPNA y SIGMA.
 - Acceso a `miaulario.unavarra.es`, `sso.unavarra.es` y `www.unavarra.es`: las peticiones de arriba.
 - Acceso opcional a los servidores de Send y a los acortadores: solo si activas los enlaces de descarga. En Firefox, la extensión también pide tu consentimiento para «contenido de sitios web» (los archivos cifrados).
