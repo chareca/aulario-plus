@@ -108,8 +108,8 @@
     if (course) MAK.showResourceButtons([{ text: MAK.t('zip.button'), onClick: () => send({ type: 'openZip', siteId: here.siteId }) }]);
     else {
       MAK.showResourceButtons([
-        { text: MAK.t('zip.button'), title: MAK.t('drive.zipHelp'), onClick: (say) => driveAction(form, root, 'zipDownload', say) },
-        { text: MAK.t('drive.trash'), title: MAK.t('drive.trashHelp'), onClick: (say) => driveAction(form, root, 'delete', say) }
+        { text: MAK.t('zip.button'), title: MAK.t('drive.zipHelp'), onClick: (ui) => driveAction(form, root, 'zipDownload', ui) },
+        { text: MAK.t('drive.trash'), title: MAK.t('drive.trashHelp'), onClick: (ui) => driveAction(form, root, 'delete', ui) }
       ]);
     }
   }
@@ -117,8 +117,10 @@
   // "Mi sitio" → Recursos: the files of the user, as a personal drive. Download all of them as one ZIP, or
   // send all of them to the trash: the form of the list gets all the files and folders of the first level
   // (also the ones of other pages of the list), and MiAulario asks to confirm. The trash keeps them
-  // (Recursos → Papelera). action: 'zipDownload' or 'delete' (the actions of the list of MiAulario).
-  async function driveAction(form, root, action, say) {
+  // (Recursos → Papelera); before it, the bar asks too. action: 'zipDownload' or 'delete' (the actions of
+  // the list of MiAulario). ui: the messages of the bar (MAK.showResourceButtons).
+  async function driveAction(form, root, action, ui) {
+    const say = ui.say;
     say(MAK.t('drive.reading'));
     let ids;
     try {
@@ -129,6 +131,7 @@
       return say(MAK.t('drive.error'));
     }
     if (!ids.length) return say(MAK.t('drive.empty'));
+    if (action === 'delete' && !(await ui.ask(MAK.t('drive.confirm', { n: ids.length }), MAK.t('drive.confirmYes')))) return;
     say('');
     for (const box of form.querySelectorAll('input[name="selectedMembers"]')) box.checked = false;
     form.append(...ids.map((value) => MAK.h('input', { attrs: { type: 'hidden', name: 'selectedMembers', value } })));

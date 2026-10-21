@@ -179,20 +179,22 @@
     return m ? `/user/${m[1]}/` : null;
   };
 
-  // The ids of the files and folders of the first level of root, from the list of /direct/content (all
-  // the levels; an item has the address /access/content<id>).
+  // The ids of the files and folders of the first level of root, from the list of /direct/content/my
+  // (all the levels). The address of an item has the user name, not the id of the root:
+  // /access/content/user/<name>/<path>; its id is root + <path>.
   MAK.driveTopIds = function (items, root) {
     const ids = new Set();
     for (const item of Array.isArray(items) ? items : []) {
       const url = MAK.safeSiteUrl(item && item.url);
       if (!url) continue;
-      let id;
+      let path;
       try {
-        id = decodeURIComponent(new URL(url).pathname).replace(/^\/access\/content(?=\/)/, '');
+        path = decodeURIComponent(new URL(url).pathname);
       } catch {
         continue;
       }
-      if (id.startsWith(root) && /^[^/]+\/?$/.test(id.slice(root.length))) ids.add(id);
+      const m = /^\/access\/content\/user\/[^/]+\/([^/]+\/?)$/.exec(path);
+      if (m) ids.add(root + m[1]);
     }
     return [...ids];
   };

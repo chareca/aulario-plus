@@ -87,19 +87,20 @@ test('Mi sitio → Recursos: the root of the files of the user, and the files an
   assert.equal(MAK.driveRoot('/group/2026_0_1_G/'), null, 'a course site: not the files of the user');
   assert.equal(MAK.driveRoot(''), null);
   const root = '/user/0a1b-2c/';
-  const at = (path) => ({ url: `https://miaulario.unavarra.es/access/content${path}` });
+  // The addresses have the user name (nchareca), the ids of the form have the id of the user (0a1b-2c).
+  const at = (path) => ({ url: `https://miaulario.unavarra.es/access/content/user/nchareca${path}` });
   const items = [
-    at('/user/0a1b-2c/'),
-    at('/user/0a1b-2c/AyDS/'),
-    at('/user/0a1b-2c/AyDS/tema%201.pdf'),
-    at('/user/0a1b-2c/Ingenieria%20del%20Conocimiento/'),
-    at('/user/0a1b-2c/pr%C3%A1ctica1.sql'),
-    at('/user/0a1b-2c/AyDS/'),
-    at('/user/other/x.pdf'),
-    { url: 'https://evil.example/access/content/user/0a1b-2c/y.pdf' },
+    at('/'),
+    at('/AyDS/'),
+    at('/AyDS/tema%201.pdf'),
+    at('/Ingenieria%20del%20Conocimiento/'),
+    at('/pr%C3%A1ctica1.sql'),
+    at('/AyDS/'),
+    { url: 'https://miaulario.unavarra.es/access/content/group/2026_0_1_G/x.pdf' },
+    { url: 'https://evil.example/access/content/user/nchareca/y.pdf' },
     null
   ];
   assert.deepEqual(MAK.driveTopIds(items, root), ['/user/0a1b-2c/AyDS/', '/user/0a1b-2c/Ingenieria del Conocimiento/', '/user/0a1b-2c/práctica1.sql'],
-    'only the first level, each one once, the names decoded; not the root, other users or other servers');
+    'only the first level, each one once, the names decoded, with the id of the root; not the root, a course site or other servers');
   assert.deepEqual(MAK.driveTopIds(undefined, root), []);
 });
