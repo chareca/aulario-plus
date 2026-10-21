@@ -82,7 +82,10 @@ test('recordStage: five stages of the degree (by the credits done), and the end;
 test('recordProgress: the credits of the degree from the table of SIGMA (a "Total" row, else its kinds), else the passed subjects', () => {
   const credits = [{ kind: 'Formación básica', passed: 60, pending: 0, min: 60 }, { kind: 'Obligatoria', passed: 96, pending: 12, min: 168 }, { kind: 'Trabajo Fin de Grado', passed: 0, pending: 0, min: 12 }];
   assert.deepEqual(MAK.recordProgress({ rows: [], credits }), { passed: 156, total: 240 });
-  assert.deepEqual(MAK.recordProgress({ rows: [], credits: [...credits, { kind: 'Total', passed: 156, pending: 12, min: 240 }] }), { passed: 156, total: 240 }, 'not twice');
+  // As SIGMA: the kinds, "Total", and two other totals after it.
+  const others = [{ kind: 'Total créditos reconocidos', passed: 6, pending: null, min: null }, { kind: 'Total créditos matriculados', passed: 168, pending: null, min: 240 }];
+  assert.deepEqual(MAK.recordProgress({ rows: [], credits: [...others, ...credits, { kind: 'Total', passed: 156, pending: 12, min: 240 }] }), { passed: 156, total: 240 }, 'the row "Total", not twice');
+  assert.deepEqual(MAK.recordProgress({ rows: [], credits: [...credits, ...others] }), { passed: 156, total: 240 }, 'no row "Total": the kinds only');
   const rows = [row({ code: 'A' }), row({ code: 'B', mark: null, grade: 'APTO', credits: 3 }), row({ code: 'C', mark: null, grade: 'NO APTO' }), row({ code: 'D', mark: 3 })];
   assert.deepEqual(MAK.recordProgress({ rows, credits: [] }), { passed: 9, total: null }, 'A and B (APTO); not "NO APTO" nor a 3');
   assert.equal(MAK.recordProgress({ rows: [], credits: [] }), null);

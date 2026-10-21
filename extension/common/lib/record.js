@@ -115,12 +115,13 @@
     return { count: rows.length, credits, points, average, rank: MAK.RANKS[Math.max(rankAt(average), 0)] };
   };
 
-  // The credits of the degree: { passed, total } from the table of credits of SIGMA (its "Total" row, else the
-  // sum of its kinds; total: the minimum credits), else { passed, total: null } from the passed subjects; or null.
+  // The credits of the degree: { passed, total } from the table of credits of SIGMA (its row "Total", else the
+  // sum of its kinds, not the other totals: "Total créditos reconocidos", "Total créditos matriculados"; total:
+  // the minimum credits), else { passed, total: null } from the passed subjects; or null.
   MAK.recordProgress = function (record) {
     const table = (record && record.credits) || [];
-    const total = table.find((c) => /^total/i.test(c.kind));
-    const kinds = total ? [total] : table;
+    const total = table.find((c) => /^total$/i.test(c.kind));
+    const kinds = total ? [total] : table.filter((c) => !/^total/i.test(c.kind));
     const add = (k) => kinds.reduce((a, c) => a + (c[k] || 0), 0);
     if (add('min') > 0) return { passed: add('passed'), total: add('min') };
     const passed = passedRows(record).reduce((a, r) => a + (r.credits || 0), 0);
