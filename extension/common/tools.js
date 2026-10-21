@@ -349,14 +349,23 @@ async function runHistory() {
   document.title = t('history.title');
   const status = h('p', { class: 'status meta', attrs: { role: 'status' } });
   const refresh = h('button', { class: 'btn', attrs: { type: 'button' }, text: t('history.refresh') });
-  const kind = h('select', { attrs: { 'aria-label': t('history.filter') } }, ['all', 'task', 'exam'].map((k) => h('option', { attrs: { value: k }, text: t(`history.show.${k}`) })));
+  // The filters, at the right of the summary: the type, the academic year and the subject (these two from the data).
+  const option = (value, text) => h('option', { attrs: { value }, text });
+  const kind = h('select', { attrs: { 'aria-label': t('history.filter') } }, ['all', 'task', 'exam'].map((k) => option(k, t(`history.show.${k}`))));
+  const year = h('select', { attrs: { 'aria-label': t('history.filterYear') } });
+  const subject = h('select', { attrs: { 'aria-label': t('history.filterSubject') } });
+  const setOptions = (sel, all, values) => {
+    const keep = sel.value;
+    MAK.fill(sel, option('', all), values.map(([value, text]) => option(value, text)));
+    sel.value = values.some(([value]) => value === keep) ? keep : '';
+  };
   const summary = h('p', { class: 'history-summary' });
   // What is older than the update of MiAulario to Sakai 25 cannot come back (RESEARCH.md): the notice says it.
   const before = h('p', { class: 'notice history-before' });
   const list = h('div', { class: 'history' });
   // One button for all the subjects: "Expandir todo" when all of them are closed, else "Colapsar todo".
   const fold = h('button', { class: 'btn', attrs: { type: 'button' } });
-  const subjectBoxes = () => [...list.querySelectorAll('details.history-subject')];
+  const subjectBoxes = () => [...list.querySelectorAll('details.history-card')];
   const foldLabel = () => {
     const boxes = subjectBoxes();
     fold.hidden = !boxes.length;
@@ -367,20 +376,27 @@ async function runHistory() {
     for (const d of subjectBoxes()) d.open = open;
     foldLabel();
   });
-  list.addEventListener('toggle', foldLabel, true); // "toggle" does not bubble: in the capture
-  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before, h('div', { class: 'history-bar' }, kind, refresh, fold), status, summary, list);
+  // The cards that the user opened: they stay open in a new drawing (the reading of MiAulario, a filter).
+  const openKeys = new Set();
+  list.addEventListener('toggle', (e) => { // "toggle" does not bubble: in the capture
+    const d = e.target;
+    if (d.matches && d.matches('details.history-card')) {
+      if (d.open) openKeys.add(d.dataset.key);
+      else openKeys.delete(d.dataset.key);
+    }
+    foldLabel();
+  }, true);
+  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), before,
+    h('div', { class: 'history-head' }, summary, h('div', { class: 'history-bar' }, kind, year, subject, refresh, fold)), status, list);
 
   const when = (ms) => (ms ? MAK.formatDate(ms) : '–');
   const STATE = { submitted: 'ok', late: 'warn', missed: 'bad', pending: 'info', unknown: '', sent: 'ok', noRecord: '' };
   let data = {};
   function draw() {
     const now = Date.now();
-    // All closed at the start; a new drawing (the reading of MiAulario, the filter) keeps the ones that the user opened.
-    const wasOpen = new Set(subjectBoxes().filter((d) => d.open).map((d) => d.dataset.key));
     const items = Object.values((data.history && data.history.items) || {});
     const grades = MAK.officialGrades(data.record);
     const mine = new Set((data.sites || []).map((s) => s.id)); // the sites of the user now: a link to the item
-    const shown = items.filter((it) => kind.value === 'all' || it.kind === kind.value);
     const tasks = items.filter((it) => it.kind === 'task');
     const exams = items.filter((it) => it.kind === 'exam');
     // The first item that MiAulario kept for this user: the earliest start of the panel "Tareas".
@@ -392,61 +408,87 @@ async function runHistory() {
       items.length ? t('history.exams', { n: exams.length, sent: exams.filter((it) => it.complete).length }) : null,
       grades.length ? t('history.officialCount', { n: grades.length }) : null
     ].filter(Boolean).join(' · ') : '';
-    if (!items.length && !grades.length) {
-      MAK.fill(list, data.history ? h('p', { class: 'empty', text: t('history.empty') }) : null);
-      foldLabel();
-      return;
-    }
     // By year and by subject: a subject of MiAulario and of SIGMA are one by the code of the subject
     // ("2025_0_240610_1_G" in MiAulario, "240610" in SIGMA); a site without it, by its name.
     const codeOf = (siteId) => (/^\d{4}_\d+_(\d+)_/.exec(siteId || '') || [])[1] || null;
     const years = new Map();
+    const names = new Map(); // all the subjects of all the years, for the filter
     const subjectOf = (y, key, name) => {
       if (!years.has(y)) years.set(y, new Map());
       const subjects = years.get(y);
       if (!subjects.has(key)) subjects.set(key, { name, items: [], grade: null });
+      if (!names.has(key)) names.set(key, name);
       return subjects.get(key);
     };
-    for (const it of shown) {
+    for (const it of items) {
+      if (kind.value !== 'all' && it.kind !== kind.value) continue;
       const name = MAK.shortTitle(it.siteTitle || it.siteId);
       subjectOf(MAK.academicYear(it), codeOf(it.siteId) || name, name).items.push(it);
     }
-    // The official grades: all of them with "Todo"; with a filter, only next to the subjects that it shows.
+    // The official grades: all of them with "Todo"; with a filter of the type, only next to the subjects that it shows.
     for (const g of grades) {
       const s = kind.value === 'all' ? subjectOf(g.year, g.code, MAK.shortTitle(g.name)) : years.has(g.year) && years.get(g.year).get(g.code);
       if (s) s.grade = g;
+    }
+    setOptions(year, t('history.allYears'), [...years.keys()].sort().reverse().map((y) => [y, t('history.year', { year: y })]));
+    setOptions(subject, t('history.allSubjects'), [...names].sort(([, a], [, b]) => a.localeCompare(b, 'es')));
+    if (!years.size) {
+      MAK.fill(list, data.history ? h('p', { class: 'empty', text: t('history.empty') }) : null);
+      foldLabel();
+      return;
     }
     const word = (s) => s.charAt(0).toLocaleUpperCase('es') + s.slice(1).toLocaleLowerCase('es');
     const gradeText = (g) => [g.grade ? word(g.grade) : null, g.mark !== null ? g.mark.toLocaleString(MAK.locale()) : null].filter(Boolean).join(' ');
     const official = (g) => h('p', { class: 'history-official meta' },
       h('strong', { text: t('history.official') }), ' ',
       [gradeText(g), g.call || null, g.credits !== null ? t('history.credits', { n: g.credits.toLocaleString(MAK.locale()) }) : null].filter(Boolean).join(' · '));
+    // A row as a line of a list of invoices: the type, the date, the title, the submission, the grade, the state and
+    // the buttons (the files and the comment of the teacher below it; the item in MiAulario).
+    const cell = (cls, main, label) => h('div', { class: `history-cell ${cls}` }, h('strong', { text: main }), h('span', { class: 'history-label', text: label }));
     const row = (it) => {
       const state = MAK.historyStatus(it, now);
       const d = it.detail || {};
       const f = d.feedback || {};
-      const title = it.url && mine.has(it.siteId) ? h('a', { class: 'title', href: it.url, title: t('history.open'), text: it.title }) : h('span', { class: 'title', text: it.title });
-      return h('li', { class: 'item' },
-        h('div', { class: 'body' },
-          h('div', null, h('span', { class: 'tag', text: t(it.kind === 'task' ? 'history.task' : 'history.exam') }), ' ', title),
-          h('div', { class: 'meta', text: [it.due ? t('history.due', { date: when(it.due) }) : null, d.date ? t('history.sentAt', { date: when(d.date) }) : null].filter(Boolean).join(' · ') }),
-          f.comment ? h('details', { class: 'meta' }, h('summary', { text: t('history.comment') }), h('p', { class: 'history-comment', text: f.comment })) : null,
-          d.files && d.files.length ? h('div', { class: 'history-files meta' }, t('history.files'), ' ', d.files.map((x, i) => [i ? ' · ' : '', h('a', { href: x.url, text: x.name })])) : null),
-        h('div', { class: 'side' },
-          h('span', { class: `tag ${STATE[state]}`, text: t(`history.state.${state}`) }),
-          f.grade ? h('div', { class: 'history-grade', text: t('history.grade', { grade: f.grade }) }) : null));
+      const link = it.url && mine.has(it.siteId) ? it.url : null;
+      const files = d.files && d.files.length ? h('p', { class: 'history-files' }, h('strong', { text: t('history.files') }), ' ', d.files.map((x, i) => [i ? ' · ' : '', h('a', { href: x.url, text: x.name })])) : null;
+      const comment = f.comment ? h('div', null, h('strong', { text: t('history.comment') }), h('p', { class: 'history-comment', text: f.comment })) : null;
+      const more = files || comment ? h('div', { class: 'history-more', hidden: true }, files, comment) : null;
+      const toggle = more ? h('button', { class: 'history-icon', attrs: { type: 'button', 'aria-expanded': 'false', title: t('history.more'), 'aria-label': t('history.more') } }, MAK.icon('chevron')) : null;
+      if (toggle) toggle.addEventListener('click', () => {
+        more.hidden = !more.hidden;
+        toggle.setAttribute('aria-expanded', String(!more.hidden));
+      });
+      return h('li', { class: 'history-row' },
+        h('span', { class: 'history-kind', text: t(it.kind === 'task' ? 'history.task' : 'history.exam') }),
+        cell('due', when(it.due), t('history.dueLabel')),
+        h('div', { class: 'history-cell name' }, link ? h('a', { class: 'history-title', href: link, text: it.title }) : h('span', { class: 'history-title', text: it.title })),
+        cell('sent', d.date ? when(d.date) : '–', t('history.sentLabel')),
+        cell('grade', f.grade || '–', t('history.gradeLabel')),
+        h('span', { class: `history-pill ${STATE[state]}`, text: t(`history.state.${state}`) }),
+        h('div', { class: 'history-actions' }, toggle,
+          link ? h('a', { class: 'history-icon', href: link, title: t('history.open'), attrs: { 'aria-label': t('history.open') } }, MAK.icon('arrow')) : null),
+        more);
     };
-    MAK.fill(list, [...years.keys()].sort().reverse().map((y) => h('section', { class: 'history-year' },
-      h('h2', { text: t('history.year', { year: y }) }),
-      [...years.get(y).entries()].sort(([, a], [, b]) => a.name.localeCompare(b.name, 'es')).map(([key, subject]) => {
-        const its = subject.items.sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
-        const g = subject.grade;
-        return h('details', { class: 'history-subject', attrs: { 'data-key': `${y}|${key}`, open: wasOpen.has(`${y}|${key}`) } },
-          h('summary', null, h('strong', { text: subject.name }), its.length ? h('span', { class: 'meta', text: ` · ${its.length}` }) : null,
-            g ? [' ', h('span', { class: `tag ${g.passed ? 'ok' : /no presentad/i.test(g.grade) ? '' : 'bad'}`, text: gradeText(g) })] : null),
-          g ? official(g) : null,
-          its.length ? h('ul', { class: 'history-list' }, its.map(row)) : null);
-      }))));
+    const shownYears = [...years.keys()].filter((y) => !year.value || y === year.value).sort().reverse();
+    MAK.fill(list, shownYears.map((y) => {
+      const subjects = [...years.get(y).entries()].filter(([key]) => !subject.value || key === subject.value);
+      if (!subjects.length) return null;
+      return h('section', { class: 'history-year' },
+        h('h2', { text: t('history.year', { year: y }) }),
+        subjects.sort(([, a], [, b]) => a.name.localeCompare(b.name, 'es')).map(([key, s]) => {
+          const its = s.items.sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
+          const g = s.grade;
+          return h('details', { class: 'history-card', attrs: { 'data-key': `${y}|${key}`, open: openKeys.has(`${y}|${key}`) } },
+            h('summary', null,
+              h('span', { class: 'history-card-name', text: s.name }),
+              its.length ? h('span', { class: 'history-count', text: t('history.count', { n: its.length }) }) : null,
+              g ? h('span', { class: `history-pill ${g.passed ? 'ok' : /no presentad/i.test(g.grade) ? '' : 'bad'}`, text: gradeText(g) }) : null,
+              h('span', { class: 'history-chevron' }, MAK.icon('chevron'))),
+            g ? official(g) : null,
+            its.length ? h('ul', { class: 'history-rows' }, its.map(row)) : null);
+        }));
+    }));
+    if (!list.querySelector('.history-card')) MAK.fill(list, h('p', { class: 'empty', text: t('history.none') }));
     foldLabel();
   }
   async function load() {
@@ -462,7 +504,7 @@ async function runHistory() {
     await load();
     if (!r || r.error) status.textContent = t((r && r.error) || 'history.network');
   }
-  kind.addEventListener('change', draw);
+  for (const sel of [kind, year, subject]) sel.addEventListener('change', draw);
   refresh.addEventListener('click', update);
   await load();
   update();
