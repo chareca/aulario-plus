@@ -96,7 +96,7 @@ nav.tabs .count-badge { display: inline-block; min-width: 16px; padding: 0 4px; 
 .counter .sub.hot { color: var(--ap-red); font-weight: 700; }
 .counter:hover, .counter:focus-visible { background: var(--ap-surface2); }
 /* The links: MiAulario and the help */
-.tools-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 10px; border-top: var(--ap-item-sep); }
+.tools-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding-top: 10px; border-top: var(--ap-item-sep); }
 .tool { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 6px 2px; font-size: 11px; line-height: 1.2; text-align: center;
   color: var(--ap-link); background: none; border: 0; border-radius: var(--ap-radius-box); }
 .tool svg { width: 18px; height: 18px; }
@@ -133,6 +133,8 @@ details > summary { cursor: pointer; font-family: var(--ap-font-head); font-weig
 .tag.ok { background: var(--ap-count-ok-bg); color: var(--ap-count-ok-fg); border-color: var(--ap-count-ok-edge); text-shadow: var(--ap-count-glow); }
 .tag.info { background: var(--ap-blue-bg); color: var(--ap-blue); }
 .tag.new { background: var(--ap-green-bg); color: var(--ap-green); }
+.tag.warn { background: var(--ap-orange-bg); color: var(--ap-orange); }
+.tag.bad { background: var(--ap-count-hot-bg); color: var(--ap-count-hot-fg); }
 .empty { color: var(--ap-muted); text-align: center; padding: 28px 10px; }
 .notice { margin: 4px 0 10px; padding: 8px; border-radius: var(--ap-radius-box); border: var(--ap-bw-sm) solid var(--ap-orange); color: var(--ap-orange); background: var(--ap-orange-bg); }
 .notice button { margin-top: 6px; width: 100%; }
@@ -243,6 +245,24 @@ body.tools { width: auto; height: auto; min-height: 100vh; }
 .tools-main .status { margin: 8px 0; overflow-wrap: anywhere; }
 .tools-main progress { width: 100%; margin: 6px 0 10px; accent-color: var(--ap-fg); }
 .tools-main .row { max-width: 380px; }
+/* The history (tools.html?history) */
+.tools-main:has(#history:not([hidden])) { width: min(900px, calc(100% - 24px)); }
+.history-bar { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.history-bar .btn { flex: none; }
+.history-summary { font-weight: 700; margin: 6px 0 12px; }
+.history-year h2 { font-size: calc(17px * var(--ap-head-zoom)); margin: 18px 0 6px; }
+.history-subject { margin: 6px 0; padding: 6px 10px; border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
+.history-subject > summary { cursor: pointer; }
+.history-list { list-style: none; margin: 8px 0 2px; padding: 0; }
+.history-list .item { align-items: flex-start; }
+.history-list .item .title { font-weight: 700; }
+.history-files a, .history-comment { overflow-wrap: anywhere; }
+.history-comment { white-space: pre-line; margin: 4px 0; }
+.history-grade { font-weight: 800; margin-top: 4px; }
+.history-import { margin: 4px 0 14px; padding: 8px 10px; border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
+.history-import > summary { cursor: pointer; font-weight: 700; }
+.history-paste { width: 100%; box-sizing: border-box; margin: 8px 0; min-height: 110px; font: inherit; font-size: 12px; color: var(--ap-input-fg);
+  background: var(--ap-input-bg); border: var(--ap-bw-sm) solid var(--ap-input-edge); border-radius: var(--ap-input-radius); padding: 6px 8px; resize: vertical; }
 
 /* Grades */
 .grade-row { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--ap-line); }

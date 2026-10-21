@@ -288,6 +288,7 @@ function renderHome(el) {
   const link = (icon, text, url) => h('button', { class: 'tool', attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url }); closePopup(); } } }, MAK.icon(icon), h('span', { text }));
   const tools = h('div', { class: 'tools-row' },
     link('school', t('welcome.open'), `${MAK.BASE}/portal`),
+    link('history', t('home.history'), ext.runtime.getURL('tools.html?history')),
     link('news', t('help.news'), ext.runtime.getURL('tools.html?news')),
     link('help', t('home.help'), ext.runtime.getURL('tools.html?welcome')),
     link('bug', t('help.bug'), issueUrl('bug')));

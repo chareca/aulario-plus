@@ -229,6 +229,18 @@ function make(NOW) {
       '/direct/calendar/my.json': { entityPrefix: 'calendar', calendar_collection: CALENDAR },
     '/api/users/me/grades': { grades: GRADES, sites: SITES.map((s) => ({ siteId: s.id, title: s.title })) }
     };
+    // The panel "Tareas" (lib/history.js): the tasks of this year, and a task and an exam of a site of the year before
+    // (the user is not a member of it any more), and an item of the Gradebook (not in the history).
+    const OLD = '2025_0_100001_1_G';
+    const OLD_TASK = assignment('asg-old', OLD, 'Práctica final', { dueTime: epoch(NOW - 300 * D), closeTime: epoch(NOW - 300 * D),
+      submissions: [submission({ submitted: true, canSubmit: false, userSubmission: true, dateSubmittedEpochSeconds: (NOW - 301 * D) / 1000, returned: true, graded: true, grade: '9',
+        feedbackComment: '<p>Muy buen trabajo.</p>', submittedAttachments: [{ name: 'practica.zip', url: `https://miaulario.unavarra.es/access/content/attachment/${OLD}/Assignments/x/practica.zip`, size: 4096 }] })] });
+    const taskOf = (a, o) => Object.assign({ siteId: a.context, siteTitle: (SITES.find((x) => x.id === a.context) || { title: `25_0_100001_1_G MATEMÁTICAS I` }).title, description: a.title,
+      reference: `/assignment/a/${a.context}/${a.id}`, complete: null, starts: NOW - 10 * D, due: a.dueTime ? a.dueTime.epochSecond * 1000 : NOW, url: `https://miaulario.unavarra.es/portal/directtool/x?assignmentId=${a.id}` }, o);
+    r['/api/users/me/tasks'] = { canAddTask: true, tasks: [...ASSIGNMENTS.map((a) => taskOf(a)), taskOf(OLD_TASK, { starts: NOW - 320 * D }),
+      { siteId: OLD, siteTitle: '25_0_100001_1_G MATEMÁTICAS I', description: 'Examen parcial', reference: `/samigo/${OLD}/123456`, complete: true, starts: NOW - 280 * D, due: NOW - 279 * D, url: null },
+      { siteId: OLD, siteTitle: '25_0_100001_1_G MATEMÁTICAS I', description: 'Nota de clase', reference: `/gbassignment/${OLD}/7`, complete: null, due: NOW - 200 * D }] };
+    for (const a of [...ASSIGNMENTS, OLD_TASK]) r[`/direct/assignment/item/${a.id}.json`] = a;
     for (const s of SITES) {
       r[`/direct/site/${s.id}/pages.json`] = pages(s.id);
       r[`/direct/content/site/${s.id}.json`] = { entityPrefix: 'content', content_collection: s.type === 'coord' ? [] : resources(s.id) };

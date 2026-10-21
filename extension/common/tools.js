@@ -3,6 +3,7 @@
 //   tools.html?ics=1          export the deliveries and the calendar events as an .ics file
 //   tools.html?check=1        the MiAulario checks (diagnostic); "&auto=1" starts them at once
 //   tools.html?perm=exams     the permission to read the exam calendars (www2.unavarra.es)
+//   tools.html?history        the history of the tasks and the exams of the user (lib/history.js)
 // A tab is used (not the popup) because the popup closes when it loses the focus.
 const ext = globalThis.browser ?? globalThis.chrome;
 const { t } = MAK;
@@ -336,6 +337,112 @@ function runNews() {
     helpLinks());
 }
 
+// ---- The history of the tasks and the exams ---------------------------------------------------------
+// The kept history at once, then a new reading (the background script; the page draws it again when it changes).
+// By academic year, then by subject; a task with its state, its submission, its grade, the comment of the
+// teacher and the files of the user; an exam with its state. A filter: all, the tasks, the exams.
+async function runHistory() {
+  const h = MAK.h;
+  const box = $('history');
+  box.hidden = false;
+  $('title').textContent = t('history.title');
+  document.title = t('history.title');
+  const status = h('p', { class: 'status meta', attrs: { role: 'status' } });
+  const refresh = h('button', { class: 'btn', attrs: { type: 'button' }, text: t('history.refresh') });
+  const kind = h('select', { attrs: { 'aria-label': t('history.filter') } }, ['all', 'task', 'exam'].map((k) => h('option', { attrs: { value: k }, text: t(`history.show.${k}`) })));
+  const summary = h('p', { class: 'history-summary' });
+  const list = h('div', { class: 'history' });
+  // Import the submission confirmation emails of MiAulario (the exams and tasks of before September 2025).
+  const paste = h('textarea', { class: 'history-paste', attrs: { rows: 6, placeholder: t('history.importPlaceholder'), 'aria-label': t('history.import') } });
+  const importBtn = h('button', { class: 'btn primary', attrs: { type: 'button' }, text: t('history.importDo') });
+  const importStatus = h('span', { class: 'meta' });
+  const importBox = h('details', { class: 'history-import' }, h('summary', { text: t('history.import') }),
+    h('p', { class: 'meta', text: t('history.importHelp') }), paste, h('div', { class: 'row' }, importBtn, importStatus));
+  importBtn.addEventListener('click', async () => {
+    importBtn.disabled = true;
+    importStatus.textContent = '';
+    const r = await Promise.resolve(ext.runtime.sendMessage({ type: 'historyImport', text: paste.value })).catch(() => null);
+    importBtn.disabled = false;
+    if (!r || !r.ok) importStatus.textContent = t('history.importError');
+    else if (!r.total) importStatus.textContent = t('history.importNone');
+    else {
+      importStatus.textContent = t('history.imported', { n: r.added, total: r.total });
+      if (r.added) { paste.value = ''; await load(); }
+    }
+  });
+  MAK.fill(box, h('p', { class: 'meta', text: t('history.help') }), h('div', { class: 'history-bar' }, kind, refresh), status, summary, importBox, list);
+
+  const when = (ms) => (ms ? MAK.formatDate(ms) : '–');
+  const STATE = { submitted: 'ok', late: 'warn', missed: 'bad', pending: 'info', unknown: '', sent: 'ok', noRecord: '' };
+  let data = {};
+  function draw() {
+    const now = Date.now();
+    const items = Object.values((data.history && data.history.items) || {});
+    const mine = new Set((data.sites || []).map((s) => s.id)); // the sites of the user now: a link to the item
+    const shown = items.filter((it) => kind.value === 'all' || it.kind === kind.value);
+    const tasks = items.filter((it) => it.kind === 'task');
+    const exams = items.filter((it) => it.kind === 'exam');
+    summary.textContent = items.length ? [
+      t('history.tasks', { n: tasks.length, submitted: tasks.filter((it) => ['submitted', 'late'].includes(MAK.historyStatus(it, now))).length }),
+      t('history.exams', { n: exams.length, sent: exams.filter((it) => it.complete).length })
+    ].join(' · ') : '';
+    if (!items.length) {
+      MAK.fill(list, data.history ? h('p', { class: 'empty', text: t('history.empty') }) : null);
+      return;
+    }
+    const years = new Map();
+    for (const it of shown) {
+      const y = MAK.academicYear(it);
+      const subject = MAK.shortTitle(it.siteTitle || it.siteId);
+      if (!years.has(y)) years.set(y, new Map());
+      const subjects = years.get(y);
+      if (!subjects.has(subject)) subjects.set(subject, []);
+      subjects.get(subject).push(it);
+    }
+    const current = MAK.academicYear({ due: now });
+    const row = (it) => {
+      const state = MAK.historyStatus(it, now);
+      const d = it.detail || {};
+      const f = d.feedback || {};
+      const title = it.url && mine.has(it.siteId) ? h('a', { class: 'title', href: it.url, title: t('history.open'), text: it.title }) : h('span', { class: 'title', text: it.title });
+      return h('li', { class: 'item' },
+        h('div', { class: 'body' },
+          h('div', null, h('span', { class: 'tag', text: t(it.kind === 'task' ? 'history.task' : 'history.exam') }), ' ', title),
+          h('div', { class: 'meta', text: [it.due ? t('history.due', { date: when(it.due) }) : null, d.date ? t('history.sentAt', { date: when(d.date) }) : null].filter(Boolean).join(' · ') }),
+          f.comment ? h('details', { class: 'meta' }, h('summary', { text: t('history.comment') }), h('p', { class: 'history-comment', text: f.comment })) : null,
+          d.files && d.files.length ? h('div', { class: 'history-files meta' }, t('history.files'), ' ', d.files.map((x, i) => [i ? ' · ' : '', h('a', { href: x.url, text: x.name })])) : null),
+        h('div', { class: 'side' },
+          h('span', { class: `tag ${STATE[state]}`, text: t(`history.state.${state}`) }),
+          f.grade ? h('div', { class: 'history-grade', text: t('history.grade', { grade: f.grade }) }) : null));
+    };
+    MAK.fill(list, [...years.keys()].sort().reverse().map((y) => h('section', { class: 'history-year' },
+      h('h2', { text: t('history.year', { year: y }) }),
+      [...years.get(y).keys()].sort((a, b) => a.localeCompare(b, 'es')).map((subject) => {
+        const its = years.get(y).get(subject).sort((a, b) => (b.due || b.starts || 0) - (a.due || a.starts || 0));
+        return h('details', { class: 'history-subject', attrs: { open: y === current } },
+          h('summary', null, h('strong', { text: subject }), h('span', { class: 'meta', text: ` · ${its.length}` })),
+          h('ul', { class: 'history-list' }, its.map(row)));
+      }))));
+  }
+  async function load() {
+    data = await ext.storage.local.get(['history', 'sites']);
+    status.textContent = data.history ? t('history.updated', { ago: MAK.ago(data.history.at, Date.now()) }) : '';
+    draw();
+  }
+  async function update() {
+    refresh.disabled = true;
+    status.textContent = t('history.reading');
+    const r = await Promise.resolve(ext.runtime.sendMessage({ type: 'historyRefresh' })).catch(() => null);
+    refresh.disabled = false;
+    await load();
+    if (!r || r.error) status.textContent = t((r && r.error) || 'history.network');
+  }
+  kind.addEventListener('change', draw);
+  refresh.addEventListener('click', update);
+  await load();
+  update();
+}
+
 async function init() {
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments', 'sakaiMode']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
@@ -368,6 +475,8 @@ async function init() {
     runNews();
   } else if (params.get('perm') === 'exams') {
     await runExamPermission();
+  } else if (params.has('history')) {
+    await runHistory();
   }
 }
 

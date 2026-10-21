@@ -193,6 +193,9 @@
   // The official grades of SIGMA (lib/record.js): they stay after a logout (the same user comes back: a new
   // reading needs the Expediente again), and they go when a different user logs in (lib/sync.js).
   MAK.RECORD_KEYS = ['record', 'recordTry', 'recordSeen'];
+  // The keys of the user that stay after a logout and go when a different user logs in: the official grades and the
+  // history of the tasks and the exams (lib/history.js).
+  MAK.USER_KEYS = [...MAK.RECORD_KEYS, 'history'];
   MAK.RESOURCE_PREFIX = 'res:';
 
   MAK.resourceKey = function (siteId) {

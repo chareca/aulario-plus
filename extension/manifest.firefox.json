@@ -46,6 +46,7 @@
       "lib/pdftext.js",
       "lib/degree.js",
       "lib/record.js",
+      "lib/history.js",
       "background.js"
     ]
   },

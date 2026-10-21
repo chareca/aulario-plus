@@ -82,6 +82,9 @@
       resources: (siteId) => getJson(`/direct/content/site/${enc(siteId)}.json`, 'content_collection'),
       calendar: (fromYmd, toYmd) => getJson(`/direct/calendar/my.json?firstDate=${fromYmd}&lastDate=${toYmd}`, 'calendar_collection'),
       grades: () => getJson('/api/users/me/grades', 'grades'),
+      // The panel "Tareas" of the user (also of the sites of other years), and one task with the submission of the user.
+      tasks: () => getJson('/api/users/me/tasks', 'tasks'),
+      assignment: (id) => getJson(`/direct/assignment/item/${enc(id)}.json`),
       // The pages of the tool Lessons ("Contenidos") of a site, and the tree of one page.
       lessons: (siteId) => getJson(`/direct/lessons/site/${enc(siteId)}.json`, 'lessons_collection'),
       lesson: (id) => getJson(`/direct/lessons/lesson/${enc(id)}.json`),

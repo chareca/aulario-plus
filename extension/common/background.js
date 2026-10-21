@@ -11,7 +11,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js', 'lib/history.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -180,6 +180,43 @@ if (ext.tabs && ext.tabs.onUpdated) {
   ext.tabs.onRemoved.addListener((tabId) => {
     recordRun().then((run) => (run && run.tabId === tabId ? runArea.remove('recordRun') : null)).catch(() => {});
   });
+}
+
+// ---- The history of the tasks and the exams (lib/history.js) ----------------------------------------
+// The panel "Tareas" of MiAulario, and the submission of each task that can still change. One reading at a time.
+let historyRunning = null;
+function refreshHistory() {
+  if (historyRunning) return historyRunning;
+  historyRunning = (async () => {
+    let raw;
+    try {
+      raw = await courseApi.tasks();
+    } catch (e) {
+      // Without a session MiAulario answers with the page of the login.
+      return { error: e && (e.kind === 'not-json' || e.status === 401 || e.status === 403) ? 'history.login' : 'history.network' };
+    }
+    const now = Date.now();
+    const { history } = await store.get('history');
+    const next = MAK.mergeHistory(history, MAK.cleanHistoryItems(raw), now);
+    const todo = Object.values(next.items).filter((it) => MAK.historyNeedsDetail(it, now));
+    for (let i = 0; i < todo.length; i += 4) {
+      await Promise.all(todo.slice(i, i + 4).map(async (it) => {
+        try {
+          it.detail = MAK.historyDetail(await courseApi.assignment(it.id), now);
+        } catch {} // the next reading tries again
+      }));
+    }
+    await store.set({ history: next });
+    return { ok: true, items: Object.keys(next.items).length };
+  })().finally(() => { historyRunning = null; });
+  return historyRunning;
+}
+
+// Once a day with the ping, also without the page: the history grows alone. Not after a logout (paused).
+async function historyDue() {
+  const d = await store.get(['history', 'paused', 'last']);
+  if (d.paused || !(d.last && d.last.loggedIn)) return;
+  if (!d.history || Date.now() - d.history.at >= MAK.HISTORY_MS) await refreshHistory();
 }
 
 async function getState() {
@@ -919,6 +956,20 @@ const handlers = {
       return readRecordNow(active ? active.id : null);
     }
   },
+  // The page "Historial" (tools.html?history): read the history now.
+  historyRefresh: { run: () => refreshHistory() },
+  // Import the submission confirmation emails that the user pastes (the exams and tasks of before September 2025).
+  historyImport: {
+    run: async (msg) => {
+      const items = MAK.parseSubmissionEmails(String((msg && msg.text) || ''));
+      if (!items.length) return { ok: true, added: 0, total: 0 };
+      const { history } = await store.get('history');
+      const before = history ? Object.keys(history.items).length : 0;
+      const next = MAK.mergeHistory(history, items, Date.now());
+      await store.set({ history: next });
+      return { ok: true, added: Object.keys(next.items).length - before, total: items.length };
+    }
+  },
   // The user saw the rank (a window of the popup or of MiAulario): what goes up from now is news.
   recordSeen: {
     content: true,
@@ -1080,6 +1131,7 @@ const alarmHandlers = {
     // The time changes the deliveries that are due soon.
     await updateBadge();
     await checkDueReminders().catch(() => {});
+    await historyDue().catch(() => {});
   }
 };
 
