@@ -63,6 +63,10 @@
   `;
   MAK.extButtonClass = (kind) => `mak-${kind}`;
 
+  // The keys of the search for the system of the user: ⌘K on macOS, Ctrl+K on Windows and Linux.
+  MAK.isMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  MAK.searchKey = () => (MAK.isMac() ? '⌘K' : 'Ctrl+K');
+
   // Drawn icons (SVG, the color of the text): the same size and place in all the systems, which a
   // character such as ✉ does not give. name: 'pencil', 'mail', 'chevron' (an arrow down) or 'arrow'
   // (up and to the right: a link), 'calc' (a calculator). The class "ap-icon-<name>" lets a theme put
@@ -72,7 +76,18 @@
     mail: [['rect', { x: 3, y: 5.5, width: 18, height: 13, rx: 2 }], ['path', { d: 'M3.5 7l8.5 6 8.5-6' }]],
     chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
     calc: [['rect', { x: 5, y: 3, width: 14, height: 18, rx: 2 }], ['path', { d: 'M8 7h8' }], ['path', { d: 'M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01M8.5 18h.01M12 18h.01M15.5 18h.01' }]],
-    arrow: [['path', { d: 'M7 17L17 7' }], ['path', { d: 'M8 7h9v9' }]]
+    arrow: [['path', { d: 'M7 17L17 7' }], ['path', { d: 'M8 7h9v9' }]],
+    // The main menu of the popup (Inicio)
+    home: [['path', { d: 'M3.5 11.5L12 4.5l8.5 7' }], ['path', { d: 'M6 9.8V19.5h4.5v-5.5h3v5.5H18V9.8' }]],
+    power: [['path', { d: 'M12 3.5v8' }], ['path', { d: 'M7.4 6.6A7.5 7.5 0 1 0 16.6 6.6' }]],
+    bell: [['path', { d: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z' }], ['path', { d: 'M10 20.5a2 2 0 0 0 4 0' }]],
+    clock: [['circle', { cx: 12, cy: 13, r: 7.5 }], ['path', { d: 'M12 9v4l2.5 2.5' }], ['path', { d: 'M4 6.5L7 4M20 6.5L17 4' }]],
+    mode: [['circle', { cx: 12, cy: 12, r: 8 }], ['path', { d: 'M12 4a8 8 0 0 1 0 16z', fill: 'currentColor' }]],
+    sync: [['path', { d: 'M19.5 10A8 8 0 0 0 5.6 7.2L4 9' }], ['path', { d: 'M4 4.5V9h4.5' }], ['path', { d: 'M4.5 14a8 8 0 0 0 13.9 2.8L20 15' }], ['path', { d: 'M20 19.5V15h-4.5' }]],
+    school: [['path', { d: 'M2.5 9.5L12 5l9.5 4.5L12 14z' }], ['path', { d: 'M6.5 11.6v4.2c0 1.5 2.5 2.9 5.5 2.9s5.5-1.4 5.5-2.9v-4.2' }], ['path', { d: 'M21.5 9.5v5' }]],
+    news: [['path', { d: 'M11 3.5l1.9 5.3 5.3 1.9-5.3 1.9L11 17.9l-1.9-5.3-5.3-1.9 5.3-1.9z' }], ['path', { d: 'M18.5 15v5M16 17.5h5' }]],
+    help: [['circle', { cx: 12, cy: 12, r: 8.5 }], ['path', { d: 'M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.3' }], ['path', { d: 'M12 16.8h.01' }]],
+    bug: [['rect', { x: 8, y: 8, width: 8, height: 11.5, rx: 4 }], ['path', { d: 'M12 11v8.5M8 12.5H4.5M19.5 12.5H16M8 16.5l-3 1.5M16 16.5l3 1.5M9 9L6.5 6.5M15 9l2.5-2.5' }]]
   };
   MAK.icon = function (name) {
     const ns = 'http://www.w3.org/2000/svg';

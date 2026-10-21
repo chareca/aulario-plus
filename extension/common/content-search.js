@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
-  const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const MAC = MAK.isMac();
   const h = MAK.h;
 
   // The look comes from the theme (lib/themes.js, MAK.themedStyle).

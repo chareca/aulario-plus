@@ -21,6 +21,7 @@
   </header>
   <div class="searchbar"><input type="search" id="search" autocomplete="off" spellcheck="false" aria-controls="search-results"></div>
   <nav class="tabs" role="tablist">
+    <button role="tab" id="tabbtn-home" class="tab-home" data-tab="home" aria-controls="tab-home" data-i18n-title="tab.home" title="Inicio" aria-label="Inicio"></button>
     <button role="tab" id="tabbtn-due" data-tab="due" aria-controls="tab-due"><span data-i18n="tab.due">Entregas</span></button>
     <button role="tab" id="tabbtn-inbox" data-tab="inbox" aria-controls="tab-inbox"><span data-i18n="tab.inbox">Bandeja</span><span class="count-badge" id="count-inbox" hidden></span></button>
     <button role="tab" id="tabbtn-new" data-tab="new" aria-controls="tab-new"><span data-i18n="tab.new">Novedades</span><span class="count-badge" id="count-new" hidden></span></button>
@@ -35,6 +36,7 @@
     </div>
     <div id="whatsnew" class="whatsnew" hidden></div>
     <section id="search-results" aria-live="polite" hidden></section>
+    <section id="tab-home" role="tabpanel" aria-labelledby="tabbtn-home" hidden></section>
     <section id="tab-due" role="tabpanel" aria-labelledby="tabbtn-due" hidden></section>
     <section id="tab-inbox" role="tabpanel" aria-labelledby="tabbtn-inbox" hidden></section>
     <section id="tab-new" role="tabpanel" aria-labelledby="tabbtn-new" hidden></section>

@@ -295,7 +295,7 @@ function runWelcome() {
   box.hidden = false;
   $('title').textContent = t('welcome.title');
   document.title = t('welcome.title');
-  const list = (keys, tag = 'ul') => h(tag, null, keys.map((k) => h('li', { text: t(k) })));
+  const list = (keys, tag = 'ul') => h(tag, null, keys.map((k) => h('li', { text: t(k, { key: MAK.searchKey() }) })));
   const perms = [
     ['welcome.permMia', 'welcome.permMiaWhy'],
     ['welcome.permSso', 'welcome.permSsoWhy'],
@@ -329,7 +329,7 @@ function runNews() {
   document.title = t('whatsnew.title');
   const lang = MAK.getLang();
   MAK.fill(box,
-    MAK.CHANGES.map((c) => [h('h2', { text: t('whatsnew.version', { version: c.version }) }), h('ul', null, (c[lang] || c.es).map((x) => h('li', { text: x })))]),
+    MAK.CHANGES.map((c) => [h('h2', { text: t('whatsnew.version', { version: c.version }) }), h('ul', null, (c[lang] || c.es).map((x) => h('li', { text: x.replace('{key}', MAK.searchKey()) })))]),
     h('p', null, h('a', { text: t('whatsnew.all'), href: `${MAK.REPO_URL}/releases` })),
     h('h2', { text: t('help.section') }),
     helpLinks());

@@ -19,6 +19,16 @@ test('each delivery is in the correct group', () => {
   assert.deepEqual(ids(groups.closed), ['asg-closed']);
 });
 
+test('the deliveries of the main menu: to do, late, and pending in the next 7 days', () => {
+  const { groups } = build();
+  const s = MAK.dueSummary(groups, F.NOW);
+  assert.equal(s.todo, groups.late.length + groups.pending.length + groups.action.length);
+  assert.equal(s.late, 1);
+  const DAY = MAK.DAY;
+  const made = MAK.dueSummary({ late: [], pending: [{ due: F.NOW + DAY }, { due: F.NOW + 7 * DAY }, { due: null }], action: [{}] }, F.NOW);
+  assert.deepEqual(made, { todo: 4, late: 0, week: 1 }, 'the 7th day and a delivery without a date are not this week');
+});
+
 test('urgency colors, and no color for deliveries on paper', () => {
   const { groups } = build();
   const u = Object.fromEntries([...groups.late, ...groups.pending].map((x) => [x.id, x.urgency]));

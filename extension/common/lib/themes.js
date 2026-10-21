@@ -405,8 +405,8 @@
         button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 3px #75bfec; }
         input[type="checkbox"], input[type="radio"], label.check input { accent-color: var(--ap-accent); }
         /* The tabs of a tool of MiAulario */
-        nav.tabs { flex-wrap: wrap; gap: 4px; padding: 8px 10px 2px; border-bottom: 0; }
-        nav.tabs button { flex: none; padding: 4px 8px; font-size: 12px; line-height: 18px; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: 1px solid var(--ap-line);
+        nav.tabs { gap: 3px; padding: 8px 10px 2px; border-bottom: 0; }
+        nav.tabs button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 4px 5px; font-size: 12px; line-height: 18px; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: 1px solid var(--ap-line);
           border-radius: 4px; }
         nav.tabs button:hover { background: var(--ap-btn-edge); }
         nav.tabs button[aria-selected="true"] { font-weight: 400; color: var(--ap-link); background: var(--ap-surface);
@@ -617,6 +617,8 @@
         nav.tabs button[aria-selected="true"] { color: #ffffff; font-weight: 400; background: ${DOTS('rgba(255, 255, 255, 0.18)', 6)}, #e8302a;
           text-shadow: ${LETTERING(1, `1.5px 1.5px 0 ${INK}`)}; }
         nav.tabs .count-badge { color: ${INK}; background: #ffd43b; border: 1.5px solid ${INK}; font-family: var(--ap-font); text-shadow: none; }
+        /* The main menu: the switches that are on, captions */
+        .switch[aria-pressed="true"], .switch:not([aria-pressed]) { color: ${INK}; border: 2.5px solid ${INK}; }
         /* The rows: a late one on the red dots */
         .item.u-overdue, .item.u-red { background: ${DOTS('rgba(232, 48, 42, 0.15)', 6)}, var(--ap-red-bg); }
         .card .head a { letter-spacing: 0.04em; }

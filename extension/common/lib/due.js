@@ -76,6 +76,13 @@
     return { groups, soon, urgent };
   };
 
+  // The deliveries of the main menu of the popup: the ones to do (late, pending and returned to send
+  // again), the late ones, and the pending ones of the next 7 days. groups: MAK.buildDue(...).groups.
+  MAK.dueSummary = function (groups, now) {
+    const week = groups.pending.filter((x) => x.due && x.due - now < 7 * DAY).length;
+    return { todo: groups.late.length + groups.pending.length + groups.action.length, late: groups.late.length, week };
+  };
+
   // The week view: for each week (Monday to Sunday) from this week, the open deliveries and the
   // calendar events. The events of a delivery (with assignmentId) are not shown two times.
   MAK.buildWeeks = function ({ deliveries, events, sites, hidden, now, count = 6 }) {

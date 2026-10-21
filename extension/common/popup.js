@@ -38,6 +38,7 @@ const withNames = () => Object.assign({}, S, { sites: namedSites() });
 // ---- Panels ------------------------------------------------------------------
 
 const panels = {
+  home: { render: renderHome },
   due: { render: renderDue },
   inbox: { render: renderInbox },
   new: { render: renderNew, open: openNew },
@@ -45,17 +46,16 @@ const panels = {
   sites: { render: renderSites },
   settings: { render: renderSettings }
 };
-let current = 'due';
+let current = 'home';
 
 function selectTab(name) {
-  if (!panels[name]) name = 'due';
+  if (!panels[name]) name = 'home';
   current = name;
   if (ui.query) setQuery('');
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) {
     btn.setAttribute('aria-selected', String(btn.dataset.tab === name));
   }
   for (const key of Object.keys(panels)) $(`tab-${key}`).hidden = key !== name || !!ui.query;
-  try { localStorage.setItem('mak.tab', name); } catch {}
   if (panels[name].open) panels[name].open();
   renderCurrent();
 }
@@ -119,7 +119,7 @@ document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() =
 // While the search box has text, the results replace the panel (a fuzzy finder, lib/search.js). The
 // index is made again only when the stored data changes.
 
-const SEARCH_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl+K';
+const SEARCH_KEY = MAK.searchKey();
 let searchIndex = null;
 
 function setQuery(value) {
@@ -165,7 +165,7 @@ function setupSearch() {
   const box = $('search');
   box.addEventListener('input', () => setQuery(box.value));
   // Up and down: the arrows, and on macOS also Ctrl+P and Ctrl+N. The end of the list goes to the start.
-  const MAC = SEARCH_KEY === '⌘K';
+  const MAC = MAK.isMac();
   box.addEventListener('keydown', (e) => {
     const ctrl = MAC && e.ctrlKey && !e.metaKey && !e.altKey;
     const key = e.key.toLowerCase();
@@ -217,6 +217,93 @@ function renderHeader() {
   else if (meta.lastSync) sub = t('sub.lastSync', { ago: MAK.ago(meta.lastSync, now) }) + (meta.stale && Object.keys(meta.stale).length ? t('sub.stale') : '');
   else sub = t('sub.noData');
   $('subline').textContent = sub;
+}
+
+// ---- Home: the main menu -------------------------------------------------------
+// The things that the user needs most, in one place: the session (pause and resume), four switches,
+// the counters of the lists (each one opens its tab), and links to MiAulario and to the help.
+// Two looks: "panel" (a large power button, as in uBlock Origin) and "board" (large cards).
+// shortcut: "Probar el otro diseño" and the look in localStorage are for the trial of the user; keep one look before the release.
+let homeLook = 'panel';
+try { if (localStorage.getItem('mak.home') === 'board') homeLook = 'board'; } catch {}
+const MODES = ['auto', 'light', 'dark'];
+const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+// The state of the session for the menu: a class (on, off, bad, wait), a title and a line below it.
+function sessionState(now) {
+  const last = S.last || null;
+  if (S.paused) return { cls: 'off', title: t('status.paused'), line: t('home.pausedHelp') };
+  if (!last) return { cls: 'wait', title: t('status.noPing'), line: '' };
+  if (!last.loggedIn) return { cls: 'bad', title: t(last.error ? 'status.networkError' : 'status.notLoggedIn'), line: t('home.loginHelp') };
+  const next = status && status.nextPing ? Math.max(0, Math.round((status.nextPing - now) / 1000)) : null;
+  return { cls: 'on', title: t('home.active'), line: next === null ? '' : t('home.nextPing', { t: clockText(next) }) };
+}
+
+// Every second: only the texts of the session (the menu is drawn again when the data changes).
+function updateHomeSession(now) {
+  const box = $('home-session');
+  if (!box) return;
+  const st = sessionState(now);
+  box.querySelector('strong').textContent = st.title;
+  box.querySelector('small').textContent = st.line;
+}
+
+// The counters of the lists: [{ tab, n, label, sub, hot }]; n is null without data.
+function homeCounters(now) {
+  const ok = S.meta && S.meta.lastSync && settings().syncEnabled;
+  const d = ok ? MAK.dueSummary(MAK.buildDue({ assignments: S.assignments, sites: namedSites(), pages: S.pages, hidden: hiddenSet(), now }).groups, now) : null;
+  return [
+    { tab: 'due', n: d ? d.todo : null, label: t('home.due'),
+      sub: d && d.late ? t('home.late', { n: d.late }) : d && d.week ? t('home.week', { n: d.week }) : '', hot: !!(d && d.late) },
+    { tab: 'inbox', n: ok ? inboxModel().counts.total : null, label: t('home.unread') },
+    { tab: 'new', n: ok ? MAK.buildNews(withNames(), now).reduce((n, x) => n + x.total, 0) : null, label: t('tab.new') },
+    { tab: 'grades', n: ok ? MAK.unseenGrades(S.grades, S.gradesSeenAt, hiddenSet()).length : null, label: t('home.grades') }
+  ];
+}
+
+// A quick switch: its drawing and its name; the color tells on or off, the tooltip tells it in words.
+// on: true or false (a switch), null (the mode, with three values).
+function homeSwitch(icon, name, on, title, onClick) {
+  const attrs = { type: 'button', title };
+  if (on !== null) attrs['aria-pressed'] = String(on);
+  return h('button', { class: 'switch', attrs, on: { click: onClick } }, MAK.icon(icon), h('span', { class: 'name', text: name }));
+}
+
+function renderHome(el) {
+  const now = Date.now();
+  const s = settings();
+  const st = sessionState(now);
+  const said = (name, v) => `${name}: ${t(v ? 'home.on' : 'home.off')}`;
+  const set = (patch) => () => send({ type: 'setSettings', patch });
+  const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
+  const top = homeLook === 'panel'
+    ? h('div', { class: 'home-top' },
+      h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'), title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
+      session)
+    : h('div', { class: `home-bar ${st.cls}` }, h('span', { class: 'dot', attrs: { 'aria-hidden': 'true' } }), session,
+      h('button', { class: 'btn', attrs: { type: 'button' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } }));
+  const switches = h('div', { class: 'switches' },
+    homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),
+    homeSwitch('clock', t('home.swDue'), s.notifyDue, said(t('home.swDue'), s.notifyDue), set({ notifyDue: !s.notifyDue })),
+    homeSwitch('mode', t(`theme.mode.${s.colorMode}`), null, `${t('theme.mode')}: ${t(`theme.mode.${s.colorMode}`)}`, set({ colorMode: MODES[(MODES.indexOf(s.colorMode) + 1) % MODES.length] })),
+    homeSwitch('sync', t('home.swSync'), s.syncEnabled, said(t('home.swSync'), s.syncEnabled), set({ syncEnabled: !s.syncEnabled })));
+  const counters = h('div', { class: 'counters' }, homeCounters(now).map((c) => h('button', { class: 'counter', attrs: { type: 'button' }, on: { click: () => selectTab(c.tab) } },
+    h('span', { class: 'n', text: c.n === null ? '–' : c.n > 99 ? '99+' : String(c.n) }),
+    h('span', { class: 'label', text: c.label }),
+    c.sub ? h('span', { class: `sub${c.hot ? ' hot' : ''}`, text: c.sub }) : null)));
+  const link = (icon, text, url) => h('button', { class: 'tool', attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url }); closePopup(); } } }, MAK.icon(icon), h('span', { text }));
+  const tools = h('div', { class: 'tools-row' },
+    link('school', t('welcome.open'), `${MAK.BASE}/portal`),
+    link('news', t('help.news'), ext.runtime.getURL('tools.html?news')),
+    link('help', t('home.help'), ext.runtime.getURL('tools.html?welcome')),
+    link('bug', t('help.bug'), issueUrl('bug')));
+  const look = h('button', { class: 'link-btn look', attrs: { type: 'button' }, text: t('home.tryOther'), on: { click: () => {
+    homeLook = homeLook === 'panel' ? 'board' : 'panel';
+    try { localStorage.setItem('mak.home', homeLook); } catch {}
+    renderCurrent();
+  } } });
+  const none = S.paused ? null : noDataMessage('what.home');
+  fill(el, h('div', { class: `home ${homeLook}` }, look, homeLook === 'panel' ? [top, switches, counters, none, tools] : [top, counters, none, switches, tools]));
 }
 
 // ---- Shared parts ------------------------------------------------------------
@@ -1032,9 +1119,13 @@ function dueOffsetsField(s) {
 
 // Help and support: the welcome page, the changes, a problem or an idea on GitHub (with the version
 // and the browser), and a coffee.
-function helpSection() {
+// A new issue on GitHub (kind: 'bug' or 'idea'), with the version, the browser and the language.
+function issueUrl(kind) {
   const version = ext.runtime.getManifest ? ext.runtime.getManifest().version : '';
-  const browser = MAK.browserName(navigator.userAgent, !!navigator.brave);
+  return MAK.issueUrl({ kind, version, browser: MAK.browserName(navigator.userAgent, !!navigator.brave), lang: settings().lang });
+}
+
+function helpSection() {
   const open = (url) => () => { ext.tabs.create({ url }); closePopup(); };
   const btn = (text, url) => h('button', { class: 'btn', text, attrs: { type: 'button' }, on: { click: open(url) } });
   return h('div', { class: 'section', attrs: { id: 'help' } },
@@ -1043,8 +1134,8 @@ function helpSection() {
     h('div', { class: 'help-links' },
       btn(t('help.welcome'), ext.runtime.getURL('tools.html?welcome')),
       btn(t('help.news'), ext.runtime.getURL('tools.html?news')),
-      btn(t('help.bug'), MAK.issueUrl({ kind: 'bug', version, browser, lang: settings().lang })),
-      btn(t('help.idea'), MAK.issueUrl({ kind: 'idea', version, browser, lang: settings().lang })),
+      btn(t('help.bug'), issueUrl('bug')),
+      btn(t('help.idea'), issueUrl('idea')),
       btn(t('help.coffee'), MAK.COFFEE_URL)),
     h('p', { class: 'small meta', text: t('help.coffeeText') }));
 }
@@ -1239,8 +1330,7 @@ function updateKeepAlive(now) {
   $('ka-last').textContent = last ? `${MAK.ago(last.time, now)} (${last.status || '–'})` : '–';
   $('ka-left').textContent = last && last.loggedIn ? `~${Math.max(0, MAX_INACTIVE_MIN - Math.round((now - last.time) / 60000))} min` : '–';
   if (status && status.nextPing && !paused) {
-    const s = Math.max(0, Math.round((status.nextPing - now) / 1000));
-    $('ka-next').textContent = t('ka.in', { t: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` });
+    $('ka-next').textContent = t('ka.in', { t: clockText(Math.max(0, Math.round((status.nextPing - now) / 1000))) });
   } else $('ka-next').textContent = '–';
   $('ka-toggle').textContent = t(paused ? 'set.resume' : 'set.pause');
 }
@@ -1271,6 +1361,7 @@ function tick() {
     if (due) el.textContent = MAK.countdownText(due, now);
   }
   if (current === 'settings') updateKeepAlive(now);
+  if (current === 'home') updateHomeSession(now);
   renderHeader();
   // Draw the panel again every minute, so that the urgency colors change at the correct time.
   if (now - lastRender > 60000 && !userIsInPanel()) renderCurrent();
@@ -1312,6 +1403,7 @@ async function init() {
     $('openTab').hidden = true;
     $('close').hidden = true; // a tab: the browser closes it
   }
+  $('tabbtn-home').append(MAK.icon('home'));
   S = await ext.storage.local.get(null);
   applyTheme();
   applyLanguage();
@@ -1353,13 +1445,11 @@ async function init() {
     await send({ type: 'resume' });
     checkPermissions();
   });
-  let tab = 'due';
-  try { tab = localStorage.getItem('mak.tab') || 'due'; } catch {}
+  // The popup opens on the main menu (Inicio), or on the tab of ?tab=.
   const asked = new URLSearchParams(location.search).get('tab');
-  if (asked && panels[asked]) tab = asked;
   renderHeader();
   renderWhatsNew(); // not in renderHeader (every second): its buttons would change under the mouse
-  selectTab(tab);
+  selectTab(asked && panels[asked] ? asked : 'home');
   checkPermissions();
   refreshStatus();
   send({ type: 'touch' });

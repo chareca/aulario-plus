@@ -37,7 +37,7 @@
   };
 
   // The changes of each version, the newest first (es and en). The popup shows a notice after an
-  // update to a version of this list.
+  // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey).
   MAK.CHANGES = [
     {
       version: '1.6.4',
@@ -45,7 +45,7 @@
         'Seis temas para elegir en Ajustes: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP y Folio. Cada uno en claro y en oscuro, o como MiAulario.',
         'El triángulo de la esquina del bloque de Mi sitio lo pone a todo el ancho, con el calendario debajo.',
         'Mi sitio muestra tu próximo examen en grande, y los accesos a tu expediente, Wuolah y el correo interno en una fila.',
-        'Ctrl+K (⌘K en Mac) busca también en los «Contenidos» de las materias: títulos y enlaces a PDF.',
+        '{key} busca también en los «Contenidos» de las materias: títulos y enlaces a PDF.',
         'Avisos antes de una entrega que no entregaste: 24 horas y 1 hora antes, configurables en Ajustes.',
         'Calculadora de notas en cada guía docente: te dice qué necesitas para aprobar, toma tus notas del Libro de evaluación y guarda las tuyas.',
         'Tus exámenes finales muestran la nota que te falta en cada uno, con los datos de la calculadora.',
@@ -59,7 +59,7 @@
         'Six themes to select in the settings: MiAulario (the default, the same as MiAulario), Comic, Marshmallow, Aurora, AulaXP and Folio. Each one in light and in dark, or as MiAulario.',
         'The triangle in the corner of the block of Mi sitio gives it the full width, with the calendar below it.',
         'Mi sitio shows your next exam in large, and the links to your academic record, Wuolah and the internal mail in one row.',
-        'Ctrl+K (⌘K on Mac) also searches the "Contenidos" of the sites: titles and links to PDF files.',
+        '{key} also searches the "Contenidos" of the sites: titles and links to PDF files.',
         'Reminders before a delivery that you did not submit: 24 hours and 1 hour before, in the settings.',
         'A grade calculator in each course guide: it tells you what you need to pass, takes your grades from the gradebook and keeps yours.',
         'Your final exams show the grade that you need in each of them, with the data of the calculator.',
