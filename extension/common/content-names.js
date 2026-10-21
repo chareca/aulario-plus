@@ -188,6 +188,16 @@
     }, true);
     shadow.append(style, pop);
     document.documentElement.append(host);
+    // Below the button, always inside the window: near an edge, it touches that edge (8 px). Again at
+    // each change of size: the list of the teachers comes after the opening and makes the window taller.
+    const place = () => {
+      if (pop.hidden || !anchor) return;
+      const r = anchor.getBoundingClientRect();
+      pop.style.left = `${Math.max(8, Math.min(r.left - 8, window.innerWidth - pop.offsetWidth - 8))}px`;
+      pop.style.top = `${Math.max(8, Math.min(r.bottom + 6, window.innerHeight - pop.offsetHeight - 8))}px`;
+    };
+    new ResizeObserver(place).observe(pop);
+    window.addEventListener('resize', place);
     const say = (text, error) => {
       status.className = `status${error ? ' error' : ''}`;
       status.textContent = text || '';
@@ -265,9 +275,7 @@
         MAK.fill(list);
         say(MAK.t('teach.loading'));
         pop.hidden = false;
-        const r = button.getBoundingClientRect();
-        pop.style.left = `${Math.max(8, Math.min(r.left - 8, window.innerWidth - pop.offsetWidth - 8))}px`;
-        pop.style.top = `${Math.max(8, r.bottom + 6 + pop.offsetHeight > window.innerHeight - 8 ? r.top - 6 - pop.offsetHeight : r.bottom + 6)}px`;
+        place();
         try {
           const pm = MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) });
           const myEid = (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid;

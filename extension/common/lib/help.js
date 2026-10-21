@@ -42,10 +42,12 @@
     {
       version: '1.6.7',
       es: [
-        'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.'
+        'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.',
+        'La ventana «Escribir a un profesor» se queda siempre dentro de la pantalla, también con las asignaturas del final de la lista.'
       ],
       en: [
-        'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.'
+        'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
+        'The window "Write to a teacher" always stays inside the screen, also for the subjects at the end of the list.'
       ]
     },
     {
