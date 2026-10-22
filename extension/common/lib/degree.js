@@ -178,8 +178,11 @@
       if (el.tagName === 'A') {
         const url = MAK.examPdfUrl(el.getAttribute('href'));
         const t = text(el);
-        if (url && EXAM_LINK.test(t) && !NOT_EXAMS.test(t) && !pdfs.some((p) => p.url === url) && pdfs.length < 8) {
-          pdfs.push({ text: cut(t, 120), url, season: seasonOf(t) || season });
+        if (url && EXAM_LINK.test(t) && !NOT_EXAMS.test(t)) {
+          const own = seasonOf(t) || season;
+          const dup = pdfs.find((p) => p.url === url);
+          // The same PDF under the two semesters (Medicina): for both (null), each subject in it takes the semester of its guide.
+          if (dup) { if (dup.season !== own) dup.season = null; } else if (pdfs.length < 8) pdfs.push({ text: cut(t, 120), url, season: own });
         }
         continue;
       }

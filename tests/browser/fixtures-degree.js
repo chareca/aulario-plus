@@ -53,6 +53,7 @@
 <ul><li><a href="https://www2.unavarra.es/gesadj/CyD6/evaluacion/medicina/evaluacionordinaria.pdf">Evaluaci&oacute;n ordinaria Curso 2026-2027</a></li>
 <li><a href="https://www2.unavarra.es/gesadj/CyD6/evaluacion/medicina/evaluacionextraordinaria.pdf">Evaluaci&oacute;n extraordinaria Curso 2026-2027</a></li></ul>
 </section><section id="opcion2"><header class="-my-4"><h3><strong>Evaluación de Primavera</strong></h3></header>
-<ul><li><a href="https://www2.unavarra.es/gesadj/CyD6/evaluacion/medicina/evaluacionordinaria.pdf">Evaluaci&oacute;n ordinaria Curso 2026-2027</a></li></ul>
+<ul><li><a href="https://www2.unavarra.es/gesadj/CyD6/evaluacion/medicina/evaluacionordinaria.pdf">Evaluaci&oacute;n ordinaria Curso 2026-2027</a></li>
+<li><a href="https://www2.unavarra.es/gesadj/CyD6/evaluacion/medicina/evaluacionextraordinaria.pdf">Evaluaci&oacute;n extraordinaria Curso 2026-2027</a></li></ul>
 </section>`);
 })(typeof window !== 'undefined' ? window : globalThis);

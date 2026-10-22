@@ -40,10 +40,13 @@
     assert.ok(e.pdfs[0].url.endsWith('999_examenes%20otono_26-27.pdf'));
   });
 
-  test('evaluation page (Medicina): no periods, the PDF files once', () => {
+  test('evaluation page (Medicina): no periods, the PDF files once; the PDF under both semesters is for both', () => {
     const e = MAK.parseEvaluation(parse(EVALUATION_MED_HTML));
     assert.deepEqual(e.periods, []);
-    assert.deepEqual(e.pdfs.map((p) => p.text), ['Evaluación ordinaria Curso 2026-2027', 'Evaluación extraordinaria Curso 2026-2027']);
+    // Both PDFs are under Otoño and Primavera (each one has the two semesters): no semester, so they are shown all the
+    // year (also from 25 January), and each subject in them takes the semester of its guide.
+    assert.deepEqual(e.pdfs.map((p) => [p.text, p.season]), [['Evaluación ordinaria Curso 2026-2027', null], ['Evaluación extraordinaria Curso 2026-2027', null]]);
+    assert.deepEqual(MAK.cleanDegree({ base: 'https://www.unavarra.es/sites/grados/ciencias-salud/medicina', periods: [], pdfs: e.pdfs }).pdfs.map((p) => p.season), [null, null], 'kept when stored');
   });
 
   test('a page that is not an evaluation page gives nothing', () => {
