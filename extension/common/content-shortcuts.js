@@ -25,17 +25,17 @@
   // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.BOX_CSS.
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
-    /* The exams on the full width; below them, the row of the actions. */
+    /* The exams on the full width, with the actions as small buttons in their head. */
     .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; container-type: inline-size; }
     .tile { min-width: 0; padding: 12px 14px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
     .tile h4 { margin: 0 0 8px; font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
     .tile h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.8em; }
     .period { margin: 2px 0; }
     /* The next exam of the user: the day in large, the subject, and the days to it. */
-    .next-exam { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 0 12px; padding: 12px 14px;
+    .next-exam { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 10px; padding: 8px 12px;
       background: var(--ap-accent-soft); border-radius: var(--ap-radius); }
     .next-exam .day { flex: none; text-align: center; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style);
-      letter-spacing: var(--ap-head-spacing); font-size: calc(40px * var(--ap-head-zoom)); line-height: 0.9; }
+      letter-spacing: var(--ap-head-spacing); font-size: calc(30px * var(--ap-head-zoom)); line-height: 0.9; }
     .next-exam .day small { display: block; font-size: 0.4em; letter-spacing: normal; margin-top: 2px; }
     .next-exam .what { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 1px; }
     .next-exam .what .name { font-weight: 800; font-size: 1.08em; line-height: 1.2; }
@@ -54,8 +54,8 @@
     .exams .calc-need.ok { color: var(--ap-green); }
     .links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; }
     .note { font-size: 0.93em; margin: 6px 0; }
-    /* The actions in one row below the exams: buttons of the theme, the same height. */
-    .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: stretch; }
+    /* The actions: small buttons of the theme in the head of the exams (alone, without guides: a row). */
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     a.action, button.action { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 14px; text-align: center;
       font: 700 1em/1.25 var(--ap-font); text-decoration: none; cursor: pointer; color: var(--ap-primary-fg); background: var(--ap-primary-bg);
       border: var(--ap-bw-sm) solid var(--ap-primary-edge); border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); }
@@ -66,8 +66,17 @@
     @media (prefers-reduced-motion: reduce) { .action .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font-size: 0.93em; max-width: 100%; }
-    .exams-head { display: flex; align-items: center; gap: 8px; }
-    .exams-head > span { flex: 1; min-width: 0; }
+    .exams-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+    .exams-head > h4 { flex: 1; min-width: 0; margin: 0; }
+    .exams-head .actions { gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; flex-direction: row; }
+    /* Small, also over the rules of a theme for each button (:nth-child): the theme keeps its colors. */
+    .exams-head .actions .action:nth-child(n) { min-height: 0; padding: 4px 12px; font-size: 0.86em; transform: none; }
+    /* The cards of the exams and the calendar side by side (the calendar shown, enough width); else one below the other. */
+    .exams-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+    .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+    @container (max-width: 700px) { .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr); } }
+    .exams-row .exams { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0; }
+    .exams-row .cal-wrap { margin: 0; }
     ${MAK.EXAM_CAL_CSS}
     .mak-btn { padding: 4px 12px; }
   `;
@@ -267,9 +276,8 @@
       if (!period && !mine.length) continue;
       const cal = MAK.examCalendar(MAK.examDays(mine, (r) => siteName(sites, r)), { now });
       if (cal) cals.push(h('div', { class: 'cal-wrap', hidden: !calOn }, cal));
-      parts[season] = {
-        body: [period ? periodLine(period) : null, mine.length ? examList(mine, sites, now, need) : null, cal ? cals[cals.length - 1] : null]
-      };
+      const list = mine.length ? examList(mine, sites, now, need) : null;
+      parts[season] = { body: [period ? periodLine(period) : null, list || cal ? h('div', { class: 'exams-row' }, list, cal ? cals[cals.length - 1] : null) : null] };
     }
     return MAK.semesterSections({ key: 'exams', now, parts, title: (s) => t(`short.semester.${s}`) });
   }
@@ -343,21 +351,23 @@
     MAK.setLang(settings.lang);
     const guides = MAK.userGuides(data, MAK.hiddenEverywhere(settings));
     const now = Date.now();
-    const examTile = h('section', { class: 'tile' }, h('h4', { text: t('short.exams') }), h('p', { class: 'meta', text: t('short.loading') }));
     const actions = h('div', { class: 'actions' });
     const drawActions = (wuolah) => MAK.fill(actions, recordAction(), wuolahActions(wuolah), mailAction());
     drawActions(null);
-    MAK.fill(box(), examTile, actions);
+    const head = h('div', { class: 'exams-head' }, h('h4', { text: t('short.exams') }), actions);
+    const examTile = h('section', { class: 'tile' }, head, h('p', { class: 'meta', text: t('short.loading') }));
     noGuides = !guides.length && !settings.degree;
+    // Without guides (no degree): only the actions.
     if (noGuides) {
-      examTile.remove();
+      MAK.fill(box(), actions);
       return;
     }
+    MAK.fill(box(), examTile);
     const degree = await findDegree(data, guides.map((g) => g.guide), settings).catch(() => null);
     drawActions(MAK.wuolahLinks(degree && degree.base, MAK.studyYear(guides.map((g) => g.guide))));
     if (!degree || !degree.base) {
       const list = (degree && degree.list) || [];
-      MAK.fill(examTile, h('h4', { text: t('short.exams') }), list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
+      MAK.fill(examTile, head, list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
       return;
     }
     // From 25 January the first semester is gone (its exams are past).
@@ -365,7 +375,6 @@
     const pdfLinks = (degree.pdfs || []).filter((p) => !p.season || show(p.season))
       .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
     const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
-    const head = h('h4', { class: 'exams-head' }, h('span', { text: t('short.exams') }));
     MAK.fill(examTile,
       head,
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
