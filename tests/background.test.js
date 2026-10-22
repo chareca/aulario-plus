@@ -119,10 +119,11 @@ test('"Borrar todos los datos" wins over a ping that waits for MiAulario, and a 
   release();
   assert.equal(await ping, null);
   assert.deepEqual(bg.ext.storage.local.data, { paused: 'reset' }, 'no "paused: false" and no "last" after the deletion');
-  // The browser closed in the middle of a deletion: the next start removes what is left.
-  const next = loadBackground({ local: { paused: 'reset', sites: [{ id: 'x' }], history: { at: 1, items: {} } } });
+  // The browser closed in the middle of a deletion: the next start removes what is left, not the settings that the
+  // user changed in the popup after the deletion.
+  const next = loadBackground({ local: { paused: 'reset', sites: [{ id: 'x' }], history: { at: 1, items: {} }, settings: { lang: 'en' } } });
   for (const f of next.ext._listeners.startup) await f();
-  assert.deepEqual(next.ext.storage.local.data, { paused: 'reset' });
+  assert.deepEqual(next.ext.storage.local.data, { paused: 'reset', settings: { lang: 'en' } });
 });
 
 test('an extension page in a tab is a page, not a content script', async () => {

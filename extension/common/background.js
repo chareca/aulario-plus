@@ -1222,8 +1222,14 @@ async function wipeAll() {
 
 async function boot() {
   // All the data was deleted: nothing starts until the user starts it again ("resume"). A deletion that the end of the
-  // browser cut ends here (the data that a running sync wrote after the first removal).
-  if ((await ext.storage.local.get('paused')).paused === 'reset') return clearAll();
+  // browser cut ends here: the data that a running sync wrote after the first removal. Not the settings: the user can
+  // change them in the popup while the extension is empty (the theme, the language).
+  if ((await ext.storage.local.get('paused')).paused === 'reset') {
+    return store.transaction(async (tx) => {
+      const left = Object.keys(await tx.get(null)).filter((k) => k !== 'paused' && k !== 'settings');
+      if (left.length) await tx.remove(left);
+    });
+  }
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
