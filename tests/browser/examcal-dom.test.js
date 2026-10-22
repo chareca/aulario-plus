@@ -87,6 +87,29 @@
     style.remove();
   });
 
+  test('two months side by side, smaller with less space; one below the other only without room for two', () => {
+    const style = document.createElement('style');
+    style.textContent = MAK.EXAM_CAL_CSS;
+    document.head.append(style);
+    const tops = (width) => {
+      const cal = MAK.examCalendar(days(), { now: at(2026, 9, 21) });
+      cal.style.width = `${width}px`;
+      document.body.append(cal);
+      const months = [...cal.querySelectorAll('.cal-month')].map((m) => m.getBoundingClientRect());
+      const day = cal.querySelector('.cal-day').getBoundingClientRect();
+      cal.remove();
+      return { same: months[0].top === months[1].top, inside: months[1].right <= months[0].left + width + 0.5, day };
+    };
+    try {
+      assert.deepEqual([tops(560).same, tops(340).same, tops(300).same], [true, true, false]);
+      assert.ok(tops(340).inside, 'inside the calendar');
+      const [big, small] = [tops(560).day, tops(340).day];
+      assert.ok(small.width < big.width && Math.abs(small.height / small.width - 7 / 8) < 0.05, 'smaller days, the same shape');
+    } finally {
+      style.remove();
+    }
+  });
+
   test('the button shows and hides the calendars, and saves the setting', () => {
     const wraps = [document.createElement('div'), document.createElement('div')];
     wraps.forEach((w) => { w.hidden = true; });

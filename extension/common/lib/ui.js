@@ -198,13 +198,14 @@
 
   MAK.EXAM_CAL_CSS = `
     .cal-wrap { margin: 10px 0 4px; }
+    /* The months side by side, smaller with less space (down to 150 px each); one below the other only without room for two. */
     .cal-months { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 14px 22px; }
-    .cal-month { min-width: 0; max-width: 100%; }
+    .cal-month { flex: 1 1 150px; min-width: 0; max-width: 242px; }
     .cal-title { font-weight: 700; margin: 0 0 6px; }
     .cal-title::first-letter { text-transform: uppercase; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 32px)); gap: 3px; }
     .cal-wd { text-align: center; font-size: 11px; font-weight: 700; color: var(--ap-muted); }
-    .cal-day { position: relative; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--ap-radius-sm);
+    .cal-day { position: relative; aspect-ratio: 8 / 7; display: flex; align-items: center; justify-content: center; border-radius: var(--ap-radius-sm);
       font-size: 12.5px; font-variant-numeric: tabular-nums; }
     .cal-day.out { visibility: hidden; }
     .cal-day.today { box-shadow: inset 0 0 0 2px var(--ap-fg); }
