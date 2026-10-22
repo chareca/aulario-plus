@@ -1928,8 +1928,8 @@
         /* The pills of the actions in the colors of Mocha, with the dark text (crust), as the buttons of catppuccin.com.
            On hover the colors change places (MAK.hoverCss): these variables are the colors of each pill. */
         ${CAT_PASTELS.slice(0, 4).map((c, i) => `.actions .action:nth-child(4n+${i + 1}) { --ap-primary-bg: ${c}; --ap-primary-edge: ${c}; --ap-primary-solid: ${c}; --ap-primary-fg: #11111b; }`).join('\n        ')}
-        /* The cards of the exams: a stripe of a color of Mocha on the left */
-        .exams li { box-shadow: inset 4px 0 0 var(--cat, #cba6f7); }
+        /* The cards of the exams: a stripe of a color of Mocha on each side */
+        .exams li { box-shadow: inset 4px 0 0 var(--cat, #cba6f7), inset -4px 0 0 var(--cat, #cba6f7); }
         ${CAT_PASTELS.map((c, i) => `.exams li:nth-child(6n+${i + 1}) { --cat: ${c}; }`).join('\n        ')}
         .mak-logo { background: ${CAT_CUP} center / contain no-repeat; }
         .mak-logo > * { display: none; }
