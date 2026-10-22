@@ -61,7 +61,8 @@
         'En los grados con el mismo calendario de exámenes en los dos semestres, como Medicina, Mi sitio lo enseña todo el curso.',
         'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.',
         'Tema nuevo, Catppuccin («Aulappuccin»): los colores pastel de Catppuccin, Latte en light mode y Mocha en dark mode, con botones de varios colores y títulos en degradado.',
-        'Ajustes → «Exportar mi configuración»: descarga un archivo JSON con todos tus ajustes.'
+        'Ajustes → «Exportar mi configuración»: descarga un archivo JSON con todos tus ajustes.',
+        'Después de cada actualización, la primera página de MiAulario te enseña una sola vez las novedades en una línea.'
       ],
       en: [
         'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
@@ -77,7 +78,8 @@
         'In the degrees with the same exam calendar for the two semesters, as Medicine, Mi sitio shows it all the year.',
         'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.',
         'A new theme, Catppuccin ("Aulappuccin"): the pastel colors of Catppuccin, Latte in light mode and Mocha in dark mode, with buttons of several colors and titles in a gradient.',
-        'Settings → "Export my settings": download a JSON file with all your settings.'
+        'Settings → "Export my settings": download a JSON file with all your settings.',
+        'After each update, the first page of MiAulario shows you the news in one line, one time.'
       ]
     },
     {
