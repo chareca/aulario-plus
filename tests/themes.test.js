@@ -110,8 +110,8 @@ test('the images of a theme: files of the extension (img/), a relative address i
       for (const [, file] of v.matchAll(/ap-asset:([\w./-]+)/g)) assert.ok(fs.existsSync(path.join(COMMON, file)) && /^img\/[\w.-]+\.webp$/.test(file), `${th.id}: ${file}`);
     }
   }
-  assert.match(MAK.themeValues('galaxia', true).page, /^url\("img\/galaxia-dark\.webp"\)/);
-  assert.match(MAK.themeValues('galaxia', false).page, /^url\("img\/galaxia-light\.webp"\)/);
+  assert.match(MAK.themeValues('galaxia', true).page, /url\("img\/galaxia-dark\.webp"\)/);
+  assert.match(MAK.themeValues('galaxia', false).page, /url\("img\/galaxia-light\.webp"\)/);
   const before = MAK.assetUrl;
   MAK.assetUrl = (file) => `chrome-extension://ext-id/${file}`; // content-theme.js
   try {

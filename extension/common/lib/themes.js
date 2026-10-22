@@ -165,6 +165,12 @@
 
   // ---- The drawings and the pieces of CSS of "Cuaderno" ----
   const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  // Saturn, the logo of the theme Vía Láctea: the back of the ring, the planet, the front of the ring.
+  const SATURN = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26"><defs>'
+    + '<radialGradient id="p" cx="0.38" cy="0.32" r="0.78"><stop offset="0" stop-color="#fff4d8"/><stop offset="0.55" stop-color="#e9b766"/><stop offset="1" stop-color="#8f5427"/></radialGradient>'
+    + '<linearGradient id="r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9fb4ff"/><stop offset="0.5" stop-color="#ffe3ad"/><stop offset="1" stop-color="#c79bff"/></linearGradient></defs>'
+    + '<g transform="rotate(-20 13 13)" fill="none" stroke="url(#r)" stroke-width="1.9" stroke-linecap="round"><path d="M1.8 13a11.2 3.6 0 0 1 22.4 0"/>'
+    + '<circle cx="13" cy="13" r="6.4" fill="url(#p)" stroke="none"/><path d="M1.8 13a11.2 3.6 0 0 0 22.4 0"/></g></svg>');
   // The lines of a page (every 26 px).
   const RULED = (c) => `repeating-linear-gradient(180deg, transparent 0 25px, ${c} 25px 26px)`;
   // The red margin of a page, 34 px from the left.
@@ -1614,10 +1620,10 @@
         weight: '500',
         'head-weight': '800',
         'head-spacing': '0.01em',
-        page: 'url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #c9cff4',
+        page: 'url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #e8e4f9',
         surface: 'rgba(255, 255, 255, 0.4)',
         solid: '#eef0fd',
-        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.42)), url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #c9cff4',
+        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url("ap-asset:img/galaxia-light.webp") 50% 0 / 100% auto no-repeat, #e8e4f9',
         surface2: 'rgba(255, 255, 255, 0.66)',
         fg: '#181c4f',
         muted: '#454c8c',
@@ -1639,9 +1645,9 @@
         'btn-bg': 'rgba(255, 255, 255, 0.55)',
         'btn-fg': '#181c4f',
         'btn-edge': 'rgba(255, 255, 255, 0.85)',
-        'primary-bg': '#3a3fc4',
+        'primary-bg': 'linear-gradient(110deg, #2f4fd0 0%, #6a3fc8 52%, #b03287 100%)',
         'primary-fg': '#ffffff',
-        'primary-edge': '#3a3fc4',
+        'primary-edge': '#5a3fc4',
         radius: '18px',
         'radius-sm': '999px',
         'radius-box': '14px',
@@ -1669,10 +1675,10 @@
         'k-other': '#e3e5f6', 'k-other-fg': '#181c4f'
       },
       dark: {
-        page: 'url("ap-asset:img/galaxia-dark.webp") 50% 40% / cover no-repeat, #05081a',
+        page: 'linear-gradient(rgba(5, 8, 26, 0.18), rgba(5, 8, 26, 0.18)), url("ap-asset:img/galaxia-dark.webp") 50% 40% / cover no-repeat, #05081a',
         surface: 'rgba(8, 11, 36, 0.3)',
         solid: '#0c1031',
-        'win-bg': 'linear-gradient(rgba(5, 8, 26, 0.5), rgba(5, 8, 26, 0.5)), url("ap-asset:img/galaxia-dark.webp") 50% 40% / cover no-repeat, #05081a',
+        'win-bg': 'linear-gradient(rgba(5, 8, 26, 0.52), rgba(5, 8, 26, 0.52)), url("ap-asset:img/galaxia-dark.webp") 50% 0 / 100% auto no-repeat, #05081a',
         surface2: 'rgba(255, 255, 255, 0.08)',
         fg: '#eceeff',
         muted: '#afb6e2',
@@ -1694,9 +1700,9 @@
         'btn-bg': 'rgba(255, 255, 255, 0.08)',
         'btn-fg': '#eceeff',
         'btn-edge': 'rgba(200, 210, 255, 0.3)',
-        'primary-bg': '#6d6af2',
+        'primary-bg': 'linear-gradient(110deg, #3d5ee6 0%, #7b4fe0 50%, #c94aa6 100%)',
         'primary-fg': '#ffffff',
-        'primary-edge': '#8d89ff',
+        'primary-edge': 'rgba(205, 195, 255, 0.55)',
         shadow: '0 22px 46px -26px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'shadow-pop': '0 30px 70px -20px rgba(0, 0, 0, 0.85), 0 0 40px -12px rgba(120, 120, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         backdrop: 'rgba(2, 3, 14, 0.55)',
@@ -1726,9 +1732,17 @@
         .sems.two .sem { border-top: 0; }
         .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
         .countdown, .count { text-shadow: 0 0 14px rgba(160, 150, 255, 0.45); }
-        .next-exam .day { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffffff, #c9d0ff 45%, #6d6af2 100%); color: #0c1031;
-          box-shadow: 0 0 22px rgba(140, 130, 255, 0.55); }
-        .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(109, 106, 242, 0.55); }
+        .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
+          background: radial-gradient(circle at 35% 30%, #ffffff, #c9d0ff 45%, #6d6af2 100%); color: #0c1031; box-shadow: 0 0 22px rgba(140, 130, 255, 0.55);
+          font-size: 32px; line-height: 0.9; }
+        .next-exam .day small { font-size: 13px; margin-top: 3px; }
+        .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(150, 90, 230, 0.55); }
+        .mak-logo { background: ${SATURN} center / contain no-repeat; }
+        .mak-logo > * { display: none; }
+      `,
+      blockCss: `
+        #mak-block .mak-logo { background: ${SATURN} center / contain no-repeat; }
+        #mak-block .mak-logo > * { display: none; }
       `
     }
   ];
