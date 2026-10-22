@@ -126,6 +126,17 @@ test('"Borrar todos los datos" wins over a ping that waits for MiAulario, and a 
   assert.deepEqual(next.ext.storage.local.data, { paused: 'reset', settings: { lang: 'en' } });
 });
 
+test('"Importar mi configuración": the settings of the file in place of the current ones, checked again; not from a page of MiAulario', async () => {
+  const bg = loadBackground({ local: { settings: { theme: 'cromo', nicknames: { a: 'A', b: 'B' } } } });
+  const file = { theme: 'galaxia', nicknames: { c: 'C' }, colorMode: 'nope' };
+  assert.equal(await bg.send({ type: 'importSettings', settings: file }, CONTENT()), null, 'not from a page of MiAulario');
+  assert.equal(bg.ext.storage.local.data.settings.theme, 'cromo');
+  assert.deepEqual(await bg.send({ type: 'importSettings', settings: [] }), { ok: false });
+  assert.deepEqual(await bg.send({ type: 'importSettings', settings: file }), { ok: true });
+  const s = bg.ext.storage.local.data.settings;
+  assert.deepEqual([s.theme, s.nicknames, s.colorMode], ['galaxia', { c: 'C' }, 'auto'], 'in place of the old ones (not mixed), with the checks');
+});
+
 test('an extension page in a tab is a page, not a content script', async () => {
   const bg = loadBackground();
   const sender = { id: 'ext-id', tab: { id: 9 }, frameId: 0, url: 'chrome-extension://ext-id/tools.html' };

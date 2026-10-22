@@ -274,6 +274,59 @@ async function runExamPermission() {
   } catch {}
 }
 
+// ---- Import the settings ---------------------------------------------------------------
+
+// tools.html?import: a file of "Exportar mi configuración" in place of the settings (a page, not the popup: the popup
+// closes when the window of the files opens). The file is checked (MAK.configImport), then a question with how many
+// settings change, and only "Importar" changes them (the background checks them again).
+async function runImport(store) {
+  const { h, fill } = MAK;
+  const box = $('import');
+  box.hidden = false;
+  $('title').textContent = t('config.importTitle');
+  document.title = t('config.importTitle');
+  const file = h('input', { attrs: { type: 'file', accept: '.json,application/json', 'aria-label': t('config.importPick') } });
+  const ask = h('div', { hidden: true });
+  const status = h('p', { class: 'status', attrs: { role: 'status' } });
+  const reset = () => {
+    fill(ask);
+    ask.hidden = true;
+  };
+  file.addEventListener('change', async () => {
+    reset();
+    status.textContent = '';
+    const f = file.files && file.files[0];
+    const got = f && f.size <= 1e6 ? MAK.configImport(await f.text().catch(() => '')) : null;
+    if (!got) {
+      status.textContent = t('config.importBad');
+      return;
+    }
+    const n = MAK.configChanges(MAK.withDefaults(store.settings), got.settings);
+    if (!n) {
+      status.textContent = t('config.importSame');
+      return;
+    }
+    const no = h('button', { class: 'btn', text: t('config.importNo'), attrs: { type: 'button' } });
+    const yes = h('button', { class: 'btn primary', text: t('config.importYes'), attrs: { type: 'button' } });
+    no.addEventListener('click', () => {
+      reset();
+      file.value = '';
+    });
+    yes.addEventListener('click', async () => {
+      yes.disabled = no.disabled = true;
+      const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'importSettings', settings: got.settings }), null);
+      reset();
+      if (r && r.ok) store.settings = got.settings;
+      status.textContent = t(r && r.ok ? 'config.importDone' : 'config.importError');
+    });
+    const date = got.exported ? MAK.formatDate(Date.parse(got.exported)) : '?';
+    fill(ask, h('p', { text: t('config.importAsk', { n, date, version: got.version || '?' }) }), h('div', { class: 'row' }, no, yes));
+    ask.hidden = false;
+    no.focus();
+  });
+  fill(box, h('p', { text: t('config.importHelp') }), file, ask, status);
+}
+
 // ---- Welcome and changes ----------------------------------------------------------------
 
 // tools.html?welcome: after the install. What the extension does, the first steps, why it asks for
@@ -544,6 +597,8 @@ async function init() {
     await runExamPermission();
   } else if (params.has('history')) {
     await runHistory();
+  } else if (params.has('import')) {
+    await runImport(store);
   }
 }
 

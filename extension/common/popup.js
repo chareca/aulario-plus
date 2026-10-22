@@ -1418,7 +1418,10 @@ function renderSettings(el) {
       { class: 'section' },
       h('h2', { text: t('config.title') }),
       h('p', { class: 'small', text: t('config.help') }),
-      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('config.export'), attrs: { type: 'button' }, on: { click: exportConfig } }))
+      h('div', { class: 'row' },
+        h('button', { class: 'btn', text: t('config.export'), attrs: { type: 'button' }, on: { click: exportConfig } }),
+        // In a page: the popup closes when the window of the files opens.
+        h('button', { class: 'btn', text: t('config.import'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?import') }); closePopup(); } } }))
     ),
     helpSection(),
     dangerSection()

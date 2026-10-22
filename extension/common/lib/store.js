@@ -171,6 +171,23 @@
   MAK.configExport = (settings, version, now) => ({ app: 'Aulario Plus', version: String(version || ''), exported: now.toISOString(), settings: MAK.withDefaults(settings) });
   // Its name, with the date of the user: "aulario-plus-config-22-10-2026.json".
   MAK.configFileName = (now) => `aulario-plus-config-${[now.getDate(), now.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('-')}-${now.getFullYear()}.json`;
+  // "Importar mi configuración" (tools.html?import): the text of such a file -> { settings, version, exported }, or null
+  // (another file, a broken one, a big one). The settings go through MAK.withDefaults, as any change of the settings:
+  // a bad value gets its default, an unknown setting goes.
+  MAK.configImport = function (text) {
+    if (typeof text !== 'string' || text.length > 1e6) return null;
+    let o;
+    try {
+      o = JSON.parse(text);
+    } catch {
+      return null;
+    }
+    if (!o || o.app !== 'Aulario Plus' || !o.settings || typeof o.settings !== 'object' || Array.isArray(o.settings)) return null;
+    const exported = typeof o.exported === 'string' && !Number.isNaN(Date.parse(o.exported)) ? o.exported : '';
+    return { settings: MAK.withDefaults(o.settings), version: typeof o.version === 'string' ? o.version.slice(0, 20) : '', exported };
+  };
+  // How many settings change from cur to next (both from MAK.withDefaults).
+  MAK.configChanges = (cur, next) => Object.keys(next).filter((k) => JSON.stringify(cur[k]) !== JSON.stringify(next[k])).length;
 
   // Sites that the extension must not show (if the user selected "everywhere").
   MAK.hiddenEverywhere = function (settings) {

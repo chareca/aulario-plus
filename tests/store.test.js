@@ -27,6 +27,22 @@ test('"Exportar mi configuración": every setting (a new one by itself), the ver
   assert.equal(MAK.configFileName(now), 'aulario-plus-config-05-10-2026.json');
 });
 
+test('"Importar mi configuración": only a file of the export; every value checked as a change of the settings; how many change', () => {
+  const now = new Date(2026, 9, 5, 9, 30);
+  const file = JSON.stringify(MAK.configExport({ theme: 'galaxia', nicknames: { s1: 'IP' } }, '1.6.7', now));
+  const got = MAK.configImport(file);
+  assert.deepEqual([got.version, got.exported, got.settings.theme, got.settings.nicknames], ['1.6.7', now.toISOString(), 'galaxia', { s1: 'IP' }]);
+  assert.equal(MAK.configChanges(MAK.withDefaults({}), got.settings), 2, 'the theme and the names');
+  assert.equal(MAK.configChanges(got.settings, got.settings), 0);
+  // Not a file of the export: nothing.
+  for (const bad of ['', 'no json', '[]', 'null', JSON.stringify({ app: 'Otra', settings: {} }), JSON.stringify({ app: 'Aulario Plus', settings: [] }), JSON.stringify({ app: 'Aulario Plus' }), 'x'.repeat(1e6 + 1)]) {
+    assert.equal(MAK.configImport(bad), null, bad.slice(0, 40));
+  }
+  // A changed file: bad values get their default, unknown settings go.
+  const edited = MAK.configImport(JSON.stringify({ app: 'Aulario Plus', exported: 'ayer', settings: { theme: '<b>x</b>', lang: 'fr', colorMode: 'dark', junk: 1, degree: 'https://evil.example/' } }));
+  assert.deepEqual([edited.settings.theme, edited.settings.lang, edited.settings.colorMode, edited.settings.degree, 'junk' in edited.settings, edited.exported], ['', 'es', 'dark', '', false, '']);
+});
+
 test('the store queue does not lose writes that occur at the same time', async () => {
   const area = memoryArea({ counter: 0 });
   const store = MAK.createStore(area);

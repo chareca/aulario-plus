@@ -749,6 +749,15 @@ const handlers = {
       return Object.assign({ lang }, notice);
     }
   },
+  // "Importar mi configuración" (tools.html?import), after the confirmation: the settings of the file in place of the
+  // current ones, checked again here (MAK.withDefaults). Only the pages of the extension.
+  importSettings: {
+    run: async (msg) => {
+      if (!msg || !msg.settings || typeof msg.settings !== 'object' || Array.isArray(msg.settings)) return { ok: false };
+      await store.set({ settings: MAK.withDefaults(msg.settings) });
+      return { ok: true };
+    }
+  },
   // "Ver todas las novedades" in that window: the page of the news.
   openNews: {
     content: true,
