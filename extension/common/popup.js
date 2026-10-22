@@ -78,8 +78,7 @@ function renderCurrent() {
   const open = new Set(keyed().filter(([, d]) => d.open).map(([k]) => k));
   // The button under the pointer is a new one: it takes the hover at once, without the slow change of its colors
   // (else they come again: a flicker). Until the browser gives it the hover (mouseover) and draws it, or a moment.
-  panel.classList.add('still');
-  const go = () => requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.remove('still')));
+  const go = MAK.holdStill(panel);
   panel.addEventListener('mouseover', go, { once: true });
   setTimeout(go, 300);
   panels[current].render(panel);
@@ -229,7 +228,6 @@ function renderHeader() {
 // The things that the user needs most, in one place: the session (pause and resume), four switches,
 // the counters of the lists (each one opens its tab), and links to MiAulario and to the help. The session
 // has a large power button, as in uBlock Origin.
-const MODES = ['auto', 'light', 'dark'];
 const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
 // The state of the session for the menu: a class (on, off, bad, wait), a title and a line below it.
@@ -298,7 +296,8 @@ function renderHome(el) {
   const switches = h('div', { class: 'switches' },
     homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),
     homeSwitch('clock', t('home.swDue'), s.notifyDue, said(t('home.swDue'), s.notifyDue), set({ notifyDue: !s.notifyDue })),
-    homeSwitch('mode', t(`theme.mode.${s.colorMode}`), null, `${t('theme.mode')}: ${t(`theme.mode.${s.colorMode}`)}`, set({ colorMode: MODES[(MODES.indexOf(s.colorMode) + 1) % MODES.length] })),
+    // The mode: light or dark, the other one of the mode on the screen ("auto" only in the settings).
+    homeSwitch('mode', t(`theme.mode.${s.colorMode}`), null, `${t('theme.mode')}: ${t(`theme.mode.${s.colorMode}`)}`, set({ colorMode: darkNow() ? 'light' : 'dark' })),
     homeSwitch('sync', t('home.swSync'), s.syncEnabled, said(t('home.swSync'), s.syncEnabled), set({ syncEnabled: !s.syncEnabled })));
   const counters = h('div', { class: 'counters' }, homeCounters(now).map((c) => h('button', { class: 'counter', attrs: { type: 'button' }, on: { click: () => selectTab(c.tab) } },
     h('span', { class: 'n', text: c.n === null ? '–' : c.n > 99 ? '99+' : String(c.n) }),

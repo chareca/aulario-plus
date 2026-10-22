@@ -1904,7 +1904,21 @@
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
     const cards = MAK.THEMES.map((t) => t.cardCss || '');
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, assets(th.css), MAK.hoverCss(th, scheme === 'dark'), MAK.themeIconCss(th)].join('\n');
+    const still = '.ap-still, .ap-still *, .ap-still *::before, .ap-still *::after { transition: none !important; }';
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, assets(th.css), MAK.hoverCss(th, scheme === 'dark'), MAK.themeIconCss(th), still].join('\n');
+  };
+
+  // No transitions in el (.ap-still, pageThemeCss) until release(): then two frames more, so that the new colors are
+  // drawn at once. Only the last call ends it (a change in the middle of another one).
+  const stillRuns = new WeakMap();
+  MAK.holdStill = function (el) {
+    const run = (stillRuns.get(el) || 0) + 1;
+    stillRuns.set(el, run);
+    el.classList.add('ap-still');
+    const view = el.ownerDocument.defaultView;
+    return () => view && view.requestAnimationFrame(() => view.requestAnimationFrame(() => {
+      if (stillRuns.get(el) === run) el.classList.remove('ap-still');
+    }));
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
@@ -1919,7 +1933,13 @@
       (doc.head || doc.documentElement).append(style);
     }
     const css = MAK.pageThemeCss(th.id, url || ((f) => `fonts/${f}`), mode);
-    if (style.textContent !== css) style.textContent = css;
+    if (style.textContent !== css) {
+      // A new theme or mode: at once. With the slow change of the colors, a text keeps the color of the old mode for a
+      // moment over a background that changes at once (a gradient, a photo): a flicker.
+      const release = MAK.holdStill(doc.documentElement);
+      style.textContent = css;
+      release();
+    }
     doc.documentElement.dataset.theme = th.id;
     doc.documentElement.dataset.scheme = mode;
     for (const el of doc.querySelectorAll('[data-brand]')) el.textContent = MAK.brandName(th);

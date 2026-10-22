@@ -267,7 +267,6 @@ body.tools { width: auto; height: auto; min-height: 100vh; }
 .history-card-name { flex: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
 .history-count { color: var(--ap-muted); font-size: 12px; white-space: nowrap; }
 .history-chevron { display: inline-grid; place-items: center; color: var(--ap-muted); }
-.still, .still * { transition: none !important; }
 .history-chevron svg, .history-icon svg { width: 16px; height: 16px; transition: transform 0.15s; }
 .history-card[open] > summary .history-chevron svg, .history-icon[aria-expanded="true"] svg { transform: rotate(180deg); }
 .history-official { margin: 0; padding: 10px 16px; border-top: 1px solid var(--ap-line); }
