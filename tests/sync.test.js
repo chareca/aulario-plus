@@ -73,7 +73,12 @@ test('no request when the extension is paused or the sync is off', async () => {
   assert.deepEqual(await s.sync.run({ force: true }), { skipped: 'paused' });
   const s2 = setup({ local: { settings: { syncEnabled: false } } });
   assert.deepEqual(await s2.sync.run({ force: true }), { skipped: 'disabled' });
-  assert.equal(s.log.length + s2.log.length, 0);
+  const s3 = setup({ local: { paused: 'reset' } });
+  assert.deepEqual(await s3.sync.run({ force: true }), { skipped: 'paused' });
+  assert.equal(s.log.length + s2.log.length + s3.log.length, 0);
+  // "Pausar" (paused: 'user') only stops keeping the session: the data still come.
+  const s4 = setup({ local: { paused: 'user' } });
+  assert.ok((await s4.sync.run({ force: true })).steps);
 });
 
 test('a logged-out session keeps the old data', async () => {

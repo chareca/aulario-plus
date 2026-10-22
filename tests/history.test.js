@@ -94,12 +94,13 @@ test('the background: reads the panel and the submission of each task; later onl
 test('the history is not read while paused or empty, or without a session; another user: the data of the old one goes first', async () => {
   const log = [];
   const routes = { '/direct/session/current.json': { userId: 'u' }, '/api/users/me/tasks': { tasks: RAW } };
-  for (const paused of ['reset', 'user']) {
-    const bg = loadBackground({ fetch: fakeFetch(routes, log), now: NOW, local: { paused } });
-    assert.deepEqual(await bg.send({ type: 'historyRefresh' }), { error: 'history.paused' });
-    assert.equal(bg.ext.storage.local.data.history, undefined);
-  }
+  const reset = loadBackground({ fetch: fakeFetch(routes, log), now: NOW, local: { paused: 'reset' } });
+  assert.deepEqual(await reset.send({ type: 'historyRefresh' }), { error: 'history.paused' });
+  assert.equal(reset.ext.storage.local.data.history, undefined);
   assert.equal(log.length, 0, 'no request');
+  // "Pausar" only stops keeping the session: the history is read.
+  const user = loadBackground({ fetch: fakeFetch(Object.assign({}, routes, { '/direct/assignment/item/a1.json': item(SENT) })), now: NOW, local: { paused: 'user' } });
+  assert.ok((await user.send({ type: 'historyRefresh' })).ok);
   // Logged out (the pause of a logout) and still without a session: the login.
   const out = loadBackground({ fetch: fakeFetch({ '/direct/session/current.json': { userId: null } }), now: NOW, local: { paused: true } });
   assert.deepEqual(await out.send({ type: 'historyRefresh' }), { error: 'history.login' });

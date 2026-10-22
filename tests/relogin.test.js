@@ -1,6 +1,6 @@
 'use strict';
-// content.js on a MiAulario page without a session: the automatic login, and the repair of the
-// session cookies when a login of the last minutes did not give a session.
+// content.js on a MiAulario page without a session: the automatic login, one at a time for all the tabs
+// (the background grants it with "loginStart"), and no second login after a login without a session.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -11,10 +11,8 @@ const COMMON = path.join(__dirname, '..', 'extension', 'common');
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'extension', 'manifest.chromium.json'), 'utf8'));
 const group = manifest.content_scripts.find((g) => g.js.includes('content.js'));
 const SAML = '/sakai-login-tool/container/saml/login';
-const LOGIN_KEY = 'aulario-plus-last-relogin';
-const REPAIR_KEY = 'aulario-plus-last-repair';
 
-async function run({ loggedIn = false, paused = false, autoLogin = true, storage = {}, pathname = '/portal', keepSession = true, notice = false } = {}) {
+async function run({ loggedIn = false, paused = false, autoLogin = true, granted = true, storage = {}, pathname = '/portal', keepSession = true, notice = false } = {}) {
   const assigned = [];
   const messages = [];
   const session = new Map(Object.entries(storage).map(([k, v]) => [k, String(v)]));
@@ -34,7 +32,7 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, storage
         sendMessage: async (msg) => {
           messages.push(msg.type);
           if (msg.type === 'getStatus') return { paused, autoLogin, nextPing: null };
-          if (msg.type === 'repairSession') return { ok: true };
+          if (msg.type === 'loginStart') return granted ? { ok: true } : null;
           if (msg.type === 'keepOffNotice') return { show: notice, lang: 'es' };
           return null;
         }
@@ -58,51 +56,36 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, storage
   return { assigned, messages, session, asked };
 }
 
-test('no session and no recent login: the automatic login opens the SAML login', async () => {
+test('no session: the background grants the login, then the SAML login opens', async () => {
   const r = await run();
   assert.deepEqual(r.assigned, [SAML]);
-  assert.ok(!r.messages.includes('repairSession'));
-  assert.ok(r.session.get(LOGIN_KEY), 'the time of the login is recorded');
+  assert.ok(r.messages.indexOf('loginStart') < r.messages.indexOf('navigate'));
 });
 
 test('a session: no login', async () => {
   const r = await run({ loggedIn: true });
   assert.deepEqual(r.assigned, []);
+  assert.ok(!r.messages.includes('loginStart'));
 });
 
-test('a login of the last 2 minutes without a session: repair the cookies, then log in again', async () => {
-  const r = await run({ storage: { [LOGIN_KEY]: Date.now() - 30000 } });
-  assert.ok(r.messages.includes('repairSession'));
-  assert.ok(r.messages.indexOf('repairSession') < r.messages.indexOf('navigate'), 'the repair ends before the login opens');
-  assert.deepEqual(r.assigned, [SAML]);
-  assert.ok(r.session.get(REPAIR_KEY));
-});
-
-test('only one repair in 10 minutes: no loop', async () => {
-  const r = await run({ storage: { [LOGIN_KEY]: Date.now() - 30000, [REPAIR_KEY]: Date.now() - 60000 } });
-  assert.ok(!r.messages.includes('repairSession'));
+test('another tab logs in, or a login of the last minutes gave no session: no login (no loop, no second login)', async () => {
+  const r = await run({ granted: false });
   assert.deepEqual(r.assigned, []);
+  assert.ok(!r.messages.includes('repairSession'), 'nothing removes the cookies');
 });
 
-test('paused after a logout: no automatic login, but a login of the user that failed is repaired', async () => {
-  const idle = await run({ paused: true });
-  assert.deepEqual(idle.assigned, [], 'no automatic login');
-  const clicked = await run({ paused: true, storage: { [LOGIN_KEY]: Date.now() - 10000 } });
-  assert.ok(clicked.messages.includes('repairSession'));
-  assert.deepEqual(clicked.assigned, [SAML]);
+test('paused (after a logout, or by the user) or automatic login off: no login', async () => {
+  for (const o of [{ paused: true }, { paused: 'user' }, { autoLogin: false }]) {
+    const r = await run(o);
+    assert.deepEqual(r.assigned, [], JSON.stringify(o));
+    assert.ok(!r.messages.includes('loginStart'));
+  }
 });
 
-test('automatic login off: no login, but the repair after a login of the user', async () => {
-  const idle = await run({ autoLogin: false });
-  assert.deepEqual(idle.assigned, []);
-  const clicked = await run({ autoLogin: false, storage: { [LOGIN_KEY]: Date.now() - 10000 } });
-  assert.deepEqual(clicked.assigned, [SAML]);
-});
-
-test('keeping the session off (MAK.KEEP_SESSION): no automatic login and no repair; the notice of the background once', async () => {
-  const off = await run({ keepSession: false, storage: { [LOGIN_KEY]: Date.now() - 30000 } });
+test('keeping the session off (MAK.KEEP_SESSION): no automatic login; the notice of the background once', async () => {
+  const off = await run({ keepSession: false });
   assert.deepEqual(off.assigned, []);
-  assert.ok(!off.messages.includes('repairSession') && !off.messages.includes('getStatus'));
+  assert.ok(!off.messages.includes('loginStart') && !off.messages.includes('getStatus'));
   assert.deepEqual(off.asked, [], 'the background says that the user saw it');
   const first = await run({ keepSession: false, notice: true, loggedIn: true });
   assert.equal(first.asked.length, 1);

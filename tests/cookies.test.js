@@ -54,125 +54,88 @@ test('keeping the session off (MAK.KEEP_SESSION): no persistent copy; at an upda
   assert.deepEqual(named('idpsession').map((c) => [c.value, c.domain, c.expirationDate]), [['sso', '.sso.unavarra.es', undefined]]);
 });
 
-test('login: after the changes stop, the extension writes the cookie that the browser has', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { server, named } = withJar(bg);
-  server('SAKAISESSIONID', 'A-anonymous');
-  server('SAKAISESSIONID', 'B-logged-in');
-  // A late event of the old session.
-  bg.ext._listeners.cookies.forEach((f) => f({ cookie: { name: 'SAKAISESSIONID', value: 'A-anonymous', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/' }, removed: false }));
-  await wait(40);
-  const list = named('SAKAISESSIONID');
-  assert.equal(list.length, 1);
-  assert.equal(list[0].value, 'B-logged-in', 'the new session stays');
-  assert.ok(list[0].expirationDate > Date.now() / 1000 + 86400, 'and it is persistent');
-  assert.equal(list[0].hostOnly, true, 'a host-only cookie stays host-only');
-});
+const { fakeFetch } = require('./helpers');
+const F = require('./fixtures/miaulario');
+const later = () => Date.now() / 1000 + 1e6;
+// A background with the session kept, a cookie jar, and the requests (a session with or without a user).
+function kept({ user = 'user-1', local } = {}) {
+  const log = [];
+  const routes = F.routes();
+  routes['/direct/session/current.json'] = { userId: user, userEid: user ? 'eid' : null };
+  const bg = loadBackground({ keepSession: true, fetch: fakeFetch(routes, log), local });
+  return Object.assign({ bg, log, keepAlive: () => log.filter((x) => x.url.includes('/direct/session/current.json') && !x.url.includes('auto=true')).length }, withJar(bg));
+}
 
-test('login: a change of the server during the write is not lost', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { server, named } = withJar(bg);
-  const set = bg.ext.cookies.set;
-  let raced = false;
-  bg.ext.cookies.set = async (d) => {
-    // The server sets the logged-in session after the read and before the write of the old value.
-    if (!raced && d.value === 'A-anonymous' && d.expirationDate > 2) {
-      raced = true;
-      server('SAKAISESSIONID', 'B-logged-in');
-    }
-    return set(d);
-  };
-  server('SAKAISESSIONID', 'A-anonymous');
-  await wait(60);
-  assert.ok(raced);
-  const list = named('SAKAISESSIONID');
-  assert.equal(list.length, 1);
-  assert.equal(list[0].value, 'B-logged-in');
-  assert.ok(list[0].expirationDate, 'persistent');
-});
-
-test('an old copy with other attributes is removed: the browser sends one session cookie', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { server, named, put } = withJar(bg);
-  // An old persistent copy (host-only), and the new cookie of the server as a domain cookie.
-  put({ name: 'SAKAISESSIONID', value: 'OLD', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, httpOnly: true, expirationDate: Date.now() / 1000 + 1e6 });
-  server('SAKAISESSIONID', 'NEW', { domain: '.miaulario.unavarra.es', hostOnly: false });
-  await wait(40);
-  const list = named('SAKAISESSIONID');
-  assert.equal(list.length, 1, 'one copy');
-  assert.equal(list[0].value, 'NEW');
-  assert.equal(list[0].domain, '.miaulario.unavarra.es', 'the form of the server cookie');
-  assert.ok(list[0].expirationDate);
-});
-
-test('the persistent copy has the attributes of the server cookie, and is always secure (https only)', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { server, named } = withJar(bg);
-  server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false, sameSite: 'no_restriction' });
-  server('SERVERID', 'h31', { secure: false, httpOnly: false, sameSite: 'lax' });
-  await wait(40);
-  const [sso] = named('idpsession');
-  assert.deepEqual([sso.domain, sso.hostOnly, sso.path, sso.secure, sso.httpOnly, sso.sameSite], ['.sso.unavarra.es', false, '/', true, true, 'no_restriction']);
-  assert.ok(sso.expirationDate);
-  const [node] = named('SERVERID');
-  assert.deepEqual([node.value, node.domain, node.hostOnly, node.secure, node.httpOnly, node.sameSite], ['h31', 'miaulario.unavarra.es', true, true, false, 'lax']);
-  assert.ok(node.expirationDate);
-});
-
-test('a persistent cookie, another cookie or a pause: no change', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { put, server } = withJar(bg);
+test('a login writes no cookie: the extension does not touch the cookies while they change', async () => {
+  const { bg, server, named } = kept();
   let sets = 0;
   const set = bg.ext.cookies.set;
   bg.ext.cookies.set = async (d) => { sets++; return set(d); };
-  put({ name: 'SAKAISESSIONID', value: 'X', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: 9e9 });
-  server('OTHER', 'Y');
+  server('SAKAISESSIONID', 'A-anonymous');
+  server('JSESSIONID', 'login', { path: '/sakai-login-tool' });
+  server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false });
+  server('SAKAISESSIONID', 'B-logged-in');
   await wait(30);
   assert.equal(sets, 0);
-  await bg.ext.storage.local.set({ paused: true });
-  server('SAKAISESSIONID', 'Z');
-  await wait(30);
-  assert.equal(sets, 0, 'paused after a logout');
+  assert.deepEqual(named('SAKAISESSIONID').map((c) => [c.value, c.expirationDate]), [['B-logged-in', undefined]]);
+});
+
+test('a ping that sees the user: the cookies of MiAulario become persistent (path "/", attributes of the server, secure); never the SSO session', async () => {
+  const { bg, server, named, put, keepAlive } = kept();
+  server('SAKAISESSIONID', 'S1');
+  server('SERVERID', 'h31', { secure: false, httpOnly: false, sameSite: 'lax' });
+  put({ name: 'SAKAISESSIONID', value: 'other-path', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/portal', secure: true, httpOnly: true });
+  server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false });
+  assert.equal((await bg.send({ type: 'pingNow' })).loggedIn, true);
+  assert.equal(keepAlive(), 1, 'the keep-alive request');
+  const [main, other] = ['/', '/portal'].map((path) => named('SAKAISESSIONID').find((c) => c.path === path));
+  assert.deepEqual([main.value, main.hostOnly, main.secure, main.httpOnly, main.sameSite], ['S1', true, true, true, 'no_restriction']);
+  assert.ok(main.expirationDate > Date.now() / 1000 + 29 * 86400, 'persistent for 30 days');
+  assert.deepEqual([other.value, other.expirationDate], ['other-path', undefined], 'a copy of another path is not touched');
+  const [node] = named('SERVERID');
+  assert.deepEqual([node.value, node.secure, node.httpOnly, node.sameSite], ['h31', true, false, 'lax']);
+  assert.ok(node.expirationDate);
+  assert.equal(named('idpsession')[0].expirationDate, undefined, 'the SSO session is not kept');
+  // Each ping with the user moves the date: the cookie does not end during a session.
+  put(Object.assign({}, main, { expirationDate: Date.now() / 1000 + 3600 }));
+  await bg.send({ type: 'pingNow' });
+  assert.ok(named('SAKAISESSIONID').find((c) => c.path === '/').expirationDate > Date.now() / 1000 + 29 * 86400);
+});
+
+test('a ping that sees a session without a user (it ended, as after a sleep): no keep-alive, and the old persistent copies become session cookies', async () => {
+  const { bg, put, named, keepAlive } = kept({ user: null });
+  put({ name: 'SAKAISESSIONID', value: 'dead', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, httpOnly: true, expirationDate: later() });
+  put({ name: 'SERVERID', value: 'h31', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: later() });
+  assert.equal((await bg.send({ type: 'pingNow' })).loggedIn, false);
+  assert.equal(keepAlive(), 0, 'a session without a user is not kept alive');
+  assert.deepEqual(named('SAKAISESSIONID').map((c) => [c.value, c.expirationDate]), [['dead', undefined]]);
+  assert.equal(named('SERVERID')[0].expirationDate, undefined);
+});
+
+test('"Pausar", or a logout: the session ends with the browser (the cookies stay, as session cookies, for the logout of MiAulario)', async () => {
+  for (const type of ['pause', 'logout']) {
+    const { bg, put, named } = kept();
+    put({ name: 'SAKAISESSIONID', value: 'A', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: later() });
+    put({ name: 'idpsession', value: 'sso', domain: '.sso.unavarra.es', hostOnly: false, path: '/', expirationDate: later() });
+    await bg.send({ type }, type === 'logout' ? CONTENT : undefined);
+    assert.deepEqual([...named('SAKAISESSIONID'), ...named('idpsession')].map((c) => [c.value, c.expirationDate]), [['A', undefined], ['sso', undefined]], type);
+    assert.equal((await bg.ext.storage.local.get('paused')).paused, type === 'logout' ? true : 'user');
+  }
 });
 
 test('the end of the pause of a logout (a new login): the session cookies are persistent again', async () => {
-  const { fakeFetch } = require('./helpers');
-  const F = require('./fixtures/miaulario');
-  const bg = loadBackground({ keepSession: true, web: fastTimers, fetch: fakeFetch(F.routes()), local: { paused: true } });
-  const { server, named } = withJar(bg);
+  const { bg, server, named } = kept({ local: { paused: true } });
   server('SAKAISESSIONID', 'NEW');
-  await wait(30);
   assert.equal(named('SAKAISESSIONID')[0].expirationDate, undefined, 'paused: a session cookie');
   assert.ok(await bg.send({ type: 'pingNow' }));
-  await wait(40);
+  assert.equal((await bg.ext.storage.local.get('paused')).paused, false);
   assert.ok(named('SAKAISESSIONID')[0].expirationDate > Date.now() / 1000 + 86400, 'persistent');
 });
 
-test('repairSession removes all the copies of the Sakai session and SERVERID, and keeps the SSO session', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { put, named } = withJar(bg);
-  const later = Date.now() / 1000 + 1e6;
-  put({ name: 'SAKAISESSIONID', value: 'OLD', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, expirationDate: later });
-  put({ name: 'SAKAISESSIONID', value: 'NEW', domain: '.miaulario.unavarra.es', hostOnly: false, path: '/', secure: true });
-  put({ name: 'SERVERID', value: 'h31', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: later });
-  put({ name: 'idpsession', value: 'sso', domain: '.sso.unavarra.es', hostOnly: false, path: '/', secure: true, expirationDate: later });
-  const r = await bg.send({ type: 'repairSession' }, CONTENT);
-  assert.deepEqual(r, { ok: true });
-  assert.equal(named('SAKAISESSIONID').length, 0);
-  assert.equal(named('SERVERID').length, 0);
-  assert.equal(named('idpsession').length, 1, 'the SSO session stays: no password at the next login');
+test('at an update with the session kept: the persistent copy of the SSO session of an older version becomes a session cookie', async () => {
+  const { bg, put, named } = kept();
+  put({ name: 'idpsession', value: 'sso', domain: '.sso.unavarra.es', hostOnly: false, path: '/', secure: true, httpOnly: true, expirationDate: later() });
+  for (const f of bg.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
   await wait(30);
-  assert.equal(named('SAKAISESSIONID').length, 0, 'no write comes back after the repair');
-});
-
-test('logout removes all the copies of the session cookies', async () => {
-  const bg = loadBackground({ keepSession: true, web: fastTimers });
-  const { put, named } = withJar(bg);
-  const later = Date.now() / 1000 + 1e6;
-  put({ name: 'SAKAISESSIONID', value: 'A', domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', expirationDate: later });
-  put({ name: 'SAKAISESSIONID', value: 'B', domain: '.miaulario.unavarra.es', hostOnly: false, path: '/', expirationDate: later });
-  put({ name: 'idpsession', value: 'sso', domain: '.sso.unavarra.es', hostOnly: false, path: '/', expirationDate: later });
-  await bg.send({ type: 'logout' }, CONTENT);
-  assert.equal(named('SAKAISESSIONID').length + named('idpsession').length, 0);
-  assert.equal((await bg.ext.storage.local.get('paused')).paused, true);
+  assert.equal(named('idpsession')[0].expirationDate, undefined);
 });

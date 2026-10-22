@@ -32,18 +32,32 @@ test('the calendar button of MiAulario saves only its setting; the other setting
   assert.deepEqual([s.examCalendar, s.lang === 'en', s.hiddenSites.length], [false, false, 0], 'nothing else of the message');
 });
 
-test('"Pausar" stays until "Reanudar": a ping does not continue it, not even with a session', async () => {
+test('"Pausar" stays until "Reanudar": a ping only reads the session (no keep-alive), and a new login does not continue it', async () => {
   const log = [];
-  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' } });
-  assert.equal(await bg.send({ type: 'pingNow' }), null);
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' }, keepSession: true });
+  assert.equal((await bg.send({ type: 'pingNow' })).loggedIn, true, 'the state of the session for the popup');
   assert.equal(bg.ext.storage.local.data.paused, 'user');
-  assert.equal(log.length, 0, 'no request');
+  assert.ok(log.length && log.every((x) => x.url.includes('auto=true')), 'no keep-alive request');
   // A logout and a new login do not end it either.
   await bg.send({ type: 'logout' }, CONTENT({ url: 'https://miaulario.unavarra.es/portal' }));
   assert.equal(bg.ext.storage.local.data.paused, 'user');
-  assert.equal(await bg.send({ type: 'pingNow' }), null);
+  await bg.send({ type: 'pingNow' });
+  assert.equal(bg.ext.storage.local.data.paused, 'user');
   await bg.send({ type: 'resume' });
   assert.equal(bg.ext.storage.local.data.paused, false);
+});
+
+test('one automatic login at a time for all the tabs, none in the 3 minutes after a login, and none during a login of the user', async () => {
+  const bg = loadBackground();
+  const tabs = await Promise.all([1, 2, 3].map((id) => bg.send({ type: 'loginStart' }, CONTENT({ tab: { id } }))));
+  assert.deepEqual(tabs.filter(Boolean), [{ ok: true }], 'several tabs at once: one login');
+  assert.equal(await bg.send({ type: 'loginStart' }, CONTENT()), null, 'that login gave no session: no second login (no loop)');
+  const later = loadBackground();
+  assert.deepEqual(await later.send({ type: 'loginStart', user: true }, CONTENT()), { ok: true }, 'a click of the user on a login link');
+  assert.equal(await later.send({ type: 'loginStart' }, CONTENT({ tab: { id: 2 } })), null, 'no automatic login during it');
+  const area = later.ext.storage.session || later.ext.storage.local;
+  await area.set({ loginAt: Date.now() - 4 * 60000 });
+  assert.deepEqual(await later.send({ type: 'loginStart' }, CONTENT()), { ok: true }, 'after 3 minutes, again');
 });
 
 test('messages from other origins, other frames, other extensions or with an unknown type are rejected', async () => {

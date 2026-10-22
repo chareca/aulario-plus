@@ -305,7 +305,7 @@ function renderHome(el) {
     link('news', t('help.news'), ext.runtime.getURL('tools.html?news')),
     link('help', t('home.help'), ext.runtime.getURL('tools.html?welcome')),
     link('bug', t('help.bug'), issueUrl('bug')));
-  const none = S.paused ? null : noDataMessage('what.home');
+  const none = MAK.dataPaused(S.paused) ? null : noDataMessage('what.home');
   fill(el, h('div', { class: 'home' }, top, switches, counters, none, tools));
 }
 
@@ -321,7 +321,7 @@ function noDataMessage(whatKey) {
   const what = t(whatKey);
   if (!settings().syncEnabled) return emptyBox(t('empty.syncOff', { what }));
   if (!meta.lastSync) {
-    if (S.paused) return emptyBox(t('empty.paused'));
+    if (MAK.dataPaused(S.paused)) return emptyBox(t('empty.paused'));
     if (meta.loggedIn === false) return emptyBox(t('empty.login', { what }));
     return emptyBox(t('empty.noData'));
   }

@@ -1,15 +1,14 @@
 // Aulario Plus: background script (service worker in Chromium, event page in Firefox).
 //
-// 1. At a random interval of 3 to 10 minutes (in steps of 1 second), the script sends
-//    GET /direct/session/current.json without "?auto=true". Sakai records this request
+// 1. At a random interval of 3 to 10 minutes (in steps of 1 second), the script reads the session. If it has a
+//    user, the script sends GET /direct/session/current.json without "?auto=true": Sakai records this request
 //    as activity and sets the inactivity timer (60 minutes) to zero.
-// 2. The script changes the session cookies (SAKAISESSIONID, SERVERID, idpsession)
-//    into persistent cookies. Then the cookies stay after you close the browser.
-// 3. If you log out, the script pauses and removes these cookies. The script starts
-//    again when you log in manually.
+// 2. Then the script makes the session cookies of MiAulario (SAKAISESSIONID, SERVERID) persistent: they stay
+//    after you close the browser. A session without a user makes them session cookies again.
+// 3. If you log out, the script pauses, and the cookies become session cookies. The script starts again when
+//    you log in.
 // Points 1 and 2 (and the login of content.js) work only with MAK.KEEP_SESSION (lib/core.js). Without it, the
-// request of point 1 has "auto=true" (only the state of the session), and the persistent copies of an older
-// version become session cookies again.
+// script only reads the session, and the persistent copies of an older version become session cookies again.
 
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
@@ -32,15 +31,16 @@ const PING_MIN_SECONDS = 3 * 60;
 const PING_MAX_SECONDS = 10 * 60;
 const PERSIST_DAYS = 30;
 
-// The session cookies of each host. The extension copies their attributes (domain, path, flags)
-// from the cookie that the server sets.
+// The cookies that the extension makes persistent (only the ones of MiAulario), or that versions before 1.6.7 made
+// persistent (also idpsession of the SSO): the extension makes all of them session cookies again when needed.
 const COOKIE_HOSTS = {
   'miaulario.unavarra.es': ['SAKAISESSIONID', 'SERVERID'],
   'sso.unavarra.es': ['idpsession']
 };
 const SESSION_HOST = 'miaulario.unavarra.es';
-// Wait this time without a change of a cookie before the extension writes it again.
-const SETTLE_MS = 1500;
+// No automatic login in this time after a login.
+const LOGIN_GAP_MS = 3 * MAK.MINUTE;
+let loginQueue = Promise.resolve();
 
 // The optional permission to read the exam calendars of www2.unavarra.es.
 async function hasExamPermission() {
@@ -158,7 +158,7 @@ async function recordDue() {
   if (!(await hasRecordPermission())) return;
   const d = await store.get(['record', 'recordTry', 'paused']);
   const now = Date.now();
-  if (d.paused || (d.record && now - d.record.at < RECORD_MS) || (d.recordTry && now - d.recordTry.at < RECORD_RETRY_MS)) return;
+  if (MAK.dataPaused(d.paused) || (d.record && now - d.record.at < RECORD_MS) || (d.recordTry && now - d.recordTry.at < RECORD_RETRY_MS)) return;
   await refreshRecord();
 }
 
@@ -201,7 +201,7 @@ function refreshHistory() {
       ({ paused } = await store.get('paused'));
       if (paused === true) return { error: 'history.login' };
     }
-    if (paused) return { error: 'history.paused' };
+    if (MAK.dataPaused(paused)) return { error: 'history.paused' };
     // Another user than the one of the kept data: the sync removes the data of the other user first (lib/sync.js).
     const session = await courseApi.session().catch(() => null);
     if (!session || !session.userId) return { error: 'history.login' };
@@ -234,7 +234,7 @@ function refreshHistory() {
 // Once a day with the ping, also without the page: the history grows alone. Not after a logout (paused).
 async function historyDue() {
   const d = await store.get(['history', 'paused', 'last']);
-  if (d.paused || !(d.last && d.last.loggedIn)) return;
+  if (MAK.dataPaused(d.paused) || !(d.last && d.last.loggedIn)) return;
   if (!d.history || Date.now() - d.history.at >= MAK.HISTORY_MS) await refreshHistory();
 }
 
@@ -243,26 +243,34 @@ async function getState() {
   return { paused: !!d.paused, autoLogin: d.autoLogin !== false };
 }
 
-// The keep-alive request: without "auto=true", so Sakai records it as activity.
+// The state of the session, with "auto=true" (Sakai does not count it as activity). With a user, and not after
+// "Pausar": the keep-alive request (without "auto=true": Sakai counts it as activity and sets the inactivity timer to
+// zero), and the session cookies of MiAulario become persistent. Without a user (the session ended, or a login has
+// not ended yet): no keep-alive (it would keep a session without a user), and the persistent copies become session
+// cookies again, so an old session does not stay for the next login.
 async function ping() {
   const { paused } = await ext.storage.local.get('paused');
-  // "Pausar" in the popup ('user'), or all the data deleted ('reset'): only "Reanudar" continues.
-  if (paused === 'user' || paused === 'reset') return null;
-  if (paused) {
-    // The extension is paused after a manual logout. Only read the session (with "auto=true",
-    // it does not reset the timer). If the user logged in again, continue, as "Reanudar" does.
-    const session = await courseApi.session().catch(() => null);
-    if (!session || !session.userId) return null;
-    await store.set({ paused: false });
-    await persistExisting();
-  }
+  if (paused === 'reset') return null; // all the data deleted: only "Empezar de nuevo" continues
   const last = { time: Date.now(), ok: false, status: 0, loggedIn: null };
+  let user = null; // null: no answer of Sakai (network, error, a page of HTML); '': a session without a user
   try {
-    const r = await fetch(MAK.KEEP_SESSION ? SESSION_URL : `${SESSION_URL}?auto=true`, { cache: 'no-store', credentials: 'include' });
+    const r = await fetch(`${SESSION_URL}?auto=true`, { cache: 'no-store', credentials: 'include' });
     const s = await r.json().catch(() => null);
     Object.assign(last, { status: r.status, ok: r.ok, loggedIn: !!(s && s.userId) });
+    if (r.ok && s) user = s.userId || '';
   } catch (e) {
     last.error = String(e);
+  }
+  // After a logout (paused: true), a new login continues, as "Reanudar" does.
+  if (paused === true) {
+    if (!user) return null;
+    await store.set({ paused: false });
+  }
+  if (user && MAK.KEEP_SESSION && paused !== 'user') {
+    await fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' }).catch(() => {});
+    await persistSession();
+  } else if (user === '') {
+    await unpersistExisting([SESSION_HOST]);
   }
   await store.set({ last });
   return last;
@@ -270,28 +278,17 @@ async function ping() {
 
 // ---- Persistent cookies ------------------------------------------------------
 //
-// The server sets the session cookies without an expiration date. The extension writes each one
-// again, with the same attributes and an expiration date. At login, MiAulario changes
-// SAKAISESSIONID more than one time in a short period. If a write replaces the new (logged-in)
-// session with an older value, the page shows "not logged in" after a correct login. So:
-// 1. The extension waits until the cookie does not change for SETTLE_MS.
-// 2. It reads the cookie that the browser has now, and writes this cookie (not the cookie of the
-//    event) with its own domain, path and flags. Thus the write replaces this cookie.
-// 3. It removes the other copies of the cookie for the same host (another path, or a host-only
-//    cookie and a domain cookie). The browser sends all the copies, and Sakai reads only one.
-// 4. If the server set a new value during the write, the write replaced it. Then the extension
-//    writes the new value.
+// The server sets the session cookies without an expiration date, so the browser removes them when it closes. With
+// MAK.KEEP_SESSION, a ping that sees the user writes the cookies of MiAulario again with an expiration date: the
+// session continues after a restart of the browser (if Sakai still has it). The extension never writes a cookie
+// during a login (then the session has no user yet), and it never keeps the SSO session (idpsession): that is the
+// session of all the services of the UPNA.
 
-const cookieWatch = new Map(); // "store|host|name" -> { seq, cookie, timer, written: { value, seq } }
-let cookieSeq = 0;
 let cookieQueue = Promise.resolve();
-// One cookie job at a time, in the order of the events.
+// One cookie job at a time.
 const queueCookie = (job) => (cookieQueue = cookieQueue.then(job).catch(() => {}));
 
 const cookieHost = (c) => String(c.domain || '').replace(/^\./, '');
-const isSessionCookie = (c) => (COOKIE_HOSTS[cookieHost(c)] || []).includes(c.name);
-const watchKey = (storeId, host, name) => `${storeId || ''}|${host}|${name}`;
-const sameCookie = (a, b) => a.domain === b.domain && (a.path || '/') === (b.path || '/') && !!a.hostOnly === !!b.hostOnly;
 
 // The details for cookies.set: the same cookie (domain, path, flags) with this value and expiration.
 function cookieDetails(c, host, value, expirationDate) {
@@ -315,75 +312,26 @@ async function cookieCopies(host, name, storeId) {
   }
 }
 
-// Remove exactly one copy: write the same cookie with an expiration date in the past.
-async function dropCookie(c, host) {
-  try { await ext.cookies.set(cookieDetails(c, host, '', 1)); } catch {}
-}
-
-async function settleCookie(host, name, storeId, round = 0) {
-  const key = watchKey(storeId, host, name);
-  const watch = cookieWatch.get(key);
-  if (watch) clearTimeout(watch.timer);
-  if ((await getState()).paused) return;
-  const seq = cookieSeq;
-  const copies = await cookieCopies(host, name, storeId);
-  // The cookie of the server is the copy without an expiration date.
-  let target = copies.find((c) => !c.expirationDate);
-  if (!target && watch && watch.written && watch.seq > watch.written.seq && watch.cookie.value !== watch.written.value) {
-    target = watch.cookie; // the last write replaced a newer value of the server
-  }
-  if (!target) return;
-  for (const c of copies) if (!sameCookie(c, target)) await dropCookie(c, host);
-  try {
-    await ext.cookies.set(cookieDetails(target, host, target.value, Math.floor(Date.now() / 1000) + PERSIST_DAYS * 86400));
-  } catch {}
-  const now = cookieWatch.get(key) || { seq: 0 };
-  now.written = { value: target.value, seq };
-  cookieWatch.set(key, now);
-  // The server changed the cookie during the write: do the work again at once.
-  if (now.seq > seq && round < 3) await settleCookie(host, name, storeId, round + 1);
-}
-
-ext.cookies.onChanged.addListener(({ cookie, removed }) => {
-  // A persistent cookie is a write of the extension, or a cookie that is persistent already.
-  if (!MAK.KEEP_SESSION || removed || !isSessionCookie(cookie) || cookie.expirationDate) return;
-  const host = cookieHost(cookie);
-  const key = watchKey(cookie.storeId, host, cookie.name);
-  const watch = cookieWatch.get(key) || {};
-  clearTimeout(watch.timer);
-  Object.assign(watch, { seq: ++cookieSeq, cookie });
-  watch.timer = setTimeout(() => queueCookie(() => settleCookie(host, cookie.name, cookie.storeId)), SETTLE_MS);
-  cookieWatch.set(key, watch);
-});
-
-// Remove all the copies of the cookies of a host (for all the names if "names" is not given).
-function dropSessionCookies(hosts, names) {
+// The session cookies of MiAulario (the copies of the path "/", the ones of the server) become persistent, for
+// PERSIST_DAYS from now: each ping with a user moves the date.
+function persistSession() {
+  const expires = Math.floor(Date.now() / 1000) + PERSIST_DAYS * 86400;
   return queueCookie(async () => {
-    for (const host of hosts) {
-      for (const name of names || COOKIE_HOSTS[host]) {
-        for (const [key, w] of cookieWatch) if (key.endsWith(`|${host}|${name}`)) { clearTimeout(w.timer); cookieWatch.delete(key); }
-        for (const c of await cookieCopies(host, name)) await dropCookie(c, host);
+    for (const name of COOKIE_HOSTS[SESSION_HOST]) {
+      for (const c of await cookieCopies(SESSION_HOST, name)) {
+        if ((c.path || '/') === '/') try { await ext.cookies.set(cookieDetails(c, SESSION_HOST, c.value, expires)); } catch {}
       }
     }
   });
 }
 
-const clearPersisted = () => dropSessionCookies(Object.keys(COOKIE_HOSTS));
-
-// At install or at browser start, change the cookies that exist into persistent cookies.
-async function persistExisting() {
-  if (!MAK.KEEP_SESSION) return;
-  for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
-    for (const name of names) await queueCookie(() => settleCookie(host, name));
-  }
-}
-
-// Without MAK.KEEP_SESSION: the persistent copies of an older version become session cookies again (the same
-// cookie without its expiration date), so the session ends with the browser, as without the extension.
-async function unpersistExisting() {
+// The persistent copies become session cookies again (the same cookie without its expiration date), so the session
+// ends with the browser, as without the extension: when the session has no user, at a pause or a logout, without
+// MAK.KEEP_SESSION, and for the copies that an older version made (also of idpsession). All the cookie stores.
+async function unpersistExisting(hosts = Object.keys(COOKIE_HOSTS)) {
   const stores = (await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => [])).map((s) => s.id);
-  for (const [host, names] of Object.entries(COOKIE_HOSTS)) {
-    for (const name of names) {
+  for (const host of hosts) {
+    for (const name of COOKIE_HOSTS[host]) {
       await queueCookie(async () => {
         for (const c of (await Promise.all((stores.length ? stores : [undefined]).map((id) => cookieCopies(host, name, id)))).flat()) {
           if (!c.expirationDate) continue;
@@ -652,6 +600,7 @@ const handlers = {
   pause: {
     run: async () => {
       await store.set({ paused: 'user' }); // not true (a logout): a new login does not continue it
+      await unpersistExisting(); // the session ends with the browser, as without the extension
       return { ok: true };
     }
   },
@@ -670,21 +619,28 @@ const handlers = {
       return { ok: true };
     }
   },
-  // A login did not give a session (content.js). An old copy of the session cookie can cause this.
-  // Remove all the copies of SAKAISESSIONID and SERVERID: the next login makes them again. The SSO
-  // session (idpsession) stays, so the login does not ask for the password.
-  repairSession: {
+  // The automatic login of content.js: one at a time for all the tabs, and none in the LOGIN_GAP_MS after a login
+  // (also one of the user: content.js tells it, with "user"). Two logins at the same time break each other.
+  loginStart: {
     content: true,
-    run: async () => {
-      await dropSessionCookies([SESSION_HOST]);
-      return { ok: true };
+    run: (msg) => {
+      const job = loginQueue.then(async () => {
+        const area = ext.storage.session || ext.storage.local;
+        const { loginAt } = await area.get('loginAt');
+        if (!msg.user && loginAt && Date.now() - loginAt < LOGIN_GAP_MS) return null;
+        await area.set({ loginAt: Date.now() });
+        return { ok: true };
+      });
+      loginQueue = job.catch(() => {});
+      return job;
     }
   },
   logout: {
     content: true,
     run: async () => {
       await store.update('paused', (p) => (p === 'user' || p === 'reset' ? p : true)); // "Pausar" stays until "Reanudar"
-      await clearPersisted();
+      // The session ends with the browser. The cookies stay for the logout of MiAulario, which goes on to the SSO.
+      await unpersistExisting();
       // The course data stays only while the user is logged in. It goes now; then the sync that is
       // running ends (a new one stops: paused) and what it wrote goes too. Now first: if the browser
       // stops the service worker during the wait, no data stays.
@@ -813,7 +769,7 @@ const handlers = {
       });
       await sync.touch();
       if (MAK.hiddenEverywhere(settings).has(siteId) || !settings.syncEnabled) return { isNew: info.isNew, since: info.since, news: null, lang: settings.lang };
-      if (info.isNew && !st.paused) await sync.run({ siteIds: [siteId] }).catch(() => {});
+      if (info.isNew && !MAK.dataPaused(st.paused)) await sync.run({ siteIds: [siteId] }).catch(() => {});
       const key = MAK.resourceKey(siteId);
       const d = await store.get(['announcements', 'assignments', 'forums', 'pages', 'forumSnap', 'grades', key]);
       const snap = (d.forumSnap || {})[siteId];
@@ -1247,7 +1203,9 @@ async function boot() {
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
-  await (MAK.KEEP_SESSION ? persistExisting() : unpersistExisting());
+  // The persistent copies of idpsession of older versions (and without MAK.KEEP_SESSION, all of them) become session
+  // cookies again. With it, the ping below makes the cookies of MiAulario persistent if the session has a user.
+  await unpersistExisting(MAK.KEEP_SESSION ? ['sso.unavarra.es'] : undefined);
   await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});

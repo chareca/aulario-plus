@@ -146,7 +146,7 @@
 
     async function runOnce(o) {
       const st = await store.get(['paused', 'settings', 'meta']);
-      if (st.paused) return { skipped: 'paused' };
+      if (MAK.dataPaused(st.paused)) return { skipped: 'paused' };
       const settings = MAK.withDefaults(st.settings);
       if (!settings.syncEnabled) return { skipped: 'disabled' };
       let meta = Object.assign({}, st.meta);
