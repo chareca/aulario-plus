@@ -121,6 +121,14 @@ test('recordGain: only what went up since the user saw it (new passed subjects, 
   assert.equal(MAK.recordGain(before, { codes: ['A'], pct: 20 }), null, 'a seen state of a version before (no rank): no rank up');
 });
 
+test('the reading: one at a time (the alarm and a click at once: one window)', async () => {
+  const bg = loadBackground();
+  await bg.ext.permissions.request(bg.MAK.RECORD_PERMISSION);
+  const both = await Promise.all([bg.fireAlarm('sigma-record'), bg.send({ type: 'recordOpen' }), bg.send({ type: 'recordOpen' })]);
+  assert.deepEqual(both.slice(1), [{ ok: true }, { ok: true }]);
+  assert.equal(bg.ext._tabs.length, 1, 'one reading');
+});
+
 test('the reading: in the background (every 3 days) or in a small window ("Abrir expediente"); it ends after "Expediente completo"', async () => {
   const bg = loadBackground();
   assert.deepEqual(await bg.send({ type: 'recordOpen' }), { error: 'record.permission' }, 'nothing without the permission');

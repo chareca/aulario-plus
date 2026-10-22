@@ -17,7 +17,6 @@
   const CALENDAR_MS = 6 * HOUR;
   const CALENDAR_DAYS = 6 * 7; // the week view: this week and the next 5 weeks
   const PAGES_MS = DAY;
-  const LOCK_MS = 3 * MINUTE;
   const ANNOUNCEMENT_DAYS = 60;
   const MAX_FORUMS_PER_SITE = 10;
   const MAX_LESSONS_PER_SITE = 10;
@@ -78,7 +77,6 @@
   MAK.createSync = function (opts) {
     const api = opts.api;
     const store = opts.store;
-    const lockArea = opts.lockArea || null;
     const now = opts.now || (() => Date.now());
     const pauseMs = opts.pauseMs === undefined ? 300 : opts.pauseMs;
     const sleep = opts.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
@@ -89,18 +87,6 @@
       const idle = meta.lastUse ? t - meta.lastUse > IDLE_AFTER_MS : false;
       const age = t - (meta.lastSync || 0);
       return age < 0 || age >= (idle ? IDLE_ROUTINE_MS : ROUTINE_MS); // < 0: the clock went back
-    }
-
-    async function takeLock() {
-      if (!lockArea) return true;
-      const { syncLock } = await lockArea.get('syncLock');
-      if (syncLock && syncLock > now()) return false;
-      await lockArea.set({ syncLock: now() + LOCK_MS });
-      return true;
-    }
-
-    async function releaseLock() {
-      if (lockArea) await lockArea.set({ syncLock: 0 });
     }
 
     // Remove all the course data and the reading state, and from the settings what the user wrote about
@@ -115,7 +101,9 @@
         const meta = all.meta || {};
         // A logout keeps who the user was: then the login of another user removes the official grades.
         await tx.set({ meta: Object.assign({ installedAt: meta.installedAt || now() }, otherUser ? {} : { userId: meta.userId, userEid: meta.userEid }) });
-        if (all.settings) await tx.set({ settings: Object.assign({}, all.settings, { targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '' }) });
+        // Another user: also the names of the sites, the degree and the message to a teacher (signed with a name).
+        const theirs = otherUser ? { nicknames: {}, degree: '', teacherSubject: '', teacherBody: '' } : {};
+        if (all.settings) await tx.set({ settings: Object.assign({}, all.settings, { targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '' }, theirs) });
       });
     }
 
@@ -154,7 +142,6 @@
       // A wait of more than 1 hour (the longest): the clock went back; no wait.
       if (meta.backoffUntil && now() < meta.backoffUntil && meta.backoffUntil - now() <= HOUR) return { skipped: 'backoff' };
       if (!o.force && !(o.siteIds && o.siteIds.length) && !isDue(meta)) return { skipped: 'not-due' };
-      if (!(await takeLock())) return { skipped: 'locked' };
 
       const t = now();
       if (meta.lastSync > t) meta.lastFullSync = meta.sitesAt = meta.calendarAt = 0; // the clock went back: all again
@@ -189,8 +176,7 @@
           if (!(e && (e.kind === 'not-json' || e.status === 401 || e.status === 403))) throw e;
         }
         if (!session || !session.userId) {
-          meta.loggedIn = false;
-          await store.set({ meta });
+          meta.loggedIn = false; // written at the end (finally)
           return { skipped: 'logged-out' };
         }
         if (meta.userId && meta.userId !== session.userId) {
@@ -362,8 +348,11 @@
           meta.stale.session = t;
         }
       } finally {
-        await store.set({ meta });
-        await releaseLock();
+        // The copy of meta is from the start: a visit while the sync ran (touch) wrote a newer lastUse.
+        await store.update('meta', (cur) => {
+          const lastUse = Math.max((cur && cur.lastUse) || 0, meta.lastUse || 0);
+          return lastUse ? Object.assign({}, meta, { lastUse }) : meta;
+        });
       }
       result.full = full;
       return result;

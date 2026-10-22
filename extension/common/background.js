@@ -19,7 +19,7 @@ if (typeof importScripts === 'function') {
 const ext = globalThis.browser ?? globalThis.chrome;
 const store = MAK.createStore(ext.storage.local);
 const courseApi = MAK.createApi({ fetch: (url, init) => fetch(url, init) });
-const sync = MAK.createSync({ api: courseApi, store, lockArea: ext.storage.session || null, onNewGrades: (list) => notifyNewGrades(list) });
+const sync = MAK.createSync({ api: courseApi, store, onNewGrades: (list) => notifyNewGrades(list) });
 
 const SESSION_URL = 'https://miaulario.unavarra.es/direct/session/current.json';
 // The popup asks for a sync when the data is older than this.
@@ -107,8 +107,16 @@ async function endStaleRun() {
 }
 
 // shown: a small window, which the user sees ("Abrir expediente"), else a tab in the background.
-// from: the tab that shows the average and the rank at the end (MiAulario), or null.
-async function refreshRecord(shown, from) {
+// from: the tab that shows the average and the rank at the end (MiAulario), or null. One at a time: the alarm and a
+// click at once would open two readings (the second one in recordRun, the first tab open for ever); the second one
+// waits, then sees the open reading.
+let recordQueue = Promise.resolve();
+function refreshRecord(shown, from) {
+  const job = recordQueue.then(() => startRecord(shown, from));
+  recordQueue = job.catch(() => {});
+  return job;
+}
+async function startRecord(shown, from) {
   if ((await store.get('paused')).paused === 'reset') return { error: 'record.paused' }; // all the data deleted
   if (!(await hasRecordPermission())) return { error: 'record.permission' };
   const run = await recordRun();

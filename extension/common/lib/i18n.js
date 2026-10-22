@@ -110,7 +110,6 @@
       'skip.disabled': 'La sincronización está desactivada',
       'skip.logged-out': 'Primero inicia sesión en MiAulario',
       'skip.backoff': 'El servidor está ocupado. Inténtalo más tarde',
-      'skip.locked': 'Ya hay una actualización en curso',
       'skip.someFailed': 'Algunos datos no se actualizaron',
 
       'badge.title': 'MiAulario: {due} entregas pronto · {unread} sin leer · {grades} notas nuevas',
@@ -912,7 +911,6 @@
       'skip.disabled': 'Course data sync is off',
       'skip.logged-out': 'Log in to MiAulario first',
       'skip.backoff': 'The server is busy. Do it again later',
-      'skip.locked': 'An update is in progress',
       'skip.someFailed': 'Some data did not update',
 
       'badge.title': 'MiAulario: {due} deliveries soon · {unread} unread · {grades} new grades',

@@ -11,7 +11,7 @@ function setup({ routes = F.routes(), local = {}, now = F.NOW } = {}) {
   const clock = { t: now };
   const store = MAK.createStore(area);
   const api = MAK.createApi({ fetch: fakeFetch(routes, log) });
-  const sync = MAK.createSync({ api, store, lockArea: memoryArea(), now: () => clock.t, pauseMs: 0 });
+  const sync = MAK.createSync({ api, store, now: () => clock.t, pauseMs: 0 });
   return { area, log, clock, store, sync, routes };
 }
 
@@ -166,9 +166,11 @@ test('a logout keeps the official grades and who the user was: another user afte
 });
 
 test('a different user removes all the data of the previous user', async () => {
-  const s = setup({ local: { settings: { hiddenSites: [F.COORD] }, readAnn: { x: 1 }, record: { rows: [], credits: [] }, recordSeen: { codes: [] } } });
+  const mine = { nicknames: { [F.CS]: 'IP' }, degree: 'https://www.unavarra.es/sites/grados/juridicas/derecho', teacherSubject: 'Duda', teacherBody: 'Un saludo, Ana Pérez' };
+  const s = setup({ local: { settings: Object.assign({ hiddenSites: [F.COORD] }, mine), readAnn: { x: 1 }, record: { rows: [], credits: [] }, recordSeen: { codes: [] } } });
   await s.sync.run({ force: true });
   assert.ok(s.area.data.record && s.area.data.recordSeen, 'the same user: the official grades stay');
+  assert.equal(s.area.data.settings.teacherBody, 'Un saludo, Ana Pérez', 'and what the user wrote');
   assert.equal(s.area.data.meta.userEid, 'chareca.1', 'the user of the photo of the bar (content-rank.js)');
   s.routes['/direct/session/current.json'] = { userId: 'user-2' };
   s.clock.t += MAK.HOUR;
@@ -178,7 +180,24 @@ test('a different user removes all the data of the previous user', async () => {
   assert.deepEqual(s.area.data.readAnn || {}, {});
   assert.deepEqual([s.area.data.record, s.area.data.recordSeen], [undefined, undefined], 'the official grades of the other user go');
   assert.ok(s.area.data.announcements.every((a) => a.seen === 0), 'the data of the new user is the baseline');
-  assert.deepEqual(s.area.data.settings, { hiddenSites: [F.COORD], targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '' }, 'settings stay, without what the user wrote');
+  assert.deepEqual(s.area.data.settings, { hiddenSites: [F.COORD], targets: {}, guideGrades: {}, guideWeights: {}, forwardEmail: '', nicknames: {}, degree: '', teacherSubject: '', teacherBody: '' },
+    'settings stay, without what the user wrote (also the names of the sites, the degree and the message signed with a name)');
+});
+
+test('a visit while the sync runs: its last use stays (the end of the sync does not write the copy of the start)', async () => {
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const routes = F.routes();
+  const session = routes['/direct/session/current.json'];
+  routes['/direct/session/current.json'] = async (...a) => { await gate; return typeof session === 'function' ? session(...a) : session; };
+  const s = setup({ routes, local: { meta: { lastUse: F.NOW - 13 * MAK.HOUR } } });
+  const run = s.sync.run({ force: true });
+  await new Promise((r) => setTimeout(r, 10));
+  s.clock.t += MAK.MINUTE;
+  await s.sync.touch(); // the user opens MiAulario
+  release();
+  await run;
+  assert.equal(s.area.data.meta.lastUse, F.NOW + MAK.MINUTE);
 });
 
 test('items that appear after the first sync get the time when the extension saw them', async () => {
