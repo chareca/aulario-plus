@@ -21,6 +21,14 @@
     assert.deepEqual(MAK.cleanGuide(g), g, 'the stored form is the same');
   });
 
+  test('guide: two activities with the same name are two (the calculator keeps a grade for each one)', () => {
+    const twice = GUIDE_HTML.replace('<td>Prácticas</td>', '<td>Examen teórico-práctico</td>');
+    const rows = MAK.parseGuide(parse(twice), URL_OK).evaluation.rows;
+    assert.deepEqual(rows.map((r) => [r.activity, r.weight]), [['Examen teórico-práctico', 60], ['Examen teórico-práctico (2)', 30], ['Lab report 1', 10]]);
+    const calc = MAK.guideCalc(rows, { 'Examen teórico-práctico': 3 }, {});
+    assert.equal(calc.rows.filter((r) => r.grade === 3).length, 1, 'a grade for one row, not for both');
+  });
+
   test('guide: a page that is not a guide gives null; a guide without the table gives no rows', () => {
     assert.equal(MAK.parseGuide(parse('<html><body><h1>Forbidden</h1></body></html>'), URL_OK), null);
     const noTable = GUIDE_HTML.replace(/<h3>Evaluación<\/h3>[\s\S]*<h3>Temario<\/h3>/, '<h3>Evaluación</h3><p>Examen final: 100 %.</p><h3>Temario</h3>');

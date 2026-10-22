@@ -137,6 +137,14 @@
       if (!c[cA]) continue;
       out.push({ activity: at(c, cA), weight: MAK.guideWeight(c[cW]), weightText: at(c, cW), recoverable: at(c, cR), minimum: at(c, cM), attendance: at(c, cT) });
     }
+    // Two rows with the same name ("Prueba escrita" 30 % and 40 %): the calculator keeps the grades and the weights by
+    // name, so the second one is "Prueba escrita (2)" (else a grade goes to both).
+    const seen = new Map();
+    for (const r of out) {
+      const n = (seen.get(r.activity) || 0) + 1;
+      seen.set(r.activity, n);
+      if (n > 1) r.activity = `${r.activity} (${n})`;
+    }
     return out;
   }
 
