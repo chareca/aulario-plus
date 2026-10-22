@@ -261,10 +261,11 @@ async function ping() {
   } catch (e) {
     last.error = String(e);
   }
-  // After a logout (paused: true), a new login continues, as "Reanudar" does.
+  // After a logout (paused: true), a new login continues, as "Reanudar" does: only if it is still so (all the data
+  // can be deleted while the request waits; then nothing more).
   if (paused === true) {
     if (!user) return null;
-    await store.set({ paused: false });
+    if ((await store.update('paused', (p) => (p === true ? false : undefined))) === 'reset') return null;
   }
   if (user && MAK.KEEP_SESSION && paused !== 'user') {
     await fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' }).catch(() => {});
@@ -272,7 +273,9 @@ async function ping() {
   } else if (user === '') {
     await unpersistExisting([SESSION_HOST]);
   }
-  await store.set({ last });
+  await store.transaction(async (tx) => {
+    if ((await tx.get('paused')).paused !== 'reset') await tx.set({ last });
+  });
   return last;
 }
 
@@ -1173,8 +1176,15 @@ ext.alarms.onAlarm.addListener((alarm) => {
 // tabs now, the others at their next load: content-early.js). Then the background starts again (its memory),
 // and the extension stays empty ("paused": 'reset'): no alarm, no ping, no sync, no message of the pages, until
 // the user starts it again in the popup ("resume").
+// Remove all the data of the storage, and mark the reset.
+const clearAll = () => store.transaction(async (tx) => {
+  await tx.remove(Object.keys(await tx.get(null)));
+  await tx.set({ paused: 'reset' });
+});
+
 async function wipeAll() {
-  await store.set({ paused: 'reset' }); // first: no new work starts
+  // First: no new work starts, and the data goes at once (the steps below can take a minute: a running sync ends).
+  await clearAll();
   await endRecordRun(''); // an open reading of SIGMA: its tab or window closes
   await sync.run().catch(() => {}); // the sync that is running ends
   if (historyRunning) await historyRunning.catch(() => {});
@@ -1195,10 +1205,7 @@ async function wipeAll() {
       })).catch(() => {});
     }
   }
-  await store.transaction(async (tx) => {
-    await tx.remove(Object.keys(await tx.get(null)));
-    await tx.set({ paused: 'reset' });
-  });
+  await clearAll(); // again: what the running sync wrote while it ended
   if (ext.storage.session) await ext.storage.session.remove(Object.keys(await ext.storage.session.get(null)));
   // After the answer to the popup (a reload closes it).
   if (ext.runtime.reload) setTimeout(() => ext.runtime.reload(), 500);
@@ -1206,8 +1213,9 @@ async function wipeAll() {
 }
 
 async function boot() {
-  // All the data was deleted: nothing starts until the user starts it again ("resume").
-  if ((await ext.storage.local.get('paused')).paused === 'reset') return;
+  // All the data was deleted: nothing starts until the user starts it again ("resume"). A deletion that the end of the
+  // browser cut ends here (the data that a running sync wrote after the first removal).
+  if ((await ext.storage.local.get('paused')).paused === 'reset') return clearAll();
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();

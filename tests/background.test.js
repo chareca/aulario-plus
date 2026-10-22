@@ -107,6 +107,24 @@ test('"Danger zone": wipeAll deletes all the data, the alarms, the notifications
   assert.ok(await bg.send({ type: 'getStatus' }, CONTENT()));
 });
 
+test('"Borrar todos los datos" wins over a ping that waits for MiAulario, and a deletion cut by the end of the browser ends at the next start', async () => {
+  let release;
+  const slow = new Promise((r) => { release = r; });
+  const routes = F.routes();
+  const session = routes['/direct/session/current.json'];
+  routes['/direct/session/current.json'] = async (...a) => { await slow; return typeof session === 'function' ? session(...a) : session; };
+  const bg = loadBackground({ fetch: fakeFetch(routes), local: { paused: true, sites: [{ id: 'x' }] } });
+  const ping = bg.send({ type: 'pingNow' }); // a logout: the ping sees if the user logged in again, and waits
+  assert.deepEqual(await bg.send({ type: 'wipeAll' }), { ok: true });
+  release();
+  assert.equal(await ping, null);
+  assert.deepEqual(bg.ext.storage.local.data, { paused: 'reset' }, 'no "paused: false" and no "last" after the deletion');
+  // The browser closed in the middle of a deletion: the next start removes what is left.
+  const next = loadBackground({ local: { paused: 'reset', sites: [{ id: 'x' }], history: { at: 1, items: {} } } });
+  for (const f of next.ext._listeners.startup) await f();
+  assert.deepEqual(next.ext.storage.local.data, { paused: 'reset' });
+});
+
 test('an extension page in a tab is a page, not a content script', async () => {
   const bg = loadBackground();
   const sender = { id: 'ext-id', tab: { id: 9 }, frameId: 0, url: 'chrome-extension://ext-id/tools.html' };
