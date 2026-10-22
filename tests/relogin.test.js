@@ -12,7 +12,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'extensio
 const group = manifest.content_scripts.find((g) => g.js.includes('content.js'));
 const SAML = '/sakai-login-tool/container/saml/login';
 
-async function run({ loggedIn = false, paused = false, autoLogin = true, granted = true, storage = {}, pathname = '/portal', keepSession = true, notice = false } = {}) {
+async function run({ loggedIn = false, paused = false, autoLogin = true, granted = true, storage = {}, pathname = '/portal', keepSession = true, notice = null } = {}) {
   const assigned = [];
   const messages = [];
   const session = new Map(Object.entries(storage).map(([k, v]) => [k, String(v)]));
@@ -33,7 +33,7 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, granted
           messages.push(msg.type);
           if (msg.type === 'getStatus') return { paused, autoLogin, nextPing: null };
           if (msg.type === 'loginStart') return granted ? { ok: true } : null;
-          if (msg.type === 'keepOffNotice') return { show: notice, lang: 'es' };
+          if (msg.type === 'pageNotice') return Object.assign({ lang: 'es' }, notice);
           return null;
         }
       },
@@ -82,16 +82,17 @@ test('paused (after a logout, or by the user) or automatic login off: no login',
   }
 });
 
-test('keeping the session off (MAK.KEEP_SESSION): no automatic login; the notice of the background once', async () => {
+test('keeping the session off (MAK.KEEP_SESSION): no automatic login; the window that the background gives, once', async () => {
   const off = await run({ keepSession: false });
   assert.deepEqual(off.assigned, []);
   assert.ok(!off.messages.includes('loginStart') && !off.messages.includes('getStatus'));
   assert.deepEqual(off.asked, [], 'the background says that the user saw it');
-  const first = await run({ keepSession: false, notice: true, loggedIn: true });
+  const first = await run({ keepSession: false, notice: { kind: 'keepOff' }, loggedIn: true });
   assert.equal(first.asked.length, 1);
   assert.deepEqual([first.asked[0][0], first.asked[0][3]], ['Mantener la sesión, desactivado por ahora', null], 'one button');
-  const on = await run({ notice: true });
-  assert.ok(!on.messages.includes('keepOffNotice'), 'with the session kept: no notice');
+  // The news of a new version: its line, a button to all the news and "Cerrar".
+  const news = await run({ notice: { kind: 'release', version: '1.6.7', text: 'Dos temas nuevos.' }, loggedIn: true });
+  assert.deepEqual(news.asked, [['Novedades de la versión 1.6.7', 'Dos temas nuevos.', 'Ver todas las novedades', 'Cerrar']]);
 });
 
 test('the login pages are not changed', async () => {

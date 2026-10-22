@@ -13,7 +13,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js', 'lib/history.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js', 'lib/history.js', 'lib/help.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -725,18 +725,36 @@ const handlers = {
       return { ok: !!mode };
     }
   },
-  // Keeping the session is off (MAK.KEEP_SESSION): the window that says it, once, at the first page of MiAulario
-  // (content.js). true only for the first request, also with several tabs.
-  keepOffNotice: {
+  // A window over the first page of MiAulario (content.js): at most one, and each one only once, marked as seen when it
+  // is given (also with several tabs at once). First "keeping the session is off" (once since the install, while
+  // MAK.KEEP_SESSION is off), then the news of a new version in one line (once for each version: whatsNew, set by the
+  // update; the bar of the popup goes with it). { lang, kind: 'keepOff' | 'release' (version, text) } or { lang }.
+  pageNotice: {
     content: true,
     run: async () => {
-      let show = false;
-      await store.update('keepOffSeen', (seen) => {
-        show = !seen && !MAK.KEEP_SESSION;
-        return show || undefined;
+      const lang = MAK.withDefaults((await store.get('settings')).settings).lang;
+      const version = ext.runtime.getManifest().version;
+      const news = MAK.changesOf(version);
+      let notice = null;
+      await store.transaction(async (tx) => {
+        const st = await tx.get(['keepOffSeen', 'whatsNew']);
+        if (!st.keepOffSeen && !MAK.KEEP_SESSION) {
+          await tx.set({ keepOffSeen: true });
+          notice = { kind: 'keepOff' };
+        } else if (st.whatsNew === version && news && news.short) {
+          await tx.remove('whatsNew');
+          notice = { kind: 'release', version, text: news.short[lang] || news.short.es };
+        }
       });
-      const { settings } = await store.get('settings');
-      return { show, lang: MAK.withDefaults(settings).lang };
+      return Object.assign({ lang }, notice);
+    }
+  },
+  // "Ver todas las novedades" in that window: the page of the news.
+  openNews: {
+    content: true,
+    run: async () => {
+      await ext.tabs.create({ url: ext.runtime.getURL('tools.html?news') });
+      return { ok: true };
     }
   },
   dismissWhatsNew: {

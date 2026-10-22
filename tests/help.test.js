@@ -22,6 +22,9 @@ test('issueUrl: a problem or an idea on GitHub, with the version, the browser an
   assert.equal(new URL(MAK.issueUrl({ kind: 'idea', version: '1', browser: 'x', lang: 'en' })).searchParams.get('labels'), 'enhancement');
   assert.ok(MAK.CHANGES.every((c) => /^\d+\.\d+\.\d+$/.test(c.version) && c.es.length === c.en.length), 'the same changes in both languages');
   assert.equal(MAK.changesOf('1.6.4').version, '1.6.4');
+  // The newest version: its news in one short line in both languages (the window over MiAulario after the update).
+  const { short } = MAK.CHANGES[0];
+  assert.ok(short && ['es', 'en'].every((l) => typeof short[l] === 'string' && short[l].trim() && !/\n/.test(short[l]) && short[l].length <= 160), 'the line of the news of the newest version');
   assert.equal(MAK.changesOf('0.0.1'), null);
 });
 

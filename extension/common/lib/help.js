@@ -37,10 +37,16 @@
   };
 
   // The changes of each version, the newest first (es and en). The popup shows a notice after an
-  // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey).
+  // update to a version of this list. "{key}": the keys of the search of the system (MAK.searchKey). "short": the
+  // news in one line, for the window over MiAulario after the update (each new version needs it).
   MAK.CHANGES = [
     {
       version: '1.6.7',
+      // The news in one line: the window over MiAulario after the update (background.js, pageNotice).
+      short: {
+        es: 'Dos temas nuevos (Vía Láctea y Catppuccin), Mi sitio aprovecha mejor el espacio y puedes exportar tu configuración en Ajustes.',
+        en: 'Two new themes (Milky Way and Catppuccin), Mi sitio uses the space better, and you can export your settings in the settings.'
+      },
       es: [
         'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.',
         'La ventana «Escribir a un profesor» se queda siempre dentro de la pantalla, también con las asignaturas del final de la lista.',

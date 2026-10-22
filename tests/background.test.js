@@ -160,10 +160,48 @@ test('keeping the session off (MAK.KEEP_SESSION): the ping only reads the sessio
   const reads = log.filter((x) => x.url.includes('/direct/session/current.json'));
   assert.ok(reads.length && reads.every((x) => x.url.includes('auto=true')), 'no request without auto=true: Sakai records no activity');
   assert.equal(bg.ext.storage.local.data.last.loggedIn, true, 'the state of the session for the popup');
-  const shown = await Promise.all([1, 2].map(() => bg.send({ type: 'keepOffNotice' }, CONTENT())));
-  assert.deepEqual(shown.map((r) => r.show).sort(), [false, true], 'two tabs at once: one window');
-  assert.equal((await bg.send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'only once');
-  assert.equal((await loadBackground({ keepSession: true }).send({ type: 'keepOffNotice' }, CONTENT())).show, false, 'with the session kept: no notice');
+  const shown = await Promise.all([1, 2].map(() => bg.send({ type: 'pageNotice' }, CONTENT())));
+  assert.deepEqual(shown.map((r) => r.kind || null).sort(), ['keepOff', null], 'two tabs at once: one window');
+  assert.equal((await bg.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'only once');
+  // Seen in an earlier version: not again after an update, a logout or the login of another user.
+  const seen = loadBackground({ fetch: fakeFetch(F.routes()), local: { keepOffSeen: true } });
+  for (const f of seen.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
+  await seen.send({ type: 'logout' }, CONTENT({ url: 'https://miaulario.unavarra.es/portal' }));
+  await seen.ext.storage.local.set({ meta: { userId: 'someone-else' } });
+  await seen.send({ type: 'syncNow' });
+  assert.equal((await seen.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'seen before: not again');
+  assert.equal((await loadBackground({ keepSession: true }).send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'with the session kept: no notice');
+});
+
+test('the news of a new version: one window over MiAulario after the update (not after an install), with its line, once; the bar of the popup goes with it', async () => {
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const updated = (local) => {
+    const bg = loadBackground({ local });
+    bg.ext.runtime.getManifest = () => ({ version: '1.6.7' });
+    return bg;
+  };
+  const bg = updated({ keepOffSeen: true });
+  for (const f of bg.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
+  await tick();
+  assert.equal(bg.ext.storage.local.data.whatsNew, '1.6.7');
+  const two = await Promise.all([1, 2].map(() => bg.send({ type: 'pageNotice' }, CONTENT())));
+  const shown = two.filter((r) => r.kind);
+  assert.equal(shown.length, 1, 'two tabs at once: one window');
+  assert.deepEqual([shown[0].kind, shown[0].version, shown[0].text], ['release', '1.6.7', bg.MAK.changesOf('1.6.7').short.es]);
+  assert.equal(bg.ext.storage.local.data.whatsNew, undefined, 'seen: the bar of the popup goes too');
+  assert.equal((await bg.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'only once');
+  assert.deepEqual(await bg.send({ type: 'openNews' }, CONTENT()), { ok: true });
+  assert.equal(bg.ext._tabs.at(-1).url, 'chrome-extension://ext-id/tools.html?news', '"Ver todas las novedades"');
+  // The notice of the session not seen yet: that one first, the news at the next page.
+  const both = updated({});
+  for (const f of both.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.5' });
+  await tick();
+  assert.deepEqual([(await both.send({ type: 'pageNotice' }, CONTENT())).kind, (await both.send({ type: 'pageNotice' }, CONTENT())).kind], ['keepOff', 'release']);
+  // An install: the welcome page, no window of news.
+  const fresh = updated({});
+  for (const f of fresh.ext._listeners.installed) await f({ reason: 'install' });
+  await tick();
+  assert.deepEqual([(await fresh.send({ type: 'pageNotice' }, CONTENT())).kind, (await fresh.send({ type: 'pageNotice' }, CONTENT())).kind], ['keepOff', undefined]);
 });
 
 test('the popup reads the session when it opens and with ↻, not only at the next alarm', async () => {

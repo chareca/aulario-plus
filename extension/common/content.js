@@ -147,17 +147,19 @@
     MAK.showNewsBanner({ siteId: here.siteId, result: r, compact: !r.isNew });
   }
 
-  // Keeping the session is off for now: say it once, in a window over the first page of MiAulario.
-  async function keepOffNotice() {
-    if (MAK.KEEP_SESSION || !MAK.askWindow) return;
-    const r = await send({ type: 'keepOffNotice' });
-    if (!r || !r.show) return;
+  // A window over the first page of MiAulario, each one once (the background says which one and marks it seen):
+  // keeping the session is off for now, or the news of a new version in one line, with a button to all of them.
+  async function pageNotice() {
+    if (!MAK.askWindow) return;
+    const r = await send({ type: 'pageNotice' });
+    if (!r || !r.kind) return;
     MAK.setLang(r.lang);
-    MAK.askWindow(MAK.t('keepOff.title'), MAK.t('keepOff.text'), MAK.t('keepOff.ok'), null);
+    if (r.kind === 'keepOff') return MAK.askWindow(MAK.t('keepOff.title'), MAK.t('keepOff.text'), MAK.t('keepOff.ok'), null);
+    if (await MAK.askWindow(MAK.t('release.title', { version: r.version }), r.text, MAK.t('release.see'), MAK.t('release.close'))) send({ type: 'openNews' });
   }
 
   if (await reloginIfNeeded()) return;
-  keepOffNotice();
+  pageNotice();
   reportToolVisit();
   flushPendingMarkViewed();
   reportVisit('load');

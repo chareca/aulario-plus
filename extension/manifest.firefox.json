@@ -50,6 +50,7 @@
       "lib/degree.js",
       "lib/record.js",
       "lib/history.js",
+      "lib/help.js",
       "background.js"
     ]
   },
