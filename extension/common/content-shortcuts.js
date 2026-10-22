@@ -75,7 +75,7 @@
     .exams-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
     .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
     @container (max-width: 700px) { .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr); } }
-    .exams-row .exams { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 0; }
+    ${MAK.EXAM_ROWS_CSS}
     .exams-row .cal-wrap { margin: 0; }
     ${MAK.EXAM_CAL_CSS}
     .mak-btn { padding: 4px 12px; }

@@ -228,6 +228,19 @@
     .cal-toggle[aria-pressed="true"] { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); }
   `;
 
+  // The cards of the exams of "Mi sitio" (content-shortcuts.js) in .exams-row .exams.
+  MAK.EXAM_ROWS_CSS = `
+    /* The cards in rows of 3; the last row never has one card alone: 5 = 3 + 2, 4 = 2 + 2, 7 = 3 + 2 + 2, 1 = the full width.
+       A grid of 6: a card takes 2 columns, in a row of 2 it takes 3. */
+    .exams-row .exams { grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0; }
+    .exams-row .exams li { grid-column: span 2; }
+    .exams-row .exams li:nth-last-child(2):nth-child(3n+1), .exams-row .exams li:nth-last-child(1):nth-child(3n+2),
+    .exams-row .exams li:nth-last-child(4):nth-child(3n+1), .exams-row .exams li:nth-last-child(3):nth-child(3n+2),
+    .exams-row .exams li:nth-last-child(2):nth-child(3n), .exams-row .exams li:nth-last-child(1):nth-child(3n+1) { grid-column: span 3; }
+    .exams-row .exams li:only-child:nth-child(n) { grid-column: 1 / -1; }
+    @container (max-width: 460px) { .exams-row .exams li:nth-child(n):nth-last-child(n) { grid-column: 1 / -1; } }
+  `;
+
   // The calendar: days (MAK.examDays), the months of the days (of the focus: its exams). null without a day.
   MAK.examCalendar = function (days, { focus, now } = {}) {
     const h = MAK.h;
