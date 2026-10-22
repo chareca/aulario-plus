@@ -4,6 +4,8 @@
   'use strict';
   const MAK = (root.MAK = root.MAK || {});
 
+  // A key never changes its meaning or its type: files of «Exportar mi configuración» of other versions keep their
+  // keys (MAK.configMerge takes a key only with the type of its default). A new meaning: a new key.
   MAK.defaultSettings = function () {
     return {
       syncEnabled: true,
@@ -144,7 +146,7 @@
       notifyDue: 'notifyDue' in s ? !!s.notifyDue : d.notifyDue,
       dueOffsets: cleanOffsets(s.dueOffsets, d.dueOffsets),
       badge,
-      hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string'))].slice(0, 500) : [],
+      hiddenSites: Array.isArray(s.hiddenSites) ? [...new Set(s.hiddenSites.filter((x) => typeof x === 'string' && x.length < 300))].slice(0, 500) : [],
       hiddenMode: s.hiddenMode === 'sidebar' ? 'sidebar' : 'everywhere',
       lang: s.lang === 'en' ? 'en' : 'es',
       targets: cleanTargets(s.targets),
@@ -224,11 +226,12 @@
       if (!o || typeof o !== 'object' || cleanValue(o.app) !== 'Aulario Plus' || !o.settings || typeof o.settings !== 'object' || Array.isArray(o.settings)) return null;
       const version = typeof o.version === 'string' ? cleanValue(o.version).slice(0, 20) : '';
       const exported = typeof o.exported === 'string' && !Number.isNaN(Date.parse(o.exported)) ? o.exported : '';
+      // Only the known values, cleaned: the message to the background is small and has no deep data.
+      const settings = sameKind(cleanValue(o.settings), MAK.defaultSettings());
       // A theme that this version does not have (an older or newer one): the current theme stays. MAK.themeIds: the
       // pages (lib/themes.js), where the file is read.
-      const theme = cleanValue(o.settings.theme);
-      const settings = MAK.themeIds && theme && !MAK.themeIds().includes(theme) ? Object.fromEntries(Object.entries(o.settings).filter(([k]) => k !== 'theme')) : o.settings;
-      return { file: { settings, ui: o.ui, sitePhotos: o.sitePhotos }, version, exported };
+      if (MAK.themeIds && settings.theme && !MAK.themeIds().includes(settings.theme)) delete settings.theme;
+      return { file: { settings, ui: MAK.cleanUi(cleanValue(o.ui)), sitePhotos: MAK.cleanPhotos(cleanValue(o.sitePhotos)) }, version, exported };
     } catch {
       return null;
     }

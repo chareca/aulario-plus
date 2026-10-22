@@ -37,6 +37,9 @@ test('"Importar mi configuración": only a file of Aulario Plus, whatever its na
     assert.equal(MAK.configImport(bad), null, bad.slice(0, 40));
   }
   assert.equal(MAK.configImport(JSON.stringify({ app: 'Aulario Plus', exported: 'ayer', version: 7, settings: {} })).exported, '', 'a date that is not a date');
+  // What goes to the background: only the known values with their type, cleaned.
+  const sent = MAK.configImport(JSON.stringify({ app: 'Aulario Plus', settings: { theme: ' cromo​', confetti: 'yes', debugMode: true, big: 'x'.repeat(5e5), nicknames: { a: [[[[['A']]]]] } }, ui: { 'mak-a': '1', b: '1' }, sitePhotos: { s: 99 } })).file;
+  assert.deepEqual(sent, { settings: { theme: 'cromo', nicknames: { a: [[]] } }, ui: { 'mak-a': '1' }, sitePhotos: {} }, 'at most 4 levels; MAK.withDefaults drops the rest');
 });
 
 test('"Importar mi configuración": a file of an older or newer version, strange values, extra settings; the file wins only with right values', () => {
@@ -46,7 +49,7 @@ test('"Importar mi configuración": a file of an older or newer version, strange
   const old = merge({ theme: 'galaxia', oldSetting: true });
   assert.deepEqual([old.settings.theme, old.settings.notifyDue, old.settings.teacherBody, 'oldSetting' in old.settings], ['galaxia', false, 'Hola,\n\nUn saludo', false]);
   // A wrong type: ignored (the current value stays), also inside the badge and the links.
-  const odd = merge({ notifyDue: 'true', theme: 42, dueOffsets: 'many', badge: { grades: 'yes', messages: false, extra: 1 }, links: { downloads: '9', mode: 'key' }, hiddenSites: [1, 'x', null] });
+  const odd = merge({ notifyDue: 'true', theme: 42, dueOffsets: 'many', badge: { grades: 'yes', messages: false, extra: 1 }, links: { downloads: '9', mode: 'key' }, hiddenSites: [1, 'x', null, 'y'.repeat(300)] });
   assert.deepEqual([odd.settings.notifyDue, odd.settings.theme, odd.settings.dueOffsets], [false, 'cromo', MAK.defaultSettings().dueOffsets]);
   assert.deepEqual([odd.settings.badge.grades, odd.settings.badge.messages, 'extra' in odd.settings.badge], [false, false, false]);
   assert.deepEqual([odd.settings.links.downloads, odd.settings.links.mode, odd.settings.hiddenSites], [MAK.defaultSettings().links.downloads, 'key', ['x']]);

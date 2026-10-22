@@ -302,7 +302,8 @@ async function runImport() {
       return;
     }
     const cur = await ext.storage.local.get(['settings', 'pageUi', 'sitePhotos']);
-    const n = MAK.configChanges(cur, MAK.configMerge(cur, got.file));
+    const next = MAK.configMerge(cur, got.file);
+    const n = MAK.configChanges(cur, next);
     if (!n) {
       status.textContent = t('config.importSame');
       return;
@@ -320,7 +321,10 @@ async function runImport() {
       status.textContent = t(r && r.ok ? 'config.importDone' : 'config.importError');
     });
     const date = got.exported ? MAK.formatDate(Date.parse(got.exported)) : '?';
-    fill(ask, h('p', { text: t('config.importAsk', { n, date, version: got.version || '?' }) }), h('div', { class: 'row' }, no, yes));
+    // A new address for the forward of the mail (content-forward.js shows it): only with a word about it.
+    const email = next.settings.forwardEmail !== MAK.withDefaults(cur.settings).forwardEmail && next.settings.forwardEmail;
+    fill(ask, h('p', { text: t('config.importAsk', { n, date, version: got.version || '?' }) }),
+      email ? h('p', null, h('strong', { text: t('config.importEmail', { email }) })) : null, h('div', { class: 'row' }, no, yes));
     ask.hidden = false;
     no.focus();
   });
