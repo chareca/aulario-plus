@@ -162,6 +162,13 @@ function renderSearch() {
       })
     ])
   );
+  markSearchSel();
+}
+
+// The selected result: its mark, and in view.
+function markSearchSel() {
+  const el = $('search-results');
+  for (const a of el.querySelectorAll('.result')) a.classList.toggle('sel', Number(a.dataset.n) === ui.searchSel);
   const sel = el.querySelector('.result.sel');
   if (sel) sel.scrollIntoView({ block: 'nearest' });
 }
@@ -179,7 +186,7 @@ function setupSearch() {
       e.preventDefault();
       const n = ui.searchList.length;
       if (n) ui.searchSel = (ui.searchSel + step + n) % n;
-      renderSearch();
+      markSearchSel(); // the same results: only the mark moves (not the search again, at each key)
     } else if (e.key === 'Enter') {
       const x = ui.searchList[ui.searchSel];
       if (x) ext.tabs.create({ url: x.url });
