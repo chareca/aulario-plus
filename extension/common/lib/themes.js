@@ -1613,6 +1613,7 @@
     {
       id: 'galaxia',
       name: { es: 'Vía Láctea', en: 'Milky Way' },
+      brand: 'Vía Aulactea', // the name in the titles
       about: { es: 'Vidrio sobre la Vía Láctea de verdad (foto: ESO/S. Brunier).', en: 'Glass over the real Milky Way (photo: ESO/S. Brunier).' },
       fonts: [{ family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }],
       light: {

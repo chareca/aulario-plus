@@ -67,10 +67,11 @@ test('the CSS of a theme for its card in the settings: only rules of its card, i
   for (const id of MAK.themeIds()) assert.ok(MAK.pageThemeCss(id, (f) => `fonts/${f}`, 'light').includes(xp), `with the theme ${id}`);
 });
 
-test('the name in the titles: "AulaXP" with AulaXP, else "Aulario Plus"', () => {
+test('the name in the titles: "AulaXP" with AulaXP, "Vía Aulactea" with Vía Láctea, else "Aulario Plus"', () => {
   assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'AulaXP');
   assert.equal(MAK.brandName(MAK.theme('cromo')), 'AulaXP');
-  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno', 'galaxia']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
+  assert.equal(MAK.brandName(MAK.theme('galaxia')), 'Vía Aulactea');
+  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
   assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);
