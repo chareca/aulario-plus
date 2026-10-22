@@ -49,7 +49,8 @@
         'En todos los temas, los botones invierten sus colores al pasar el ratón, poco a poco.',
         'El buscador ({key}) no pierde nunca el foco mientras está abierto: puedes escribir siempre, aunque hagas clic dentro de él o la página se esté cargando. Un clic fuera lo cierra.',
         'Mi sitio aprovecha mejor el espacio: los atajos van en la cabecera de los exámenes, el próximo examen ocupa una franja baja y las tarjetas de los exámenes van al lado del calendario. Con la pantalla a la mitad, las tarjetas van de dos en dos y el calendario debajo, con los meses lado a lado.',
-        'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.'
+        'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.',
+        'Tema nuevo, Catppuccin («Aulappuccin»): los colores pastel de Catppuccin, Latte en light mode y Mocha en dark mode, con botones de varios colores y títulos en degradado.'
       ],
       en: [
         'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
@@ -59,7 +60,8 @@
         'In all the themes, the buttons swap their colors on hover, slowly.',
         'The search ({key}) never loses the focus while it is open: you can always type, also after a click in it or while the page loads. A click outside closes it.',
         'Mi sitio uses the space better: the shortcuts are in the head of the exams, the next exam takes a low strip, and the cards of the exams are next to the calendar. With the window at half the screen, the cards go two by two and the calendar below them, with its months side by side.',
-        'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.'
+        'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.',
+        'A new theme, Catppuccin ("Aulappuccin"): the pastel colors of Catppuccin, Latte in light mode and Mocha in dark mode, with buttons of several colors and titles in a gradient.'
       ]
     },
     {

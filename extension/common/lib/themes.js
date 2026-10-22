@@ -190,6 +190,20 @@
     + '<linearGradient id="r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9fb4ff"/><stop offset="0.5" stop-color="#ffe3ad"/><stop offset="1" stop-color="#c79bff"/></linearGradient></defs>'
     + '<g transform="rotate(-20 13 13)" fill="none" stroke="url(#r)" stroke-width="1.9" stroke-linecap="round"><path d="M1.8 13a11.2 3.6 0 0 1 22.4 0"/>'
     + '<circle cx="13" cy="13" r="6.4" fill="url(#p)" stroke="none"/><path d="M1.8 13a11.2 3.6 0 0 0 22.4 0"/></g></svg>');
+  // The logo of the theme Catppuccin (our own drawing, not the cat of Catppuccin): a cappuccino with the ears of a cat,
+  // its steam and its saucer, in the colors peach, pink and mauve of Mocha.
+  const CAT_CUP = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26"><defs>'
+    + '<linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fab387"/><stop offset=".5" stop-color="#f5c2e7"/><stop offset="1" stop-color="#cba6f7"/></linearGradient></defs>'
+    + '<path d="M9.2 1.8c-1 1.5 1 2.5 0 4M13.2 1.8c-1 1.5 1 2.5 0 4" fill="none" stroke="#b4befe" stroke-width="1.3" stroke-linecap="round"/>'
+    + '<path d="M3.8 9.6L5.4 6.2 8 9.2zM18.2 9.6L16.6 6.2 14 9.2z" fill="#f5c2e7"/>'
+    + '<path d="M18.6 11.2h1.3a2.7 2.7 0 0 1 0 5.4h-1.6" fill="none" stroke="#cba6f7" stroke-width="2"/>'
+    + '<path d="M3.4 9h15.2v6.4a6.2 6.2 0 0 1-6.2 6.2H9.6a6.2 6.2 0 0 1-6.2-6.2z" fill="url(#c)"/>'
+    + '<circle cx="8.4" cy="14.2" r="1.05" fill="#1e1e2e"/><circle cx="13.6" cy="14.2" r="1.05" fill="#1e1e2e"/>'
+    + '<path d="M10 16.5q1 .9 2 0" fill="none" stroke="#1e1e2e" stroke-width=".9" stroke-linecap="round"/>'
+    + '<path d="M2.4 24h17.2" stroke="#cba6f7" stroke-width="1.6" stroke-linecap="round"/></svg>');
+  // The colors of Catppuccin Mocha for the pills and the cards: peach, pink, teal, blue, mauve, green.
+  const CAT_PASTELS = ['#fab387', '#f5c2e7', '#94e2d5', '#89b4fa', '#cba6f7', '#a6e3a1'];
+
   // The lines of a page (every 26 px).
   const RULED = (c) => `repeating-linear-gradient(180deg, transparent 0 25px, ${c} 25px 26px)`;
   // The red margin of a page, 34 px from the left.
@@ -1796,6 +1810,134 @@
       `,
       blockCss: `
         #mak-block .mak-logo { background: ${SATURN} center / contain no-repeat; }
+        #mak-block .mak-logo > * { display: none; }
+      `
+    },
+    // ---- 8 · Catppuccin: the pastel colors of Catppuccin (https://catppuccin.com, MIT License, © Catppuccin), Latte in
+    // the light mode and Mocha in the dark mode: its pills of several colors, a title in a gradient (peach, pink, mauve).
+    {
+      id: 'catppuccin',
+      name: { es: 'Catppuccin', en: 'Catppuccin' },
+      brand: 'Aulappuccin', // the name in the titles
+      about: { es: 'Los colores pastel de Catppuccin: Latte en light mode y Mocha en dark mode.', en: 'The pastel colors of Catppuccin: Latte in light mode and Mocha in dark mode.' },
+      fonts: [{ family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }],
+      light: {
+        font: '"AP Manrope", "Manrope", system-ui, sans-serif',
+        weight: '500',
+        'head-weight': '800',
+        // Latte: base #eff1f5, mantle #e6e9ef, crust #dce0e8, surface0 #ccd0da, surface1 #bcc0cc, text #4c4f69
+        page: 'radial-gradient(420px 300px at 100% 0%, rgba(136, 57, 239, 0.08), transparent 70%), radial-gradient(420px 300px at 0% 100%, rgba(254, 100, 11, 0.07), transparent 70%), #e6e9ef',
+        surface: '#eff1f5',
+        solid: '#eff1f5',
+        surface2: '#e6e9ef',
+        fg: '#4c4f69',
+        muted: '#5c5f77',
+        line: '#ccd0da',
+        edge: '#bcc0cc',
+        accent: '#8839ef',
+        'accent-fg': '#eff1f5',
+        'accent-soft': 'rgba(136, 57, 239, 0.12)',
+        link: '#1e66f5',
+        red: '#d20f39', 'red-bg': 'rgba(210, 15, 57, 0.12)',
+        orange: '#fe640b', 'orange-bg': 'rgba(254, 100, 11, 0.12)',
+        yellow: '#df8e1d', 'yellow-bg': 'rgba(223, 142, 29, 0.14)',
+        green: '#40a02b', 'green-bg': 'rgba(64, 160, 43, 0.12)',
+        blue: '#1e66f5', 'blue-bg': 'rgba(30, 102, 245, 0.12)',
+        grey: '#7c7f93', 'grey-bg': '#e6e9ef',
+        'mark-bg': 'rgba(223, 142, 29, 0.3)',
+        'head-fg': '#4c4f69',
+        'btn-bg': '#dce0e8',
+        'btn-fg': '#4c4f69',
+        'btn-edge': '#ccd0da',
+        'primary-bg': '#8839ef',
+        'primary-fg': '#eff1f5',
+        'primary-edge': '#8839ef',
+        radius: '16px',
+        'radius-sm': '999px',
+        'radius-box': '12px',
+        shadow: '0 12px 30px -20px rgba(76, 79, 105, 0.45)',
+        'shadow-pop': '0 24px 60px -24px rgba(76, 79, 105, 0.55)',
+        backdrop: 'rgba(76, 79, 105, 0.35)',
+        'count-weight': '800',
+        'count-soon-fg': '#fe640b',
+        'count-hot-fg': '#d20f39',
+        'count-ok-fg': '#40a02b',
+        'input-bg': '#eff1f5',
+        'input-edge': '#bcc0cc',
+        'input-radius': '12px',
+        'logo-bg': '#eff1f5',
+        'logo-ring': '#8839ef',
+        'logo-dot': '#fe640b',
+        'k-exam': '#8839ef', 'k-exam-fg': '#eff1f5',
+        'k-practice': '#179299', 'k-practice-fg': '#eff1f5',
+        'k-work': '#40a02b', 'k-work-fg': '#eff1f5',
+        'k-participation': '#df8e1d', 'k-participation-fg': '#11111b',
+        'k-presentation': '#ea76cb', 'k-presentation-fg': '#11111b',
+        'k-other': '#9ca0b0', 'k-other-fg': '#11111b'
+      },
+      dark: {
+        // Mocha: base #1e1e2e, mantle #181825, crust #11111b, surface0 #313244, surface1 #45475a, text #cdd6f4
+        page: 'radial-gradient(420px 300px at 100% 0%, rgba(203, 166, 247, 0.1), transparent 70%), radial-gradient(420px 300px at 0% 100%, rgba(250, 179, 135, 0.07), transparent 70%), #181825',
+        surface: '#1e1e2e',
+        solid: '#1e1e2e',
+        surface2: '#313244',
+        fg: '#cdd6f4',
+        muted: '#a6adc8',
+        line: '#313244',
+        edge: '#45475a',
+        accent: '#cba6f7',
+        'accent-fg': '#11111b',
+        'accent-soft': 'rgba(203, 166, 247, 0.14)',
+        link: '#89b4fa',
+        red: '#f38ba8', 'red-bg': 'rgba(243, 139, 168, 0.15)',
+        orange: '#fab387', 'orange-bg': 'rgba(250, 179, 135, 0.15)',
+        yellow: '#f9e2af', 'yellow-bg': 'rgba(249, 226, 175, 0.14)',
+        green: '#a6e3a1', 'green-bg': 'rgba(166, 227, 161, 0.14)',
+        blue: '#89b4fa', 'blue-bg': 'rgba(137, 180, 250, 0.15)',
+        grey: '#9399b2', 'grey-bg': '#313244',
+        'mark-bg': 'rgba(249, 226, 175, 0.28)',
+        'head-fg': '#cdd6f4',
+        'btn-bg': '#313244',
+        'btn-fg': '#cdd6f4',
+        'btn-edge': '#45475a',
+        'primary-bg': '#cba6f7',
+        'primary-fg': '#11111b',
+        'primary-edge': '#cba6f7',
+        shadow: '0 14px 34px -20px rgba(0, 0, 0, 0.75)',
+        'shadow-pop': '0 28px 64px -24px rgba(0, 0, 0, 0.85)',
+        backdrop: 'rgba(17, 17, 27, 0.6)',
+        'count-soon-fg': '#fab387',
+        'count-hot-fg': '#f38ba8',
+        'count-ok-fg': '#a6e3a1',
+        'input-bg': '#181825',
+        'input-edge': '#45475a',
+        'logo-bg': '#1e1e2e',
+        'logo-ring': '#cba6f7',
+        'logo-dot': '#fab387',
+        'k-exam': '#cba6f7', 'k-exam-fg': '#11111b',
+        'k-practice': '#94e2d5', 'k-practice-fg': '#11111b',
+        'k-work': '#a6e3a1', 'k-work-fg': '#11111b',
+        'k-participation': '#f9e2af', 'k-participation-fg': '#11111b',
+        'k-presentation': '#f5c2e7', 'k-presentation-fg': '#11111b',
+        'k-other': '#9399b2', 'k-other-fg': '#11111b'
+      },
+      css: `
+        /* The titles: a gradient peach, pink, mauve, as the title of catppuccin.com */
+        header.top h1, .tile h4, .box > .head .title { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation), var(--ap-accent)); color: transparent;
+          -webkit-background-clip: text; background-clip: text; }
+        /* The pills of the actions in the colors of Mocha, with the dark text (crust), as the buttons of catppuccin.com.
+           On hover the colors change places (MAK.hoverCss): these variables are the colors of each pill. */
+        ${CAT_PASTELS.slice(0, 4).map((c, i) => `.actions .action:nth-child(4n+${i + 1}) { --ap-primary-bg: ${c}; --ap-primary-edge: ${c}; --ap-primary-solid: ${c}; --ap-primary-fg: #11111b; }`).join('\n        ')}
+        /* The cards of the exams: a stripe of a color of Mocha on the left */
+        .exams li { box-shadow: inset 4px 0 0 var(--cat, #cba6f7); }
+        ${CAT_PASTELS.map((c, i) => `.exams li:nth-child(6n+${i + 1}) { --cat: ${c}; }`).join('\n        ')}
+        .mak-logo { background: ${CAT_CUP} center / contain no-repeat; }
+        .mak-logo > * { display: none; }
+      `,
+      blockCss: `
+        #mak-block .mak-title { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation), var(--ap-accent)); color: transparent;
+          -webkit-background-clip: text; background-clip: text; }
+        #mak-block .mak-logo { background: ${CAT_CUP} center / contain no-repeat; }
         #mak-block .mak-logo > * { display: none; }
       `
     }
