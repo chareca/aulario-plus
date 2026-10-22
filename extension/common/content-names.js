@@ -68,6 +68,19 @@
   let sites = new Map(); // id -> stored site (full title)
   const nameOf = (siteId) => (sites.has(siteId) ? MAK.siteName(sites.get(siteId), settings) : siteId);
 
+  // A click outside the window closes it (not on its button: the button opens and closes it), also a click in an iframe
+  // of the page (the tools of MiAulario, as «Mensaje del día»): the page gets no click from an iframe, only the blur of
+  // its window. anchor(): the button that opened the window.
+  function closeOutside(pop, host, anchor, close) {
+    document.addEventListener('mousedown', (e) => {
+      const path = e.composedPath();
+      if (!pop.hidden && !path.includes(host) && !path.includes(anchor())) close();
+    }, true);
+    window.addEventListener('blur', () => setTimeout(() => {
+      if (!pop.hidden && document.activeElement instanceof HTMLIFrameElement) close();
+    }));
+  }
+
   // ---- The editor: one for all the pencils, at a fixed place next to the pencil ----
 
   let editor = null;
@@ -112,10 +125,7 @@
       }
     });
     pop.addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('mousedown', (e) => {
-      const path = e.composedPath();
-      if (!path.includes(host) && !path.includes(anchor)) close();
-    }, true);
+    closeOutside(pop, host, () => anchor, close);
     window.addEventListener('resize', close);
     shadow.append(style, pop);
     document.documentElement.append(host);
@@ -177,10 +187,7 @@
     );
     pop.addEventListener('keydown', (e) => e.stopPropagation());
     pop.addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('mousedown', (e) => {
-      const path = e.composedPath();
-      if (!pop.hidden && !path.includes(host) && !path.includes(anchor)) close();
-    }, true);
+    closeOutside(pop, host, () => anchor, close);
     shadow.append(style, pop);
     document.documentElement.append(host);
     MAK.escCloses(pop, close);
