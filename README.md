@@ -28,7 +28,7 @@
 - **Guías docentes:** cómo se evalúa cada asignatura, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
 - **Archivos:** descarga una asignatura en ZIP o envía sus archivos por el correo interno; en los Recursos de Mi sitio, descarga o borra todos tus archivos de una vez.
 - **Temas:** igual que MiAulario (por defecto) o uno de siete estilos (Cómic, Malvavisco, Aurora, AulaXP, Folio, Vía Láctea y Catppuccin), en light o dark mode. Las fotos del tema Vía Láctea son de ESO ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): ESO/S. Brunier, ESO/H. Drass et al., ESO/T. Preibisch, ESO/B. Bailleul, ESO/Igor Chekalin, ESO/F. Comeron y ESO) y la Tierra, de NASA. Los colores del tema Catppuccin son de [Catppuccin](https://catppuccin.com) (licencia MIT, [github.com/catppuccin](https://github.com/catppuccin/catppuccin)).
-- **Tu configuración:** expórtala a un archivo JSON desde Ajustes.
+- **Tu configuración:** guárdala en un archivo JSON desde Ajustes y recupérala cuando quieras.
 - **Confeti:** cuando entregas una tarea o un examen, sin sonido (se puede apagar).
 
 ## Privacidad

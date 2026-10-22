@@ -44,8 +44,8 @@
       version: '1.6.7',
       // The news in one line: the window over MiAulario after the update (background.js, pageNotice).
       short: {
-        es: 'Dos temas nuevos (Vía Láctea y Catppuccin), Mi sitio aprovecha mejor el espacio y puedes exportar tu configuración en Ajustes.',
-        en: 'Two new themes (Milky Way and Catppuccin), Mi sitio uses the space better, and you can export your settings in the settings.'
+        es: 'Dos temas nuevos (Vía Láctea y Catppuccin), Mi sitio aprovecha mejor el espacio y puedes guardar y recuperar tu configuración en Ajustes.',
+        en: 'Two new themes (Milky Way and Catppuccin), Mi sitio uses the space better, and you can save and restore your settings in the settings.'
       },
       es: [
         'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.',
@@ -61,7 +61,7 @@
         'En los grados con el mismo calendario de exámenes en los dos semestres, como Medicina, Mi sitio lo enseña todo el curso.',
         'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.',
         'Tema nuevo, Catppuccin («Aulappuccin»): los colores pastel de Catppuccin, Latte en light mode y Mocha en dark mode, con botones de varios colores y títulos en degradado.',
-        'Ajustes → «Exportar mi configuración»: descarga un archivo JSON con todos tus ajustes.',
+        'Ajustes → «Tu configuración»: «Exportar mi configuración» descarga un archivo JSON con todos tus ajustes, e «Importar mi configuración» los recupera de ese archivo, después de decirte cuántos cambian y preguntarte.',
         'Después de cada actualización, la primera página de MiAulario te enseña una sola vez las novedades en una línea.'
       ],
       en: [
@@ -78,7 +78,7 @@
         'In the degrees with the same exam calendar for the two semesters, as Medicine, Mi sitio shows it all the year.',
         'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.',
         'A new theme, Catppuccin ("Aulappuccin"): the pastel colors of Catppuccin, Latte in light mode and Mocha in dark mode, with buttons of several colors and titles in a gradient.',
-        'Settings → "Export my settings": download a JSON file with all your settings.',
+        'Settings → "Your settings": "Export my settings" downloads a JSON file with all your settings, and "Import my settings" gets them back from that file, after it tells you how many change and asks you.',
         'After each update, the first page of MiAulario shows you the news in one line, one time.'
       ]
     },
