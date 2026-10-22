@@ -26,6 +26,16 @@
     }
   };
 
+  // An open or closed box of Mi sitio ("mak-…" -> '1' or '0'): in the page (localStorage, read when the box is drawn)
+  // and a copy in the storage of the extension, for "Exportar mi configuración" (background.js saveUi).
+  MAK.uiSave = function (key, on) {
+    const value = on ? '1' : '0';
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+    MAK.safeCall(() => (root.browser || root.chrome).runtime.sendMessage({ type: 'saveUi', states: { [key]: value } }), null);
+  };
+
   // ---- Dates ---------------------------------------------------------------
 
   // Change the date formats of Sakai into milliseconds. Return null if the value is not a date.

@@ -106,7 +106,7 @@
       content.hidden = hidden;
       const toggle = MAK.foldButton(!hidden, { open: t('fold.open', { name: title }), close: t('fold.close', { name: title }) }, (open) => {
         content.hidden = !open;
-        try { localStorage.setItem(`${HOST_ID}:hidden`, open ? '0' : '1'); } catch {}
+        MAK.uiSave(`${HOST_ID}:hidden`, !open); // '1': folded
       });
       head = h('div', { class: 'head' }, h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } }), toggle);
     }

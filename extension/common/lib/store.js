@@ -166,28 +166,96 @@
     };
   };
 
-  // "Exportar mi configuración" (popup): all the settings with their defaults (MAK.withDefaults names every setting, so a
-  // new one is in the file by itself), the version and the date. now: a Date.
-  MAK.configExport = (settings, version, now) => ({ app: 'Aulario Plus', version: String(version || ''), exported: now.toISOString(), settings: MAK.withDefaults(settings) });
+  // ---- "Tu configuración": a file with the settings, the open or closed boxes of Mi sitio and the photos of the
+  // subjects. Export: the popup. Import: tools.html?import (a question first), then the background (importSettings).
+
+  // The open or closed boxes of Mi sitio: { "mak-…": '1' | '0' } (MAK.uiSave), at most 500.
+  const UI_KEY = /^mak-[\w:.~-]{1,200}$/;
+  MAK.cleanUi = function (v) {
+    const out = {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+    for (const [k, x] of Object.entries(v).slice(-500)) if (UI_KEY.test(k) && (x === '1' || x === '0')) out[k] = x;
+    return out;
+  };
+  // The photo of each subject (MAK.assignSitePhotos): { siteId: 0..9 }, at most 500.
+  MAK.cleanPhotos = function (v) {
+    const out = {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+    const count = MAK.SITE_PHOTOS || 10;
+    for (const [k, n] of Object.entries(v).slice(-500)) if (/^[\w~!.-]{1,100}$/.test(k) && Number.isInteger(n) && n >= 0 && n < count) out[k] = n;
+    return out;
+  };
+
+  // A value of a file: a text without invisible or control characters (the line breaks stay), in one Unicode form,
+  // without spaces at the ends; objects and lists cleaned inside (4 levels, 1000 items), without the keys that change
+  // an object (__proto__…). null: not a value of JSON data.
+  function cleanValue(v, depth = 0) {
+    if (typeof v === 'string') return v.normalize('NFC').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g, '').trim();
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    if (typeof v === 'boolean') return v;
+    if (depth >= 4 || !v || typeof v !== 'object') return null;
+    if (Array.isArray(v)) return v.slice(0, 1000).map((x) => cleanValue(x, depth + 1)).filter((x) => x !== null);
+    const out = {};
+    for (const [k, x] of Object.entries(v).slice(0, 1000)) {
+      const key = cleanValue(k);
+      if (!key || key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+      const c = cleanValue(x, depth + 1);
+      if (c !== null) out[key] = c;
+    }
+    return out;
+  }
+  const kindOf = (v) => (Array.isArray(v) ? 'list' : v === null ? 'null' : typeof v);
+  // The keys of def that given has with the same type ("sí/no" only true or false, a list only a list…).
+  const sameKind = (given, def) => Object.fromEntries(Object.keys(def).filter((k) => given && Object.hasOwn(given, k) && kindOf(given[k]) === kindOf(def[k])).map((k) => [k, given[k]]));
+
+  // The file: { app, version, exported, settings, ui, sitePhotos }. data: the storage ({ settings, pageUi, sitePhotos }).
+  MAK.configExport = (data, version, now) => ({
+    app: 'Aulario Plus', version: String(version || ''), exported: now.toISOString(),
+    settings: MAK.withDefaults(data && data.settings), ui: MAK.cleanUi(data && data.pageUi), sitePhotos: MAK.cleanPhotos(data && data.sitePhotos)
+  });
   // Its name, with the date of the user: "aulario-plus-config-22-10-2026.json".
   MAK.configFileName = (now) => `aulario-plus-config-${[now.getDate(), now.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('-')}-${now.getFullYear()}.json`;
-  // "Importar mi configuración" (tools.html?import): the text of such a file -> { settings, version, exported }, or null
-  // (another file, a broken one, a big one). The settings go through MAK.withDefaults, as any change of the settings:
-  // a bad value gets its default, an unknown setting goes.
+  // The text of a file -> { file: its parts, version, exported }, or null: not a file of Aulario Plus (another file, a
+  // broken one, a big one). Its name does not count. MAK.configMerge checks its values.
   MAK.configImport = function (text) {
-    if (typeof text !== 'string' || text.length > 1e6) return null;
-    let o;
     try {
-      o = JSON.parse(text);
+      if (typeof text !== 'string' || text.length > 1e6) return null;
+      const o = JSON.parse(text.replace(/^\ufeff/, ''));
+      if (!o || typeof o !== 'object' || cleanValue(o.app) !== 'Aulario Plus' || !o.settings || typeof o.settings !== 'object' || Array.isArray(o.settings)) return null;
+      const version = typeof o.version === 'string' ? cleanValue(o.version).slice(0, 20) : '';
+      const exported = typeof o.exported === 'string' && !Number.isNaN(Date.parse(o.exported)) ? o.exported : '';
+      // A theme that this version does not have (an older or newer one): the current theme stays. MAK.themeIds: the
+      // pages (lib/themes.js), where the file is read.
+      const theme = cleanValue(o.settings.theme);
+      const settings = MAK.themeIds && theme && !MAK.themeIds().includes(theme) ? Object.fromEntries(Object.entries(o.settings).filter(([k]) => k !== 'theme')) : o.settings;
+      return { file: { settings, ui: o.ui, sitePhotos: o.sitePhotos }, version, exported };
     } catch {
       return null;
     }
-    if (!o || o.app !== 'Aulario Plus' || !o.settings || typeof o.settings !== 'object' || Array.isArray(o.settings)) return null;
-    const exported = typeof o.exported === 'string' && !Number.isNaN(Date.parse(o.exported)) ? o.exported : '';
-    return { settings: MAK.withDefaults(o.settings), version: typeof o.version === 'string' ? o.version.slice(0, 20) : '', exported };
   };
-  // How many settings change from cur to next (both from MAK.withDefaults).
-  MAK.configChanges = (cur, next) => Object.keys(next).filter((k) => JSON.stringify(cur[k]) !== JSON.stringify(next[k])).length;
+  // The storage after an import (the page shows how many change; the background writes it in one step). Only the known
+  // settings of the file, cleaned, with the right type (also inside the badge and the links); a setting that is not in
+  // the file, or not right, keeps its current value; then MAK.withDefaults checks each value. The boxes and the photos
+  // of the file over the current ones. cur: { settings, pageUi, sitePhotos }; file: MAK.configImport(...).file.
+  MAK.configMerge = function (cur, file) {
+    const c = cur || {};
+    const f = file && typeof file === 'object' ? file : {};
+    const base = MAK.withDefaults(c.settings);
+    const d = MAK.defaultSettings();
+    const given = sameKind(cleanValue(f.settings), d);
+    for (const k of ['badge', 'links']) if (given[k]) given[k] = Object.assign({}, base[k], sameKind(given[k], d[k]));
+    return {
+      settings: MAK.withDefaults(Object.assign({}, base, given)),
+      pageUi: MAK.cleanUi(Object.assign({}, MAK.cleanUi(c.pageUi), MAK.cleanUi(cleanValue(f.ui)))),
+      sitePhotos: MAK.cleanPhotos(Object.assign({}, MAK.cleanPhotos(c.sitePhotos), MAK.cleanPhotos(cleanValue(f.sitePhotos))))
+    };
+  };
+  // How many values change from cur (the storage) to next (MAK.configMerge).
+  MAK.configChanges = function (cur, next) {
+    const diff = (a, b) => Object.keys(Object.assign({}, a, b)).filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).length;
+    const c = cur || {};
+    return diff(MAK.withDefaults(c.settings), next.settings) + diff(MAK.cleanUi(c.pageUi), next.pageUi) + diff(MAK.cleanPhotos(c.sitePhotos), next.sitePhotos);
+  };
 
   // Sites that the extension must not show (if the user selected "everywhere").
   MAK.hiddenEverywhere = function (settings) {

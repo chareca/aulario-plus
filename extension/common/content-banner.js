@@ -119,7 +119,7 @@
     const fold = MAK.foldButton(!closed, { open: MAK.t('block.open'), close: MAK.t('block.close') }, (open) => {
       closed = !open;
       draw();
-      try { localStorage.setItem(BLOCK_CLOSED, closed ? '1' : '0'); } catch {}
+      MAK.uiSave(BLOCK_CLOSED, closed);
     });
     fold.setAttribute('aria-controls', 'mak-block-body');
     // The wide block: in a column of the row of its own, with the classes (and the margins) of the column.
@@ -127,7 +127,7 @@
     const widen = column ? h('button', { class: 'mak-widen', attrs: { type: 'button' }, on: { click: () => {
       wide = !wide;
       place();
-      try { localStorage.setItem(BLOCK_WIDE, wide ? '1' : '0'); } catch {}
+      MAK.uiSave(BLOCK_WIDE, wide);
     } } }) : null;
     const place = () => {
       if (wide) {

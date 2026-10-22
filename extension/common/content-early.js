@@ -114,10 +114,28 @@
     setNames(state.sites, state.settings);
   }
 
-  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites', 'paused']), null)
+  // The open or closed boxes of Mi sitio: the page keeps them (localStorage), the extension a copy (pageUi, for
+  // "Exportar mi configuración"). After an import (pageUiImport, not yet in this page) the copy goes into the page;
+  // else the states of the page go to the copy (once the ones from before this copy existed).
+  function syncUi(d) {
+    try {
+      const kept = MAK.cleanUi(d.pageUi);
+      if (d.pageUiImport && String(d.pageUiImport) !== localStorage.getItem('mak.ui-import')) {
+        for (const [k, v] of Object.entries(kept)) localStorage.setItem(k, v);
+        localStorage.setItem('mak.ui-import', String(d.pageUiImport));
+        return;
+      }
+      const here = MAK.cleanUi(Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
+      const changed = Object.entries(here).filter(([k, v]) => kept[k] !== v);
+      if (changed.length) MAK.safeCall(() => ext.runtime.sendMessage({ type: 'saveUi', states: Object.fromEntries(changed) }), null);
+    } catch {} // the page blocks its storage
+  }
+
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sites', 'paused', 'pageUi', 'pageUiImport']), null)
     .then((d) => {
       // All the data was deleted (the "Danger zone"): also the keys of the extension in this page.
       if (d && d.paused === 'reset') MAK.dropStorageKeys();
+      else if (d && window === window.top) syncUi(d);
       state.settings = MAK.withDefaults(d && d.settings);
       state.sites = (d && d.sites) || [];
       apply();

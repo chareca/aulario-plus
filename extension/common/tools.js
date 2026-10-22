@@ -279,7 +279,7 @@ async function runExamPermission() {
 // tools.html?import: a file of "Exportar mi configuración" in place of the settings (a page, not the popup: the popup
 // closes when the window of the files opens). The file is checked (MAK.configImport), then a question with how many
 // settings change, and only "Importar" changes them (the background checks them again).
-async function runImport(store) {
+async function runImport() {
   const { h, fill } = MAK;
   const box = $('import');
   box.hidden = false;
@@ -301,7 +301,8 @@ async function runImport(store) {
       status.textContent = t('config.importBad');
       return;
     }
-    const n = MAK.configChanges(MAK.withDefaults(store.settings), got.settings);
+    const cur = await ext.storage.local.get(['settings', 'pageUi', 'sitePhotos']);
+    const n = MAK.configChanges(cur, MAK.configMerge(cur, got.file));
     if (!n) {
       status.textContent = t('config.importSame');
       return;
@@ -314,9 +315,8 @@ async function runImport(store) {
     });
     yes.addEventListener('click', async () => {
       yes.disabled = no.disabled = true;
-      const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'importSettings', settings: got.settings }), null);
+      const r = await MAK.safeCall(() => ext.runtime.sendMessage({ type: 'importSettings', file: got.file }), null);
       reset();
-      if (r && r.ok) store.settings = got.settings;
       status.textContent = t(r && r.ok ? 'config.importDone' : 'config.importError');
     });
     const date = got.exported ? MAK.formatDate(Date.parse(got.exported)) : '?';
@@ -598,7 +598,7 @@ async function init() {
   } else if (params.has('history')) {
     await runHistory();
   } else if (params.has('import')) {
-    await runImport(store);
+    await runImport();
   }
 }
 

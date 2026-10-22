@@ -185,7 +185,7 @@
     const flip = () => {
       open = !open;
       draw();
-      try { localStorage.setItem(key, open ? '1' : '0'); } catch {}
+      MAK.uiSave(key, open);
     };
     arrow.addEventListener('click', flip);
     card.querySelector('h4').addEventListener('click', flip);
@@ -208,7 +208,7 @@
     // The arrow folds the box (the title too); the box stays folded when the page opens again.
     const toggle = MAK.foldButton(!hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
       content.hidden = !open;
-      try { localStorage.setItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`, open ? '0' : '1'); } catch {}
+      MAK.uiSave(`${HOST_ID}:${mySite ? 'mine' : siteId}`, !open); // '1': folded
     });
     const name = h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } });
     shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, extra || null, toggle), content));

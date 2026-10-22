@@ -126,15 +126,21 @@ test('"Borrar todos los datos" wins over a ping that waits for MiAulario, and a 
   assert.deepEqual(next.ext.storage.local.data, { paused: 'reset', settings: { lang: 'en' } });
 });
 
-test('"Importar mi configuración": the settings of the file in place of the current ones, checked again; not from a page of MiAulario', async () => {
-  const bg = loadBackground({ local: { settings: { theme: 'cromo', nicknames: { a: 'A', b: 'B' } } } });
-  const file = { theme: 'galaxia', nicknames: { c: 'C' }, colorMode: 'nope' };
-  assert.equal(await bg.send({ type: 'importSettings', settings: file }, CONTENT()), null, 'not from a page of MiAulario');
-  assert.equal(bg.ext.storage.local.data.settings.theme, 'cromo');
-  assert.deepEqual(await bg.send({ type: 'importSettings', settings: [] }), { ok: false });
-  assert.deepEqual(await bg.send({ type: 'importSettings', settings: file }), { ok: true });
-  const s = bg.ext.storage.local.data.settings;
-  assert.deepEqual([s.theme, s.nicknames, s.colorMode], ['galaxia', { c: 'C' }, 'auto'], 'in place of the old ones (not mixed), with the checks');
+test('"Importar mi configuración": all or nothing, checked again here; not from a page of MiAulario. The copy of the boxes of Mi sitio', async () => {
+  const local = { settings: { theme: 'cromo', teacherBody: 'Un saludo', nicknames: { a: 'A' } }, pageUi: { 'mak-mysite-wide': '1' }, sitePhotos: { s1: 1 } };
+  const bg = loadBackground({ local: JSON.parse(JSON.stringify(local)) });
+  const file = { settings: { theme: 'galaxia', nicknames: { c: 'C' }, colorMode: 'nope', notifyDue: 'no' }, ui: { 'mak-mysite-closed': '1' }, sitePhotos: { s2: 2 } };
+  assert.equal(await bg.send({ type: 'importSettings', file }, CONTENT()), null, 'not from a page of MiAulario');
+  for (const bad of [null, [], 'x']) assert.deepEqual(await bg.send({ type: 'importSettings', file: bad }), { ok: false });
+  assert.deepEqual([bg.ext.storage.local.data.settings, bg.ext.storage.local.data.pageUi], [local.settings, local.pageUi], 'nothing changed');
+  assert.deepEqual(await bg.send({ type: 'importSettings', file }), { ok: true });
+  const d = bg.ext.storage.local.data;
+  assert.deepEqual([d.settings.theme, d.settings.nicknames, d.settings.colorMode, d.settings.notifyDue, d.settings.teacherBody], ['galaxia', { c: 'C' }, 'auto', true, 'Un saludo']);
+  assert.deepEqual([d.pageUi, d.sitePhotos, typeof d.pageUiImport], [{ 'mak-mysite-wide': '1', 'mak-mysite-closed': '1' }, { s1: 1, s2: 2 }, 'number'], 'the pages of MiAulario take the boxes');
+  // The copy of the boxes: from the pages of MiAulario, only the right keys and values.
+  assert.deepEqual(await bg.send({ type: 'saveUi', states: { 'mak-sem:exams:autumn': '0', evil: '1', 'mak-x': 'yes' } }, CONTENT()), { ok: true });
+  assert.deepEqual(bg.ext.storage.local.data.pageUi, { 'mak-mysite-wide': '1', 'mak-mysite-closed': '1', 'mak-sem:exams:autumn': '0' });
+  assert.deepEqual(await bg.send({ type: 'saveUi', states: { evil: '1' } }, CONTENT()), { ok: false });
 });
 
 test('an extension page in a tab is a page, not a content script', async () => {

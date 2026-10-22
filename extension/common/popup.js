@@ -1433,7 +1433,7 @@ function renderSettings(el) {
 // closes the popup, and a blob goes with it.
 function exportConfig() {
   const now = new Date();
-  const json = JSON.stringify(MAK.configExport(S.settings, ext.runtime.getManifest().version, now), null, 2);
+  const json = JSON.stringify(MAK.configExport(S, ext.runtime.getManifest().version, now), null, 2);
   const a = document.createElement('a');
   a.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
   a.download = MAK.configFileName(now);

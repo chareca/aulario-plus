@@ -167,7 +167,7 @@
       const fold = MAK.foldButton(open, { open: MAK.t('fold.open', { name: label }), close: MAK.t('fold.close', { name: label }) }, (o) => {
         sem.classList.toggle('open', o);
         sem.classList.toggle('closed', !o);
-        try { localStorage.setItem(store, o ? '1' : '0'); } catch {}
+        MAK.uiSave(store, o);
         layout();
       });
       sem.append(MAK.h('div', { class: 'sem-head' }, MAK.h('span', { class: 'sem-title', text: label, on: { click: () => fold.click() } }), fold), body);

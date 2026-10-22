@@ -18,29 +18,61 @@ test('withDefaults fills the missing settings and rejects bad values', () => {
   assert.deepEqual([...MAK.hiddenEverywhere({ hiddenMode: 'everywhere', hiddenSites: ['a'] })], ['a']);
 });
 
-test('"Exportar mi configuración": every setting (a new one by itself), the version and the date; the name of the file', () => {
+test('"Exportar mi configuración": every setting (a new one by itself), the boxes of Mi sitio, the photos, the version and the date; the name of the file', () => {
   const now = new Date(2026, 9, 5, 9, 30);
-  const out = MAK.configExport({ theme: 'galaxia', nicknames: { s1: 'IP' }, junk: 1 }, '1.6.7', now);
+  const out = MAK.configExport({ settings: { theme: 'galaxia', nicknames: { s1: 'IP' }, junk: 1 }, pageUi: { 'mak-mysite-closed': '1', other: '1' }, sitePhotos: { '2026_0_1': 3 }, history: { x: 1 } }, '1.6.7', now);
   assert.deepEqual([out.app, out.version, out.exported], ['Aulario Plus', '1.6.7', now.toISOString()]);
   assert.deepEqual(Object.keys(out.settings).sort(), Object.keys(MAK.defaultSettings()).sort(), 'all the settings: a new setting with a default is in the file');
   assert.deepEqual([out.settings.theme, out.settings.nicknames, out.settings.junk], ['galaxia', { s1: 'IP' }, undefined]);
+  assert.deepEqual([out.ui, out.sitePhotos, out.history], [{ 'mak-mysite-closed': '1' }, { '2026_0_1': 3 }, undefined], 'the boxes and the photos; no data of the courses');
   assert.equal(MAK.configFileName(now), 'aulario-plus-config-05-10-2026.json');
 });
 
-test('"Importar mi configuración": only a file of the export; every value checked as a change of the settings; how many change', () => {
-  const now = new Date(2026, 9, 5, 9, 30);
-  const file = JSON.stringify(MAK.configExport({ theme: 'galaxia', nicknames: { s1: 'IP' } }, '1.6.7', now));
+test('"Importar mi configuración": only a file of Aulario Plus, whatever its name; the BOM and the spaces of the editors do not matter', () => {
+  const file = JSON.stringify(MAK.configExport({ settings: { theme: 'galaxia' } }, '1.6.7', new Date(2026, 9, 5)));
   const got = MAK.configImport(file);
-  assert.deepEqual([got.version, got.exported, got.settings.theme, got.settings.nicknames], ['1.6.7', now.toISOString(), 'galaxia', { s1: 'IP' }]);
-  assert.equal(MAK.configChanges(MAK.withDefaults({}), got.settings), 2, 'the theme and the names');
-  assert.equal(MAK.configChanges(got.settings, got.settings), 0);
-  // Not a file of the export: nothing.
-  for (const bad of ['', 'no json', '[]', 'null', JSON.stringify({ app: 'Otra', settings: {} }), JSON.stringify({ app: 'Aulario Plus', settings: [] }), JSON.stringify({ app: 'Aulario Plus' }), 'x'.repeat(1e6 + 1)]) {
+  assert.deepEqual([got.version, got.file.settings.theme], ['1.6.7', 'galaxia']);
+  assert.deepEqual(MAK.configImport(`﻿${file.replace('"Aulario Plus"', '" Aulario Plus "')}\n\n`).file.settings.theme, 'galaxia', 'a BOM, spaces');
+  for (const bad of ['', 'no json', '[]', 'null', '1', JSON.stringify({ app: 'Otra', settings: {} }), JSON.stringify({ app: 'Aulario Plus', settings: [] }), JSON.stringify({ app: 'Aulario Plus' }), 'x'.repeat(1e6 + 1)]) {
     assert.equal(MAK.configImport(bad), null, bad.slice(0, 40));
   }
-  // A changed file: bad values get their default, unknown settings go.
-  const edited = MAK.configImport(JSON.stringify({ app: 'Aulario Plus', exported: 'ayer', settings: { theme: '<b>x</b>', lang: 'fr', colorMode: 'dark', junk: 1, degree: 'https://evil.example/' } }));
-  assert.deepEqual([edited.settings.theme, edited.settings.lang, edited.settings.colorMode, edited.settings.degree, 'junk' in edited.settings, edited.exported], ['', 'es', 'dark', '', false, '']);
+  assert.equal(MAK.configImport(JSON.stringify({ app: 'Aulario Plus', exported: 'ayer', version: 7, settings: {} })).exported, '', 'a date that is not a date');
+});
+
+test('"Importar mi configuración": a file of an older or newer version, strange values, extra settings; the file wins only with right values', () => {
+  const cur = { settings: { theme: 'cromo', notifyDue: false, teacherBody: 'Hola,\n\nUn saludo', nicknames: { a: 'A' }, badge: { grades: false } }, pageUi: { 'mak-mysite-wide': '1' }, sitePhotos: { s1: 1 } };
+  const merge = (settings, extra = {}) => MAK.configMerge(cur, MAK.configImport(JSON.stringify(Object.assign({ app: 'Aulario Plus', settings }, extra))).file);
+  // An older file: a setting that it does not have keeps the current value; a setting that no longer exists goes.
+  const old = merge({ theme: 'galaxia', oldSetting: true });
+  assert.deepEqual([old.settings.theme, old.settings.notifyDue, old.settings.teacherBody, 'oldSetting' in old.settings], ['galaxia', false, 'Hola,\n\nUn saludo', false]);
+  // A wrong type: ignored (the current value stays), also inside the badge and the links.
+  const odd = merge({ notifyDue: 'true', theme: 42, dueOffsets: 'many', badge: { grades: 'yes', messages: false, extra: 1 }, links: { downloads: '9', mode: 'key' }, hiddenSites: [1, 'x', null] });
+  assert.deepEqual([odd.settings.notifyDue, odd.settings.theme, odd.settings.dueOffsets], [false, 'cromo', MAK.defaultSettings().dueOffsets]);
+  assert.deepEqual([odd.settings.badge.grades, odd.settings.badge.messages, 'extra' in odd.settings.badge], [false, false, false]);
+  assert.deepEqual([odd.settings.links.downloads, odd.settings.links.mode, odd.settings.hiddenSites], [MAK.defaultSettings().links.downloads, 'key', ['x']]);
+  // Strange characters and spaces: cleaned; values outside the checks: the default (MAK.withDefaults).
+  const text = merge({ theme: ' galaxia​ ', nicknames: { ' a ': ' Mates‮\u0007 ' }, teacherBody: 'Hola\r\n​fin\u0000', lang: 'fr', colorMode: 'DARK', degree: 'https://evil.example/' });
+  assert.deepEqual([text.settings.theme, text.settings.nicknames, text.settings.teacherBody, text.settings.lang, text.settings.colorMode, text.settings.degree], ['galaxia', { a: 'Mates' }, 'Hola\nfin', 'es', 'auto', '']);
+  // The boxes and the photos: only the right ones, over the current ones.
+  const ui = merge({}, { ui: { 'mak-mysite-closed': '1', 'mak-x': 'yes', evil: '1' }, sitePhotos: { s2: 4, s3: 99, 'a b': 1 } });
+  assert.deepEqual([ui.pageUi, ui.sitePhotos], [{ 'mak-mysite-wide': '1', 'mak-mysite-closed': '1' }, { s1: 1, s2: 4 }]);
+  // Keys that change an object, deep lists: nothing breaks, nothing changes outside.
+  const proto = MAK.configImport('{"app":"Aulario Plus","settings":{"__proto__":{"notifyDue":true},"nicknames":{"__proto__":"x","constructor":"y","b":"B"}}}');
+  const safe = MAK.configMerge(cur, proto.file);
+  assert.deepEqual([safe.settings.notifyDue, safe.settings.nicknames, {}.notifyDue], [false, { b: 'B' }, undefined]);
+  let deep = '"x"';
+  for (let i = 0; i < 5000; i++) deep = `[${deep}]`;
+  assert.doesNotThrow(() => MAK.configMerge(cur, MAK.configImport(`{"app":"Aulario Plus","settings":{"hiddenSites":${deep}}}`).file));
+  // How many change: 0 with the same values.
+  assert.equal(MAK.configChanges(cur, MAK.configMerge(cur, { settings: {} })), 0);
+  assert.equal(MAK.configChanges(cur, old), 1, 'the theme');
+  // In the pages (lib/themes.js): a theme that this version does not have keeps the current one; '' (the default) is a theme.
+  MAK.themeIds = () => ['cromo', 'galaxia'];
+  try {
+    assert.deepEqual(['nebulosa', 'galaxia​', ''].map((theme) => merge({ theme }).settings.theme), ['cromo', 'galaxia', '']);
+  } finally {
+    delete MAK.themeIds;
+  }
 });
 
 test('the store queue does not lose writes that occur at the same time', async () => {
