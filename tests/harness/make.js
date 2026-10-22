@@ -196,7 +196,8 @@ for (const page of ['popup.html', 'tools.html']) {
 }
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/record.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-theme.js', 'content-banner.js', 'content-rank.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'content-early.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+// content-early.js before the other content scripts, as in the manifest (document_start; the others: document_idle).
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/record.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-early.js', 'content-theme.js', 'content-banner.js', 'content-rank.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.mkdirSync(path.join(OUT, 'direct/profile/chareca.1/image'), { recursive: true });
 fs.writeFileSync(path.join(OUT, 'direct/profile/chareca.1/image/thumb.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#5b7083"/><circle cx="16" cy="12" r="6" fill="#dfe6ec"/><path d="M4 30c2-8 22-8 24 0" fill="#dfe6ec"/></svg>`);
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>
