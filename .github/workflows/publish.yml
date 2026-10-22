@@ -80,7 +80,8 @@ jobs:
           '
 
   build:
-    if: ${{ !inputs.check }}
+    # A pre-release (a test) does not go to the stores; a manual run has no release, so it goes.
+    if: ${{ !inputs.check && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
