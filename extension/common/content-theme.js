@@ -7,6 +7,7 @@
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
   const url = (file) => ext.runtime.getURL(`fonts/${file}`);
+  MAK.assetUrl = (file) => ext.runtime.getURL(file); // the images of a theme (img/) in the parts in MiAulario
   let dark = null; // the mode of the last drawing
 
   function redraw(force) {

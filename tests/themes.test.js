@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(COMMON, f), 'utf8');
 
 test('each theme: a unique id, a name and a text in Spanish and English, light and dark values, its CSS', () => {
   const ids = MAK.themeIds();
-  assert.deepEqual(ids, ['miaulario', 'bloques', 'plastilina', 'eterea', 'cromo', 'cuaderno']);
+  assert.deepEqual(ids, ['miaulario', 'bloques', 'plastilina', 'eterea', 'cromo', 'cuaderno', 'galaxia']);
   assert.equal(MAK.DEFAULT_THEME, 'miaulario', 'the default: the look of MiAulario');
   assert.equal(new Set(ids).size, ids.length);
   for (const th of MAK.THEMES) {
@@ -70,7 +70,7 @@ test('the CSS of a theme for its card in the settings: only rules of its card, i
 test('the name in the titles: "AulaXP" with AulaXP, else "Aulario Plus"', () => {
   assert.equal(MAK.themeName(MAK.theme('cromo'), 'es'), 'AulaXP');
   assert.equal(MAK.brandName(MAK.theme('cromo')), 'AulaXP');
-  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
+  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno', 'galaxia']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
   assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);
@@ -93,7 +93,7 @@ test('the fonts of the themes are files of the extension, with the OFL license',
   for (const name of ['chromium', 'firefox']) {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', `manifest.${name}.json`), 'utf8'));
     const war = manifest.web_accessible_resources;
-    assert.deepEqual(war, [{ resources: ['fonts/*.woff2'], matches: ['https://miaulario.unavarra.es/*'] }], name);
+    assert.deepEqual(war, [{ resources: ['fonts/*.woff2', 'img/*.webp'], matches: ['https://miaulario.unavarra.es/*'] }], name);
     const scripts = manifest.content_scripts[1].js;
     assert.ok(scripts.indexOf('lib/themes.js') < scripts.indexOf('content-theme.js'), name);
     assert.ok(scripts.indexOf('content-theme.js') < scripts.indexOf('content-banner.js'), `${name}: the theme before the parts`);
@@ -101,6 +101,23 @@ test('the fonts of the themes are files of the extension, with the OFL license',
     for (const lib of manifest.content_scripts[0].js.filter((f) => f.startsWith('lib/'))) {
       assert.ok(scripts.includes(lib) && scripts.indexOf(lib) < scripts.indexOf('content-theme.js'), `${name}: ${lib} in the group of the parts`);
     }
+  }
+});
+
+test('the images of a theme: files of the extension (img/), a relative address in its pages, the full one in MiAulario', () => {
+  for (const th of MAK.THEMES) {
+    for (const v of [...Object.values(th.light), ...Object.values(th.dark)]) {
+      for (const [, file] of v.matchAll(/ap-asset:([\w./-]+)/g)) assert.ok(fs.existsSync(path.join(COMMON, file)) && /^img\/[\w.-]+\.webp$/.test(file), `${th.id}: ${file}`);
+    }
+  }
+  assert.match(MAK.themeValues('galaxia', true).page, /^url\("img\/galaxia-dark\.webp"\)/);
+  assert.match(MAK.themeValues('galaxia', false).page, /^url\("img\/galaxia-light\.webp"\)/);
+  const before = MAK.assetUrl;
+  MAK.assetUrl = (file) => `chrome-extension://ext-id/${file}`; // content-theme.js
+  try {
+    assert.match(MAK.themeVars('galaxia', true), /--ap-win-bg: [^;]*url\("chrome-extension:\/\/ext-id\/img\/galaxia-dark\.webp"\)/);
+  } finally {
+    MAK.assetUrl = before;
   }
 });
 

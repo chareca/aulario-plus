@@ -1600,6 +1600,136 @@
         .panel > input { margin: 12px 14px 4px; padding: 6px 12px; border: 1.6px solid var(--ap-input-edge); border-radius: var(--ap-input-radius); background: var(--ap-input-bg); }
         .panel > .foot { border-top: 0; }
       `
+    },
+    // ---- 7 · Vía Láctea (id "galaxia"): glass over the real Milky Way, a photo of ESO/S. Brunier (CC BY 4.0,
+    // https://www.eso.org/public/images/eso0932a/), turned so that the band goes up to the right. The light mode:
+    // the same sky at dusk, periwinkle, with the band in white. The images are files of the extension (img/).
+    {
+      id: 'galaxia',
+      name: { es: 'Vía Láctea', en: 'Milky Way' },
+      about: { es: 'Vidrio sobre la Vía Láctea de verdad (foto: ESO/S. Brunier).', en: 'Glass over the real Milky Way (photo: ESO/S. Brunier).' },
+      fonts: [{ family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }],
+      light: {
+        font: '"AP Manrope", "Manrope", system-ui, sans-serif',
+        weight: '500',
+        'head-weight': '800',
+        'head-spacing': '0.01em',
+        page: 'url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #c9cff4',
+        surface: 'rgba(255, 255, 255, 0.4)',
+        solid: '#eef0fd',
+        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.42)), url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #c9cff4',
+        surface2: 'rgba(255, 255, 255, 0.66)',
+        fg: '#181c4f',
+        muted: '#454c8c',
+        line: 'rgba(255, 255, 255, 0.7)',
+        edge: 'rgba(255, 255, 255, 0.78)',
+        accent: '#2c32a6',
+        'accent-fg': '#ffffff',
+        'accent-soft': 'rgba(255, 255, 255, 0.55)',
+        link: '#2c32a6',
+        red: '#b0275e', 'red-bg': 'rgba(255, 205, 222, 0.7)',
+        orange: '#9c4a14', 'orange-bg': 'rgba(255, 224, 200, 0.7)',
+        yellow: '#715c0c', 'yellow-bg': 'rgba(255, 240, 185, 0.7)',
+        green: '#1f6a52', 'green-bg': 'rgba(200, 240, 222, 0.7)',
+        blue: '#2c32a6', 'blue-bg': 'rgba(210, 218, 255, 0.75)',
+        grey: '#454c8c', 'grey-bg': 'rgba(255, 255, 255, 0.55)',
+        'mark-bg': 'linear-gradient(transparent 58%, rgba(160, 150, 255, 0.55) 58%)',
+        'head-fg': '#181c4f',
+        'head-line': '1px solid rgba(255, 255, 255, 0.7)',
+        'btn-bg': 'rgba(255, 255, 255, 0.55)',
+        'btn-fg': '#181c4f',
+        'btn-edge': 'rgba(255, 255, 255, 0.85)',
+        'primary-bg': '#3a3fc4',
+        'primary-fg': '#ffffff',
+        'primary-edge': '#3a3fc4',
+        radius: '18px',
+        'radius-sm': '999px',
+        'radius-box': '14px',
+        shadow: '0 22px 46px -28px rgba(30, 30, 110, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        'shadow-pop': '0 30px 70px -22px rgba(30, 30, 110, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        blur: 'blur(4px) saturate(120%)',
+        backdrop: 'rgba(40, 44, 120, 0.3)',
+        'item-sep': '1px solid rgba(255, 255, 255, 0.7)',
+        'count-weight': '800',
+        'count-fg': '#181c4f',
+        'count-soon-fg': '#9c4a14',
+        'count-hot-fg': '#b0275e',
+        'count-ok-fg': '#1f6a52',
+        'input-bg': 'rgba(255, 255, 255, 0.55)',
+        'input-edge': 'rgba(255, 255, 255, 0.9)',
+        'input-radius': '12px',
+        'logo-bg': '#ffffff',
+        'logo-ring': '#3a3fc4',
+        'logo-dot': '#a38bff',
+        'k-exam': 'linear-gradient(90deg, #b9c2ff, #d3c4ff)', 'k-exam-fg': '#181c4f',
+        'k-practice': 'linear-gradient(90deg, #bfe3ff, #c8d4ff)', 'k-practice-fg': '#181c4f',
+        'k-work': '#cdeee0', 'k-work-fg': '#181c4f',
+        'k-participation': '#fff0b8', 'k-participation-fg': '#181c4f',
+        'k-presentation': '#e6d8ff', 'k-presentation-fg': '#181c4f',
+        'k-other': '#e3e5f6', 'k-other-fg': '#181c4f'
+      },
+      dark: {
+        page: 'url("ap-asset:img/galaxia-dark.webp") 50% 40% / cover no-repeat, #05081a',
+        surface: 'rgba(8, 11, 36, 0.3)',
+        solid: '#0c1031',
+        'win-bg': 'linear-gradient(rgba(5, 8, 26, 0.5), rgba(5, 8, 26, 0.5)), url("ap-asset:img/galaxia-dark.webp") 50% 40% / cover no-repeat, #05081a',
+        surface2: 'rgba(255, 255, 255, 0.08)',
+        fg: '#eceeff',
+        muted: '#afb6e2',
+        line: 'rgba(200, 210, 255, 0.16)',
+        edge: 'rgba(200, 210, 255, 0.24)',
+        accent: '#c9d0ff',
+        'accent-fg': '#0c1031',
+        'accent-soft': 'rgba(200, 210, 255, 0.1)',
+        link: '#c9d0ff',
+        red: '#ff95b6', 'red-bg': 'rgba(130, 40, 80, 0.45)',
+        orange: '#ffbf8f', 'orange-bg': 'rgba(130, 75, 40, 0.45)',
+        yellow: '#f3d97a', 'yellow-bg': 'rgba(110, 95, 30, 0.45)',
+        green: '#9ee3c3', 'green-bg': 'rgba(40, 100, 80, 0.45)',
+        blue: '#aebcff', 'blue-bg': 'rgba(55, 70, 150, 0.5)',
+        grey: '#afb6e2', 'grey-bg': 'rgba(255, 255, 255, 0.08)',
+        'mark-bg': 'linear-gradient(transparent 58%, rgba(140, 130, 255, 0.5) 58%)',
+        'head-fg': '#eceeff',
+        'head-line': '1px solid rgba(200, 210, 255, 0.16)',
+        'btn-bg': 'rgba(255, 255, 255, 0.08)',
+        'btn-fg': '#eceeff',
+        'btn-edge': 'rgba(200, 210, 255, 0.3)',
+        'primary-bg': '#6d6af2',
+        'primary-fg': '#ffffff',
+        'primary-edge': '#8d89ff',
+        shadow: '0 22px 46px -26px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        'shadow-pop': '0 30px 70px -20px rgba(0, 0, 0, 0.85), 0 0 40px -12px rgba(120, 120, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        backdrop: 'rgba(2, 3, 14, 0.55)',
+        'item-sep': '1px solid rgba(200, 210, 255, 0.16)',
+        'count-fg': '#eceeff',
+        'count-soon-fg': '#ffbf8f',
+        'count-hot-fg': '#ff95b6',
+        'count-ok-fg': '#9ee3c3',
+        'input-bg': 'rgba(255, 255, 255, 0.06)',
+        'input-edge': 'rgba(200, 210, 255, 0.28)',
+        'logo-bg': '#0c1031',
+        'logo-ring': '#c9d0ff',
+        'logo-dot': '#a38bff',
+        'k-exam': 'linear-gradient(90deg, #5d5fd0, #8a6fd6)', 'k-exam-fg': '#ffffff',
+        'k-practice': 'linear-gradient(90deg, #3f7fc4, #5b6fd0)', 'k-practice-fg': '#ffffff',
+        'k-work': '#3f8a72', 'k-work-fg': '#ffffff',
+        'k-participation': '#a8903e', 'k-participation-fg': '#ffffff',
+        'k-presentation': '#7f62c4', 'k-presentation-fg': '#ffffff',
+        'k-other': '#4c5180', 'k-other-fg': '#ffffff'
+      },
+      css: `
+        nav.tabs { border-bottom: 1px solid var(--ap-line); }
+        .mak-logo { border-radius: 50%; }
+        /* One level of glass (a tile, a card of a guide); in it, rows with thin lines, not more glass. */
+        .tile, .guide-card { background: var(--ap-surface2); border: 1px solid var(--ap-edge); }
+        .sem { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 0 4px; }
+        .sems.two .sem { border-top: 0; }
+        .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
+        .countdown, .count { text-shadow: 0 0 14px rgba(160, 150, 255, 0.45); }
+        .next-exam .day { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffffff, #c9d0ff 45%, #6d6af2 100%); color: #0c1031;
+          box-shadow: 0 0 22px rgba(140, 130, 255, 0.55); }
+        .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(109, 106, 242, 0.55); }
+      `
     }
   ];
 
@@ -1615,9 +1745,14 @@
 
   // All the variables of a theme for one mode: BASE (light, then dark in the dark mode), then the light
   // values of the theme, then (dark) the dark values of the theme. { name: value }.
+  // A file of the extension in a value: "ap-asset:img/<file>". In the pages of the extension, the address is relative;
+  // content-theme.js gives the full address for the parts in MiAulario (web_accessible_resources).
+  MAK.assetUrl = (file) => file;
   MAK.themeValues = function (id, dark) {
     const th = MAK.theme(id);
-    return Object.assign({}, BASE.light, dark ? BASE.dark : null, th.light, dark ? th.dark : null);
+    const all = Object.assign({}, BASE.light, dark ? BASE.dark : null, th.light, dark ? th.dark : null);
+    for (const k of Object.keys(all)) all[k] = all[k].replace(/ap-asset:([\w./-]+)/g, (_, file) => MAK.assetUrl(file));
+    return all;
   };
   MAK.THEME_VARS = Object.keys(BASE.light);
 

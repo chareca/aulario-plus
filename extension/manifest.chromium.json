@@ -97,7 +97,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "fonts/*.woff2"
+        "fonts/*.woff2",
+        "img/*.webp"
       ],
       "matches": [
         "https://miaulario.unavarra.es/*"
