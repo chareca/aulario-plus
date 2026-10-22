@@ -562,6 +562,10 @@ let badgeTimer = null;
 let searchCache = null; // the search index; made again after a change of the data
 ext.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') searchCache = null;
+  // New sites: a photo for each new subject (a theme with photos); the photos of the others stay.
+  if (area === 'local' && changes.sites && Array.isArray(changes.sites.newValue)) {
+    store.update('sitePhotos', (kept) => MAK.assignSitePhotos(changes.sites.newValue, kept || {})).catch(() => {});
+  }
   if (area === 'local' && (changes.assignments || changes.settings)) checkDueSoon();
   if (area !== 'local' || !Object.keys(changes).some((k) => BADGE_KEYS.includes(k))) return;
   clearTimeout(badgeTimer);

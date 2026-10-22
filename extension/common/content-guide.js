@@ -200,7 +200,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = MAK.themedStyle(CSS());
+    const style = MAK.themedStyle(CSS(), mySite ? null : { photo: siteId }); // in a subject: the photo of the subject
     const content = h('div', { class: `content${mySite ? '' : ' one'}` }, body);
     let hidden = false;
     try { hidden = localStorage.getItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`) === '1'; } catch {}

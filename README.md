@@ -27,7 +27,7 @@
 - **Historial:** todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario del profesor, y la nota oficial de cada asignatura de cada curso.
 - **Guías docentes:** cómo se evalúa cada asignatura, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
 - **Archivos:** descarga una asignatura en ZIP o envía sus archivos por el correo interno; en los Recursos de Mi sitio, descarga o borra todos tus archivos de una vez.
-- **Temas:** igual que MiAulario (por defecto) o uno de seis estilos (Cómic, Malvavisco, Aurora, AulaXP, Folio y Vía Láctea), en light o dark mode. La foto de la Vía Láctea es de ESO/S. Brunier ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
+- **Temas:** igual que MiAulario (por defecto) o uno de seis estilos (Cómic, Malvavisco, Aurora, AulaXP, Folio y Vía Láctea), en light o dark mode. Las fotos del tema Vía Láctea son de ESO ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): ESO/S. Brunier, ESO/H. Drass et al., ESO/T. Preibisch, ESO/B. Bailleul, ESO/Igor Chekalin, ESO/F. Comeron y ESO) y la Tierra, de NASA.
 - **Confeti:** cuando entregas una tarea o un examen, sin sonido (se puede apagar).
 
 ## Privacidad

@@ -83,3 +83,32 @@ test('publicSiteName: the name for other persons is never the name from the user
   assert.equal(MAK.publicSiteName(site), 'Complejidad y Computabilidad', 'the recipients see the full name');
   assert.equal(MAK.publicSiteName({ id: 'X', title: 'Coordinación' }), 'Coordinación');
 });
+
+test('the photo of each subject (Vía Láctea): a year gets 1–5 in the first semester and 6–10 in the second; a subject keeps its photo', async () => {
+  const s = (code, title, year = 2026) => ({ id: `${year}_0_${code}_1`, title, type: 'course' });
+  const autumn = [s('240501', 'Procesadores'), s('240503', 'Seguridad'), s('240505', 'Gestión'), s('240507', 'Análisis'), s('240509', 'Complejidad')];
+  const spring = [s('240602', 'Redes'), s('240604', 'Inteligencia'), s('240606', 'Bases'), s('240608', 'Web'), s('240610', 'Trabajo')];
+  const year = MAK.assignSitePhotos([...spring, { id: 'comunidad-etsiiit', title: 'Comunidad', type: 'project' }, ...autumn], {});
+  const of = (list) => list.map((x) => year[x.id]);
+  assert.deepEqual(of(autumn), [3, 4, 2, 0, 1], 'the first semester: 1–5, by name');
+  assert.deepEqual(of(spring), [7, 6, 5, 9, 8], 'the second semester: 6–10');
+  assert.equal(year['comunidad-etsiiit'], undefined, 'a community: no photo');
+  // The first semester ends (its sites go), a subject comes in February: the others keep their photos.
+  const later = MAK.assignSitePhotos([...spring, s('240612', 'Álgebra')], year);
+  assert.deepEqual(of(spring).concat(of(autumn)), spring.concat(autumn).map((x) => later[x.id]));
+  assert.ok(!of(spring).includes(later[s('240612').id]), 'no photo twice in the second semester');
+  // The next year: the first semester takes the photos of the second semester of before, not twice in one semester.
+  const next = ['240701', '240703', '240705', '240707', '240709', '240711'].map((c, i) => s(c, `Nueva ${i}`, 2027));
+  const map = MAK.assignSitePhotos(next, later);
+  const got = next.map((x) => map[x.id]);
+  assert.equal(new Set(got.slice(0, 6)).size, 6, 'six subjects of one semester: six photos');
+  assert.deepEqual(got.slice(0, 4).sort(), [5, 6, 7, 8], 'first the photos that the first semester did not have');
+});
+
+test('the photos of the subjects: the background gives them when the sites come, they stay after a logout', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  await bg.ext.storage.local.set({ sites: [{ id: '2026_0_240501_1', title: 'A', type: 'course' }, { id: '2026_0_240602_1', title: 'B', type: 'course' }] });
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepEqual(bg.ext.storage.local.data.sitePhotos, { '2026_0_240501_1': 0, '2026_0_240602_1': 1 });
+  assert.ok(!bg.MAK.DATA_KEYS.includes('sitePhotos') && bg.MAK.USER_KEYS.includes('sitePhotos'), 'a logout keeps them; another user removes them');
+});

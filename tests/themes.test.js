@@ -112,6 +112,15 @@ test('the images of a theme: files of the extension (img/), a relative address i
     }
   }
   assert.match(MAK.themeValues('galaxia', true).page, /url\("img\/galaxia-dark\.webp"\)/);
+  // The photos of the subjects and of the novelties (dark and light), and the Earth of the next exam.
+  const th = MAK.theme('galaxia');
+  assert.equal(th.photos.sites.length, 10, 'MAK.SITE_PHOTOS');
+  for (const name of [...th.photos.sites, th.photos.news]) {
+    for (const file of [`img/${name}.webp`, `img/${name}-light.webp`]) assert.ok(fs.existsSync(path.join(COMMON, file)), file);
+  }
+  for (const mode of ['light', 'dark']) assert.match(th.photoBg[mode], /url\("ap-asset:img\/\{photo\}(-light)?\.webp"\)/);
+  assert.ok(fs.existsSync(path.join(COMMON, 'img/galaxia-earth.webp')) && th.css.includes('ap-asset:img/galaxia-earth.webp'));
+  assert.match(MAK.pageThemeCss('galaxia', (f) => `fonts/${f}`, 'dark'), /url\("img\/galaxia-earth\.webp"\)/, 'the address in a page of the extension');
   assert.match(MAK.themeValues('galaxia', false).page, /url\("img\/galaxia-light\.webp"\)/);
   const before = MAK.assetUrl;
   MAK.assetUrl = (file) => `chrome-extension://ext-id/${file}`; // content-theme.js

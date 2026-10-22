@@ -47,7 +47,7 @@
         'En el calendario de una asignatura, los exámenes de las otras siguen en gris, pero al pasar el ratón dicen de qué asignatura son y cuándo.',
         'Las ventanas dentro del popup también se cierran con un clic fuera, como al pulsar Cancelar.',
         'El buscador ({key}) no pierde nunca el foco mientras está abierto: puedes escribir siempre, aunque hagas clic dentro de él o la página se esté cargando. Un clic fuera lo cierra.',
-        'Tema nuevo, Vía Láctea: vidrio sobre una foto real de nuestra galaxia (ESO/S. Brunier); en light mode, el mismo cielo al anochecer.'
+        'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.'
       ],
       en: [
         'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
@@ -55,7 +55,7 @@
         'In the calendar of a subject, the exams of the other subjects stay grey, but on hover they say which subject and when.',
         'The windows inside the popup also close with a click outside, as "Cancel" does.',
         'The search ({key}) never loses the focus while it is open: you can always type, also after a click in it or while the page loads. A click outside closes it.',
-        'A new theme, Milky Way: glass over a real photo of our galaxy (ESO/S. Brunier); in light mode, the same sky at dusk.'
+        'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.'
       ]
     },
     {

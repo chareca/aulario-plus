@@ -37,9 +37,20 @@
     MAK.safeCall(() => ext.runtime.sendMessage({ type: 'pageMode', mode }), null);
   }
 
-  MAK.safeCall(() => ext.storage.local.get('settings'), null).then((d) => apply(d && d.settings));
+  // The photo of each subject, for a theme with photos (MAK.assignSitePhotos, in the background).
+  const setPhotos = (map) => { MAK.sitePhotoMap = map && typeof map === 'object' ? map : {}; };
+
+  MAK.safeCall(() => ext.storage.local.get(['settings', 'sitePhotos']), null).then((d) => {
+    setPhotos(d && d.sitePhotos);
+    apply(d && d.settings);
+  });
   ext.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.settings && MAK.extensionAlive()) apply(changes.settings.newValue);
+    if (area !== 'local' || !MAK.extensionAlive()) return;
+    if (changes.sitePhotos) {
+      setPhotos(changes.sitePhotos.newValue);
+      redraw(true);
+    }
+    if (changes.settings) apply(changes.settings.newValue);
   });
   report();
   new MutationObserver(() => {

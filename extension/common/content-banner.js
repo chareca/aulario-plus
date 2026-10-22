@@ -234,7 +234,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const style = MAK.themedStyle(CSS());
+    const style = MAK.themedStyle(CSS(), { photo: 'news' }); // the photo of the novelties (a theme with photos)
 
     const list = h(
       'div',

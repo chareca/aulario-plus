@@ -62,4 +62,39 @@
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;
+
+  // The photos of the subjects (a theme with photos: Vía Láctea has MAK.SITE_PHOTOS of them). kept: { siteId: n }, the
+  // photos given before: a subject keeps its photo (also when its semester ends, or a new subject comes). The new
+  // subjects: the newest year first, the first semester before the second, then by name; each one takes the photo least
+  // used in its semester, then the least used of all. So a year gets 1–5 in the first semester and 6–10 in the second,
+  // and a semester has no photo twice (with up to 10 subjects in it). Only the sites of subjects (2026_0_240504_1).
+  MAK.SITE_PHOTOS = 10;
+  MAK.assignSitePhotos = function (sites, kept, count = MAK.SITE_PHOTOS) {
+    const termOf = (id) => {
+      const m = /^(\d{4})_\d+_(\d{6})/.exec(String(id));
+      if (!m) return null;
+      const n = Number(m[2][3]); // the semester in the code (as MAK.guideSeason): odd the first, even the second
+      return { year: Number(m[1]), term: n >= 1 && n <= 8 ? (n % 2 ? 0 : 1) : 2 };
+    };
+    const map = Object.assign({}, kept);
+    const all = new Array(count).fill(0);
+    const byTerm = [0, 1, 2].map(() => new Array(count).fill(0));
+    for (const [id, n] of Object.entries(map)) {
+      const t = termOf(id);
+      if (t && n >= 0 && n < count) { all[n]++; byTerm[t.term][n]++; }
+    }
+    const fresh = (Array.isArray(sites) ? sites : [])
+      .filter((s) => s && !Object.hasOwn(map, String(s.id)) && termOf(s.id))
+      .map((s) => Object.assign({ id: String(s.id), title: String(s.title || '') }, termOf(s.id)))
+      .sort((a, b) => b.year - a.year || a.term - b.term || a.title.localeCompare(b.title, 'es') || (a.id < b.id ? -1 : 1));
+    for (const c of fresh) {
+      const own = byTerm[c.term];
+      let best = 0;
+      for (let i = 1; i < count; i++) if (own[i] < own[best] || (own[i] === own[best] && all[i] < all[best])) best = i;
+      own[best]++;
+      all[best]++;
+      map[c.id] = best;
+    }
+    return map;
+  };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

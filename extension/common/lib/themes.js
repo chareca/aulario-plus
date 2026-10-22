@@ -1614,7 +1614,16 @@
       id: 'galaxia',
       name: { es: 'Vía Láctea', en: 'Milky Way' },
       brand: 'Vía Aulactea', // the name in the titles
-      about: { es: 'Vidrio sobre la Vía Láctea de verdad (foto: ESO/S. Brunier).', en: 'Glass over the real Milky Way (photo: ESO/S. Brunier).' },
+      about: { es: 'Vidrio sobre la Vía Láctea de verdad y una foto del espacio en cada asignatura (fotos: ESO y NASA).', en: 'Glass over the real Milky Way, and a photo of space in each subject (photos: ESO and NASA).' },
+      // The photos of the parts of a subject (one for each subject, MAK.assignSitePhotos) and of the bar of the novelties:
+      // ESO, CC BY 4.0 (eso1625a ESO/H. Drass et al., eso1208a ESO/T. Preibisch, eso0202a, eso1238a ESO/B. Bailleul,
+      // eso1740a, eso1105a ESO/Igor Chekalin, eso0848a, eso0926a, eso1221a, eso1303a ESO/F. Comeron; the novelties
+      // eso1131a). Blurred on purpose, small: the browser makes them large. The Earth of the next exam: NASA (Blue Marble).
+      photos: { sites: ['galaxia-site-01', 'galaxia-site-02', 'galaxia-site-03', 'galaxia-site-04', 'galaxia-site-05', 'galaxia-site-06', 'galaxia-site-07', 'galaxia-site-08', 'galaxia-site-09', 'galaxia-site-10'], news: 'galaxia-news' },
+      photoBg: {
+        light: 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url("ap-asset:img/{photo}-light.webp") 50% 35% / cover no-repeat, #e8e4f9',
+        dark: 'linear-gradient(rgba(5, 8, 26, 0.5), rgba(5, 8, 26, 0.5)), url("ap-asset:img/{photo}.webp") 50% 35% / cover no-repeat, #05081a'
+      },
       fonts: [{ family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }],
       light: {
         font: '"AP Manrope", "Manrope", system-ui, sans-serif',
@@ -1734,8 +1743,8 @@
         .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
         .countdown, .count { text-shadow: 0 0 14px rgba(160, 150, 255, 0.45); }
         .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
-          background: radial-gradient(circle at 35% 30%, #ffffff, #c9d0ff 45%, #6d6af2 100%); color: #0c1031; box-shadow: 0 0 22px rgba(140, 130, 255, 0.55);
-          font-size: 32px; line-height: 0.9; }
+          background: url("ap-asset:img/galaxia-earth.webp") center / cover no-repeat, #1d4e9e; color: #ffffff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+          box-shadow: 0 0 24px rgba(110, 170, 255, 0.5); font-size: 32px; line-height: 0.9; }
         .next-exam .day small { font-size: 13px; margin-top: 3px; }
         .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(150, 90, 230, 0.55); }
         .mak-logo { background: ${SATURN} center / contain no-repeat; }
@@ -1763,12 +1772,14 @@
   // A file of the extension in a value: "ap-asset:img/<file>". In the pages of the extension, the address is relative;
   // content-theme.js gives the full address for the parts in MiAulario (web_accessible_resources).
   MAK.assetUrl = (file) => file;
+  const assets = (text) => String(text || '').replace(/ap-asset:([\w./-]+)/g, (_, file) => MAK.assetUrl(file));
   MAK.themeValues = function (id, dark) {
     const th = MAK.theme(id);
     const all = Object.assign({}, BASE.light, dark ? BASE.dark : null, th.light, dark ? th.dark : null);
-    for (const k of Object.keys(all)) all[k] = all[k].replace(/ap-asset:([\w./-]+)/g, (_, file) => MAK.assetUrl(file));
+    for (const k of Object.keys(all)) all[k] = assets(all[k]);
     return all;
   };
+
   MAK.THEME_VARS = Object.keys(BASE.light);
 
   // The icons that a theme can draw again (MAK.icon, lib/ui.js). theme.icons: { name: '<svg …>' }.
@@ -1824,7 +1835,7 @@
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
     const cards = MAK.THEMES.map((t) => t.cardCss || '');
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, th.css || '', MAK.themeIconCss(th)].join('\n');
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, assets(th.css), MAK.themeIconCss(th)].join('\n');
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
@@ -1853,16 +1864,24 @@
   // theme (content-theme.js).
   const styles = new Set();
   MAK.themeId = MAK.DEFAULT_THEME;
+  MAK.sitePhotoMap = {}; // the photo of each subject: { siteId: n } (MAK.assignSitePhotos; content-theme.js reads it)
+  // The background of a part with a photo of its own, if the theme has photos: "news" (the bar of the novelties) or the
+  // id of a site (the photo of the subject).
+  function photoVar(th, photo, dark) {
+    if (!photo || !th.photos || !th.photoBg) return '';
+    const file = photo === 'news' ? th.photos.news : th.photos.sites[MAK.sitePhotoMap[photo]];
+    return file ? ` --ap-win-bg: ${assets((dark ? th.photoBg.dark : th.photoBg.light).replace('{photo}', file))};` : '';
+  }
   function themedText(css, opts) {
     const th = MAK.theme(MAK.themeId);
     const dark = typeof MAK.isDarkPage === 'function' && MAK.isDarkPage();
     const scope = (opts && opts.scope) || ':host';
     const own = opts && opts.scope ? th.blockCss || '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // the block: its own CSS
     const motion = MAK.motionCss(opts && opts.scope ? `${scope}, ${scope} *, ${scope}::before, ${scope} *::before, ${scope} *::after` : ALL);
-    return `${scope} { ${MAK.themeVars(th.id, dark)} }\n${motion}\n${css}\n${own}`;
+    return `${scope} { ${MAK.themeVars(th.id, dark)}${photoVar(th, opts && opts.photo, dark)} }\n${motion}\n${css}\n${assets(own)}`;
   }
   // opts.scope: a selector for a style in the page (not in a shadow root); then the variables and the
-  // blockCss of the theme (the only style in the page is the one of the block).
+  // blockCss of the theme (the only style in the page is the one of the block). opts.photo: the photo of the part.
   MAK.themedStyle = function (css, opts) {
     const el = document.createElement('style');
     el.textContent = themedText(css, opts);
