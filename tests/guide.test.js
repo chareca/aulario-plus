@@ -125,11 +125,11 @@ test('pageGuide: an error of MiAulario or the login page is not "no guide": noth
   const sent = [];
   const send = async (m) => (sent.push(m.type), { ok: true });
   const real = globalThis.fetch;
-  const answer = (ok, html) => async (url) => ({ ok, status: ok ? 200 : 503, url, text: async () => html });
+  const answer = (status, html) => async (url) => ({ ok: status < 400, status, url, text: async () => html });
   try {
-    globalThis.fetch = answer(false, 'Service Unavailable');
+    globalThis.fetch = answer(503, 'Service Unavailable');
     await assert.rejects(MAK.pageGuide('s1', data, send), /guide\.network/, 'a 503');
-    globalThis.fetch = answer(true, '<form><input name="eid"><input type="password" name="pw"></form>');
+    globalThis.fetch = answer(200, '<form><input name="eid"><input type="password" name="pw"></form>');
     await assert.rejects(MAK.pageGuide('s1', data, send), /guide\.network/, 'the login page');
     assert.deepEqual(sent, [], 'nothing stored');
     let asked = null;
@@ -137,6 +137,14 @@ test('pageGuide: an error of MiAulario or the login page is not "no guide": noth
     assert.equal(await MAK.pageGuide('s1', data, send), null, 'a tool page without a guide');
     assert.deepEqual(sent, ['saveGuide'], 'that one is stored: no guide');
     assert.equal(asked, 'https://miaulario.unavarra.es/portal/tool/P1', 'the address of MiAulario, also from the popup');
+    sent.length = 0;
+    globalThis.fetch = answer(404, 'Not found');
+    assert.equal(await MAK.pageGuide('s1', data, send), null, 'no page of the tool (404): no guide, as before');
+    assert.deepEqual(sent, ['saveGuide']);
+    sent.length = 0;
+    globalThis.fetch = answer(200, `<input type="password"><iframe src="${URL_OK}"></iframe>`);
+    await MAK.pageGuide('s1', data, send).catch(() => {}); // no DOMParser in Node: the guide itself is not read here
+    assert.deepEqual(sent, ['fetchGuide'], 'a page with the guide is not the login page, also with a password field');
   } finally {
     globalThis.fetch = real;
   }

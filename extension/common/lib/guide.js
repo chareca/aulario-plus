@@ -405,12 +405,14 @@
       tool: data.pages && data.pages[siteId] && data.pages[siteId].guide,
       stored: data.guides && data.guides[siteId],
       now: Date.now(),
-      // An error of the server or the login page (after the session ends) is not "no guide": nothing is stored (for 7
-      // days), the next opening reads it again. The login pages (MiAulario, the UPNA) have a password; a tool has not.
+      // An error of the server (5xx, 429) or the login page after the session ends (a password field and no guide: the
+      // login pages of MiAulario and the UPNA) is not "no guide": nothing is stored for 7 days, the next opening reads
+      // it again. A page without the tool (404) is "no guide", as before.
       fetchMia: async (path) => {
         const r = await fetch(new URL(path, MAK.BASE).href, { credentials: 'include' });
-        const html = r.ok ? await r.text() : '';
-        if (!r.ok || /<input[^>]+type=["']?password/i.test(html)) throw new Error('guide.network');
+        if (r.status >= 500 || r.status === 429) throw new Error('guide.network');
+        const html = await r.text();
+        if (!MAK.findGuideUrl(html) && /<input[^>]+type=["']?password/i.test(html)) throw new Error('guide.network');
         return html;
       },
       fetchGuide: async (url) => {
