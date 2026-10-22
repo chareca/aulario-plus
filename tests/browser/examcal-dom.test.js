@@ -98,25 +98,28 @@
     b.click();
     assert.deepEqual([wraps.every((w) => w.hidden), saved], [true, [true, false]]);
   });
-  test('the cards of the exams (Mi sitio): rows of 3, the last row never with one card alone, the cards of a short row wider', () => {
+  test('the cards of the exams (Mi sitio): rows of 3, the last row never with one card alone, the cards of a short row wider; less space: rows of 2, then 1', () => {
     const style = document.createElement('style');
-    style.textContent = `.wrap { container-type: inline-size; width: 900px; } .exams { list-style: none; display: grid; gap: 8px; padding: 0; } ${MAK.EXAM_ROWS_CSS}`;
+    style.textContent = `.wrap { width: 900px; } .exams { list-style: none; display: grid; gap: 8px; padding: 0; } ${MAK.EXAM_ROWS_CSS}`;
     document.head.append(style);
     // The cards of each row (the same top), from the top.
-    const rows = (n) => {
+    const rows = (n, width = 900) => {
       const ul = h('ul', { class: 'exams' }, Array.from({ length: n }, () => h('li', { text: 'x' })));
-      const wrap = h('div', { class: 'wrap' }, h('div', { class: 'exams-row' }, ul));
+      const wrap = h('div', { class: 'wrap', attrs: { style: `width: ${width}px` } }, h('div', { class: 'exams-row' }, ul));
       document.body.append(wrap);
       const tops = [...ul.children].map((li) => Math.round(li.getBoundingClientRect().top));
       const widths = [...ul.children].map((li) => Math.round(li.getBoundingClientRect().width));
       wrap.remove();
       const counts = [...new Set(tops)].map((t) => tops.filter((x) => x === t).length);
-      return { counts, full: widths[n - 1] > 850 };
+      return { counts, full: widths[n - 1] > width - 50 };
     };
     const h = MAK.h;
     try {
       assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8].map((n) => rows(n).counts), [[1], [2], [3], [2, 2], [3, 2], [3, 3], [3, 2, 2], [3, 3, 2]]);
       assert.ok(rows(1).full, 'one exam: the full width');
+      assert.deepEqual([1, 2, 3, 4, 5].map((n) => rows(n, 640).counts), [[1], [2], [2, 1], [2, 2], [2, 2, 1]], 'half a screen: rows of 2');
+      assert.ok(rows(3, 640).full, 'the odd last card: the full width');
+      assert.deepEqual(rows(3, 400).counts, [1, 1, 1], 'a column: one card a row');
     } finally {
       style.remove();
     }

@@ -67,14 +67,17 @@
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font-size: 0.93em; max-width: 100%; }
     .exams-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
-    .exams-head > h4 { flex: 1; min-width: 0; margin: 0; }
+    /* The title never shrinks under the buttons; narrow (half a screen, a column): on its own row, the buttons below it. */
+    .exams-head > h4 { flex: 1 0 auto; margin: 0; white-space: nowrap; }
+    @container (max-width: 600px) { .exams-head > h4 { flex-basis: 100%; } }
     .exams-head .actions { gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; flex-direction: row; }
     /* Small, also over the rules of a theme for each button (:nth-child): the theme keeps its colors. */
     .exams-head .actions .action:nth-child(n) { min-height: 0; padding: 4px 12px; font-size: 0.86em; transform: none; }
-    /* The cards of the exams and the calendar side by side (the calendar shown, enough width); else one below the other. */
+    /* The cards of the exams and the calendar side by side (the calendar shown, enough width); else the calendar below,
+       with its months side by side. */
     .exams-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
     .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
-    @container (max-width: 700px) { .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr); } }
+    @container (max-width: 860px) { .exams-row:has(> .cal-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr); } }
     ${MAK.EXAM_ROWS_CSS}
     .exams-row .cal-wrap { margin: 0; }
     ${MAK.EXAM_CAL_CSS}
