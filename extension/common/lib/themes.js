@@ -1769,7 +1769,12 @@
           color: #ffffff; text-shadow: 0 0 10px rgba(0, 0, 0, 0.75), 0 0 2px rgba(0, 0, 0, 0.6); /* a shadow in the middle, behind the days */
           box-shadow: 0 0 20px rgba(110, 170, 255, 0.5); font-size: 24px; line-height: 0.9; }
         .next-exam .day small { font-size: 11px; margin-top: 2px; }
-        .btn.primary, .power, .mak-btn, .actions .action { box-shadow: 0 0 14px -2px rgba(163, 139, 255, 0.35); }
+        /* The buttons: an edge of nebula; on hover the colors change places, the fill grows from the edges (0.3 s). */
+        .btn.primary, .power, .mak-btn, .mak-icon, .actions .action, .win button.primary, .mail button.primary {
+          box-shadow: inset 0 0 0 0 var(--ap-primary-fg), 0 0 14px -2px rgba(163, 139, 255, 0.35); transition: color 0.3s ease, box-shadow 0.3s ease; }
+        .btn.primary:hover, .power:hover, .mak-btn:hover, .mak-icon:hover, .actions .action:hover, .win button.primary:hover, .mail button.primary:hover,
+        .btn.primary:focus-visible, .power:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .actions .action:focus-visible {
+          color: var(--ap-solid); filter: none; box-shadow: inset 0 0 0 40px var(--ap-primary-fg), 0 0 18px -2px rgba(163, 139, 255, 0.6); }
         .mak-logo { background: ${SATURN} center / contain no-repeat; }
         .mak-logo > * { display: none; }
       `,
