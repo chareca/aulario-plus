@@ -121,6 +121,8 @@ test('the images of a theme: files of the extension (img/), a relative address i
   for (const mode of ['light', 'dark']) assert.match(th.photoBg[mode], /url\("ap-asset:img\/\{photo\}(-light)?\.webp"\)/);
   assert.ok(fs.existsSync(path.join(COMMON, 'img/galaxia-earth.webp')) && th.css.includes('ap-asset:img/galaxia-earth.webp'));
   assert.match(MAK.pageThemeCss('galaxia', (f) => `fonts/${f}`, 'dark'), /url\("img\/galaxia-earth\.webp"\)/, 'the address in a page of the extension');
+  // The planets of the cards of the exams: one for each photo number, drawn (data: SVG), nothing from other servers.
+  for (let i = 0; i < 10; i++) assert.match(th.css, new RegExp(`\\.exams li\\[data-photo="${i}"\\]::before \\{ background-image: url\\("data:image/svg\\+xml,`), `planet ${i}`);
   assert.match(MAK.themeValues('galaxia', false).page, /url\("img\/galaxia-light\.webp"\)/);
   const before = MAK.assetUrl;
   MAK.assetUrl = (file) => `chrome-extension://ext-id/${file}`; // content-theme.js

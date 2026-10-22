@@ -198,6 +198,8 @@
     return (s && MAK.publicSiteName(s)) || r.name;
   };
 
+  let photos = {}; // the photo of each subject: { siteId: n } (MAK.assignSitePhotos)
+
   function examList(mine, sites, now, need) {
     const today = new Date(new Date(now).toDateString()).getTime(); // the same "from today" as nextExam and MAK.myExams
     return h('ul', { class: 'exams' }, mine.map((r) => {
@@ -210,7 +212,8 @@
         return h('div', { class: `when${ms < today ? ' past' : ''}`, title: `${label}: ${text}` }, h('b', { text: label }), ` ${text}`);
       };
       const near = days >= 0 && days <= 2 ? 'hot' : days >= 0 && days <= 7 ? 'soon' : '';
-      return h('li', { class: near === 'hot' ? 'now' : near },
+      const photo = photos[r.siteId]; // the number of the photo of the subject (a theme with photos draws its planet)
+      return h('li', { class: near === 'hot' ? 'now' : near, data: Number.isInteger(photo) ? { photo: String(photo) } : null },
         h('div', { class: 'top' }, h('span', { class: 'name', text: name, title: name }), h('span', { class: `count ${near}`, text: countdown(days) })),
         line(t('short.final'), r.final, r.finalRoom),
         line(t('short.rec'), r.recovery, r.recoveryRoom),
@@ -334,7 +337,8 @@
     if (where && where.pageOrTool && !/^(inicio|home|overview|hasiera)$/i.test(document.title.split(':').pop().trim())) return;
     const s = await pageFetch('/direct/session/current.json?auto=true', { cache: 'no-store', credentials: 'include' }).then((r) => r.json()).catch(() => null);
     if (!s || !s.userId) return;
-    const data = (await MAK.safeCall(() => ext.storage.local.get(['guides', 'sites', 'settings', 'degree', 'degreeList']), null)) || {};
+    const data = (await MAK.safeCall(() => ext.storage.local.get(['guides', 'sites', 'settings', 'degree', 'degreeList', 'sitePhotos']), null)) || {};
+    photos = data.sitePhotos && typeof data.sitePhotos === 'object' ? data.sitePhotos : {};
     const settings = MAK.withDefaults(data.settings);
     MAK.setLang(settings.lang);
     const guides = MAK.userGuides(data, MAK.hiddenEverywhere(settings));
@@ -385,7 +389,7 @@
   // The permission for the calendars (tools.html?perm=exams), or new guides after a sync: draw again.
   let timer = null;
   ext.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local' || !MAK.extensionAlive() || !(changes.examsGranted || (changes.guides && (noGuides || !document.getElementById(HOST_ID))))) return;
+    if (area !== 'local' || !MAK.extensionAlive() || !(changes.examsGranted || changes.sitePhotos || (changes.guides && (noGuides || !document.getElementById(HOST_ID))))) return;
     clearTimeout(timer);
     timer = setTimeout(run, 500);
   });
