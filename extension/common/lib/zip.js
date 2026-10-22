@@ -259,7 +259,8 @@
       if (reason) errors.push(`${path.slice(rootName.length + 1)}: ${reason}`);
     }
 
-    if (errors.length) zip.addFile(`${rootName}/${t('zip.errorsFile')}`, new TextEncoder().encode(`${errors.join('\r\n')}\r\n`), now);
+    // Its own name too: the site can have a file "_errores.txt" (then "_errores (2).txt").
+    if (errors.length) zip.addFile(`${rootName}/${unique(rootName, t('zip.errorsFile'))}`, new TextEncoder().encode(`${errors.join('\r\n')}\r\n`), now);
     return { parts: zip.finish(), files, errors };
   };
 

@@ -152,6 +152,20 @@ test('buildSiteZip: folders, files, links, empty folders and errors', async () =
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('buildSiteZip: the file of the errors does not take the name of a file of the site', async () => {
+  MAK.setLang('es');
+  const base = `https://miaulario.unavarra.es/access/content/group/${F.CS}`;
+  const file = (name) => ({ url: `${base}/${encodeURIComponent(name)}`, title: name, type: 'text/plain', size: 1, modified: F.NOW, folder: false, link: null, copyright: false });
+  const items = [file('_errores.txt'), file('Perdido.pdf')];
+  const fetchFile = async (url) => (url.endsWith('Perdido.pdf') ? { ok: false, status: 404, url, type: 'text/html', data: null } : { ok: true, status: 200, url, type: 'text/plain', data: bytes('mine') });
+  const r = await MAK.buildSiteZip({ items, siteId: F.CS, siteTitle: 'CS', fetchFile, t: MAK.t, now: F.NOW });
+  const dir = tmp();
+  const z = pythonRead(writeZip(dir, r.parts));
+  assert.equal(z.files['CS/_errores.txt'], 'mine', 'the file of the site');
+  assert.match(z.files['CS/_errores (2).txt'], /Perdido\.pdf: error HTTP 404/);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('buildSiteZip: a folder in a folder with a new name ("practicas (2)") stays in it', async () => {
   const base = `https://miaulario.unavarra.es/access/content/group/${F.CS}`;
   const folder = (p) => ({ url: `${base}/${p}/`, title: p.split('/').pop(), type: 'collection', size: 0, modified: F.NOW, folder: true, link: null, copyright: false });
