@@ -76,6 +76,12 @@ function renderCurrent() {
     });
   };
   const open = new Set(keyed().filter(([, d]) => d.open).map(([k]) => k));
+  // The button under the pointer is a new one: it takes the hover at once, without the slow change of its colors
+  // (else they come again: a flicker). Until the browser gives it the hover (mouseover) and draws it, or a moment.
+  panel.classList.add('still');
+  const go = () => requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.remove('still')));
+  panel.addEventListener('mouseover', go, { once: true });
+  setTimeout(go, 300);
   panels[current].render(panel);
   if (open.size) for (const [k, d] of keyed()) if (open.has(k)) d.open = true;
   updateTabCounts();
