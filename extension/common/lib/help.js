@@ -45,7 +45,7 @@
         'El estado de tu sesión se comprueba al abrir el popup y al pulsar ↻: después de iniciar sesión dice «Conectado» enseguida, sin esperar unos minutos.',
         'La ventana «Escribir a un profesor» se queda siempre dentro de la pantalla, también con las asignaturas del final de la lista.',
         'En el calendario de una asignatura, los exámenes de las otras siguen en gris, pero al pasar el ratón dicen de qué asignatura son y cuándo.',
-        'Las ventanas dentro del popup también se cierran con un clic fuera, como al pulsar Cancelar.',
+        'Las ventanas se cierran con un clic fuera o con Esc, como al pulsar Cancelar, también las del popup y aunque hayas hecho clic en su texto.',
         'El buscador ({key}) no pierde nunca el foco mientras está abierto: puedes escribir siempre, aunque hagas clic dentro de él o la página se esté cargando. Un clic fuera lo cierra.',
         'Mi sitio aprovecha mejor el espacio: los atajos van en la cabecera de los exámenes, el próximo examen ocupa una franja baja y las tarjetas de los exámenes van al lado del calendario.',
         'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.'
@@ -54,7 +54,7 @@
         'The extension checks your session when you open the popup and when you click ↻: after you log in, it says "Connected" at once, with no wait of some minutes.',
         'The window "Write to a teacher" always stays inside the screen, also for the subjects at the end of the list.',
         'In the calendar of a subject, the exams of the other subjects stay grey, but on hover they say which subject and when.',
-        'The windows inside the popup also close with a click outside, as "Cancel" does.',
+        'The windows close with a click outside or with Esc, as "Cancel" does, also the ones of the popup and after a click on their text.',
         'The search ({key}) never loses the focus while it is open: you can always type, also after a click in it or while the page loads. A click outside closes it.',
         'Mi sitio uses the space better: the shortcuts are in the head of the exams, the next exam takes a low strip, and the cards of the exams are next to the calendar.',
         'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.'

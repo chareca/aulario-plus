@@ -1166,9 +1166,9 @@ function dialog(title, body, buttons) {
       h('h2', { text: title }), body,
       h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
         on: { click: () => { box.remove(); if (b.click) b.click(); } } })))));
-  box.addEventListener('keydown', (e) => { if (e.key === 'Escape') box.remove(); });
   box.addEventListener('mousedown', (e) => { if (e.target === box) box.remove(); });
   document.body.append(box);
+  MAK.escCloses(box, () => box.remove());
   box.querySelector('button').focus();
 }
 

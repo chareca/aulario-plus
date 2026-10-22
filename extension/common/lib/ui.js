@@ -418,6 +418,19 @@
     ${MAK.LOGO_CSS}
   `;
 
+  // Escape closes a window (as Cancel) also when the focus is not in it: after a click on its text, or when its field
+  // loses the focus. One listener on the document while the window is in the page; win hidden: closed.
+  MAK.escCloses = function (win, close) {
+    const key = (e) => {
+      if (!win.isConnected) document.removeEventListener('keydown', key, true);
+      else if (e.key === 'Escape' && !win.hidden) {
+        e.stopPropagation();
+        close();
+      }
+    };
+    document.addEventListener('keydown', key, true);
+  };
+
   // A window over the page (the calculator, the forward of the mail, the message to a teacher...):
   // .backdrop > .win > header (h2, button.x), then the content.
   MAK.WIN_CSS = () => `

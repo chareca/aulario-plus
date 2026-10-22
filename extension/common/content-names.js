@@ -109,9 +109,6 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         save(input.value);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
       }
     });
     pop.addEventListener('click', (e) => e.stopPropagation());
@@ -122,6 +119,7 @@
     window.addEventListener('resize', close);
     shadow.append(style, pop);
     document.documentElement.append(host);
+    MAK.escCloses(pop, close);
 
     editor = {
       toggle(id, pencil) {
@@ -177,10 +175,7 @@
       status,
       h('p', { class: 'help', text: MAK.t('teach.help') })
     );
-    pop.addEventListener('keydown', (e) => {
-      e.stopPropagation();
-      if (e.key === 'Escape') close();
-    });
+    pop.addEventListener('keydown', (e) => e.stopPropagation());
     pop.addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('mousedown', (e) => {
       const path = e.composedPath();
@@ -188,6 +183,7 @@
     }, true);
     shadow.append(style, pop);
     document.documentElement.append(host);
+    MAK.escCloses(pop, close);
     // Below the button, always inside the window: near an edge, it touches that edge (8 px). Again at
     // each change of size: the list of the teachers comes after the opening and makes the window taller.
     const place = () => {

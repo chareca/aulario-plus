@@ -149,4 +149,20 @@
     assert.equal(MAK.semesterSections({ key: 'test', now: autumnDay, parts: {}, title: String }), null);
     try { for (const k of keys) localStorage.removeItem(k); } catch {}
   });
+
+  test('a window over the page: Escape closes it as Cancel, also when the focus is not in it; the page does not get the key', async () => {
+    const before = document.documentElement.children.length;
+    const answer = MAK.askWindow('Borrar', 'Seguro?', 'Sí');
+    assert.equal(document.documentElement.children.length, before + 1);
+    document.activeElement.blur(); // a click on the text of the window: the focus leaves it
+    const page = [];
+    const listen = (e) => page.push(e.key);
+    document.body.addEventListener('keydown', listen);
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(await answer, false);
+    assert.equal(document.documentElement.children.length, before, 'closed');
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.body.removeEventListener('keydown', listen);
+    assert.deepEqual(page, ['Escape'], 'only the second one: the window is gone, and its listener too');
+  });
 })();

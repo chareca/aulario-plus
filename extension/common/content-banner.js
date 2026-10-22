@@ -188,12 +188,10 @@
       const backdrop = h('div', { class: 'backdrop' }, win);
       backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) answer(false)(); });
       // The keys stay in the window: the page (the shortcuts of MiAulario) does not get them.
-      backdrop.addEventListener('keydown', (e) => {
-        e.stopPropagation();
-        if (e.key === 'Escape') answer(false)();
-      });
+      backdrop.addEventListener('keydown', (e) => e.stopPropagation());
       shadow.append(style, backdrop);
       document.documentElement.append(host);
+      MAK.escCloses(win, answer(false));
       (no || ok).focus();
     });
   }

@@ -90,12 +90,10 @@
     };
     backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop && !(view && view.isBusy())) close(); });
     // The keys stay in the window: the page does not get them.
-    backdrop.addEventListener('keydown', (e) => {
-      e.stopPropagation();
-      if (e.key === 'Escape' && !(view && view.isBusy())) close();
-    });
+    backdrop.addEventListener('keydown', (e) => e.stopPropagation());
     shadow.append(style, backdrop);
     document.documentElement.append(host);
+    MAK.escCloses(backdrop, () => !(view && view.isBusy()) && close());
     open = host;
     view = MAK.mailWindow(into, {
       site: { id: siteId, name: siteName, fullName: publicName },
