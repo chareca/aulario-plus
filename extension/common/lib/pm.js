@@ -98,7 +98,9 @@
       if (!target) throw new PmError('pm.url', String(url).slice(0, 100));
       let res;
       try {
-        res = await doFetch(target, Object.assign({ credentials: 'include', cache: 'no-store' }, init));
+        // A request without an answer in 60 s fails (the network went away): the window does not stay busy. A send
+        // that fails so is "maybe sent" (pm.sendUnknown): no second send.
+        res = await doFetch(target, Object.assign({ credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(60000) }, init));
       } catch {
         throw new PmError('pm.network');
       }
@@ -261,7 +263,10 @@
         ? pick.continueUrl || `${pick.attach.action}?sakai_action=doAddattachments`
         : pick.cancelUrl || `${pick.attach.action}?sakai_action=doCancel`;
       const next = MAK.pmCompose(await post(url, multipart(pick.attach)));
-      const missing = files.filter((f) => !next.snap.text.includes(f.title)).map((f) => f.title);
+      // A file is in the page as many times as the requested names that contain its name: "1.pdf" also is in
+      // "Tema 1.pdf", so with both the page has "1.pdf" two times (a failed "1.pdf" is missing).
+      const times = (part) => next.snap.text.split(part).length - 1;
+      const missing = files.filter((f) => times(f.title) < files.filter((g) => g.title.includes(f.title)).length).map((f) => f.title);
       if (missing.length) throw new PmError('pm.noAttach', missing.join(', '));
       if (next.fields.subject.value.trim() !== String(data.subject).trim()) throw new PmError('pm.lostFields');
       return next;

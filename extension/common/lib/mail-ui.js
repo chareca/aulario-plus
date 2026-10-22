@@ -261,11 +261,12 @@
 
     const openBtn = h('button', { text: t('mail.open'), attrs: { type: 'button', title: t('mail.openHelp') }, on: { click: () => run('open') } });
     const sendBtn = h('button', { class: 'primary', text: t('mail.sendNow'), attrs: { type: 'button' }, on: { click: () => {
-      // A confirmation: a copy to the email of the user with files, or a group or all the participants.
+      // A confirmation: a copy to the email of the user with files, or other people, with the list (also one person: a
+      // group can have a name as a person, "Prácticas, grupo 2 (tarde)", and the message cannot come back).
       st.confirm = false;
       const chosen = st.mode === 'others' ? (st.people || []).filter((p) => st.chosen.has(p.value)) : [];
       if (st.mode === 'me' && files.length) st.confirm = t('mail.confirmMe', { files: t('mail.files', { n: files.length }) });
-      else if (chosen.some((p) => p.kind !== 'person')) st.confirm = t('mail.confirmGroup', { list: chosen.map((p) => p.label).join(', ') });
+      else if (chosen.length) st.confirm = t('mail.confirmGroup', { list: chosen.map((p) => p.label).join(', ') });
       drawConfirm(); // also hides an old question (other recipients)
       if (!st.confirm) run('send');
     } } });

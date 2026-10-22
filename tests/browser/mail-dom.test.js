@@ -120,7 +120,10 @@
     tick('OTRA', true); // after the question: "all" must not go out without a new question
     assert.equal(confirm().hidden, true);
     tick('Todos los participantes', false);
-    w.button(MAK.t('mail.sendNow')).click(); // only a person: no question
+    w.button(MAK.t('mail.sendNow')).click(); // only a person: also a question, with the name
+    assert.equal(w.log.sent.length, 0, 'not yet');
+    assert.ok(!confirm().hidden && confirm().textContent.includes('OTRA'));
+    w.button(MAK.t('mail.confirmYes')).click();
     await until(() => w.status() === MAK.t('mail.error.pm.sendUnknown'));
     assert.equal(confirm().hidden, true, 'no old question with its "Yes"');
     w.button(MAK.t('mail.sendNow')).click();

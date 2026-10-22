@@ -11,6 +11,11 @@ test('pmLoader: only addresses of MiAulario (the actions come from the pages); a
   await assert.rejects(load('javascript:alert(1)'), (e) => e.code === 'pm.url');
   await assert.rejects(load('/portal/tool/T/compose'), (e) => e.code === 'pm.http');
   assert.deepEqual(asked, ['https://miaulario.unavarra.es/portal/tool/T/compose'], 'no request to another site');
+  // A request without an answer ends (a timeout): the window does not stay busy.
+  let init = null;
+  const timed = MAK.pmLoader(async (u, i) => { init = i; throw new Error('aborted'); });
+  await assert.rejects(timed('/portal/tool/T/compose'), (e) => e.code === 'pm.network');
+  assert.ok(init.signal instanceof AbortSignal, 'with a time limit');
 });
 
 // Snapshots with the same form names as the real "Correo interno" (Messages tool of Sakai).
@@ -80,7 +85,7 @@ function fakeServer(o = {}) {
     }
     if (url === PICKER && has('sakai_action', 'doAttachitem')) {
       const id = (e.find(([k]) => k === 'itemId') || [])[1];
-      if (!o.dropAttach) state.attached.push(id.split('/').pop());
+      if (!o.dropAttach && id.split('/').pop() !== o.drop) state.attached.push(id.split('/').pop());
       return pickerSnap(state.attached);
     }
     if (url.startsWith(`${PICKER}?sakai_action=`)) return compose({ subject: o.loseSubject ? '' : state.subject, text: state.attached.join(' ') });
@@ -205,6 +210,12 @@ test('errors with codes: no inbox, no fields, no buttons, no attachment page, fi
   await assert.rejects(pm.prepare(await pm.open('T'), DATA), { code: 'pm.noPicker' });
   pm = pmWith({ dropAttach: true });
   await assert.rejects(pm.prepare(await pm.open('T'), DATA), (e) => e.code === 'pm.noAttach' && /Tema 1\.pdf/.test(e.message));
+  // One file fails without an error page, and its name is in the name of another file ("1.pdf" in "Tema 1.pdf").
+  pm = pmWith({ drop: '1.pdf' });
+  const both = Object.assign({}, DATA, { files: [{ itemId: '/group/S/1.pdf', title: '1.pdf' }, { itemId: '/group/S/Apuntes/Tema 1.pdf', title: 'Tema 1.pdf' }] });
+  await assert.rejects(pm.prepare(await pm.open('T'), both), (e) => e.code === 'pm.noAttach' && /: 1\.pdf$/.test(e.message));
+  pm = pmWith();
+  assert.ok(await pm.prepare(await pm.open('T'), both), 'both attached: fine');
   pm = pmWith({ loseSubject: true });
   await assert.rejects(pm.prepare(await pm.open('T'), DATA), { code: 'pm.lostFields' });
   pm = pmWith();
