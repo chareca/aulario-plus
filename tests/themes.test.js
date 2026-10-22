@@ -133,6 +133,36 @@ test('the images of a theme: files of the extension (img/), a relative address i
   }
 });
 
+test('the hover of all the buttons: the colors change places, slowly, with one solid color for the text and a good contrast; a theme can keep its own hover', () => {
+  const lum = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+  for (const th of MAK.THEMES) {
+    for (const dark of [false, true]) {
+      const v = MAK.themeValues(th.id, dark);
+      const color = (k) => {
+        let x = v[k];
+        for (let i = 0; i < 6; i++) x = x.replace(/var\(--ap-([\w-]+)\)/g, (_, n) => v[n]);
+        return x;
+      };
+      for (const kind of ['btn', 'head-btn', 'primary']) {
+        const [fill, text] = [color(`${kind}-fg`), color(`${kind}-solid`)];
+        const name = `${th.id} ${dark ? 'dark' : 'light'} ${kind}`;
+        assert.match(text, /^#[0-9a-f]{6}$/i, `${name}: one color, without a gradient, an image or transparency`);
+        const [a, b] = [lum(fill), lum(text)].sort((x, y) => y - x);
+        assert.ok((a + 0.05) / (b + 0.05) >= 4.5, `${name}: ${fill} / ${text}`);
+      }
+      const css = MAK.hoverCss(th, dark);
+      assert.match(css, /transition-duration: 0\.3s/, th.id);
+      for (const sel of ['.btn:hover', 'button.x:hover', '.win button.plain:hover', '.icon-btn:hover', '.mak-icon:hover', '.chips button:hover']) assert.ok(css.includes(sel), `${th.id}: ${sel}`);
+      assert.doesNotMatch(css, /box-shadow: none, /, 'no "none" in a list of shadows');
+    }
+  }
+  assert.ok(!MAK.hoverCss(MAK.theme('bloques'), false).includes('.actions .action:hover'), 'the bursts of Cómic: their own hover');
+  assert.ok(MAK.hoverCss(MAK.theme('miaulario'), false).includes('.actions .action:hover'));
+  const page = MAK.pageThemeCss('miaulario', (f) => `fonts/${f}`, 'light');
+  assert.match(page, /\.btn\.primary:hover, \.btn\.primary:focus-visible[^{]*\{\s*color: var\(--ap-primary-solid\) !important/, 'over the hover rules of the theme: they do not hide the text');
+});
+
 test('the icons of a theme: known names, a drawing of its own, nothing from other servers', () => {
   for (const th of MAK.THEMES) {
     for (const [name, svg] of Object.entries(th.icons || {})) {

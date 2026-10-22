@@ -59,6 +59,7 @@
       'head-btn-bg': 'var(--ap-btn-bg)', // the buttons in a head (the arrow, the close button)
       'head-btn-fg': 'var(--ap-btn-fg)',
       'head-btn-edge': 'var(--ap-btn-edge)',
+      'head-btn-solid': 'var(--ap-btn-solid)',
       'head-btn-size': '30px',
       'win-head-bg': 'var(--ap-head-bg)', // the head of a window over the page (else as the head of a box)
       'win-head-fg': 'var(--ap-head-fg)',
@@ -68,9 +69,12 @@
       'btn-bg': 'var(--ap-surface2)',
       'btn-fg': 'var(--ap-fg)',
       'btn-edge': 'var(--ap-edge)',
+      'btn-solid': 'var(--ap-btn-bg)', // the color of a button as one color: its text on hover (MAK.hoverCss)
       'primary-bg': 'var(--ap-accent)',
       'primary-fg': 'var(--ap-accent-fg)',
       'primary-edge': 'var(--ap-accent)',
+      'primary-solid': 'var(--ap-primary-bg)', // the same for a primary button
+      'hover-shadow': 'none', // a shadow of the buttons on hover, outside (a glow)
       // Forms
       radius: '10px', // the boxes and the cards
       'radius-sm': '6px', // the buttons, the fields and the tags
@@ -419,7 +423,7 @@
         /* "Exámenes finales": in the block itself, as the content of a block of MiAulario */
         .tile { padding: 0; background: none; border: 0; border-radius: 0; }
         /* The buttons with an icon (the pencil, the mail, the calculator): as the icons of MiAulario, without a frame */
-        .mak-icon { color: var(--ap-fg); background: transparent; border-color: transparent; box-shadow: none; }
+        .mak-icon { color: var(--ap-fg); background: transparent; border-color: transparent; box-shadow: none; --ap-primary-fg: var(--ap-fg); --ap-primary-solid: var(--ap-solid); }
         .mak-icon:hover { background: var(--ap-surface2); filter: none; }
         /* The focus: the light blue ring of MiAulario */
         .btn:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .mak-fold:focus-visible, .chips button:focus-visible, .actions .action:focus-visible,
@@ -433,6 +437,7 @@
         nav.tabs button[aria-selected="true"] { font-weight: 400; color: var(--ap-link); background: var(--ap-surface);
           border-top: 3px solid color-mix(in srgb, var(--ap-accent) 55%, var(--ap-surface)); padding-top: 2px; }
         /* The buttons in the blue head of a window: white, with a light border */
+        .win > header { --ap-head-btn-fg: var(--ap-win-head-fg); --ap-head-btn-solid: var(--ap-win-head-bg); }
         .win > header button.plain, .win > header button.btn { color: var(--ap-win-head-fg); background: transparent;
           border-color: color-mix(in srgb, var(--ap-win-head-fg) 55%, transparent); box-shadow: none; }
         .win > header button.plain:hover, .win > header button.btn:hover { background: color-mix(in srgb, var(--ap-win-head-fg) 15%, transparent); }
@@ -459,6 +464,7 @@
     // balloons and the bursts stay as they are).
     {
       id: 'bloques',
+      keepHover: ['.actions .action'], // the bursts: their own hover (they turn and grow)
       name: { es: 'Cómic', en: 'Comic' },
       about: { es: 'Viñetas en tinta, tramas de puntos, globos de diálogo y explosiones.', en: 'Panels in ink, halftone dots, speech balloons and bursts.' },
       fonts: [
@@ -949,6 +955,7 @@
         page: 'radial-gradient(circle 64px at 88% 250px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(420px 300px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(400px 320px at 100% 30%, #c6dcfb, transparent 60%), radial-gradient(420px 300px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
         surface: 'rgba(255, 255, 255, 0.38)',
         solid: '#f6f0f7',
+        'btn-solid': 'var(--ap-solid)',
         'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(640px 420px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(640px 440px at 100% 45%, #c6dcfb, transparent 60%), radial-gradient(640px 420px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
         surface2: 'rgba(255, 255, 255, 0.62)',
         fg: '#2a2740',
@@ -1128,6 +1135,9 @@
         'primary-bg': XP.face,
         'primary-fg': '#000000',
         'primary-edge': '#003c74',
+        'primary-solid': '#ece9d8',
+        'btn-solid': '#ece9d8',
+        'head-btn-solid': '#2263d5',
         // A window: a thick blue frame, rounded at the top
         'pane-bg': 'linear-gradient(180deg, #7ba2e7 0%, #6375d6 100%)', // the pane of tasks of the file explorer
         radius: '8px 8px 0 0',
@@ -1367,6 +1377,7 @@
     // The dark mode: a notebook of black paper and a white gel pen (the notes and the erasers stay as they are).
     {
       id: 'cuaderno',
+      keepHover: ['.actions .action'], // the erasers: their own hover (they rise)
       name: { es: 'Folio', en: 'Folio' },
       about: { es: 'Hojas rayadas con espiral, post-its, separadores, resaltador y gomas de borrar.', en: 'Lined pages with a spiral, sticky notes, dividers, a highlighter and erasers.' },
       fonts: [
@@ -1423,6 +1434,8 @@
         'primary-bg': RUBBER('#f3a2a8'),
         'primary-fg': '#1d2a78',
         'primary-edge': 'rgba(120, 30, 40, 0.22)',
+        'primary-solid': '#f5f2ea',
+        'btn-solid': '#f5f2ea',
         radius: '4px',
         'radius-sm': '9px',
         'radius-box': '3px',
@@ -1486,6 +1499,7 @@
         'head-fg': '#eeebe3',
         'head-btn-fg': '#eeebe3',
         'head-btn-edge': '#eeebe3',
+        'head-btn-solid': 'var(--ap-solid)',
         'title-deco': `${PEN_LINE('#93b8ff')} left bottom / 100% 8px no-repeat`,
         shadow: '0 1px 1px rgba(0, 0, 0, 0.4), 2px 3px 0 -1px #2a2926, 2px 3px 1px -1px rgba(0, 0, 0, 0.6), 4px 6px 0 -2px #252421, 4px 6px 1px -2px rgba(0, 0, 0, 0.6), 0 12px 20px -10px rgba(0, 0, 0, 0.8)',
         'shadow-pop': '0 2px 3px rgba(0, 0, 0, 0.5), 0 22px 44px -12px rgba(0, 0, 0, 0.85)',
@@ -1558,7 +1572,8 @@
         .tile { padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
         /* The arrows: a box drawn with the pen */
         .mak-fold { color: var(--ap-fg) !important; background: transparent !important; border: 1.6px solid currentColor !important; box-shadow: none !important;
-          border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px !important; }
+          border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px !important;
+          --ap-btn-fg: var(--ap-fg); --ap-btn-solid: var(--ap-solid); --ap-head-btn-fg: var(--ap-fg); --ap-head-btn-solid: var(--ap-solid); --ap-primary-fg: var(--ap-fg); --ap-primary-solid: var(--ap-solid); }
         /* The next exam: a yellow sticky note with tape */
         .next-exam { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-count-fg: #1d2a78; --ap-count-soon-fg: #c2570c; --ap-count-hot-fg: #d0262b; --ap-count-hot-edge: #d0262b;
           position: relative; margin: 14px 6px 14px; padding: 10px 16px 9px; color: #1d2a78; border: 0; transform: rotate(-1.2deg);
@@ -1648,6 +1663,8 @@
         page: 'url("ap-asset:img/galaxia-light.webp") 50% 40% / cover no-repeat, #e8e4f9',
         surface: 'rgba(255, 255, 255, 0.4)',
         solid: '#eef0fd',
+        'btn-solid': 'var(--ap-solid)',
+        'hover-shadow': '0 0 18px -2px rgba(163, 139, 255, 0.6)',
         'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url("ap-asset:img/galaxia-light.webp") 50% 0 / 100% auto no-repeat, #e8e4f9',
         surface2: 'rgba(255, 255, 255, 0.66)',
         fg: '#181c4f',
@@ -1673,6 +1690,7 @@
         'primary-bg': 'linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)) padding-box, linear-gradient(110deg, #3fa6e0, #7b5fe0, #e05fa8) border-box',
         'primary-fg': '#181c4f',
         'primary-edge': 'transparent',
+        'primary-solid': '#ffffff',
         radius: '18px',
         'radius-sm': '999px',
         'radius-box': '14px',
@@ -1728,6 +1746,7 @@
         'primary-bg': 'linear-gradient(rgba(14, 18, 48, 0.92), rgba(14, 18, 48, 0.92)) padding-box, linear-gradient(110deg, #7fd3ff, #a38bff, #ff9bd2) border-box',
         'primary-fg': '#ffffff',
         'primary-edge': 'transparent',
+        'primary-solid': '#0e1230',
         shadow: '0 22px 46px -26px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'shadow-pop': '0 30px 70px -20px rgba(0, 0, 0, 0.85), 0 0 40px -12px rgba(120, 120, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         backdrop: 'rgba(2, 3, 14, 0.55)',
@@ -1769,12 +1788,9 @@
           color: #ffffff; text-shadow: 0 0 10px rgba(0, 0, 0, 0.75), 0 0 2px rgba(0, 0, 0, 0.6); /* a shadow in the middle, behind the days */
           box-shadow: 0 0 20px rgba(110, 170, 255, 0.5); font-size: 24px; line-height: 0.9; }
         .next-exam .day small { font-size: 11px; margin-top: 2px; }
-        /* The buttons: an edge of nebula; on hover the colors change places, the fill grows from the edges (0.3 s). */
+        /* The buttons: an edge of nebula and a glow (on hover the colors change places, with a stronger glow: MAK.hoverCss). */
         .btn.primary, .power, .mak-btn, .mak-icon, .actions .action, .win button.primary, .mail button.primary {
-          box-shadow: inset 0 0 0 0 var(--ap-primary-fg), 0 0 14px -2px rgba(163, 139, 255, 0.35); transition: color 0.3s ease, box-shadow 0.3s ease; }
-        .btn.primary:hover, .power:hover, .mak-btn:hover, .mak-icon:hover, .actions .action:hover, .win button.primary:hover, .mail button.primary:hover,
-        .btn.primary:focus-visible, .power:focus-visible, .mak-btn:focus-visible, .mak-icon:focus-visible, .actions .action:focus-visible {
-          color: var(--ap-solid); filter: none; box-shadow: inset 0 0 0 40px var(--ap-primary-fg), 0 0 18px -2px rgba(163, 139, 255, 0.6); }
+          box-shadow: 0 0 14px -2px rgba(163, 139, 255, 0.35), inset 0 0 0 0 var(--ap-primary-fg); }
         .mak-logo { background: ${SATURN} center / contain no-repeat; }
         .mak-logo > * { display: none; }
       `,
@@ -1817,6 +1833,30 @@
     return Object.entries(th.icons || {})
       .map(([name, svg]) => `svg.ap-icon-${name} { background: url("data:image/svg+xml,${encodeURIComponent(svg)}") center / contain no-repeat; } svg.ap-icon-${name} > * { display: none; }`)
       .join('\n');
+  };
+
+  // On hover (and with the keyboard) a button changes its colors, slowly (0.3 s): the color of its text fills it from
+  // the edges, and its own color as one color (…-solid) is the text. The shadow of the theme stays, and hover-shadow
+  // comes (first in the list, so the change is smooth). [the buttons, their colors]: the normal ones, the ones in a head,
+  // the primary ones (the last ones win). A theme that draws a button with other colors sets these variables on it, and
+  // it can keep its own hover for some buttons (keepHover: their selectors); its other hover rules do not hide the text
+  // (!important). dark: the mode.
+  const INVERT = [
+    [['.btn', 'nav.tabs button', '.chips button', '.switch', '.counter', '.tool', '.pencil', '.history-icon', '.week', '.mak-fold',
+      '.cal-toggle[aria-pressed="false"]', ':host(.in-block) .box > .head .mak-fold', '.win button.plain', '.win button.btn', '.mail button', '.pop button'], 'btn'],
+    [['.icon-btn', 'button.x', '.box > .head .mak-fold', '.win > header button.plain', '.win > header button.btn'], 'head-btn'],
+    [['.btn.primary', '.power', '.mak-btn', '.mak-icon', '.actions .action', '.chips button[aria-pressed="true"]', '.cal-toggle[aria-pressed="true"]',
+      '.win button.primary', '.mail button.primary', '.pop button.save'], 'primary']
+  ];
+  MAK.hoverCss = function (th, dark) {
+    const v = MAK.themeValues(th.id, dark);
+    const keep = ['shadow-sm', 'hover-shadow'].filter((k) => v[k] && v[k].trim() !== 'none').map((k) => `var(--ap-${k}), `).join('');
+    return INVERT.map(([all, kind]) => {
+      const sel = all.filter((s) => !(th.keepHover || []).includes(s));
+      return `${sel.join(', ')} { transition-duration: 0.3s; }
+    ${sel.flatMap((s) => [`${s}:hover`, `${s}:focus-visible`]).join(', ')} {
+      color: var(--ap-${kind}-solid) !important; filter: none !important; box-shadow: ${keep}inset 0 0 0 40px var(--ap-${kind}-fg) !important; }`;
+    }).join('\n');
   };
 
   // "--ap-name: value;" for all the variables (a CSS declaration block).
@@ -1863,7 +1903,7 @@
       ? [`:root { color-scheme: ${scheme}; ${MAK.themeVars(th.id, scheme === 'dark')} }`]
       : [`:root { color-scheme: light dark; ${MAK.themeVars(th.id, false)} }`, `@media (prefers-color-scheme: dark) { :root { ${MAK.themeVars(th.id, true)} } }`];
     const cards = MAK.THEMES.map((t) => t.cardCss || '');
-    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, assets(th.css), MAK.themeIconCss(th)].join('\n');
+    return [MAK.fontFaceCss(MAK.THEMES, url), ...vars, MAK.motionCss(ALL), ...cards, assets(th.css), MAK.hoverCss(th, scheme === 'dark'), MAK.themeIconCss(th)].join('\n');
   };
 
   // Put the theme on a page of the extension: <html data-theme="…" data-scheme="…"> and one
@@ -1904,7 +1944,7 @@
     const th = MAK.theme(MAK.themeId);
     const dark = typeof MAK.isDarkPage === 'function' && MAK.isDarkPage();
     const scope = (opts && opts.scope) || ':host';
-    const own = opts && opts.scope ? th.blockCss || '' : `${th.css || ''}\n${MAK.themeIconCss(th)}`; // the block: its own CSS
+    const own = opts && opts.scope ? th.blockCss || '' : `${th.css || ''}\n${MAK.hoverCss(th, dark)}\n${MAK.themeIconCss(th)}`; // the block: its own CSS
     const motion = MAK.motionCss(opts && opts.scope ? `${scope}, ${scope} *, ${scope}::before, ${scope} *::before, ${scope} *::after` : ALL);
     return `${scope} { ${MAK.themeVars(th.id, dark)}${photoVar(th, opts && opts.photo, dark)} }\n${motion}\n${css}\n${assets(own)}`;
   }

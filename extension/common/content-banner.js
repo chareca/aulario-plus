@@ -74,7 +74,8 @@
       background: var(--ap-head-fg); opacity: 0.45; clip-path: polygon(0 0, 100% 0, 100% 100%); box-shadow: none; transition: opacity 0.15s ease; }
     #mak-block .mak-widen:hover, #mak-block .mak-widen:focus-visible { opacity: 0.9; }
     #mak-block .mak-widen:focus-visible { outline: 2px solid var(--ap-head-fg); outline-offset: -4px; }
-    #mak-block .mak-head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); }
+    #mak-block .mak-head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); transition-duration: 0.3s; }
+    #mak-block .mak-head .mak-fold:hover, #mak-block .mak-head .mak-fold:focus-visible { color: var(--ap-head-btn-solid); filter: none; box-shadow: inset 0 0 0 40px var(--ap-head-btn-fg); }
   `;
   const BLOCK_CLOSED = 'mak-mysite-closed';
   const BLOCK_WIDE = 'mak-mysite-wide';
