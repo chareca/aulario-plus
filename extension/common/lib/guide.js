@@ -10,7 +10,6 @@
 
   MAK.GUIDE_ORIGIN = 'https://www.unavarra.es';
   MAK.GUIDE_MS = 7 * 24 * 60 * 60 * 1000; // a stored guide is read again after 7 days
-  MAK.GUIDE_TITLE = /gu[ií]a\s*docente|teaching\s*guide|irakaskuntza[-\s]*gida/i;
 
   // The address of a guide, or null: only the page of the UPNA, with the 4 parameters in digits.
   MAK.guideUrl = function (u) {
@@ -179,7 +178,6 @@
     ['presentation', /presentaci|exposici|defensa|\boral\b/],
     ['exam', /prueba|teor[ií]/]
   ];
-  MAK.ACTIVITY_KINDS = ['exam', 'practice', 'work', 'participation', 'presentation', 'other'];
   MAK.activityKind = function (name) {
     const s = String(name || '').toLowerCase();
     const k = KINDS.find(([, re]) => re.test(s));

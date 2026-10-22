@@ -113,7 +113,7 @@
   // ---- Flow (no DOM) ---------------------------------------------------------------
 
   const ends = (suffix) => (c) => c.name === suffix || c.name.endsWith(`:${suffix}`);
-  const FIELDS = { to: ends('list1'), bcc: ends('list2'), subject: ends('subject'), body: ends('pvt_message_body_inputRichText'), copy: ends('send_email_out') };
+  const FIELDS = { to: ends('list1'), subject: ends('subject'), body: ends('pvt_message_body_inputRichText'), copy: ends('send_email_out') };
 
   // The fields and buttons of a compose page. Error if a part is missing.
   MAK.pmCompose = function (snap) {

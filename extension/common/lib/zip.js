@@ -101,9 +101,6 @@
       get count() {
         return entries;
       },
-      get size() {
-        return offset;
-      },
       // The parts of the archive, for new Blob(parts) or for a file in Node.
       finish() {
         const cdStart = offset;

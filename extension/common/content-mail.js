@@ -96,7 +96,7 @@
     MAK.escCloses(backdrop, () => !(view && view.isBusy()) && close());
     open = host;
     view = MAK.mailWindow(into, {
-      site: { id: siteId, name: siteName, fullName: publicName },
+      site: { name: siteName, fullName: publicName },
       files,
       mode,
       placement: mailTool.placement,
@@ -190,7 +190,7 @@
     siteName = site ? MAK.siteName(site, settings) : siteId;
     publicName = site ? MAK.publicSiteName(site) : siteId;
     linkSettings = settings.links;
-    mailTool = { placement: tool.placement, page: tool.page };
+    mailTool = { placement: tool.placement };
     addButtons();
   }
   MAK.safeCall(() => ext.storage.local.get(['pages', 'sites', 'settings']), null).then((d) => setup(d || {}));
