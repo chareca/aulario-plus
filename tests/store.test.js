@@ -18,6 +18,15 @@ test('withDefaults fills the missing settings and rejects bad values', () => {
   assert.deepEqual([...MAK.hiddenEverywhere({ hiddenMode: 'everywhere', hiddenSites: ['a'] })], ['a']);
 });
 
+test('"Exportar mi configuración": every setting (a new one by itself), the version and the date; the name of the file', () => {
+  const now = new Date(2026, 9, 5, 9, 30);
+  const out = MAK.configExport({ theme: 'galaxia', nicknames: { s1: 'IP' }, junk: 1 }, '1.6.7', now);
+  assert.deepEqual([out.app, out.version, out.exported], ['Aulario Plus', '1.6.7', now.toISOString()]);
+  assert.deepEqual(Object.keys(out.settings).sort(), Object.keys(MAK.defaultSettings()).sort(), 'all the settings: a new setting with a default is in the file');
+  assert.deepEqual([out.settings.theme, out.settings.nicknames, out.settings.junk], ['galaxia', { s1: 'IP' }, undefined]);
+  assert.equal(MAK.configFileName(now), 'aulario-plus-config-05-10-2026.json');
+});
+
 test('the store queue does not lose writes that occur at the same time', async () => {
   const area = memoryArea({ counter: 0 });
   const store = MAK.createStore(area);

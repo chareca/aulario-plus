@@ -1413,10 +1413,31 @@ function renderSettings(el) {
         Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
       )
     ),
+    h(
+      'div',
+      { class: 'section' },
+      h('h2', { text: t('config.title') }),
+      h('p', { class: 'small', text: t('config.help') }),
+      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('config.export'), attrs: { type: 'button' }, on: { click: exportConfig } }))
+    ),
     helpSection(),
     dangerSection()
   );
   updateKeepAlive(Date.now());
+}
+
+// "Exportar mi configuración": a JSON file with all the settings. A data: address, not a blob: a "Save as" window
+// closes the popup, and a blob goes with it.
+function exportConfig() {
+  const now = new Date();
+  const json = JSON.stringify(MAK.configExport(S.settings, ext.runtime.getManifest().version, now), null, 2);
+  const a = document.createElement('a');
+  a.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+  a.download = MAK.configFileName(now);
+  a.hidden = true;
+  document.body.append(a);
+  a.click();
+  a.remove();
 }
 
 // The ping data comes from the storage (always current). Only the next alarm comes from the background.

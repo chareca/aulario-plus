@@ -166,6 +166,12 @@
     };
   };
 
+  // "Exportar mi configuración" (popup): all the settings with their defaults (MAK.withDefaults names every setting, so a
+  // new one is in the file by itself), the version and the date. now: a Date.
+  MAK.configExport = (settings, version, now) => ({ app: 'Aulario Plus', version: String(version || ''), exported: now.toISOString(), settings: MAK.withDefaults(settings) });
+  // Its name, with the date of the user: "aulario-plus-config-22-10-2026.json".
+  MAK.configFileName = (now) => `aulario-plus-config-${[now.getDate(), now.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('-')}-${now.getFullYear()}.json`;
+
   // Sites that the extension must not show (if the user selected "everywhere").
   MAK.hiddenEverywhere = function (settings) {
     return new Set(settings.hiddenMode === 'everywhere' ? settings.hiddenSites : []);
