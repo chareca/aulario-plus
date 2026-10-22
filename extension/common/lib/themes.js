@@ -743,15 +743,15 @@
         :host(.in-block) .box > .head { align-items: center; }
         :host(.in-block) .box > .head .title { margin: 4px 0; }
         /* The next exam: a splash panel. The sky and the rays, the days lettered in yellow, a caption, a burst */
-        .next-exam { --ap-fg: ${INK}; --ap-muted: #3a332b; position: relative; overflow: visible; margin: 0 0 16px; padding: 14px 16px; color: ${INK};
+        .next-exam { --ap-fg: ${INK}; --ap-muted: #3a332b; position: relative; overflow: visible; margin: 0 0 12px; padding: 8px 14px; color: ${INK};
           border: 3px solid var(--ap-edge); border-radius: 2px;
           background: radial-gradient(ellipse at 60px 50%, rgba(255, 255, 255, 0.45) 0%, transparent 45%), ${RAYS('rgba(255, 255, 255, 0.16)', '60px 50%')},
             var(--ap-head-bg); }
-        .next-exam .day { color: #ffd43b; font-size: calc(48px * var(--ap-head-zoom)); text-shadow: ${LETTERING(2, `4px 4px 0 #e8302a, 6px 6px 0 ${INK}`)}; }
+        .next-exam .day { color: #ffd43b; font-size: calc(38px * var(--ap-head-zoom)); text-shadow: ${LETTERING(2, `4px 4px 0 #e8302a, 6px 6px 0 ${INK}`)}; }
         .next-exam .day small { margin-top: 4px; font-size: 0.42em; letter-spacing: 0.06em; text-shadow: ${LETTERING(1.4, `2px 2px 0 #e8302a, 3px 3px 0 ${INK}`)}; }
         .next-exam .what { flex: 0 1 auto; padding: 6px 12px 7px; background: #ffe27a; border: 2.5px solid ${INK}; }
-        .next-exam .what .name { font-family: var(--ap-font-head); font-weight: 400; font-size: 1.45em; letter-spacing: 0.04em; }
-        .next-exam .count { margin-left: auto; padding: 14px 24px; color: #ffffff; font-size: 1.45em; border: 0; border-radius: 0; box-shadow: none; transform: rotate(-5deg);
+        .next-exam .what .name { font-family: var(--ap-font-head); font-weight: 400; font-size: 1.3em; letter-spacing: 0.04em; }
+        .next-exam .count { margin-left: auto; padding: 10px 20px; color: #ffffff; font-size: 1.3em; border: 0; border-radius: 0; box-shadow: none; transform: rotate(-5deg);
           background: ${BURST('#e8302a')} center / 100% 100% no-repeat; text-shadow: ${LETTERING(1.1)}; }
         /* The semesters: panels, the name in a caption in the corner */
         .sem { position: relative; padding: 6px 10px 12px; background: var(--ap-surface); border: 3px solid var(--ap-edge); border-radius: 2px; }
@@ -1062,9 +1062,9 @@
         .exams { gap: 0 18px; }
         .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
         .exams .when { color: var(--ap-muted); }
-        .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
-          background: radial-gradient(circle at 34% 28%, #fff 0%, #ffe3ec 42%, #c9d6fb 100%); box-shadow: 0 18px 30px -12px rgba(110, 80, 160, 0.5); color: #2a2740; font-size: 34px; line-height: 0.9; }
-        .next-exam .day small { font-size: 16px; }
+        .next-exam .day { width: 64px; height: 64px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
+          background: radial-gradient(circle at 34% 28%, #fff 0%, #ffe3ec 42%, #c9d6fb 100%); box-shadow: 0 14px 24px -12px rgba(110, 80, 160, 0.5); color: #2a2740; font-size: 24px; line-height: 0.9; }
+        .next-exam .day small { font-size: 12px; }
         .actions .action { color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: 1px solid var(--ap-btn-edge); border-radius: 999px; }
         .actions .action .label { display: none; }
         .bar.weights { height: 10px; border-radius: 99px; gap: 0; }
@@ -1357,7 +1357,7 @@
         .bar.weights span { border-radius: 2px; font-size: 10px; }
         /* The next exam: a white panel, the days in large, in the blue of the titles */
         .next-exam { background: var(--ap-surface); border: 1px solid #7f9db9; border-radius: 0; }
-        .next-exam .day { font-size: 34px; color: var(--ap-link); text-shadow: none; }
+        .next-exam .day { font-size: 28px; color: var(--ap-link); text-shadow: none; }
         .next-exam .count { font-size: 1.15em; }
       `
     },
@@ -1561,11 +1561,11 @@
           border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px !important; }
         /* The next exam: a yellow sticky note with tape */
         .next-exam { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-count-fg: #1d2a78; --ap-count-soon-fg: #c2570c; --ap-count-hot-fg: #d0262b; --ap-count-hot-edge: #d0262b;
-          position: relative; margin: 16px 6px 18px; padding: 16px 18px 14px; color: #1d2a78; border: 0; transform: rotate(-1.2deg);
+          position: relative; margin: 14px 6px 14px; padding: 10px 16px 9px; color: #1d2a78; border: 0; transform: rotate(-1.2deg);
           ${NOTE('var(--ap-accent-soft)')} }
         .next-exam::before { ${TAPE('rgba(240, 150, 168, 0.62)')} }
-        .next-exam .day { font-size: 60px; }
-        .next-exam .count { font-size: 1.6em; }
+        .next-exam .day { font-size: 44px; }
+        .next-exam .count { font-size: 1.35em; }
         /* The semesters: dividers of cardboard, with the tab on top */
         .sem { --nb-folder: var(--ap-surface2); position: relative; margin-top: 30px; padding: 6px 10px 12px; border: 0; border-radius: 0 6px 6px 6px;
           background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 40%), ${NOISE(0.08)}, var(--nb-folder);
@@ -1670,9 +1670,9 @@
         'btn-bg': 'rgba(255, 255, 255, 0.55)',
         'btn-fg': '#181c4f',
         'btn-edge': 'rgba(255, 255, 255, 0.85)',
-        'primary-bg': 'linear-gradient(110deg, #2f4fd0 0%, #6a3fc8 52%, #b03287 100%)',
-        'primary-fg': '#ffffff',
-        'primary-edge': '#5a3fc4',
+        'primary-bg': 'linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)) padding-box, linear-gradient(110deg, #3fa6e0, #7b5fe0, #e05fa8) border-box',
+        'primary-fg': '#181c4f',
+        'primary-edge': 'transparent',
         radius: '18px',
         'radius-sm': '999px',
         'radius-box': '14px',
@@ -1725,9 +1725,9 @@
         'btn-bg': 'rgba(255, 255, 255, 0.08)',
         'btn-fg': '#eceeff',
         'btn-edge': 'rgba(200, 210, 255, 0.3)',
-        'primary-bg': 'linear-gradient(110deg, #3d5ee6 0%, #7b4fe0 50%, #c94aa6 100%)',
+        'primary-bg': 'linear-gradient(rgba(14, 18, 48, 0.92), rgba(14, 18, 48, 0.92)) padding-box, linear-gradient(110deg, #7fd3ff, #a38bff, #ff9bd2) border-box',
         'primary-fg': '#ffffff',
-        'primary-edge': 'rgba(205, 195, 255, 0.55)',
+        'primary-edge': 'transparent',
         shadow: '0 22px 46px -26px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'shadow-pop': '0 30px 70px -20px rgba(0, 0, 0, 0.85), 0 0 40px -12px rgba(120, 120, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         backdrop: 'rgba(2, 3, 14, 0.55)',
@@ -1764,12 +1764,12 @@
           background: center / contain no-repeat; filter: drop-shadow(0 0 6px rgba(150, 170, 255, 0.45)); }
         ${PLANET_CSS}
         .countdown, .count { text-shadow: 0 0 14px rgba(160, 150, 255, 0.45); }
-        .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
+        .next-exam .day { width: 66px; height: 66px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
           background: radial-gradient(circle, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.24) 40%, transparent 66%), url("ap-asset:img/galaxia-earth.webp") center / cover no-repeat, #1d4e9e;
           color: #ffffff; text-shadow: 0 0 10px rgba(0, 0, 0, 0.75), 0 0 2px rgba(0, 0, 0, 0.6); /* a shadow in the middle, behind the days */
-          box-shadow: 0 0 24px rgba(110, 170, 255, 0.5); font-size: 32px; line-height: 0.9; }
-        .next-exam .day small { font-size: 13px; margin-top: 3px; }
-        .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(150, 90, 230, 0.55); }
+          box-shadow: 0 0 20px rgba(110, 170, 255, 0.5); font-size: 24px; line-height: 0.9; }
+        .next-exam .day small { font-size: 11px; margin-top: 2px; }
+        .btn.primary, .power, .mak-btn, .actions .action { box-shadow: 0 0 14px -2px rgba(163, 139, 255, 0.35); }
         .mak-logo { background: ${SATURN} center / contain no-repeat; }
         .mak-logo > * { display: none; }
       `,
