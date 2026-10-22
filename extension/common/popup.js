@@ -718,21 +718,7 @@ async function toggleCalc(siteId) {
 
 // The course guide of a site: the stored one, or read it again (the page of MiAulario and the
 // public page of the UPNA). The background script stores it.
-function siteGuide(siteId) {
-  return MAK.loadGuide({
-    tool: S.pages && S.pages[siteId] && S.pages[siteId].guide,
-    stored: S.guides && S.guides[siteId],
-    now: Date.now(),
-    fetchMia: async (path) => (await fetch(new URL(path, MAK.BASE).href, { credentials: 'include' })).text(),
-    fetchGuide: async (url) => {
-      const r = await send({ type: 'fetchGuide', url });
-      if (!r || !r.html) throw new Error((r && r.error) || 'guide.network');
-      return r.html;
-    },
-    parse: (html) => new DOMParser().parseFromString(html, 'text/html'),
-    save: (guide) => send({ type: 'saveGuide', siteId, guide })
-  });
-}
+const siteGuide = (siteId) => MAK.pageGuide(siteId, S, send);
 
 // How the grades of MiAulario go to the activities of the guide, with the minimum grades.
 function guideMap(book) {

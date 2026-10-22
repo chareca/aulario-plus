@@ -391,7 +391,7 @@
     return guide;
   };
 
-  // In a page of MiAulario (content scripts): the guide of a site. The guide is on another origin,
+  // In a page of MiAulario (content scripts) and in the popup: the guide of a site. The guide is on another origin,
   // so the background script gets it (fetchGuide) and stores it (saveGuide). data: { pages, guides }
   // from the storage; send(message) -> the answer of the background script.
   MAK.pageGuide = function (siteId, data, send) {
@@ -399,7 +399,14 @@
       tool: data.pages && data.pages[siteId] && data.pages[siteId].guide,
       stored: data.guides && data.guides[siteId],
       now: Date.now(),
-      fetchMia: async (path) => (await fetch(path, { credentials: 'include' })).text(),
+      // An error of the server or the login page (after the session ends) is not "no guide": nothing is stored (for 7
+      // days), the next opening reads it again. The login pages (MiAulario, the UPNA) have a password; a tool has not.
+      fetchMia: async (path) => {
+        const r = await fetch(new URL(path, MAK.BASE).href, { credentials: 'include' });
+        const html = r.ok ? await r.text() : '';
+        if (!r.ok || /<input[^>]+type=["']?password/i.test(html)) throw new Error('guide.network');
+        return html;
+      },
       fetchGuide: async (url) => {
         const r = await send({ type: 'fetchGuide', url });
         if (!r || !r.html) throw new Error((r && r.error) || 'guide.network');

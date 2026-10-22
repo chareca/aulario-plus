@@ -120,6 +120,28 @@ test('loadGuide: the stored guide while it is recent; else read again and store'
   assert.equal(await MAK.loadGuide(Object.assign({ tool: null, stored: null, now: 0 }, io)), null, 'no page of the guide');
 });
 
+test('pageGuide: an error of MiAulario or the login page is not "no guide": nothing is stored, the next opening reads it again', async () => {
+  const data = { pages: { s1: { guide: { placement: 'P1' } } }, guides: {} };
+  const sent = [];
+  const send = async (m) => (sent.push(m.type), { ok: true });
+  const real = globalThis.fetch;
+  const answer = (ok, html) => async (url) => ({ ok, status: ok ? 200 : 503, url, text: async () => html });
+  try {
+    globalThis.fetch = answer(false, 'Service Unavailable');
+    await assert.rejects(MAK.pageGuide('s1', data, send), /guide\.network/, 'a 503');
+    globalThis.fetch = answer(true, '<form><input name="eid"><input type="password" name="pw"></form>');
+    await assert.rejects(MAK.pageGuide('s1', data, send), /guide\.network/, 'the login page');
+    assert.deepEqual(sent, [], 'nothing stored');
+    let asked = null;
+    globalThis.fetch = async (url) => ((asked = url), { ok: true, status: 200, url, text: async () => '<p>Sin guía</p>' });
+    assert.equal(await MAK.pageGuide('s1', data, send), null, 'a tool page without a guide');
+    assert.deepEqual(sent, ['saveGuide'], 'that one is stored: no guide');
+    assert.equal(asked, 'https://miaulario.unavarra.es/portal/tool/P1', 'the address of MiAulario, also from the popup');
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
 test('activityKind: the kind of an activity from its name (the activities of real guides)', () => {
   const cases = {
     exam: ['Examen teórico-práctico', 'Prueba de respuesta larga', 'Prueba escrita que recoja los conceptos adquiridos (examen parcial)', 'Prueba escrita que recoja los conceptos adquiridos', 'Test final'],
