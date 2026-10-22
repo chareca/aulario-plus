@@ -560,12 +560,16 @@ async function openDueNote(id) {
 // Draw the badge again when the data or the settings change (wait a moment to group the changes).
 let badgeTimer = null;
 let searchCache = null; // the search index; made again after a change of the data
+// A photo for each subject that has none (a theme with photos, MAK.assignSitePhotos); the photos of the others stay.
+// When the sites change, and at the start (the sites of an update do not change: no event).
+function assignSitePhotos(sites) {
+  if (!Array.isArray(sites)) return Promise.resolve();
+  return store.update('sitePhotos', (kept) => MAK.assignSitePhotos(sites, kept || {})).catch(() => {});
+}
+
 ext.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') searchCache = null;
-  // New sites: a photo for each new subject (a theme with photos); the photos of the others stay.
-  if (area === 'local' && changes.sites && Array.isArray(changes.sites.newValue)) {
-    store.update('sitePhotos', (kept) => MAK.assignSitePhotos(changes.sites.newValue, kept || {})).catch(() => {});
-  }
+  if (area === 'local' && changes.sites) assignSitePhotos(changes.sites.newValue);
   if (area === 'local' && (changes.assignments || changes.settings)) checkDueSoon();
   if (area !== 'local' || !Object.keys(changes).some((k) => BADGE_KEYS.includes(k))) return;
   clearTimeout(badgeTimer);
@@ -1213,6 +1217,7 @@ async function boot() {
   await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});
+  await assignSitePhotos((await store.get('sites')).sites);
   await checkDueReminders().catch(() => {});
   if (!(await ext.alarms.get(RECORD_ALARM))) await ext.alarms.create(RECORD_ALARM, { delayInMinutes: 5, periodInMinutes: 360 });
 }

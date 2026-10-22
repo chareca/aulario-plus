@@ -1743,7 +1743,8 @@
         .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
         .countdown, .count { text-shadow: 0 0 14px rgba(160, 150, 255, 0.45); }
         .next-exam .day { width: 92px; height: 92px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
-          background: url("ap-asset:img/galaxia-earth.webp") center / cover no-repeat, #1d4e9e; color: #ffffff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+          background: radial-gradient(circle, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.24) 40%, transparent 66%), url("ap-asset:img/galaxia-earth.webp") center / cover no-repeat, #1d4e9e;
+          color: #ffffff; text-shadow: 0 0 10px rgba(0, 0, 0, 0.75), 0 0 2px rgba(0, 0, 0, 0.6); /* a shadow in the middle, behind the days */
           box-shadow: 0 0 24px rgba(110, 170, 255, 0.5); font-size: 32px; line-height: 0.9; }
         .next-exam .day small { font-size: 13px; margin-top: 3px; }
         .btn.primary, .power { box-shadow: 0 0 18px -2px rgba(150, 90, 230, 0.55); }

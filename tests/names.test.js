@@ -112,3 +112,10 @@ test('the photos of the subjects: the background gives them when the sites come,
   assert.deepEqual(bg.ext.storage.local.data.sitePhotos, { '2026_0_240501_1': 0, '2026_0_240602_1': 1 });
   assert.ok(!bg.MAK.DATA_KEYS.includes('sitePhotos') && bg.MAK.USER_KEYS.includes('sitePhotos'), 'a logout keeps them; another user removes them');
 });
+
+test('the photos of the subjects: also at an update, when the sites that are kept do not change', async () => {
+  const sites = [{ id: '2026_0_240501_1', title: 'A', type: 'course' }, { id: '2026_0_240602_1', title: 'B', type: 'course' }];
+  const bg = loadBackground({ fetch: fakeFetch({}), local: { sites, sitePhotos: { '2026_0_240602_1': 7 } } }); // no answer: the sync keeps the sites
+  for (const f of bg.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
+  assert.deepEqual(bg.ext.storage.local.data.sitePhotos, { '2026_0_240602_1': 7, '2026_0_240501_1': 0 }, 'a photo for the subject without one; the other keeps its photo');
+});
