@@ -155,6 +155,7 @@ test('the hover of all the buttons: the colors change places, slowly, with one s
       assert.match(css, /transition-duration: 0\.3s/, th.id);
       for (const sel of ['.btn:hover', 'button.x:hover', '.win button.plain:hover', '.icon-btn:hover', '.mak-icon:hover', '.chips button:hover']) assert.ok(css.includes(sel), `${th.id}: ${sel}`);
       assert.doesNotMatch(css, /box-shadow: none, /, 'no "none" in a list of shadows');
+      assert.match(css, /button\.x \{ border-radius: var\(--ap-radius-sm\); \}/, 'the ✕ fills with the shape of the buttons, not a square');
     }
   }
   assert.ok(!MAK.hoverCss(MAK.theme('bloques'), false).includes('.actions .action:hover'), 'the bursts of Cómic: their own hover');

@@ -1851,12 +1851,13 @@
   MAK.hoverCss = function (th, dark) {
     const v = MAK.themeValues(th.id, dark);
     const keep = ['shadow-sm', 'hover-shadow'].filter((k) => v[k] && v[k].trim() !== 'none').map((k) => `var(--ap-${k}), `).join('');
-    return INVERT.map(([all, kind]) => {
+    // A ✕ has no frame: it fills with the shape of the buttons (a theme with its own ✕ keeps it).
+    return `button.x { border-radius: var(--ap-radius-sm); }\n${INVERT.map(([all, kind]) => {
       const sel = all.filter((s) => !(th.keepHover || []).includes(s));
       return `${sel.join(', ')} { transition-duration: 0.3s; }
     ${sel.flatMap((s) => [`${s}:hover`, `${s}:focus-visible`]).join(', ')} {
       color: var(--ap-${kind}-solid) !important; filter: none !important; box-shadow: ${keep}inset 0 0 0 40px var(--ap-${kind}-fg) !important; }`;
-    }).join('\n');
+    }).join('\n')}`;
   };
 
   // "--ap-name: value;" for all the variables (a CSS declaration block).
