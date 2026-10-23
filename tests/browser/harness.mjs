@@ -67,7 +67,8 @@ async function runTests(browser, base) {
     if (!(await browser.waitFor(tab, "document.readyState === 'complete' && !!window.MAK && !!window.chrome"))) throw new Error(`${page} did not load`);
     return tab;
   }
-  const run = (tab, body) => tab.evaluate(`(async () => { ${KIT} ${body} })()`);
+  // body: code of this file only; data: the values for it (CDP arguments, not code).
+  const run = (tab, body, data = null) => tab.callFunction(`async (data) => { ${KIT} ${body} }`, data);
   async function test(name, fn) {
     const tabs = [];
     try {
@@ -166,8 +167,9 @@ async function runTests(browser, base) {
     const copy = async () => (await ext.storage.local.get('pageUi')).pageUi || {};
     await until(block, 'the block of Mi sitio');
   `;
-  const prepare = (tab, page, seed) => run(tab, `localStorage.clear(); ${Object.entries(page).map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join(' ')}
-    localStorage.setItem('mak-harness-seed', ${JSON.stringify(JSON.stringify(seed))}); return true;`);
+  const prepare = (tab, page, seed) => run(tab, `localStorage.clear();
+    for (const [k, v] of Object.entries(data.page)) localStorage.setItem(k, v);
+    localStorage.setItem('mak-harness-seed', JSON.stringify(data.seed));`, { page, seed });
   async function load(tab) {
     await tab.evaluate('window.__old = true');
     await tab.navigate(url('site.html?mine&seed'));

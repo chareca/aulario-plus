@@ -86,13 +86,18 @@ export async function launch({ chrome, headless = true, profile, extension, args
     const { targetId } = await call('Target.createTarget', { url });
     const { sessionId } = await call('Target.attachToTarget', { targetId, flatten: true });
     await call('Runtime.enable', {}, sessionId);
-    const evaluate = async (expression) => {
-      const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId);
+    const value = (r) => {
       if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception ? r.exceptionDetails.exception.description : r.exceptionDetails.text);
       return r.result.value;
     };
+    const evaluate = async (expression) => value(await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId));
+    // A function of the page with arguments: the values go to the page as data, never inside the code.
+    const callFunction = async (declaration, ...args) => {
+      const { result } = await call('Runtime.evaluate', { expression: 'globalThis' }, sessionId);
+      return value(await call('Runtime.callFunctionOn', { objectId: result.objectId, functionDeclaration: declaration, arguments: args.map((v) => ({ value: v })), returnByValue: true, awaitPromise: true }, sessionId));
+    };
     const navigate = (to) => call('Page.navigate', { url: to }, sessionId);
-    return { targetId, sessionId, evaluate, navigate };
+    return { targetId, sessionId, evaluate, callFunction, navigate };
   }
   // Wait until the expression is true in the tab.
   async function waitFor(tab, expression, ms = 15000) {
