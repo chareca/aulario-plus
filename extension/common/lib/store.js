@@ -172,10 +172,19 @@
     };
   };
 
-  // The parts of the block "Aulario Plus" of Mi sitio: { order: the three parts (the missing ones after the others, in
+  // The parts of the block "Aulario Plus" of Mi sitio: { order: all the parts (the missing ones after the others, in
   // their usual order), shape: 'rows' (one below the other), 'cols' (three columns), 'left' (the first one on the left of
   // the other two) or 'right' (the last one on the right of the other two) }.
-  MAK.MYSITE_PARTS = ['exams', 'guides', 'hours'];
+  // Each part: the id of its host (the box of its content script, in the block: class "in-block") and the key of its
+  // title. A new part of the block: a line here, so it is in the order of the user and in "Exportar mi configuración"
+  // (tests/store.test.js checks that every box in the block is here). More than three parts: their shapes in BLOCK_CSS
+  // of content-banner.js (else one below the other) and another name for "Tres columnas".
+  MAK.MYSITE_HOSTS = {
+    exams: { host: 'mak-shortcuts-host', title: 'short.exams' }, // content-shortcuts.js
+    guides: { host: 'mak-guide-host', title: 'guide.allTitle' }, // content-guide.js
+    hours: { host: 'mak-library-host', title: 'lib.title' } // content-library.js
+  };
+  MAK.MYSITE_PARTS = Object.keys(MAK.MYSITE_HOSTS);
   MAK.MYSITE_SHAPES = ['rows', 'cols', 'left', 'right'];
   MAK.cleanLayout = function (v) {
     const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};

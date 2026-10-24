@@ -140,8 +140,8 @@
     .btn:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
     p { margin: 0; }
   `;
-  const PART_HOSTS = { exams: 'mak-shortcuts-host', guides: 'mak-guide-host', hours: 'mak-library-host' };
-  const partName = (k) => MAK.t(k === 'exams' ? 'short.exams' : k === 'guides' ? 'guide.allTitle' : 'lib.title');
+  const hostOf = (k) => document.getElementById(MAK.MYSITE_HOSTS[k].host);
+  const partName = (k) => MAK.t(MAK.MYSITE_HOSTS[k].title);
 
   // The parts of the block (body) in the order and the shape of the setting mysiteLayout (MAK.cleanLayout): each host
   // its place among the parts on the page (data-slot), the body the shape and their number (BLOCK_CSS). button: opens
@@ -156,10 +156,10 @@
     let dragged = false; // a drag ended on a part: not a click
     const place = () => {
       const present = layout.order.filter((k) => {
-        const el = document.getElementById(PART_HOSTS[k]);
+        const el = hostOf(k);
         return el && el.parentElement === body;
       });
-      present.forEach((k, i) => { document.getElementById(PART_HOSTS[k]).dataset.slot = String(i + 1); });
+      present.forEach((k, i) => { hostOf(k).dataset.slot = String(i + 1); });
       body.dataset.shape = layout.shape;
       body.dataset.count = String(present.length);
     };

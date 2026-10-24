@@ -33,6 +33,20 @@ test('"Exportar mi configuración": every setting (a new one by itself), the box
   assert.deepEqual(MAK.withDefaults({ mysiteLayout: { order: ['hours', 'hours', '__proto__'], shape: 'diagonal' } }).mysiteLayout, { order: ['hours', 'exams', 'guides'], shape: 'rows' });
 });
 
+test('every box in the block "Aulario Plus" of Mi sitio is a part of MAK.MYSITE_HOSTS (so the user can place it, and it goes to the file)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const dir = path.join(__dirname, '..', 'extension', 'common');
+  // The boxes put in the block: a content script whose host (HOST_ID) gets the class "in-block". content-banner.js
+  // makes the block (its panel to arrange the parts is not a part).
+  const inBlock = fs.readdirSync(dir).filter((f) => /^content-.*\.js$/.test(f) && f !== 'content-banner.js')
+    .map((f) => fs.readFileSync(path.join(dir, f), 'utf8'))
+    .filter((js) => js.includes("classList.add('in-block')"))
+    .map((js) => /const HOST_ID = '([^']+)'/.exec(js)[1]);
+  assert.deepEqual(inBlock.sort(), Object.values(MAK.MYSITE_HOSTS).map((p) => p.host).sort());
+  assert.deepEqual(MAK.defaultSettings().mysiteLayout.order, MAK.MYSITE_PARTS, 'all the parts, in the usual order');
+});
+
 test('"Importar mi configuración": only a file of Aulario Plus, whatever its name; the BOM and the spaces of the editors do not matter', () => {
   const file = JSON.stringify(MAK.configExport({ settings: { theme: 'galaxia' } }, '1.6.7', new Date(2026, 9, 5)));
   const got = MAK.configImport(file);
