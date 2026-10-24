@@ -76,7 +76,205 @@
     #mak-block .mak-widen:focus-visible { outline: 2px solid var(--ap-head-fg); outline-offset: -4px; }
     #mak-block .mak-head .mak-fold { width: var(--ap-head-btn-size); height: var(--ap-head-btn-size); color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border-color: var(--ap-head-btn-edge); transition-duration: 0.3s; }
     #mak-block .mak-head .mak-fold:hover, #mak-block .mak-head .mak-fold:focus-visible { color: var(--ap-head-btn-solid); filter: none; box-shadow: inset 0 0 0 40px var(--ap-head-btn-fg); }
+    /* The button that arranges the parts (arrange): as the arrow, lit while its panel is open. */
+    #mak-block .mak-head .mak-organize { flex: none; display: inline-flex; align-items: center; justify-content: center; width: var(--ap-head-btn-size); height: var(--ap-head-btn-size);
+      margin: 0; padding: 0; cursor: pointer; color: var(--ap-head-btn-fg); background: var(--ap-head-btn-bg); border: var(--ap-bw-sm) solid var(--ap-head-btn-edge);
+      border-radius: var(--ap-radius-sm); box-shadow: var(--ap-shadow-sm); transition: box-shadow 0.3s ease, color 0.3s ease; }
+    #mak-block .mak-head .mak-organize:hover, #mak-block .mak-head .mak-organize:focus-visible, #mak-block .mak-head .mak-organize[aria-expanded="true"] {
+      color: var(--ap-head-btn-solid); box-shadow: inset 0 0 0 40px var(--ap-head-btn-fg); }
+    #mak-block .mak-head .mak-organize:focus-visible { outline: 2px solid var(--ap-head-fg); outline-offset: 2px; }
+    #mak-block .mak-head .mak-organize svg { width: 18px; height: 18px; }
+    #mak-layout-host[hidden] { display: none !important; }
+    /* The parts in the order of the user (data-slot) and in the shape of the user (data-shape, data-count: arrange). With
+       little width (half a screen, a phone, the block in its column) always one below the other. */
+    #mak-block { container: mak-block / inline-size; }
+    #mak-block > #mak-block-body:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 16px; align-items: start; }
+    #mak-block-body > [data-slot="1"] { order: 1; }
+    #mak-block-body > [data-slot="2"] { order: 2; }
+    #mak-block-body > [data-slot="3"] { order: 3; }
+    @container mak-block (min-width: 1300px) {
+      #mak-block > #mak-block-body[data-shape="cols"][data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @container mak-block (min-width: 1000px) {
+      #mak-block > #mak-block-body[data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #mak-block > #mak-block-body[data-shape="left"][data-count="3"], #mak-block > #mak-block-body[data-shape="right"][data-count="3"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto 1fr; }
+      #mak-block-body[data-shape="left"][data-count="3"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
+      #mak-block-body[data-shape="left"][data-count="3"] > [data-slot="2"] { grid-column: 2; grid-row: 1; }
+      #mak-block-body[data-shape="left"][data-count="3"] > [data-slot="3"] { grid-column: 2; grid-row: 2; }
+      #mak-block-body[data-shape="right"][data-count="3"] > [data-slot="1"] { grid-column: 1; grid-row: 1; }
+      #mak-block-body[data-shape="right"][data-count="3"] > [data-slot="2"] { grid-column: 1; grid-row: 2; }
+      #mak-block-body[data-shape="right"][data-count="3"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
+    }
   `;
+  // The panel of arrange: the shapes (a small drawing of each one) and a map of the parts in the shape (a part dragged
+  // to another place, or two parts clicked one after the other: they swap).
+  const ARRANGE_CSS = () => `${MAK.BOX_CSS()}
+    :host(.in-block) { margin: 0; }
+    .pan { font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); padding: 12px 14px; background: var(--ap-pane-bg);
+      border-bottom: var(--ap-bw-sm) solid var(--ap-line); display: grid; gap: 10px; }
+    .top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .acts { display: flex; gap: 8px; }
+    .top strong { margin-right: auto; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); font-size: calc(15px * var(--ap-head-zoom)); }
+    .shapes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .shape { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 0.93em; color: var(--ap-btn-fg); background: var(--ap-btn-bg);
+      border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); }
+    .shape[aria-checked="true"] { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); font-weight: 700; }
+    .shape:focus-visible, .slot:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
+    .mini, .map { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
+    .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
+    .map { gap: 8px; max-width: 560px; }
+    [data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    [data-shape="left"], [data-shape="right"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    [data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
+    [data-shape="right"] > [data-slot="1"] { grid-column: 1; grid-row: 1; }
+    [data-shape="right"] > [data-slot="2"] { grid-column: 1; grid-row: 2; }
+    [data-shape="right"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
+    .slot { min-height: 46px; padding: 8px 10px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
+      background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); }
+    .slot[aria-pressed="true"], .slot.over { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
+    .slot.drag { opacity: 0.5; cursor: grabbing; }
+    .btn { padding: 5px 12px; cursor: pointer; font: inherit; font-size: 0.93em; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); }
+    .btn.primary { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); }
+    .btn:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
+    p { margin: 0; }
+  `;
+  const PART_HOSTS = { exams: 'mak-shortcuts-host', guides: 'mak-guide-host', hours: 'mak-library-host' };
+  const partName = (k) => MAK.t(k === 'exams' ? 'short.exams' : k === 'guides' ? 'guide.allTitle' : 'lib.title');
+
+  // The parts of the block (body) in the order and the shape of the setting mysiteLayout (MAK.cleanLayout): each host
+  // its place among the parts on the page (data-slot), the body the shape and their number (BLOCK_CSS). button: opens
+  // the panel that changes them; each change is saved at once (setMySiteLayout), and comes back from the settings (also
+  // from another tab, or an import). Result: the panel (between the head and the body).
+  function arrange(body, button) {
+    const h = MAK.h;
+    const ext = root.browser || root.chrome;
+    let layout = MAK.cleanLayout(null);
+    let picked = null; // a part clicked first: the next click swaps it
+    let drag = null;
+    let dragged = false; // a drag ended on a part: not a click
+    const place = () => {
+      const present = layout.order.filter((k) => {
+        const el = document.getElementById(PART_HOSTS[k]);
+        return el && el.parentElement === body;
+      });
+      present.forEach((k, i) => { document.getElementById(PART_HOSTS[k]).dataset.slot = String(i + 1); });
+      body.dataset.shape = layout.shape;
+      body.dataset.count = String(present.length);
+    };
+    new MutationObserver(place).observe(body, { childList: true });
+    const host = h('div', { attrs: { id: 'mak-layout-host' } });
+    host.classList.add('in-block');
+    host.hidden = true;
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const pan = h('div', { class: 'pan', attrs: { role: 'region', 'aria-label': MAK.t('layout.title') } });
+    shadow.append(MAK.themedStyle(ARRANGE_CSS()), pan);
+    const status = h('p', { class: 'meta', attrs: { role: 'status' } });
+    const set = (next, save) => {
+      layout = MAK.cleanLayout(next);
+      place();
+      draw();
+      if (save) MAK.safeCall(() => ext.runtime.sendMessage({ type: 'setMySiteLayout', layout }), null);
+    };
+    const swap = (a, b) => {
+      const order = layout.order.slice();
+      const [i, j] = [order.indexOf(a), order.indexOf(b)];
+      [order[i], order[j]] = [order[j], order[i]];
+      status.textContent = MAK.t('layout.swapped', { a: partName(a), b: partName(b) });
+      set(Object.assign({}, layout, { order }), true);
+    };
+    const partAt = (x, y) => {
+      const el = shadow.elementFromPoint(x, y);
+      const slot = el && el.closest && el.closest('.slot');
+      return slot ? slot.dataset.part : null;
+    };
+    const slot = (k, i) => {
+      const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { slot: String(i + 1), part: k }, text: partName(k) });
+      b.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        drag = { from: k, x: e.clientX, y: e.clientY, moved: false };
+        b.setPointerCapture(e.pointerId);
+      });
+      b.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        drag.moved = drag.moved || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6;
+        if (!drag.moved) return;
+        const over = partAt(e.clientX, e.clientY);
+        for (const s of pan.querySelectorAll('.slot')) {
+          s.classList.toggle('drag', s.dataset.part === drag.from);
+          s.classList.toggle('over', s.dataset.part === over && over !== drag.from);
+        }
+      });
+      const end = (e) => {
+        const d = drag;
+        drag = null;
+        if (!d || !d.moved) return;
+        dragged = true;
+        const over = e.type === 'pointerup' ? partAt(e.clientX, e.clientY) : null;
+        if (over && over !== d.from) swap(d.from, over);
+        else draw();
+      };
+      b.addEventListener('pointerup', end);
+      b.addEventListener('pointercancel', end);
+      b.addEventListener('click', () => {
+        if (dragged) {
+          dragged = false;
+          return;
+        }
+        if (picked && picked !== k) {
+          const first = picked;
+          picked = null;
+          swap(first, k);
+          return;
+        }
+        picked = picked === k ? null : k;
+        status.textContent = picked ? MAK.t('layout.picked', { name: partName(k) }) : '';
+        draw();
+      });
+      return b;
+    };
+    const close = () => {
+      host.hidden = true;
+      picked = null;
+      button.setAttribute('aria-expanded', 'false');
+      button.focus();
+    };
+    function draw() {
+      const shapes = MAK.MYSITE_SHAPES.map((sh) => h('button', { class: 'shape', attrs: { type: 'button', role: 'radio', 'aria-checked': String(sh === layout.shape) },
+        on: { click: () => set(Object.assign({}, layout, { shape: sh }), true) } },
+        h('span', { class: 'mini', data: { shape: sh }, attrs: { 'aria-hidden': 'true' } }, [1, 2, 3].map((n) => h('i', { data: { slot: String(n) } }))),
+        h('span', { text: MAK.t(`layout.${sh}`) })));
+      MAK.fill(pan,
+        h('div', { class: 'top' }, h('strong', { text: MAK.t('layout.title') }),
+          h('span', { class: 'acts' },
+            h('button', { class: 'btn', attrs: { type: 'button' }, text: MAK.t('layout.reset'), on: { click: () => set(null, true) } }),
+            h('button', { class: 'btn primary', attrs: { type: 'button' }, text: MAK.t('layout.done'), on: { click: close } }))),
+        h('div', { class: 'shapes', attrs: { role: 'radiogroup', 'aria-label': MAK.t('layout.shape') } }, shapes),
+        h('p', { class: 'meta', text: MAK.t('layout.help') }),
+        h('div', { class: 'map', data: { shape: layout.shape } }, layout.order.map(slot)),
+        h('p', { class: 'meta', text: MAK.t('layout.narrow') }),
+        status);
+    }
+    button.addEventListener('click', () => {
+      host.hidden = !host.hidden;
+      button.setAttribute('aria-expanded', String(!host.hidden));
+      if (!host.hidden) draw();
+    });
+    host.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !host.hidden) close();
+    });
+    draw();
+    place();
+    MAK.safeCall(() => ext.storage.local.get('settings'), null)
+      .then((d) => set(MAK.withDefaults(d && d.settings).mysiteLayout, false))
+      .catch(() => {});
+    MAK.safeCall(() => ext.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.settings && MAK.extensionAlive()) set(MAK.withDefaults(changes.settings.newValue).mysiteLayout, false);
+    }), null);
+    return host;
+  }
+
   const BLOCK_CLOSED = 'mak-mysite-closed';
   const BLOCK_WIDE = 'mak-mysite-wide';
 
@@ -143,12 +341,15 @@
       widen.setAttribute('aria-label', label);
       widen.title = label;
     };
+    const organize = h('button', { class: 'mak-organize', attrs: { type: 'button', title: MAK.t('layout.open'), 'aria-label': MAK.t('layout.open'), 'aria-expanded': 'false', 'aria-controls': 'mak-layout-host' } }, MAK.icon('layout'));
     block.append(
       h('div', { class: 'mak-head' },
         MAK.logo(),
         h('h2', { class: 'mak-title', text: MAK.brandName(), title: MAK.t('block.tagHelp'), attrs: { id: 'mak-block-title' } }),
+        organize,
         fold,
         widen),
+      arrange(body, organize),
       body);
     draw();
     // Only with a box in it.
@@ -169,8 +370,15 @@
 
   // A question in a window over the page, in the theme of the extension: the buttons no ("Cancelar", with the
   // focus; null: none) and yes. Escape, the ✕ or a click outside the window: no. body: a text, or elements.
-  // Result: a promise of true or false.
-  function askWindow(title, body, yes, noText = MAK.t('zip.cancel')) {
+  // Result: a promise of true or false. One window at a time: the next one opens when the one before it closes.
+  let last = null; // the answer of the last window, while it is open
+  function askWindow(...args) {
+    const shown = last ? last.then(() => openWindow(...args)) : openWindow(...args);
+    last = shown;
+    shown.then(() => { if (last === shown) last = null; });
+    return shown;
+  }
+  function openWindow(title, body, yes, noText = MAK.t('zip.cancel')) {
     return new Promise((resolve) => {
       const h = MAK.h;
       const host = document.createElement('div');
@@ -178,6 +386,7 @@
       const style = MAK.themedStyle(`${MAK.WIN_CSS()}
         .win { width: min(440px, calc(100vw - 32px)); }
         .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        ${MAK.LINK_CSS}
         ${MAK.RANK_CSS || ''}`);
       const answer = (v) => () => { host.remove(); resolve(v); };
       const no = noText === null ? null : h('button', { class: 'btn', attrs: { type: 'button' }, text: noText, on: { click: answer(false) } });

@@ -242,6 +242,14 @@ test('libraryCalendar: "horario habitual", the days of an "aula" or of a color w
   assert.equal((await read(F.month('enero', 2026, 31, { yearText: 'curso 2025-2026' }), at(2025, 3, 1))).months[0].y, 2026);
   // A color with two hours ("8:00 - 21:00" and "8:00 - 14:30"): its days are not known.
   assert.equal((await read(F.month('diciembre', 2025, 31, { twoHours: true }), at(2025, 10, 27))).months[0].days[1], -2);
+  // The same with a ring (an image as Canva, or a line) on the left of "8:00 - 14:30" and around its days (Ciencias de la
+  // Salud, 2025): the ringed days have those hours, the others the other ones.
+  for (const ring of ['image', 'stroke']) {
+    const c = MAK.libraryCalendar(await MAK.pdfContent(F.canvaPdf([F.month('diciembre', 2025, 31, { twoHours: true, rings: [23, 26], ring })])), at(2025, 10, 27));
+    const hours = (d) => (c.legend[c.months[0].days[d - 1]] || {}).hours;
+    assert.deepEqual([hours(22), hours(23), hours(26), hours(29)], ['8:00–21:00', '8:00–14:30', '8:00–14:30', '8:00–21:00'], ring);
+  }
+  assert.deepEqual(await MAK.pdfContent(new Uint8Array([1, 2, 3])), { runs: [], shapes: [] }, 'not a PDF file');
 });
 
 test('openState: open until when, or closed and when it opens (also after a weekend or a closed day of a calendar)', () => {
@@ -358,4 +366,23 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   assert.equal(MAK.libraryToday(two, at(2026, 7, 23)).hours, '8:00–15:00', 'the summer');
   const salud2 = await MAK.loadLibrary({ campus: 'salud', getText: getMore, getBytes, now: at(2026, 7, 21) });
   assert.ok(!salud2.notices.some((n) => n.title === 'Horario fines de semana de julio'), 'only Arrosadía and Tudela');
+});
+
+test('noticeSummary: the days of a notice with other hours, in groups (the window of a new notice)', async () => {
+  const routes = F.routes();
+  const getText = async (url) => {
+    if (!(url in routes)) throw new Error(`404 ${url}`);
+    return String(routes[url]);
+  };
+  const load = (campus, now) => MAK.loadLibrary({ campus, getText, getBytes: async (url) => routes[url], now });
+  const short = (data) => MAK.noticeSummary(data, data.notices[0]).map((g) => [g.form, g.value && (g.value.closed ? 'closed' : g.value.hours), new Date(g.days[0]).getDate(), new Date(g.days.at(-1)).getDate(), g.weekdays || null, !!g.extra]);
+  // The summer: Monday to Friday; closed 6 to 10 July (a run); 13 and 14 July (a list). The weekends: as usual.
+  assert.deepEqual(short(await load('arrosadia', at(2026, 6, 25))), [['week', '8:00–15:00', 1, 31, [1, 2, 3, 4, 5], false], ['run', 'closed', 6, 10, null, false], ['list', '9:00–13:00', 13, 14, null, false]]);
+  // Tudela: closed 24 to 31 July, its weekend in it (closed anyway): one run.
+  assert.deepEqual(short(await load('tudela', at(2026, 6, 25)))[1], ['run', 'closed', 24, 31, null, false]);
+  // The exams: the weekends and a holiday.
+  assert.deepEqual(short(await load('arrosadia', at(2026, 4, 15))), [['week', '9:00–22:45', 18, 10, [0, 6], true]]);
+  // A notice without dates: nothing.
+  const salud = await load('salud', at(2026, 10, 24));
+  assert.deepEqual(MAK.noticeSummary(salud, salud.notices[0]), []);
 });

@@ -42,11 +42,18 @@
       .hr-cards.with-cal > .hr-side { display: flex; flex-direction: column; gap: 10px; }
       .hr-cards.with-cal > .hr-side > .hr-card { flex: 1 1 auto; }
     }
-    .hr-card { min-width: 0; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
-    .hr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; }
-    .hr-id { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; } /* the icon stays with its title */
+    .hr-card { min-width: 0; display: flex; container-type: inline-size; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
+    /* The card: its name, and open or closed at the top right; a narrow card (four in a row, a phone): open or closed at
+       its bottom left, below the hours (the cards of a row as high as the highest one: all at the same height). */
+    .hr-in { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: "id state" "body body"; gap: 8px 10px; }
+    .hr-id { grid-area: id; min-width: 0; display: flex; align-items: center; gap: 10px; } /* the icon stays with its title */
+    .hr-body { grid-area: body; min-width: 0; }
+    @container (max-width: 400px) {
+      .hr-in { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; grid-template-areas: "id" "body" "state"; }
+      .hr-in > .hr-state { justify-self: start; align-self: end; margin: 2px 0 0; }
+    }
     /* Open or closed now: a round check (white on green) or cross (white on red), and the text in that color. */
-    .hr-state { flex: none; display: inline-flex; align-items: center; gap: 7px; margin-left: auto; }
+    .hr-state { grid-area: state; align-self: center; display: inline-flex; align-items: center; gap: 7px; }
     .hr-say { display: flex; flex-direction: column; line-height: 1.2; }
     .hr-say small { font-size: 0.86em; font-weight: 600; }
     .hr-state.open { color: var(--ap-green); }
@@ -58,7 +65,7 @@
     .hr-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
       color: var(--ap-accent); background: var(--ap-accent-soft); }
     .hr-ico svg { width: 21px; height: 21px; }
-    .hr-top h5 { margin: 0; font-size: 1.02em; line-height: 1.25; }
+    .hr-id h5 { margin: 0; font-size: 1.02em; line-height: 1.25; }
     .hr-now { margin: 0 0 6px; }
     .hr-now b { font-size: 1.12em; }
     .hr-usual { margin: 0; padding-left: 18px; }
@@ -176,13 +183,13 @@
 
   // A card: its icon, its title and where, open or closed now, the hours of today, the usual ones, and more (notices).
   function card({ icon, title, place, state, today, note, lines, more, now }) {
-    return h('section', { class: 'hr-card' },
-      h('div', { class: 'hr-top' },
-        h('div', { class: 'hr-id' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
-        stateMark(state, now)),
-      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), h('span', { class: 'meta', text: ` (${note || t(today.usual ? 'lib.usualDay' : 'lib.specialDay')})` })) : null,
-      lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => (typeof l === 'string' ? h('li', { text: MAK.shortDays(l) }) : l))) : null,
-      more);
+    return h('section', { class: 'hr-card' }, h('div', { class: 'hr-in' },
+      h('div', { class: 'hr-id' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
+      stateMark(state, now),
+      h('div', { class: 'hr-body' },
+        today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), h('span', { class: 'meta', text: ` (${note || t(today.usual ? 'lib.usualDay' : 'lib.specialDay')})` })) : null,
+        lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => (typeof l === 'string' ? h('li', { text: MAK.shortDays(l) }) : l))) : null,
+        more)));
   }
 
   function draw(res) {
@@ -246,10 +253,63 @@
       h('div', { class: `hr-cards${notices.length ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, side)));
   }
 
+  // The days of a notice in short (MAK.noticeSummary), a line for each group: "Fines de semana y festivos, 18 de abril–14
+  // de junio: 9:00–22:45", "6–10 de julio: Cerrado", "13 y 14 de julio: 9:00–13:00".
+  function summaryLines(data, n) {
+    const groups = MAK.noticeSummary(data, n);
+    if (!groups.length) return [h('p', { text: t('lib.sum.none') })];
+    const locale = MAK.locale();
+    const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' });
+    const list = (items) => new Intl.ListFormat(locale, { type: 'conjunction' }).format(items);
+    const span = (g) => date.formatRange(g.days[0], g.days.at(-1));
+    // "24, 25 y 31 de diciembre y 1 de enero" ("December 24, 25 and 31 and January 1"): the month once.
+    const days = (all) => {
+      const months = [];
+      for (const ms of all) {
+        const d = new Date(ms);
+        const last = months.at(-1);
+        if (last && last[0].getMonth() === d.getMonth()) last.push(d);
+        else months.push([d]);
+      }
+      return list(months.map((m) => {
+        const full = /^\d/.test(date.format(m[0])); // the day before the month (es), or after it (en)
+        return list(m.map((d, i) => ((full ? i === m.length - 1 : i === 0) ? date.format(d) : String(d.getDate()))));
+      }));
+    };
+    const week = (wds) => {
+      const key = [...wds].sort().join('');
+      if (key === '06') return t('lib.sum.weekends');
+      if (key === '12345') return t('lib.sum.weekdays');
+      if (wds.length === 7) return t('lib.sum.everyDay');
+      const name = new Intl.DateTimeFormat(locale, { weekday: 'long' });
+      const names = list([1, 2, 3, 4, 5, 6, 0].filter((wd) => wds.includes(wd)).map((wd) => name.format(new Date(2024, 0, wd || 7)).replace(/([^s])$/, '$1s')));
+      return names.charAt(0).toUpperCase() + names.slice(1);
+    };
+    const what = (g) => (g.form === 'list' ? days(g.days)
+      : g.form === 'run' ? span(g)
+        : g.form === 'week' ? `${g.extra ? t('lib.sum.holidays', { days: week(g.weekdays) }) : week(g.weekdays)}, ${span(g)}`
+          : `${t('lib.sum.some', { n: g.days.length })}, ${span(g)}`);
+    const lines = groups.slice(0, 5).map((g) => h('li', { text: `${what(g)}: ${g.value ? hoursText(g.value) : t('lib.sum.unknown')}` }));
+    return [h('ul', null, lines), groups.length > 5 ? h('p', { text: t('lib.sum.more') }) : null];
+  }
+
+  // A window for the notices of the hours that this campus did not show yet (libraryHours: fresh, once each): their
+  // title, their days in short and a link to each one.
+  function announce(data, fresh) {
+    const list = (data.notices || []).filter((n) => fresh.includes(n.url));
+    if (!list.length || !MAK.askWindow) return;
+    MAK.askWindow(t(list.length > 1 ? 'lib.news.titleMany' : 'lib.news.title'),
+      list.map((n) => h('div', null, h('p', null, h('b', { text: n.title })), summaryLines(data, n), MAK.link(n.url, t('lib.notice')))),
+      t('lib.news.ok'), null);
+  }
+
   async function run() {
     const data = (await MAK.safeCall(() => ext.storage.local.get(['settings']), null)) || {};
     MAK.setLang(MAK.withDefaults(data.settings).lang);
-    draw(await send({ type: 'libraryHours' }));
+    if (!frame()) return; // no block on this page: nothing is asked (a new notice keeps its window for later)
+    const res = await send({ type: 'libraryHours' });
+    draw(res);
+    if (res && res.data && Array.isArray(res.fresh) && res.fresh.length) announce(res.data, res.fresh);
   }
   run();
   // Another campus in the settings: read it again.

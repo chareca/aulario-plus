@@ -32,6 +32,16 @@ test('the calendar button of MiAulario saves only its setting; the other setting
   assert.deepEqual([s.examCalendar, s.lang === 'en', s.hiddenSites.length], [false, false, 0], 'nothing else of the message');
 });
 
+test('the order of the parts of Mi sitio: only its setting, checked', async () => {
+  const bg = loadBackground();
+  const got = await bg.send({ type: 'setMySiteLayout', layout: { order: ['hours', 'evil', 'hours', 'exams'], shape: 'left' }, lang: 'en' }, CONTENT());
+  assert.deepEqual(got, { ok: true, layout: { order: ['hours', 'exams', 'guides'], shape: 'left' } });
+  const s = bg.ext.storage.local.data.settings;
+  assert.deepEqual([s.mysiteLayout, s.lang === 'en'], [got.layout, false]);
+  await bg.send({ type: 'setMySiteLayout', layout: { order: 'x', shape: 'grid' } }, CONTENT());
+  assert.deepEqual(bg.ext.storage.local.data.settings.mysiteLayout, { order: ['exams', 'guides', 'hours'], shape: 'rows' }, 'a wrong value: the usual one');
+});
+
 test('"Pausar" stays until "Reanudar": a ping only reads the session (no keep-alive), and a new login does not continue it', async () => {
   const log = [];
   const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' }, keepSession: true });
@@ -275,7 +285,18 @@ test('libraryHours: the hours of the library of the campus of the settings, kept
   const stale = await bg.send({ type: 'libraryHours' }, CONTENT());
   assert.deepEqual([stale.data.campus, stale.error], ['salud', 'library.network']);
   await bg.ext.storage.local.set({ settings: { libraryCampus: 'arrosadia' } });
-  assert.deepEqual(await bg.send({ type: 'libraryHours' }, CONTENT()), { error: 'library.network' }, 'no hours of another campus');
+  assert.deepEqual(await bg.send({ type: 'libraryHours' }, CONTENT()), { error: 'library.network', fresh: [] }, 'no hours of another campus');
+});
+
+test('libraryHours: the notices that a campus did not show yet, once each (also two tabs at once)', async () => {
+  const routes = require('./fixtures/library').routes();
+  const fetch = async (url) => (routes[String(url)] === undefined ? new Response('no', { status: 404 }) : new Response(routes[String(url)], { status: 200 }));
+  const bg = loadBackground({ fetch, local: { settings: { libraryCampus: 'salud' } } });
+  const [a, b] = await Promise.all([bg.send({ type: 'libraryHours' }, CONTENT()), bg.send({ type: 'libraryHours' }, CONTENT())]);
+  const urls = a.data.notices.map((n) => n.url);
+  assert.ok(urls.length, 'the fixture has a notice for Salud now');
+  assert.deepEqual([[...a.fresh, ...b.fresh].sort(), (await bg.send({ type: 'libraryHours' }, CONTENT())).fresh], [urls.sort(), []]);
+  assert.deepEqual((await bg.ext.storage.local.get('librarySeen')).librarySeen, urls.map((u) => `salud:${u}`));
 });
 
 test('libraryHours: hours kept by an older version (without the sports) are read again at once', async () => {

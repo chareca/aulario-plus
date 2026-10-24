@@ -26,6 +26,11 @@ test('"Exportar mi configuración": every setting (a new one by itself), the box
   assert.deepEqual([out.settings.theme, out.settings.nicknames, out.settings.junk], ['galaxia', { s1: 'IP' }, undefined]);
   assert.deepEqual([out.ui, out.sitePhotos, out.history], [{ 'mak-mysite-closed': '1' }, { '2026_0_1': 3 }, undefined], 'the boxes and the photos; no data of the courses');
   assert.equal(MAK.configFileName(now), 'aulario-plus-config-05-10-2026.json');
+  // The order of the parts of Mi sitio goes to the file and comes back, checked.
+  const layout = { order: ['guides', 'hours', 'exams'], shape: 'right' };
+  const back = MAK.configImport(JSON.stringify(MAK.configExport({ settings: { mysiteLayout: layout } }, '1.6.8', now))).file;
+  assert.deepEqual(MAK.withDefaults(back.settings).mysiteLayout, layout);
+  assert.deepEqual(MAK.withDefaults({ mysiteLayout: { order: ['hours', 'hours', '__proto__'], shape: 'diagonal' } }).mysiteLayout, { order: ['hours', 'exams', 'guides'], shape: 'rows' });
 });
 
 test('"Importar mi configuración": only a file of Aulario Plus, whatever its name; the BOM and the spaces of the editors do not matter', () => {

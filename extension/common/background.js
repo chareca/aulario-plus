@@ -225,6 +225,38 @@ async function readLibrary(campus) {
   return data;
 }
 
+// The hours of the campus of the settings: the kept ones, read again after MAK.LIBRARY_MS (a reading where a page
+// failed: after 30 minutes). When a reading fails, the last one (with "error").
+async function libraryHours() {
+  const { settings, library } = await store.get(['settings', 'library']);
+  const campus = MAK.withDefaults(settings).libraryCampus;
+  if (library && library.v === MAK.LIBRARY_FORM && library.campus === campus && Date.now() - library.at < (library.partial ? 30 * MAK.MINUTE : MAK.LIBRARY_MS)) return { data: library };
+  const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
+  if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
+  try {
+    if (!libraryReading || libraryReading.campus !== campus) libraryReading = { campus, promise: readLibrary(campus).finally(() => { libraryReading = null; }) };
+    return { data: await libraryReading.promise };
+  } catch {
+    libraryFailed = Date.now();
+    return stale;
+  }
+}
+
+// The notices of the hours of a campus that it did not show yet: their addresses, marked as shown ("campus:address",
+// the last 200) in the same step.
+async function freshNotices(data) {
+  const notices = data && Array.isArray(data.notices) ? data.notices : [];
+  if (!notices.length) return [];
+  let fresh = [];
+  await store.transaction(async (tx) => {
+    const { librarySeen } = await tx.get('librarySeen');
+    const seen = Array.isArray(librarySeen) ? librarySeen : [];
+    fresh = notices.map((n) => n.url).filter((url) => !seen.includes(`${data.campus}:${url}`));
+    if (fresh.length) await tx.set({ librarySeen: [...seen, ...fresh.map((url) => `${data.campus}:${url}`)].slice(-200) });
+  });
+  return fresh;
+}
+
 // ---- The history of the tasks and the exams (lib/history.js) ----------------------------------------
 // The panel "Tareas" of MiAulario, and the submission of each task that can still change. One reading at a time.
 let historyRunning = null;
@@ -744,6 +776,15 @@ const handlers = {
       return { ok: true };
     }
   },
+  // The order and the shape of the parts of the block "Aulario Plus" of Mi sitio (content-banner.js): only this setting.
+  setMySiteLayout: {
+    content: true,
+    run: async (msg) => {
+      const layout = MAK.cleanLayout(msg && msg.layout);
+      await store.update('settings', (cur) => MAK.withDefaults(Object.assign({}, MAK.withDefaults(cur), { mysiteLayout: layout })));
+      return { ok: true, layout };
+    }
+  },
   // The popup: the notice of the changes of the new version is closed.
   // The light or dark theme of MiAulario (content-theme.js): 'dark', 'light' or 'system'. The popup and the
   // pages of the extension follow it with the setting colorMode 'auto'.
@@ -1005,23 +1046,13 @@ const handlers = {
     }
   },
   // The hours of the library for "Mi sitio" (content-library.js, lib/library.js): the campus of the settings, read
-  // again after MAK.LIBRARY_MS. When a reading fails, the last one (with "error").
+  // again after MAK.LIBRARY_MS. When a reading fails, the last one (with "error"). fresh: the addresses of the notices
+  // that this campus did not show yet (a window, once for each one: librarySeen; also with several tabs at once).
   libraryHours: {
     content: true,
     run: async () => {
-      const { settings, library } = await store.get(['settings', 'library']);
-      const campus = MAK.withDefaults(settings).libraryCampus;
-      // A reading where a page failed: again after 30 minutes.
-      if (library && library.v === MAK.LIBRARY_FORM && library.campus === campus && Date.now() - library.at < (library.partial ? 30 * MAK.MINUTE : MAK.LIBRARY_MS)) return { data: library };
-      const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
-      if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
-      try {
-        if (!libraryReading || libraryReading.campus !== campus) libraryReading = { campus, promise: readLibrary(campus).finally(() => { libraryReading = null; }) };
-        return { data: await libraryReading.promise };
-      } catch {
-        libraryFailed = Date.now();
-        return stale;
-      }
+      const res = await libraryHours();
+      return Object.assign(res, { fresh: await freshNotices(res.data) });
     }
   },
   // The exams of an exam calendar (a PDF file on www2.unavarra.es): its rows. The file is read again

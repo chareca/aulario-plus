@@ -144,6 +144,7 @@
   const MAX_DEPTH = 8; // forms in forms
   const MAX_CODES = 70000; // the codes of the map of a font
   const MAX_ARGS = 64; // the operands of an operator
+  const MAX_SHAPES = 5000; // the drawn shapes of all the pages
 
   // A value of PDF at s[i]: a number, a name ("/Name"), a string (Uint8Array), an array, a dictionary (no prototype),
   // a reference ({ ref }), true, false, null or an operator ({ op }). Its position after it.
@@ -236,6 +237,10 @@
     return null;
   }
 
+  // The path operators (the number of their operands) and the ones that paint the path (W and W*, a clip, do not).
+  const PATH = { m: 2, l: 2, c: 6, v: 4, y: 4, re: 4 };
+  const PAINT = { S: 'stroke', s: 'stroke', f: 'fill', F: 'fill', 'f*': 'fill', B: 'both', 'B*': 'both', b: 'both', 'b*': 'both', n: 'none' };
+
   // a × b of two matrices [a b c d e f].
   const times = (a, b) => [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3], a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
     a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]];
@@ -273,10 +278,15 @@
   // The text of each page of a PDF file (an ArrayBuffer or a Uint8Array): [{ page, x, y, size, rgb, text }], one run for
   // each text block (BT ... ET; a new line in it: a space). x, y: the start, in the space of the page (y grows to the top);
   // size: the height of the letters; rgb: the fill color. The pages in their order.
-  MAK.pdfTextRuns = async function (data, unzip = inflate) {
+  MAK.pdfTextRuns = async (data, unzip = inflate) => (await MAK.pdfContent(data, unzip)).runs;
+
+  // The text (MAK.pdfTextRuns) and the drawn shapes of a PDF file: { runs, shapes: [{ page, x0, y0, x1, y1 (the box, in
+  // the space of the runs), fill (its color, or null: not filled), stroke (the color of its line, or null), image (an
+  // image: the number of its object) }] }.
+  MAK.pdfContent = async function (data, unzip = inflate) {
     const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
     const s = dec().latin.decode(bytes);
-    if (!s.startsWith('%PDF-')) return [];
+    if (!s.startsWith('%PDF-')) return { runs: [], shapes: [] };
     const objs = objects(s);
     const get = (v) => (v && typeof v === 'object' && 'ref' in v ? (objs.get(v.ref) || {}).dict : v);
     let inflated = 0;
@@ -334,12 +344,14 @@
     if (!pages.length) for (const o of objs.values()) if (o.dict && o.dict.Type === '/Page') pages.push({ d: o.dict, res: o.dict.Resources });
 
     const runs = [];
+    const shapes = [];
     let ops = 0;
     async function run(text, res, gs0, page, depth, seen) {
       const resources = get(res) || {};
       const fontDict = get(resources.Font) || {};
       const xobjects = get(resources.XObject) || {};
-      let gs = { ctm: gs0.ctm, rgb: gs0.rgb };
+      let gs = { ctm: gs0.ctm, rgb: gs0.rgb, stroke: gs0.stroke };
+      let path = []; // the points of the path, in the space of the page
       const stack = [];
       let args = [];
       let f = null;
@@ -379,10 +391,26 @@
           i = e < 0 ? text.length : i + e + 3;
         } else if (op === 'q') stack.push(gs);
         else if (op === 'Q') gs = stack.pop() || gs;
-        else if (op === 'cm' && args.length >= 6) gs = { ctm: times(args.slice(-6).map((a) => (typeof a === 'number' ? a : 0)), gs.ctm), rgb: gs.rgb };
+        else if (op === 'cm' && args.length >= 6) gs = Object.assign({}, gs, { ctm: times(args.slice(-6).map((a) => (typeof a === 'number' ? a : 0)), gs.ctm) });
         else if (op === 'rg' || op === 'g' || op === 'k' || op === 'sc' || op === 'scn') {
           const c = color(args);
-          if (c) gs = { ctm: gs.ctm, rgb: c };
+          if (c) gs = Object.assign({}, gs, { rgb: c });
+        } else if (op === 'RG' || op === 'G' || op === 'K' || op === 'SC' || op === 'SCN') {
+          const c = color(args);
+          if (c) gs = Object.assign({}, gs, { stroke: c });
+        } else if (PATH[op] && args.length >= PATH[op] && path.length < 2000) {
+          const n = args.slice(-PATH[op]).map((a) => (typeof a === 'number' ? a : 0));
+          const at = (x, y) => { const m = times([1, 0, 0, 1, x, y], gs.ctm); path.push([m[4], m[5]]); };
+          if (op === 're') for (const [x, y] of [[0, 0], [n[2], 0], [0, n[3]], [n[2], n[3]]]) at(n[0] + x, n[1] + y);
+          else for (let k = 0; k + 1 < n.length; k += 2) at(n[k], n[k + 1]);
+        } else if (PAINT[op]) {
+          if (PAINT[op] !== 'none' && path.length && shapes.length < MAX_SHAPES) {
+            const xs = path.map((p) => p[0]);
+            const ys = path.map((p) => p[1]);
+            shapes.push({ page, x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys),
+              fill: PAINT[op] !== 'stroke' ? gs.rgb : null, stroke: PAINT[op] !== 'fill' ? gs.stroke : null });
+          }
+          path = [];
         } else if (op === 'BT') { tm = tlm = ONE; block = null; }
         else if (op === 'ET') end();
         else if (op === 'Tf' && args.length >= 2) { f = await font(fontDict[String(args[args.length - 2]).slice(1)]); size = num(args.length - 1); }
@@ -403,7 +431,11 @@
           const x = ref && ref.ref !== undefined ? objs.get(ref.ref) : null;
           if (x && x.dict && x.dict.Subtype === '/Form' && !seen.has(ref.ref)) {
             const matrix = Array.isArray(x.dict.Matrix) && x.dict.Matrix.length === 6 ? x.dict.Matrix.map((a) => (typeof a === 'number' ? a : 0)) : ONE;
-            await run(await streamText(ref.ref), x.dict.Resources || res, { ctm: times(matrix, gs.ctm), rgb: gs.rgb }, page, depth + 1, new Set([...seen, ref.ref]));
+            await run(await streamText(ref.ref), x.dict.Resources || res, { ctm: times(matrix, gs.ctm), rgb: gs.rgb, stroke: gs.stroke }, page, depth + 1, new Set([...seen, ref.ref]));
+          } else if (x && x.dict && x.dict.Subtype === '/Image' && shapes.length < MAX_SHAPES) {
+            // An image: the box of the unit square in the space of the page; image: its object (the same drawing again).
+            const c = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([u, v]) => [u * gs.ctm[0] + v * gs.ctm[2] + gs.ctm[4], u * gs.ctm[1] + v * gs.ctm[3] + gs.ctm[5]]);
+            shapes.push({ page, x0: Math.min(...c.map((p) => p[0])), y0: Math.min(...c.map((p) => p[1])), x1: Math.max(...c.map((p) => p[0])), y1: Math.max(...c.map((p) => p[1])), fill: null, stroke: null, image: ref.ref });
           }
         }
         args = [];
@@ -415,10 +447,10 @@
       const parts = Array.isArray(contents) ? contents : [p.d.Contents];
       let text = '';
       for (const c of parts) if (c && c.ref !== undefined) text += `${await streamText(c.ref)}\n`;
-      await run(text, p.res, { ctm: ONE, rgb: [0, 0, 0] }, n + 1, 0, new Set());
+      await run(text, p.res, { ctm: ONE, rgb: [0, 0, 0], stroke: [0, 0, 0] }, n + 1, 0, new Set());
       if (ops >= MAX_OPS) break;
     }
-    return runs;
+    return { runs, shapes };
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

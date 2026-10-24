@@ -225,5 +225,26 @@ async function runTests(browser, base) {
     assert.deepEqual([got.campus, got.usual.length, got.notices, got.today, got.open], ['arrosadia', 2, [['Horario especial de época de exámenes', 2]], 'Horario especial de época de exámenes', null]);
   });
 
+  await test('Mi sitio: the parts in the order and the shape of the settings (also changed in another tab); one below the other with little width', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, { 'mak-mysite-wide': '1' }, {});
+    await load(tab);
+    const got = await run(tab, `
+      const body = await until(() => document.getElementById('mak-block-body'), 'the block');
+      await until(() => ['mak-shortcuts-host', 'mak-guide-host', 'mak-library-host'].every((id) => body.querySelector(':scope > #' + id)), 'the three parts');
+      const slots = () => ['mak-shortcuts-host', 'mak-guide-host', 'mak-library-host'].map((id) => document.getElementById(id).dataset.slot).join('');
+      const before = [slots(), body.dataset.shape, body.dataset.count];
+      const { settings } = await ext.storage.local.get('settings');
+      await ext.storage.local.set({ settings: Object.assign({}, settings, { mysiteLayout: { order: ['hours', 'exams', 'guides'], shape: 'left' } }) });
+      await until(() => body.dataset.shape === 'left', 'the new shape');
+      const box = (id) => document.getElementById(id).getBoundingClientRect();
+      const wide = document.getElementById('mak-block').getBoundingClientRect().width >= 1000;
+      const columns = box('mak-library-host').left < box('mak-shortcuts-host').left && Math.abs(box('mak-shortcuts-host').left - box('mak-guide-host').left) < 2 && box('mak-shortcuts-host').top < box('mak-guide-host').top;
+      const below = box('mak-library-host').top < box('mak-shortcuts-host').top && box('mak-shortcuts-host').top < box('mak-guide-host').top;
+      return { before, after: [slots(), body.dataset.count], placed: wide ? columns : below, button: !!document.querySelector('#mak-block .mak-head .mak-organize[aria-controls="mak-layout-host"]') };
+    `);
+    assert.deepEqual(got, { before: ['123', 'rows', '3'], after: ['231', '3'], placed: true, button: true });
+  });
+
   return results;
 }

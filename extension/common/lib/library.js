@@ -556,18 +556,24 @@
   // color. { legend: [{ hours, closed, usual }], months: [{ y, m, days: [the index in the legend of each day; -1: gray, no
   // other hours; -2: a color that is not in the legend (of an "aula"): its hours are not known] }] } or null. The year: the one of the page, else the one nearest to the publication (published). A page
   // whose numbers are not exactly the days of its month is left out.
-  MAK.libraryCalendar = function (runs, published = Date.now()) {
+  MAK.libraryCalendar = function (content, published = Date.now()) {
+    const { runs, shapes } = Array.isArray(content) ? { runs: content, shapes: [] } : content;
     const legend = [];
     const months = [];
+    const index = (l) => {
+      const i = legend.findIndex((x) => x.closed === l.closed && x.hours === l.hours && !!x.usual === !!l.usual);
+      return i < 0 ? legend.push(l) - 1 : i;
+    };
     for (const page of [...new Set(runs.map((r) => r.page))].slice(0, 24)) {
       const rs = runs.filter((r) => r.page === page);
+      const drawn = (shapes || []).filter((x) => x.page === page);
       const top = [...rs].sort((a, b) => b.y - a.y);
       const isDay = (r) => /^\d{1,2}$/.test(r.text);
       const title = top.find((r) => !isDay(r) && r.text.length < 60 && new RegExp(`^(${MONTHS.join('|')})\\b`).test(fold(r.text)));
       const year = top.map((r) => /\b(20\d\d)\b/.exec(r.text)).find(Boolean);
       if (!title) continue;
       const m = MONTHS.indexOf(/^[a-z]+/.exec(fold(title.text))[0]);
-      const numbers = rs.filter(isDay).map((r) => ({ n: Number(r.text), rgb: r.rgb, x: r.x }));
+      const numbers = rs.filter(isDay).map((r) => ({ n: Number(r.text), rgb: r.rgb, x: r.x, y: r.y, size: r.size, len: r.text.length }));
       // The year: the one of the page, else the one nearest to the publication; with its days in 7 columns, the one that
       // puts the 1st in its column (Monday first). No year that fits: the page is left out.
       const pub = new Date(published);
@@ -579,6 +585,19 @@
       // The legend of the page: a color with "biblioteca" or "cerrado"; its hours, in a text of the same color under a
       // name that is not of an "aula" ("biblioteca: 8:00 - 14:30 h. aula 02: 14:30 - 21:00 h."). A color with two hours
       // (for "8:00 - 21:00" and "8:00 - 14:30") does not tell the hours of its days: -2.
+      // A mark of the legend: an image or a ring on the left of a name ("biblioteca: 8:00 - 14:30 h."), around the days of
+      // those hours (the rings of Ciencias de la Salud, 2025): marks [{ shape, index }], over the color of the day.
+      const marks = [];
+      const sameMark = (a, b) => (a.image ? a.image === b.image : !!a.stroke && !a.fill && !!b.stroke && !b.fill && distance(a.stroke, b.stroke) < SAME);
+      for (const k of rs.filter((r) => /bibliotec|liburutegi|cerrad|itxit/i.test(r.text))) {
+        const shape = drawn.filter((x) => (x.image || (x.stroke && !x.fill)) && x.x1 <= k.x + 2 && x.x1 > k.x - 5 * k.size && x.x1 - x.x0 < 5 * k.size
+          && Math.abs((x.y0 + x.y1) / 2 - k.y) < 2.5 * k.size).sort((a, b) => b.x1 - a.x1)[0];
+        if (!shape || marks.some((x) => sameMark(x.shape, shape))) continue;
+        const under = rs.filter((r) => !isDay(r) && distance(r.rgb, k.rgb) < SAME && r.y < k.y && k.y - r.y < 2.5 * k.size).sort((a, b) => b.y - a.y);
+        const closed = /cerrad|itxit/i.test(k.text);
+        const hours = closed ? '' : hoursOf(k.text) || under.map((r) => hoursOf(r.text)).find(Boolean) || '';
+        if (closed || hours) marks.push({ shape, rgb: k.rgb, hours, index: index({ hours, closed }) });
+      }
       const keys = [];
       for (const k of rs.filter((r) => /bibliotec|liburutegi|cerrad|itxit/i.test(r.text))) {
         if (keys.some((x) => distance(x.rgb, k.rgb) < SAME)) continue;
@@ -594,13 +613,13 @@
         const hours = closed ? '' : [...found][0] || '';
         const usual = !closed && !hours && same.some((r) => /habitual|ohiko/i.test(r.text));
         if (!closed && !hours && !usual) continue;
+        // Two hours, one of them with its mark: the color has the other one.
+        const rest = [...found].filter((x) => !marks.some((mk) => mk.hours === x && distance(mk.rgb, k.rgb) < SAME));
         if (!closed && found.size > 1) {
-          keys.push({ rgb: k.rgb, index: -2 });
+          keys.push({ rgb: k.rgb, index: rest.length === 1 ? index({ hours: rest[0], closed: false }) : -2 });
           continue;
         }
-        let index = legend.findIndex((l) => l.closed === closed && l.hours === hours && !!l.usual === usual);
-        if (index < 0) index = legend.push(usual ? { hours, closed, usual } : { hours, closed }) - 1;
-        keys.push({ rgb: k.rgb, index });
+        keys.push({ rgb: k.rgb, index: index(usual ? { hours, closed, usual } : { hours, closed }) });
       }
       const count = new Date(y, m + 1, 0).getDate();
       if (numbers.length !== count || new Set(numbers.map((x) => x.n)).size !== count || numbers.some((x) => x.n < 1 || x.n > count)) continue;
@@ -611,6 +630,11 @@
         const near = keys.map((k) => ({ k, d: distance(k.rgb, x.rgb) })).sort((a, b) => a.d - b.d)[0];
         if (near && near.d < (gray ? SAME : NEAR)) days[x.n - 1] = near.k.index;
         else if (!gray) days[x.n - 1] = -2;
+        // A mark around the number: its hours.
+        const cx = x.x + 0.28 * x.size * x.len;
+        const cy = x.y + 0.35 * x.size;
+        const mark = marks.find((mk) => drawn.some((d) => sameMark(mk.shape, d) && d !== mk.shape && d.x0 <= cx && cx <= d.x1 && d.y0 <= cy && cy <= d.y1 && d.x1 - d.x0 < 5 * x.size));
+        if (mark) days[x.n - 1] = mark.index;
       }
       if (!months.some((x) => x.y === y && x.m === m)) months.push({ y, m, days });
     }
@@ -704,7 +728,7 @@
       let cal = null;
       if (n.pdf) {
         try {
-          cal = MAK.libraryCalendar(await MAK.pdfTextRuns(await getBytes(n.pdf)), it.date);
+          cal = MAK.libraryCalendar(await MAK.pdfContent(await getBytes(n.pdf)), it.date);
         } catch {
           failed = true;
         }
@@ -764,6 +788,48 @@
   };
 
   MAK.libraryToday = (data, now = Date.now()) => MAK.libraryDay(data, now);
+
+  // A notice in short (the window of a new notice, content-library.js): its days with other hours than the usual ones of
+  // their day of the week, in groups of the same hours, the first day first: [{ value: { hours, closed } or null (not
+  // known: see the notice), days: [the start of each day], form, weekdays, extra }]. form: 'list' (at most 3 days), 'run'
+  // (every day from the first to the last; closed: also the days closed anyway, the weekends), 'week' (every date of some days of the week between the first and the last
+  // one, or a day with other hours: weekdays [0..6]; extra: a few days more, the holidays) or 'some'.
+  MAK.noticeSummary = function (data, notice) {
+    if (!data || !notice || !notice.from) return [];
+    const alone = Object.assign({}, data, { notices: [notice], board: true });
+    const before = Object.assign({}, data, { notices: [], board: true });
+    const groups = new Map();
+    const special = new Set();
+    const shut = new Set(); // closed, also as usual
+    const start = new Date(notice.from);
+    for (let k = 0; k < 200; k++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + k);
+      if (d.getTime() >= notice.to) break;
+      const noon = d.getTime() + 12 * MAK.HOUR;
+      const x = MAK.libraryDay(alone, noon);
+      if (x && x.closed) shut.add(d.getTime());
+      if (x ? x.usual || !x.notice : !MAK.libraryDay(before, noon)) continue; // the usual hours, or nothing known anyway
+      const key = !x ? '?' : x.closed ? 'closed' : x.hours;
+      if (!groups.has(key)) groups.set(key, { value: x && { hours: x.hours, closed: !!x.closed }, days: [] });
+      groups.get(key).days.push(d.getTime());
+      special.add(d.getTime());
+    }
+    return [...groups.values()].map((g) => {
+      const first = new Date(g.days[0]);
+      const last = new Date(g.days.at(-1));
+      const between = [];
+      for (let d = first; d <= last; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) between.push(d);
+      if (g.days.length <= 3) return Object.assign(g, { form: 'list' });
+      const mine = new Set(g.days);
+      if (between.every((d) => mine.has(d.getTime()) || (g.value && g.value.closed && shut.has(d.getTime())))) return Object.assign(g, { form: 'run' });
+      const weekdays = [0, 1, 2, 3, 4, 5, 6].filter((wd) => {
+        const dates = between.filter((d) => d.getDay() === wd);
+        return dates.some((d) => mine.has(d.getTime())) && dates.every((d) => special.has(d.getTime()));
+      });
+      const extra = g.days.filter((t) => !weekdays.includes(new Date(t).getDay()));
+      return Object.assign(g, weekdays.length && extra.length * 3 <= g.days.length ? { form: 'week', weekdays, extra: extra.length > 0 } : { form: 'some' });
+    }).sort((a, b) => a.days[0] - b.days[0]);
+  };
   // Why a notice closes the library, from its title: 'summer', 'easter', 'christmas' or ''.
   MAK.closedReason = (title) => {
     const s = fold(title || '');

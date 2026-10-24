@@ -10,6 +10,7 @@
   const HOST_ID = 'mak-shortcuts-host';
   const GUIDE_ID = 'mak-guide-host'; // content-guide.js
   const BANNER_ID = 'mak-news-host'; // content-banner.js
+  const EXAMS_FOLDED = `${HOST_ID}:exams`; // '1': the tile "Exámenes finales" is folded
   const where = MAK.parsePortalPath(location.pathname);
   const onRoot = /^\/portal\/?$/.test(location.pathname);
   const mySite = onRoot || !!(where && where.siteId && where.siteId.startsWith('~'));
@@ -63,13 +64,11 @@
     @media (prefers-reduced-motion: reduce) { .action .mak-arrow { transition: none; } }
     .degree { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .degree select { font-size: 0.93em; max-width: 100%; }
-    .exams-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
-    /* The title never shrinks under the buttons; narrow (half a screen, a column): on its own row, the buttons below it. */
-    .exams-head > h4 { flex: 1 0 auto; margin: 0; white-space: nowrap; }
-    @container (max-width: 600px) { .exams-head > h4 { flex-basis: 100%; } }
-    .exams-head .actions { gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; flex-direction: row; }
+    /* The buttons in the head of the tile (MAK.foldTile): the title never shrinks under them. */
+    .tile-head > h4 { white-space: nowrap; }
+    .tile-head .actions .actions { gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; flex-direction: row; justify-content: inherit; }
     /* Small, also over the rules of a theme for each button (:nth-child): the theme keeps its colors. */
-    .exams-head .actions .action:nth-child(n) { min-height: 0; padding: 4px 12px; font-size: 0.86em; transform: none; }
+    .tile-head .actions .action:nth-child(n) { min-height: 0; padding: 4px 12px; font-size: 0.86em; transform: none; }
     /* The cards of the exams and the calendar side by side (the calendar shown, enough width); else the calendar below,
        with its months side by side. */
     .exams-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
@@ -354,8 +353,12 @@
     const actions = h('div', { class: 'actions' });
     const drawActions = (wuolah) => MAK.fill(actions, recordAction(), wuolahActions(wuolah), mailAction());
     drawActions(null);
-    const head = h('div', { class: 'exams-head' }, h('h4', { text: t('short.exams') }), actions);
-    const examTile = h('section', { class: 'tile' }, head, h('p', { class: 'meta', text: t('short.loading') }));
+    // The tile folds as the guides and the hours (its arrow, its title); it stays folded when the page opens again.
+    const calendar = h('span', { class: 'actions' });
+    const body = h('div', null, h('p', { class: 'meta', text: t('short.loading') }));
+    let folded = false;
+    try { folded = localStorage.getItem(EXAMS_FOLDED) === '1'; } catch {}
+    const examTile = MAK.foldTile(t('short.exams'), body, !folded, (open) => MAK.uiSave(EXAMS_FOLDED, !open), [actions, calendar]);
     noGuides = !guides.length && !settings.degree;
     // Without guides (no degree): only the actions.
     if (noGuides) {
@@ -367,7 +370,7 @@
     drawActions(MAK.wuolahLinks(degree && degree.base, MAK.studyYear(guides.map((g) => g.guide))));
     if (!degree || !degree.base) {
       const list = (degree && degree.list) || [];
-      MAK.fill(examTile, head, list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
+      MAK.fill(body, list.length ? h('div', { class: 'degree' }, h('span', { class: 'note', text: t('short.noDegree') }), select(list, settings.degree)) : h('p', { class: 'note meta', text: t('short.pageError') }));
       return;
     }
     // From 25 January the first semester is gone (its exams are past).
@@ -375,8 +378,7 @@
     const pdfLinks = (degree.pdfs || []).filter((p) => !p.season || show(p.season))
       .map((p) => MAK.link(p.url, p.season && !/oto|prim/i.test(p.text) ? `${p.text} (${seasonName(p.season)})` : p.text));
     const place = h('div', { class: 'mine' }, h('p', { class: 'meta', text: t('short.loading') }));
-    MAK.fill(examTile,
-      head,
+    MAK.fill(body,
       degree.error ? h('p', { class: 'note meta', text: t('short.pageError') }) : null,
       place,
       h('div', { class: 'links' }, pdfLinks, MAK.link(MAK.evaluationUrl(degree.base), t('short.evaluation'))),
@@ -384,7 +386,7 @@
     const ex = await examData(degree, guides, now, show).catch(() => ({ mine: [], note: h('p', { class: 'note meta', text: t('short.readError') }) }));
     const cals = [];
     const sections = examSections(degree, ex, data.sites, now, (siteId) => examNeed(siteId, guides, settings), cals, settings.examCalendar);
-    if (cals.length) head.append(MAK.calendarButton(settings.examCalendar, cals, (on) => send({ type: 'setExamCalendar', on })));
+    if (cals.length) calendar.append(MAK.calendarButton(settings.examCalendar, cals, (on) => send({ type: 'setExamCalendar', on })));
     const next = nextExam(ex.mine, data.sites, now);
     if (sections || ex.note) MAK.fill(place, next, sections, ex.note);
     else place.remove();

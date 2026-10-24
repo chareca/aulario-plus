@@ -14,8 +14,9 @@ const AULA = [0.902, 0.569, 0.176]; // an "aula" (not the library): its days are
 
 // A PDF file: pages of texts { text, x, y, rgb, form (a form XObject, a literal string) or not (a hex string in the page;
 // the content of the page compressed) }.
+// A ring: { ring: 'image' (the same image object each time, as Canva) or 'stroke' (a line), x, y, w, h, rgb }.
 function canvaPdf(pages) {
-  const chars = [...new Set(pages.flatMap((p) => p.flatMap((t) => [...t.text])))];
+  const chars = [...new Set(pages.flatMap((p) => p.flatMap((t) => [...(t.text || '')])))];
   const code = (c) => chars.indexOf(c) + 1;
   const two = (text) => [...text].map((c) => String.fromCharCode(code(c) >> 8, code(c) & 255)).join('');
   const literal = (text) => `(${two(text).replace(/[\\()]/g, (c) => `\\${c}`)})`;
@@ -33,11 +34,14 @@ function canvaPdf(pages) {
   const toUnicode = add(stream('', cmap));
   const font = add(`<< /Type /Font /Subtype /Type0 /BaseFont /AAAAAA+Biko /Encoding /Identity-H /ToUnicode ${toUnicode} 0 R >>`);
   const kids = [];
+  const ring = add(stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8', '\xff'));
   for (const texts of pages) {
     const forms = {};
     let content = 'q\n.24 0 0 -.24 0 263 cm\n';
     for (const [i, t] of texts.entries()) {
-      if (t.form) {
+      if (t.ring === 'image') content += `q\n${t.w} 0 0 ${t.h} ${t.x} ${t.y} cm\n/Ring Do\nQ\n`;
+      else if (t.ring) content += `q\n${t.rgb.map((x) => x.toFixed(4)).join(' ')} RG\n${t.x} ${t.y} ${t.w} ${t.h} re\nS\nQ\n`;
+      else if (t.form) {
         const name = `X${i}`;
         forms[name] = add(stream(`/Type /XObject /Subtype /Form /BBox [0 0 100 40] /Resources << /Font << /F1 ${font} 0 R >> >>`,
           `q\n${rg(t.rgb)}\nBT\n/F1 12 Tf\n1 0 0 -1 0 11 Tm\n${literal(t.text)} Tj\nET\nQ`));
@@ -46,7 +50,7 @@ function canvaPdf(pages) {
     }
     content += 'Q';
     const contents = add(stream('', content, !texts.some((t) => t.form)));
-    const xobjects = Object.entries(forms).map(([n, ref]) => `/${n} ${ref} 0 R`).join(' ');
+    const xobjects = [...Object.entries(forms), ['Ring', ring]].map(([n, ref]) => `/${n} ${ref} 0 R`).join(' ');
     kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 330 263] /Resources << /Font << /F1 ${font} 0 R >> /XObject << ${xobjects} >> >> /Contents ${contents} 0 R >>`));
   }
   objects[1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`;
@@ -57,9 +61,9 @@ function canvaPdf(pages) {
 // A month: its title, the legend and the days in a grid of weeks from Monday (green: the days in "green"; red: in "red"
 // and the other weekends, as in the real ones; grey: before "from"; aula: in the color of an "aula"). yearText: the year
 // on the page ('' without one); usual: the blue of the legend is "horario habitual" (no hours); twoHours: the blue of the
-// legend has two hours.
+// legend has two hours; rings: the days of the second one, in a ring ('image' or 'stroke': ring) as its mark in the legend.
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-function month(name, year, count, { green = [], red = [], aula = [], from = 1, form = true, splitLegend = false, yearText = String(year), usual = false, twoHours = false } = {}) {
+function month(name, year, count, { green = [], red = [], aula = [], from = 1, form = true, splitLegend = false, yearText = String(year), usual = false, twoHours = false, rings = [], ring = 'image' } = {}) {
   const weekend = (d) => [0, 6].includes(new Date(year, MONTHS.indexOf(name), d).getDay());
   const blue = usual ? [{ text: 'horario habitual de la biblioteca', rgb: BLUE }]
     : [{ text: 'biblioteca / liburutegia: 8:00 - 21:00 h.', rgb: BLUE }, ...(twoHours ? [{ text: 'biblioteca / liburutegia: 8:00 - 14:30 h.', rgb: BLUE }] : [])];
@@ -70,14 +74,16 @@ function month(name, year, count, { green = [], red = [], aula = [], from = 1, f
     { text: `${name} / apirila`, rgb: BLUE, x: 270, y: 100, form },
     ...(yearText ? [{ text: yearText, rgb: BLUE, x: 740, y: 100, form }] : []),
     ...legend.map((l, i) => ({ ...l, x: 180, y: 330 + i * 40, form })),
+    ...(rings.length ? [{ ring, x: 130, y: 365, w: 40, h: 30, rgb: BLUE }] : []), // left of the second blue name
     { text: 'cerrado/itxita', rgb: RED, x: 180, y: 500, form },
     { text: 'AULA 04 / 04 GELA', rgb: [0, 0, 0], x: 940, y: 600, form },
     { text: '8:00 - 14:45 H.', rgb: [0, 0, 0], x: 940, y: 640, form },
-    ...Array.from({ length: count }, (_, i) => {
+    ...Array.from({ length: count }, (_, i) => i).flatMap((i) => {
       const d = i + 1;
       const rgb = green.includes(d) ? GREEN : red.includes(d) ? RED : aula.includes(d) ? AULA : d < from ? GREY : weekend(d) ? RED : BLUE_DAY;
       const cell = i + (new Date(year, MONTHS.indexOf(name), 1).getDay() + 6) % 7; // Monday first, as in the real ones
-      return { text: String(d), rgb, x: 90 + (cell % 7) * 95, y: 560 + Math.floor(cell / 7) * 85, form };
+      const at = { x: 90 + (cell % 7) * 95, y: 560 + Math.floor(cell / 7) * 85 };
+      return [{ text: String(d), rgb, ...at, form }, rings.includes(d) ? { ring, x: at.x - 10, y: at.y - 10, w: 50, h: 40, rgb: BLUE } : null].filter(Boolean);
     })
   ];
 }

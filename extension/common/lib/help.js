@@ -43,16 +43,22 @@
     {
       version: '1.6.8',
       short: {
-        es: 'Nuevo en Mi sitio: «Horarios», con la biblioteca de tu campus (también en exámenes, verano y Semana Santa), el gimnasio, la piscina y la cafetería.',
-        en: 'New in Mi sitio: "Hours", with the library of your campus (also in exams, summer and Easter), the gym, the pool and the cafeteria.'
+        es: 'Nuevo en Mi sitio: «Horarios» (biblioteca con sus horarios especiales, gimnasio, piscina y cafetería) y tus secciones en el orden que quieras.',
+        en: 'New in Mi sitio: "Hours" (the library with its special hours, the gym, the pool and the cafeteria) and your sections in the order you like.'
       },
       es: [
         'Mi sitio tiene una sección nueva, «Horarios», cerrada al empezar: una tarjeta para la biblioteca de tu campus (el horario de hoy, el habitual y los avisos de su tablón con horarios especiales de exámenes, verano o Semana Santa, con su calendario en colores), otra para las instalaciones deportivas y el gimnasio, otra para la piscina y otra para las cafeterías y el comedor de tu campus (con su horario de curso, de vacaciones y de fin de semana). Cada tarjeta dice si está abierto ahora y hasta qué hora, o cuándo abre, y la cabecera enseña el horario de hoy de todas. Elige el campus de la biblioteca (Arrosadía, Ciencias de la Salud o Tudela) en Ajustes → Biblioteca.',
-        'En Mi sitio, «Guías docentes» y «Horarios» tienen su propio recuadro, como «Exámenes finales».'
+        'En Mi sitio, «Guías docentes» y «Horarios» tienen su propio recuadro, como «Exámenes finales».',
+        'Cuando la biblioteca publica un horario especial, una ventana te lo cuenta en una línea una sola vez (por ejemplo, «Fines de semana y festivos, 18 de abril – 14 de junio: 9:00–22:45»), aunque falten días para que empiece.',
+        'Organiza las secciones de Mi sitio con el botón de la cabecera de Aulario Plus: en el orden que quieras, una debajo de otra, en tres columnas o una a un lado y dos al otro. Arrastra una sección a otro hueco o pulsa dos para cambiarlas. Con poco ancho (media pantalla, móvil), van una debajo de otra.',
+        '«Exámenes finales» también se pliega con su flecha, como las demás secciones.'
       ],
       en: [
         'Mi sitio has a new section, "Hours", closed at the start: a card for the library of your campus (the hours of today, the usual ones and the notices of its board with special hours for exams, summer or Easter, with their calendar in colors), another one for the sports facilities and the gym, another one for the pool and another one for the cafeterias and the dining hall of your campus (with their hours in the term, in the holidays and on weekends). Each card says if it is open now and until when, or when it opens, and the head shows the hours of today of all of them. Choose the campus of the library (Arrosadía, Ciencias de la Salud or Tudela) in Settings → Library.',
-        'In Mi sitio, "Guías docentes" and "Hours" have their own box, as "Exámenes finales".'
+        'In Mi sitio, "Guías docentes" and "Hours" have their own box, as "Exámenes finales".',
+        'When the library publishes special hours, a window tells you in one line, only once (for example, "Weekends and holidays, April 18 – June 14: 9:00–22:45"), even days before they start.',
+        'Arrange the sections of Mi sitio with the button in the head of Aulario Plus: in the order you like, one below the other, in three columns, or one on one side and two on the other. Drag a section to another place or click two to swap them. With little width (half a screen, a phone), they go one below the other.',
+        '"Exámenes finales" also folds with its arrow, as the other sections.'
       ]
     },
     {

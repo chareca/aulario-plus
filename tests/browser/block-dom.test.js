@@ -165,4 +165,18 @@
     document.body.removeEventListener('keydown', listen);
     assert.deepEqual(page, ['Escape'], 'only the second one: the window is gone, and its listener too');
   });
+
+  test('windows one at a time (a new notice of the library and the news of a version): the next one when the first closes', async () => {
+    const before = document.documentElement.children.length;
+    const first = MAK.askWindow('Uno', 'a', 'Sí');
+    const second = MAK.askWindow('Dos', 'b', 'Sí');
+    assert.equal(document.documentElement.children.length, before + 1, 'only the first one');
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(await first, false);
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(document.documentElement.children.length, before + 1, 'then the second one');
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.equal(await second, false);
+    assert.equal(document.documentElement.children.length, before);
+  });
 })();

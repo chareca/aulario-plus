@@ -34,7 +34,8 @@
       confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
       rankBar: true, // the rank of the degree (lib/record.js) in the bar of MiAulario
       examCalendar: false, // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
-      libraryCampus: 'arrosadia' // the library of "Horarios de la biblioteca" in Mi sitio (lib/library.js): arrosadia, salud or tudela
+      libraryCampus: 'arrosadia', // the library of "Horarios de la biblioteca" in Mi sitio (lib/library.js): arrosadia, salud or tudela
+      mysiteLayout: MAK.cleanLayout(null) // the parts of the block "Aulario Plus" of Mi sitio (content-banner.js): MAK.cleanLayout
     };
   };
 
@@ -166,8 +167,20 @@
       confetti: 'confetti' in s ? !!s.confetti : d.confetti,
       rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar,
       examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar,
-      libraryCampus: ['arrosadia', 'salud', 'tudela'].includes(s.libraryCampus) ? s.libraryCampus : d.libraryCampus
+      libraryCampus: ['arrosadia', 'salud', 'tudela'].includes(s.libraryCampus) ? s.libraryCampus : d.libraryCampus,
+      mysiteLayout: MAK.cleanLayout(s.mysiteLayout)
     };
+  };
+
+  // The parts of the block "Aulario Plus" of Mi sitio: { order: the three parts (the missing ones after the others, in
+  // their usual order), shape: 'rows' (one below the other), 'cols' (three columns), 'left' (the first one on the left of
+  // the other two) or 'right' (the last one on the right of the other two) }.
+  MAK.MYSITE_PARTS = ['exams', 'guides', 'hours'];
+  MAK.MYSITE_SHAPES = ['rows', 'cols', 'left', 'right'];
+  MAK.cleanLayout = function (v) {
+    const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    const order = Array.isArray(o.order) ? o.order.filter((k, i, all) => MAK.MYSITE_PARTS.includes(k) && all.indexOf(k) === i) : [];
+    return { order: [...order, ...MAK.MYSITE_PARTS.filter((k) => !order.includes(k))], shape: MAK.MYSITE_SHAPES.includes(o.shape) ? o.shape : 'rows' };
   };
 
   // ---- "Tu configuración": a file with the settings, the open or closed boxes of Mi sitio and the photos of the
