@@ -1284,7 +1284,7 @@
           filter: none; box-shadow: ${XP.hover}; }
         .btn.primary, .mak-btn { box-shadow: ${XP.default}; }
         .btn:active, .mak-btn:active, .chips button:active, .week:active, .win button.plain:active, .win button.btn:active, .mail button:not(.x):active,
-        .chips button[aria-pressed="true"], .week.on { background: ${XP.pressed}; box-shadow: none; outline: 0; }
+        .chips button[aria-pressed="true"], .week.on, .shape[aria-checked="true"] { background: ${XP.pressed}; box-shadow: none; outline: 0; }
         .btn:focus-visible, .mak-btn:focus-visible, .chips button:focus-visible, .week:focus-visible, .win button:focus-visible, .mail button:focus-visible {
           outline: 1px dotted #000000; outline-offset: -4px; }
         .btn:disabled, .mak-btn:disabled, .win button.plain:disabled, .win button.btn:disabled, .mail button:disabled {
@@ -1383,6 +1383,14 @@
         .next-exam { background: var(--ap-surface); border: 1px solid #7f9db9; border-radius: 0; }
         .next-exam .day { font-size: 28px; color: var(--ap-link); text-shadow: none; }
         .next-exam .count { font-size: 1.15em; }
+        /* The calendars and the cards of the hours: white panels, as the exams and the guides */
+        .cal-wrap, .hr-card { background: var(--ap-surface); border: 1px solid var(--ap-line); border-radius: 3px; }
+        .cal-wrap { padding: 8px 10px; }
+        .hr-card .cal-wrap { padding: 0; background: none; border: 0; }
+        /* The panel that arranges the sections (the button of the head of the block): a pane of tasks, the sections in
+           white boxes (on the blue of the block, its text and its dashed boxes were hard to read) */
+        .pan { margin: 12px 12px 0; background: var(--ap-accent-soft); border: 1px solid #ffffff; border-radius: 5px; }
+        .slot { background: var(--ap-surface); border-color: #7f9db9; }
       `
     },
 
@@ -1985,10 +1993,11 @@
   // (!important). dark: the mode.
   const INVERT = [
     [['.btn', 'nav.tabs button', '.chips button', '.switch', '.counter', '.tool', '.pencil', '.history-icon', '.week', '.mak-fold',
-      '.cal-toggle[aria-pressed="false"]', ':host(.in-block) .box > .head .mak-fold', '.win button.plain', '.win button.btn', '.mail button', '.pop button'], 'btn'],
+      '.cal-toggle[aria-pressed="false"]', '.shape[aria-checked="false"]', ':host(.in-block) .box > .head .mak-fold', '.win button.plain', '.win button.btn', '.mail button',
+      '.pop button'], 'btn'],
     [['.icon-btn', 'button.x', '.box > .head .mak-fold', '.win > header button.plain', '.win > header button.btn'], 'head-btn'],
     [['.btn.primary', '.power', '.mak-btn', '.mak-icon', '.actions .action', '.chips button[aria-pressed="true"]', '.cal-toggle[aria-pressed="true"]',
-      '.win button.primary', '.mail button.primary', '.pop button.save'], 'primary']
+      '.shape[aria-checked="true"]', '.win button.primary', '.mail button.primary', '.pop button.save'], 'primary']
   ];
   MAK.hoverCss = function (th, dark) {
     const v = MAK.themeValues(th.id, dark);

@@ -126,7 +126,7 @@
     .mini, .map { display: grid; grid-template-columns: minmax(0, 1fr); }
     .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
     .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
-    .map { gap: 8px; max-width: 560px; }
+    .map { gap: 8px; max-width: 640px; }
     [data-count="3"][data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"], [data-count="3"][data-shape="right"], [data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
@@ -135,12 +135,12 @@
     [data-count="3"][data-shape="right"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
     .cell { position: relative; min-width: 0; display: grid; }
     .slot { min-height: 46px; padding: 8px 32px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
-      background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); }
-    .slot[aria-pressed="true"], .over > .slot { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
+      background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); transition: background-color 0.2s, border-color 0.2s; }
+    .slot:hover, .slot[aria-pressed="true"], .over > .slot { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
     .drag > .slot { opacity: 0.5; cursor: grabbing; }
     /* ✕ of a part: at its top right. */
     .drop { position: absolute; top: 5px; right: 5px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; cursor: pointer;
-      color: var(--ap-muted); background: var(--ap-pane-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: 50%; }
+      color: var(--ap-muted); background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: 50%; }
     .drop:hover { color: var(--ap-red); border-color: currentColor; }
     .drop svg, .back svg { width: 14px; height: 14px; }
     .gone { display: flex; flex-wrap: wrap; gap: 8px; }
