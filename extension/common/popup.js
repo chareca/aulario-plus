@@ -1165,16 +1165,26 @@ function recordSection() {
 }
 
 // A window over the popup: a title, its content and buttons [{ text, primary, click }]. A button closes it,
-// and so do Escape and a click outside the window (as "Cancel": no button acts).
+// and so do Escape and a click outside the window (as "Cancel": no button acts). It comes with a bounce and goes with
+// a short shrink (MAK.popIn, MAK.popOut).
 function dialog(title, body, buttons) {
-  const box = h('div', { class: 'dialog-backdrop' },
-    h('div', { class: 'dialog', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
-      h('h2', { text: title }), body,
-      h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
-        on: { click: () => { box.remove(); if (b.click) b.click(); } } })))));
-  box.addEventListener('mousedown', (e) => { if (e.target === box) box.remove(); });
+  let stop = null;
+  const shut = () => {
+    if (stop) stop();
+    stop = null;
+    if (!MAK.calmMotion()) box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
+    MAK.popOut(win, () => box.remove());
+  };
+  const win = h('div', { class: 'dialog', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
+    h('h2', { text: title }), body,
+    h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
+      on: { click: () => { shut(); if (b.click) b.click(); } } }))));
+  const box = h('div', { class: 'dialog-backdrop' }, win);
+  box.addEventListener('mousedown', (e) => { if (e.target === box) shut(); });
   document.body.append(box);
-  MAK.escCloses(box, () => box.remove());
+  stop = MAK.escCloses(box, shut);
+  if (!MAK.calmMotion()) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+  MAK.popIn(win, 'center 30%');
   box.querySelector('button').focus();
 }
 

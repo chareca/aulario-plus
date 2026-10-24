@@ -83,8 +83,10 @@
     const backdrop = h('div', { class: 'backdrop' }, into);
     let view = null;
     const share = shareFiles(files);
+    let stopEsc = null;
     const close = () => {
       if (share) share.stop(); // the files for "Share" are not needed any more
+      if (stopEsc) stopEsc();
       host.remove();
       open = null;
     };
@@ -93,7 +95,7 @@
     backdrop.addEventListener('keydown', (e) => e.stopPropagation());
     shadow.append(style, backdrop);
     document.documentElement.append(host);
-    MAK.escCloses(backdrop, () => !(view && view.isBusy()) && close());
+    stopEsc = MAK.escCloses(backdrop, () => !(view && view.isBusy()) && close());
     open = host;
     view = MAK.mailWindow(into, {
       site: { name: siteName, fullName: publicName },

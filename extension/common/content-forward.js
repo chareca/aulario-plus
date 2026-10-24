@@ -52,8 +52,10 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = MAK.themedStyle(CSS());
     let busy = false;
+    let stopEsc = null;
     const close = () => {
       if (busy) return;
+      if (stopEsc) stopEsc();
       host.remove();
       open = null;
     };
@@ -126,7 +128,7 @@
     backdrop.addEventListener('keydown', (e) => e.stopPropagation());
     shadow.append(style, backdrop);
     document.documentElement.append(host);
-    MAK.escCloses(win, close);
+    stopEsc = MAK.escCloses(win, close);
     open = host;
     email.focus();
   };

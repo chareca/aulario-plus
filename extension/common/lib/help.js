@@ -52,7 +52,7 @@
         'Cuando la biblioteca publica un horario especial, una ventana te lo cuenta en una línea una sola vez (por ejemplo, «Fines de semana y festivos, 18 de abril – 14 de junio: 9:00–22:45»), aunque falten días para que empiece.',
         'Organiza las secciones de Mi sitio con el botón de la cabecera de Aulario Plus: en el orden que quieras, una debajo de otra, en tres columnas o una a un lado y dos al otro. Arrastra una sección a otro hueco o pulsa dos para cambiarlas. Con poco ancho (media pantalla, móvil), van una debajo de otra.',
         '«Exámenes finales» también se pliega con su flecha, como las demás secciones.',
-        'Todo lo que se despliega y se pliega (las secciones de Mi sitio, el bloque, los semestres, las guías, los avisos del popup) lo hace con una animación corta; sin animación si tu sistema pide reducir el movimiento.'
+        'Todo lo que se despliega y se pliega (las secciones de Mi sitio, el bloque, los semestres, las guías, los avisos del popup) lo hace con una animación corta, y las ventanas pequeñas (cambiar el nombre de una asignatura, elegir a qué profesor escribir, las preguntas) se abren con un pequeño rebote y se cierran encogiéndose; sin animaciones si tu sistema pide reducir el movimiento.'
       ],
       en: [
         'Mi sitio has a new section, "Hours", closed at the start: a card for the library of your campus (the hours of today, the usual ones and the notices of its board with special hours for exams, summer or Easter, with their calendar in colors), another one for the sports facilities and the gym, another one for the pool and another one for the cafeterias and the dining hall of your campus (with their hours in the term, in the holidays and on weekends). Each card says if it is open now and until when, or when it opens, and the head shows the hours of today of all of them. Choose the campus of the library (Arrosadía, Ciencias de la Salud or Tudela) in Settings → Library.',
@@ -60,7 +60,7 @@
         'When the library publishes special hours, a window tells you in one line, only once (for example, "Weekends and holidays, April 18 – June 14: 9:00–22:45"), even days before they start.',
         'Arrange the sections of Mi sitio with the button in the head of Aulario Plus: in the order you like, one below the other, in three columns, or one on one side and two on the other. Drag a section to another place or click two to swap them. With little width (half a screen, a phone), they go one below the other.',
         '"Exámenes finales" also folds with its arrow, as the other sections.',
-        'Everything that unfolds and folds (the sections of Mi sitio, the block, the semesters, the guides, the announcements of the popup) does it with a short animation; none if your system asks for reduced motion.'
+        'Everything that unfolds and folds (the sections of Mi sitio, the block, the semesters, the guides, the announcements of the popup) does it with a short animation, and the small windows (renaming a subject, choosing the teacher to write to, the questions) open with a small bounce and close shrinking; no animations if your system asks for reduced motion.'
       ]
     },
     {

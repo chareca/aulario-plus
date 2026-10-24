@@ -68,6 +68,13 @@
   let sites = new Map(); // id -> stored site (full title)
   const nameOf = (siteId) => (sites.has(siteId) ? MAK.siteName(sites.get(siteId), settings) : siteId);
 
+  // A small window comes with a bounce from its button (MAK.popIn): from the middle of the button, at its top or bottom.
+  const growFrom = (pop, button) => {
+    const r = button.getBoundingClientRect();
+    const p = pop.getBoundingClientRect();
+    MAK.popIn(pop, `${Math.round(r.left + r.width / 2 - p.left)}px ${p.top >= r.bottom ? '0' : '100%'}`);
+  };
+
   // A click outside the window closes it (not on its button: the button opens and closes it), also a click in an iframe
   // of the page (the tools of MiAulario, as «Mensaje del día»): the page gets no click from an iframe, only the blur of
   // its window. anchor(): the button that opened the window.
@@ -95,8 +102,8 @@
     let anchor = null; // the pencil that opened the editor
     const close = () => {
       if (pop.hidden) return;
-      pop.hidden = true;
       siteId = null;
+      MAK.popOut(pop, () => { pop.hidden = true; });
     };
     const save = async (value) => {
       const id = siteId;
@@ -147,6 +154,7 @@
         const top = below + pop.offsetHeight > window.innerHeight - 8 ? Math.max(8, r.top - 6 - pop.offsetHeight) : below;
         pop.style.left = `${Math.max(8, left)}px`;
         pop.style.top = `${top}px`;
+        growFrom(pop, pencil);
         input.focus();
         input.select();
       }
@@ -173,10 +181,15 @@
     let anchor = null;
     let run = 0; // a new opening makes the old answers useless
     let busy = false;
+    let closing = false; // shrinking away (MAK.popOut)
     const close = () => {
-      if (busy) return;
-      pop.hidden = true;
+      if (busy || pop.hidden) return;
+      closing = true;
       run++;
+      MAK.popOut(pop, () => {
+        closing = false;
+        pop.hidden = true;
+      });
     };
     const pop = h(
       'div',
@@ -269,7 +282,7 @@
 
     picker = {
       async toggle(siteId, button) {
-        if (!pop.hidden && anchor === button) return close();
+        if (!pop.hidden && !closing && anchor === button) return close();
         const tool = mailTool(siteId);
         if (!tool || busy) return;
         const mine = ++run;
@@ -278,8 +291,10 @@
         title.textContent = MAK.t('teach.title', { site: nameOf(siteId) });
         MAK.fill(list);
         say(MAK.t('teach.loading'));
+        closing = false;
         pop.hidden = false;
         place();
+        growFrom(pop, button);
         try {
           const pm = MAK.createPm({ load: MAK.pmLoader((u, i) => fetch(u, i)) });
           const myEid = (await (await fetch('/direct/session/current.json?auto=true', { credentials: 'include' })).json()).userEid;

@@ -175,6 +175,37 @@
     el.remove();
   });
 
+  test('closed windows leave nothing in memory: their styles go from the list of the theme, their key listener goes', async () => {
+    const shut = async () => {
+      const a = MAK.askWindow('x', 'y', 'Sí');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await a;
+    };
+    // The size of the list 10 seconds later (the list forgets at each new style).
+    const count = () => {
+      const real = Date.now;
+      Date.now = () => real() + 10000;
+      MAK.themedStyle('');
+      Date.now = real;
+      return MAK.themedStyleCount();
+    };
+    await shut();
+    const before = count();
+    for (let k = 0; k < 6; k++) await shut();
+    const after = count();
+    assert.ok(after <= before + 1, `${before} -> ${after}`);
+    const added = [];
+    const add = document.addEventListener;
+    document.addEventListener = function (type, f, o) { added.push(type); return add.call(this, type, f, o); };
+    const removed = [];
+    const remove = document.removeEventListener;
+    document.removeEventListener = function (type, f, o) { removed.push(type); return remove.call(this, type, f, o); };
+    await shut();
+    document.addEventListener = add;
+    document.removeEventListener = remove;
+    assert.deepEqual([added.filter((x) => x === 'keydown').length, removed.filter((x) => x === 'keydown').length], [1, 1], 'Escape: its listener goes with the window');
+  });
+
   test('a window over the page: Escape closes it as Cancel, also when the focus is not in it; the page does not get the key', async () => {
     const before = document.documentElement.children.length;
     const answer = MAK.askWindow('Borrar', 'Seguro?', 'Sí');

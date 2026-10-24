@@ -2113,20 +2113,26 @@
   }
   // opts.scope: a selector for a style in the page (not in a shadow root); then the variables and the
   // blockCss of the theme (the only style in the page is the one of the block). opts.photo: the photo of the part.
+  // The list forgets the styles out of the page (a closed window, a box drawn again) at the next style or theme: else
+  // each window would stay in memory until the page closes. A new style has 5 seconds to go into the page.
+  const forget = () => {
+    for (const s of styles) if (!s.el.isConnected && Date.now() - s.at > 5000) styles.delete(s);
+  };
   MAK.themedStyle = function (css, opts) {
+    forget();
     const el = document.createElement('style');
     el.textContent = themedText(css, opts);
-    styles.add({ el, css, opts, seen: false });
+    styles.add({ el, css, opts, at: Date.now() });
     return el;
   };
   MAK.refreshThemedStyles = function () {
-    for (const s of [...styles]) {
-      if (s.el.isConnected) s.seen = true;
-      else if (s.seen) { styles.delete(s); continue; }
+    forget();
+    for (const s of styles) {
       const text = themedText(s.css, s.opts);
       if (s.el.textContent !== text) s.el.textContent = text;
     }
   };
+  MAK.themedStyleCount = () => styles.size; // for the tests
 
   // The fonts of a theme in a page of MiAulario. The fonts must be in the document (a @font-face in a
   // shadow root does not work). First FontFace with the bytes of the file (the page does not load

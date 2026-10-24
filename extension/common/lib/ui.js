@@ -374,9 +374,12 @@
   };
 
   // Fold or unfold an element (its "hidden") with a short animation of its height, padding, margins and opacity; done()
-  // when it ends. A new call during an animation goes back from where it is. At once with reduced motion, or when the
-  // element is not shown (a folded parent).
+  // when it ends. The browser runs it (no script at each frame), and it ends cancelled (nothing stays). A new call during
+  // an animation goes back from where it is. At once with reduced motion, out of the screen, or when the element is not
+  // shown (a folded parent).
   const folds = new WeakMap();
+  // The system asks for reduced motion: no animation.
+  MAK.calmMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const frameOf = (el) => {
     const cs = getComputedStyle(el);
     return { height: `${el.getBoundingClientRect().height}px`, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: cs.opacity };
@@ -396,8 +399,10 @@
     const already = !running && el.hidden === !open; // nothing to move
     el.hidden = false;
     const full = frameOf(el);
-    const calm = typeof el.animate !== 'function' || (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    if (already || calm || !parseFloat(full.height)) return end();
+    // Out of the screen nobody sees it move: at once (no work for the browser).
+    const box = el.getBoundingClientRect();
+    const away = box.bottom < 0 || box.top > (root.innerHeight || 0);
+    if (already || away || typeof el.animate !== 'function' || MAK.calmMotion() || !parseFloat(full.height)) return end();
     el.style.overflow = 'hidden';
     el.style.boxSizing = 'border-box';
     const anim = el.animate([now || (open ? SHUT : full), open ? full : SHUT],
@@ -418,7 +423,7 @@
       const summary = e.target.closest && e.target.closest('summary');
       const d = summary && summary.parentElement;
       if (!d || d.tagName !== 'DETAILS' || d.firstElementChild !== summary || typeof d.animate !== 'function') return;
-      if (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (MAK.calmMotion()) return;
       e.preventDefault();
       const cs = getComputedStyle(d);
       const shut = `${summary.getBoundingClientRect().height + ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0)}px`;
@@ -442,6 +447,33 @@
         anim.cancel();
       };
     });
+  };
+
+  // A small window (next to its button, or over the page) comes with a bounce and goes with a short shrink: only transform
+  // and opacity, which the browser moves without drawing the page again. at: where it grows from ("12px 0", default the
+  // center). popOut calls done() at its end (then the window is hidden or removed); a popIn during it brings it back.
+  // At once with reduced motion.
+  const pops = new WeakMap();
+  MAK.popIn = function (el, at) {
+    const out = pops.get(el);
+    if (out) out.cancel();
+    pops.delete(el);
+    if (typeof el.animate !== 'function' || MAK.calmMotion()) return;
+    el.style.transformOrigin = at || '';
+    el.animate([{ transform: 'scale(0.86)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: 0.55 }, { transform: 'scale(0.99)', offset: 0.8 }, { transform: 'none', opacity: 1 }],
+      { duration: 360, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' });
+  };
+  MAK.popOut = function (el, done) {
+    if (pops.has(el)) return; // already going
+    if (typeof el.animate !== 'function' || MAK.calmMotion()) return done();
+    const anim = el.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(1.03)', opacity: 1, offset: 0.3 }, { transform: 'scale(0.86)', opacity: 0 }],
+      { duration: 200, easing: 'cubic-bezier(0.4, 0, 0.7, 0.2)', fill: 'forwards' });
+    pops.set(el, anim);
+    anim.onfinish = () => {
+      pops.delete(el);
+      done();
+      anim.cancel();
+    };
   };
 
   // A button with the arrow. open: the state at the start. labels: { open, close }, the texts for the
@@ -541,15 +573,18 @@
 
   // Escape closes a window (as Cancel) also when the focus is not in it: after a click on its text, or when its field
   // loses the focus. One listener on the document while the window is in the page; win hidden: closed.
+  // Result: stop(), the end of the listener (else it ends at the first key after the window is gone).
   MAK.escCloses = function (win, close) {
+    const stop = () => document.removeEventListener('keydown', key, true);
     const key = (e) => {
-      if (!win.isConnected) document.removeEventListener('keydown', key, true);
+      if (!win.isConnected) stop();
       else if (e.key === 'Escape' && !win.hidden) {
         e.stopPropagation();
         close();
       }
     };
     document.addEventListener('keydown', key, true);
+    return stop;
   };
 
   // A window over the page (the calculator, the forward of the mail, the message to a teacher...):

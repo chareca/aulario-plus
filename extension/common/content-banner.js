@@ -390,7 +390,16 @@
         .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
         ${MAK.LINK_CSS}
         ${MAK.RANK_CSS || ''}`);
-      const answer = (v) => () => { host.remove(); resolve(v); };
+      // The window shrinks away, the dark around it fades, then the answer (the next window opens after it).
+      let answered = false;
+      let stop = null;
+      const answer = (v) => () => {
+        if (answered) return;
+        answered = true;
+        if (stop) stop();
+        if (backdrop.animate && !MAK.calmMotion()) backdrop.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
+        MAK.popOut(win, () => { host.remove(); resolve(v); });
+      };
       const no = noText === null ? null : h('button', { class: 'btn', attrs: { type: 'button' }, text: noText, on: { click: answer(false) } });
       const ok = h('button', { class: 'btn primary', attrs: { type: 'button' }, text: yes, on: { click: answer(true) } });
       const win = h('div', { class: 'win', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
@@ -403,7 +412,9 @@
       backdrop.addEventListener('keydown', (e) => e.stopPropagation());
       shadow.append(style, backdrop);
       document.documentElement.append(host);
-      MAK.escCloses(win, answer(false));
+      stop = MAK.escCloses(win, answer(false));
+      if (backdrop.animate && !MAK.calmMotion()) backdrop.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+      MAK.popIn(win, 'center 30%');
       (no || ok).focus();
     });
   }
