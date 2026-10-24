@@ -22,6 +22,7 @@
 - **Todo en un clic:** un menú de inicio con tu sesión y lo pendiente; entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus asignaturas, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
 - **Ctrl+K / ⌘K:** encuentra cualquier asignatura, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno, en una columna o a todo el ancho.
+- **Biblioteca:** en Mi sitio, el horario de hoy de la biblioteca de tu campus (Arrosadía, Ciencias de la Salud o Tudela) y sus horarios especiales de exámenes, verano y Semana Santa, con su calendario.
 - **Calendario de exámenes:** tus finales y recuperaciones en un calendario por meses, en cada semestre de Mi sitio y junto a la guía de cada asignatura.
 - **Notas oficiales (SIGMA):** si lo activas, tu media y tu rango junto a tu foto: ocho rangos con su gema según tus créditos aprobados, y lo que te falta para el siguiente.
 - **Historial:** todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario del profesor, y la nota oficial de cada asignatura de cada curso.
@@ -41,6 +42,6 @@ Tus datos se quedan en tu navegador: sin analíticas ni servidores propios. [Pol
 
 Aulario Plus es gratis y de código abierto. Si te ahorra tiempo, puedes invitarme a un café.
 
-<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff&amp;v=1.6.7" alt="Invítame a un café" height="50"></a></p>
+<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff&amp;v=1.6.8" alt="Invítame a un café" height="50"></a></p>
 
 [Licencia MIT](LICENSE)

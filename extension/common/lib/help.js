@@ -41,6 +41,19 @@
   // news in one line, for the window over MiAulario after the update (each new version needs it).
   MAK.CHANGES = [
     {
+      version: '1.6.8',
+      short: {
+        es: 'Nuevo en Mi sitio: los horarios de la biblioteca de tu campus, también los de exámenes, verano y Semana Santa. Elige el campus en Ajustes.',
+        en: 'New in Mi sitio: the hours of the library of your campus, also the ones of exams, summer and Easter. Choose the campus in the settings.'
+      },
+      es: [
+        'Mi sitio tiene una sección nueva, «Horarios de la biblioteca», cerrada al empezar: el horario de hoy (también en su cabecera), el habitual y los avisos del tablón de la biblioteca con horarios especiales (exámenes, verano, Semana Santa), con su calendario en colores. Elige el campus (Arrosadía, Ciencias de la Salud o Tudela) en Ajustes → Biblioteca.'
+      ],
+      en: [
+        'Mi sitio has a new section, "Library hours", closed at the start: the hours of today (also in its head), the usual hours and the notices of the board of the library with special hours (exams, summer, Easter), with their calendar in colors. Choose the campus (Arrosadía, Ciencias de la Salud or Tudela) in Settings → Library.'
+      ]
+    },
+    {
       version: '1.6.7',
       // The news in one line: the window over MiAulario after the update (background.js, pageNotice).
       short: {
