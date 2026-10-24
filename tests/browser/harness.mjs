@@ -246,5 +246,29 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { before: ['123', 'rows', '3'], after: ['231', '3'], placed: true, button: true });
   });
 
+  await test('Mi sitio: a part taken out is not shown, and "Horarios" out reads nothing; back, it reads its hours', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await load(tab);
+    await run(tab, `
+      const { settings } = await ext.storage.local.get('settings');
+      const layout = { order: ['exams', 'guides', 'hours'], shape: 'cols', hidden: ['hours'] };
+      localStorage.setItem('mak-harness-seed', JSON.stringify({ settings: Object.assign({}, settings, { mysiteLayout: layout }) }));
+    `);
+    await load(tab);
+    const got = await run(tab, `
+      const body = await until(() => document.getElementById('mak-block-body'), 'the block');
+      const lib = await until(() => body.querySelector(':scope > #mak-library-host'), 'the box of the hours');
+      await until(() => body.querySelector(':scope > #mak-guide-host') && body.dataset.count === '2', 'the other parts');
+      await new Promise((r) => setTimeout(r, 600));
+      const out = [lib.hasAttribute('data-off'), getComputedStyle(lib).display, !!(await ext.storage.local.get('library')).library, body.dataset.count];
+      const { settings } = await ext.storage.local.get('settings');
+      await ext.storage.local.set({ settings: Object.assign({}, settings, { mysiteLayout: Object.assign({}, settings.mysiteLayout, { hidden: [] }) }) });
+      const read = await until(async () => (await ext.storage.local.get('library')).library, 'the hours read again');
+      return { out, back: [lib.hasAttribute('data-off'), lib.dataset.slot, body.dataset.count, read.campus] };
+    `);
+    assert.deepEqual(got, { out: [true, 'none', false, '2'], back: [false, '3', '3', 'arrosadia'] });
+  });
+
   return results;
 }

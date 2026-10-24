@@ -34,12 +34,12 @@ test('the calendar button of MiAulario saves only its setting; the other setting
 
 test('the order of the parts of Mi sitio: only its setting, checked', async () => {
   const bg = loadBackground();
-  const got = await bg.send({ type: 'setMySiteLayout', layout: { order: ['hours', 'evil', 'hours', 'exams'], shape: 'left' }, lang: 'en' }, CONTENT());
-  assert.deepEqual(got, { ok: true, layout: { order: ['hours', 'exams', 'guides'], shape: 'left' } });
+  const got = await bg.send({ type: 'setMySiteLayout', layout: { order: ['hours', 'evil', 'hours', 'exams'], shape: 'left', hidden: ['exams', 'evil'] }, lang: 'en' }, CONTENT());
+  assert.deepEqual(got, { ok: true, layout: { order: ['hours', 'exams', 'guides'], shape: 'left', hidden: ['exams'] } });
   const s = bg.ext.storage.local.data.settings;
   assert.deepEqual([s.mysiteLayout, s.lang === 'en'], [got.layout, false]);
   await bg.send({ type: 'setMySiteLayout', layout: { order: 'x', shape: 'grid' } }, CONTENT());
-  assert.deepEqual(bg.ext.storage.local.data.settings.mysiteLayout, { order: ['exams', 'guides', 'hours'], shape: 'rows' }, 'a wrong value: the usual one');
+  assert.deepEqual(bg.ext.storage.local.data.settings.mysiteLayout, { order: ['exams', 'guides', 'hours'], shape: 'rows', hidden: [] }, 'a wrong value: the usual one');
 });
 
 test('"Pausar" stays until "Reanudar": a ping only reads the session (no keep-alive), and a new login does not continue it', async () => {

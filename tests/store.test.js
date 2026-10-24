@@ -27,10 +27,13 @@ test('"Exportar mi configuración": every setting (a new one by itself), the box
   assert.deepEqual([out.ui, out.sitePhotos, out.history], [{ 'mak-mysite-closed': '1' }, { '2026_0_1': 3 }, undefined], 'the boxes and the photos; no data of the courses');
   assert.equal(MAK.configFileName(now), 'aulario-plus-config-05-10-2026.json');
   // The order of the parts of Mi sitio goes to the file and comes back, checked.
-  const layout = { order: ['guides', 'hours', 'exams'], shape: 'right' };
+  const layout = { order: ['guides', 'hours', 'exams'], shape: 'right', hidden: ['hours'] };
   const back = MAK.configImport(JSON.stringify(MAK.configExport({ settings: { mysiteLayout: layout } }, '1.6.8', now))).file;
   assert.deepEqual(MAK.withDefaults(back.settings).mysiteLayout, layout);
-  assert.deepEqual(MAK.withDefaults({ mysiteLayout: { order: ['hours', 'hours', '__proto__'], shape: 'diagonal' } }).mysiteLayout, { order: ['hours', 'exams', 'guides'], shape: 'rows' });
+  assert.deepEqual(MAK.withDefaults({ mysiteLayout: { order: ['hours', 'hours', '__proto__'], shape: 'diagonal', hidden: ['x', 'guides', 'guides'] } }).mysiteLayout,
+    { order: ['hours', 'exams', 'guides'], shape: 'rows', hidden: ['guides'] });
+  assert.deepEqual(MAK.cleanLayout({ hidden: ['hours', 'exams', 'guides'] }).hidden, [], 'never all the parts out: all of them back');
+  assert.deepEqual(MAK.cleanLayout({ order: ['hours'], shape: 'left' }).hidden, [], 'a file of before (no "hidden"): all the parts');
 });
 
 test('every box in the block "Aulario Plus" of Mi sitio is a part of MAK.MYSITE_HOSTS (so the user can place it, and it goes to the file)', () => {

@@ -94,6 +94,7 @@
     // "Horarios" in Mi sitio (content-library.js): the library, the gym (and the sports facilities), the pool
     check: [['path', { d: 'M5.5 12.5l4.2 4.2L18.5 8' }]],
     x: [['path', { d: 'M7 7l10 10M17 7L7 17' }]],
+    plus: [['path', { d: 'M12 5.5v13M5.5 12h13' }]], // a part of Mi sitio back (content-banner.js)
     book: [['path', { d: 'M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z' }], ['path', { d: 'M12 6.5v13' }]],
     coffee: [['path', { d: 'M5 9.5h11v4.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z' }], ['path', { d: 'M16 11h1.5a2.5 2.5 0 0 1 0 5H16' }], ['path', { d: 'M8.5 3.5c-.7 1 .7 1.6 0 2.8M12 3.5c-.7 1 .7 1.6 0 2.8' }]],
     dumbbell: [['path', { d: 'M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11' }]],

@@ -303,19 +303,21 @@
       t('lib.news.ok'), null);
   }
 
+  // The part taken out of the block (the organizer of content-banner.js): nothing is read, no window.
+  const off = (settings) => MAK.withDefaults(settings).mysiteLayout.hidden.includes('hours');
   async function run() {
     const data = (await MAK.safeCall(() => ext.storage.local.get(['settings']), null)) || {};
     MAK.setLang(MAK.withDefaults(data.settings).lang);
-    if (!frame()) return; // no block on this page: nothing is asked (a new notice keeps its window for later)
+    if (!frame() || off(data.settings)) return; // no block on this page: nothing is asked (a new notice keeps its window for later)
     const res = await send({ type: 'libraryHours' });
     draw(res);
     if (res && res.data && Array.isArray(res.fresh) && res.fresh.length) announce(res.data, res.fresh);
   }
   run();
-  // Another campus in the settings: read it again.
+  // Another campus in the settings, or the part back in the block: read it again.
   ext.storage.onChanged.addListener((changes, area) => {
     const s = area === 'local' && changes.settings;
-    if (!s || !MAK.extensionAlive() || MAK.withDefaults(s.newValue).libraryCampus === MAK.withDefaults(s.oldValue).libraryCampus) return;
-    run();
+    if (!s || !MAK.extensionAlive()) return;
+    if (MAK.withDefaults(s.newValue).libraryCampus !== MAK.withDefaults(s.oldValue).libraryCampus || (off(s.oldValue) && !off(s.newValue))) run();
   });
 })();

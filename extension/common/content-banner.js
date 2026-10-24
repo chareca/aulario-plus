@@ -89,6 +89,8 @@
        little width (half a screen, a phone, the block in its column) always one below the other. */
     #mak-block { container: mak-block / inline-size; }
     #mak-block > #mak-block-body:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 16px; align-items: start; }
+    /* A part that the user took out; all the parts until the setting is read (no part out comes and goes). */
+    #mak-block-body > [data-off], #mak-block-body:not([data-shape]) > * { display: none !important; }
     #mak-block-body > [data-slot="1"] { order: 1; }
     #mak-block-body > [data-slot="2"] { order: 2; }
     #mak-block-body > [data-slot="3"] { order: 3; }
@@ -107,8 +109,8 @@
       #mak-block-body[data-shape="right"][data-count="3"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
     }
   `;
-  // The panel of arrange: the shapes (a small drawing of each one) and a map of the parts in the shape (a part dragged
-  // to another place, or two parts clicked one after the other: they swap).
+  // The panel of arrange: the shapes (a small drawing of each one, no text) and a map of the parts in the shape (a part
+  // dragged to another place, or two parts clicked one after the other: they swap; ✕ takes a part out, + puts it back).
   const ARRANGE_CSS = () => `${MAK.BOX_CSS()}
     :host(.in-block) { margin: 0; }
     .pan { font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); padding: 12px 14px; background: var(--ap-pane-bg);
@@ -117,24 +119,32 @@
     .acts { display: flex; gap: 8px; }
     .top strong { margin-right: auto; font-family: var(--ap-font-head); font-weight: var(--ap-head-weight); font-style: var(--ap-head-style); font-size: calc(15px * var(--ap-head-zoom)); }
     .shapes { display: flex; flex-wrap: wrap; gap: 8px; }
-    .shape { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 0.93em; color: var(--ap-btn-fg); background: var(--ap-btn-bg);
+    .shape { display: inline-flex; align-items: center; padding: 6px 8px; cursor: pointer; color: var(--ap-btn-fg); background: var(--ap-btn-bg);
       border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); }
-    .shape[aria-checked="true"] { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); font-weight: 700; }
-    .shape:focus-visible, .slot:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
+    .shape[aria-checked="true"] { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); }
+    .shape:focus-visible, .slot:focus-visible, .drop:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
     .mini, .map { display: grid; grid-template-columns: minmax(0, 1fr); }
     .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
     .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
     .map { gap: 8px; max-width: 560px; }
-    [data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    [data-shape="left"], [data-shape="right"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    [data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
-    [data-shape="right"] > [data-slot="1"] { grid-column: 1; grid-row: 1; }
-    [data-shape="right"] > [data-slot="2"] { grid-column: 1; grid-row: 2; }
-    [data-shape="right"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
-    .slot { min-height: 46px; padding: 8px 10px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
+    [data-count="3"][data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    [data-count="3"][data-shape="left"], [data-count="3"][data-shape="right"], [data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    [data-count="3"][data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
+    [data-count="3"][data-shape="right"] > [data-slot="1"] { grid-column: 1; grid-row: 1; }
+    [data-count="3"][data-shape="right"] > [data-slot="2"] { grid-column: 1; grid-row: 2; }
+    [data-count="3"][data-shape="right"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
+    .cell { position: relative; min-width: 0; display: grid; }
+    .slot { min-height: 46px; padding: 8px 32px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
       background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); }
-    .slot[aria-pressed="true"], .slot.over { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
-    .slot.drag { opacity: 0.5; cursor: grabbing; }
+    .slot[aria-pressed="true"], .over > .slot { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
+    .drag > .slot { opacity: 0.5; cursor: grabbing; }
+    /* ✕ of a part: at its top right. */
+    .drop { position: absolute; top: 5px; right: 5px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; cursor: pointer;
+      color: var(--ap-muted); background: var(--ap-pane-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: 50%; }
+    .drop:hover { color: var(--ap-red); border-color: currentColor; }
+    .drop svg, .back svg { width: 14px; height: 14px; }
+    .gone { display: flex; flex-wrap: wrap; gap: 8px; }
+    .back { display: inline-flex; align-items: center; gap: 6px; }
     .btn { padding: 5px 12px; cursor: pointer; font: inherit; font-size: 0.93em; color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: var(--ap-bw-sm) solid var(--ap-btn-edge); border-radius: var(--ap-radius-sm); }
     .btn.primary { color: var(--ap-primary-fg); background: var(--ap-primary-bg); border-color: var(--ap-primary-edge); }
     .btn:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 2px; }
@@ -144,9 +154,9 @@
   const partName = (k) => MAK.t(MAK.MYSITE_HOSTS[k].title);
 
   // The parts of the block (body) in the order and the shape of the setting mysiteLayout (MAK.cleanLayout): each host
-  // its place among the parts on the page (data-slot), the body the shape and their number (BLOCK_CSS). button: opens
-  // the panel that changes them; each change is saved at once (setMySiteLayout), and comes back from the settings (also
-  // from another tab, or an import). Result: the panel (between the head and the body).
+  // its place among the parts shown on the page (data-slot; a part taken out: data-off), the body the shape and their
+  // number (BLOCK_CSS). button: opens the panel that changes them; each change is saved at once (setMySiteLayout), and
+  // comes back from the settings (also from another tab, or an import). Result: the panel (between the head and the body).
   function arrange(body, button) {
     const h = MAK.h;
     const ext = root.browser || root.chrome;
@@ -154,14 +164,20 @@
     let picked = null; // a part clicked first: the next click swaps it
     let drag = null;
     let dragged = false; // a drag ended on a part: not a click
+    let loaded = false; // the setting is read: then the body has its shape (BLOCK_CSS shows the parts)
     const place = () => {
-      const present = layout.order.filter((k) => {
+      const shown = layout.order.filter((k) => {
         const el = hostOf(k);
-        return el && el.parentElement === body;
+        if (!el || el.parentElement !== body) return false;
+        const off = layout.hidden.includes(k);
+        el.toggleAttribute('data-off', off);
+        if (off) delete el.dataset.slot;
+        return !off;
       });
-      present.forEach((k, i) => { hostOf(k).dataset.slot = String(i + 1); });
+      shown.forEach((k, i) => { hostOf(k).dataset.slot = String(i + 1); });
+      if (!loaded) return;
       body.dataset.shape = layout.shape;
-      body.dataset.count = String(present.length);
+      body.dataset.count = String(shown.length);
     };
     new MutationObserver(place).observe(body, { childList: true });
     const host = h('div', { attrs: { id: 'mak-layout-host' } });
@@ -184,13 +200,20 @@
       status.textContent = MAK.t('layout.swapped', { a: partName(a), b: partName(b) });
       set(Object.assign({}, layout, { order }), true);
     };
+    // Take a part out (on: false) or put it back.
+    const show = (k, on) => {
+      if (picked === k) picked = null;
+      status.textContent = MAK.t(on ? 'layout.added' : 'layout.removed', { name: partName(k) });
+      set(Object.assign({}, layout, { hidden: on ? layout.hidden.filter((x) => x !== k) : [...layout.hidden, k] }), true);
+    };
     const partAt = (x, y) => {
       const el = shadow.elementFromPoint(x, y);
-      const slot = el && el.closest && el.closest('.slot');
-      return slot ? slot.dataset.part : null;
+      const cell = el && el.closest && el.closest('.cell');
+      return cell ? cell.dataset.part : null;
     };
-    const slot = (k, i) => {
-      const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { slot: String(i + 1), part: k }, text: partName(k) });
+    // A part in the map: its button (drag it, or click it) and ✕ (not on the last part shown).
+    const cell = (k, i, removable) => {
+      const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { key: `part:${k}` }, text: partName(k) });
       b.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         drag = { from: k, x: e.clientX, y: e.clientY, moved: false };
@@ -201,9 +224,9 @@
         drag.moved = drag.moved || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6;
         if (!drag.moved) return;
         const over = partAt(e.clientX, e.clientY);
-        for (const s of pan.querySelectorAll('.slot')) {
-          s.classList.toggle('drag', s.dataset.part === drag.from);
-          s.classList.toggle('over', s.dataset.part === over && over !== drag.from);
+        for (const c of pan.querySelectorAll('.cell')) {
+          c.classList.toggle('drag', c.dataset.part === drag.from);
+          c.classList.toggle('over', c.dataset.part === over && over !== drag.from);
         }
       });
       const end = (e) => {
@@ -232,7 +255,10 @@
         status.textContent = picked ? MAK.t('layout.picked', { name: partName(k) }) : '';
         draw();
       });
-      return b;
+      const name = MAK.t('layout.remove', { name: partName(k) });
+      return h('div', { class: 'cell', data: { slot: String(i + 1), part: k } }, b, removable
+        ? h('button', { class: 'drop', data: { key: `toggle:${k}` }, attrs: { type: 'button', title: name, 'aria-label': name }, on: { click: () => show(k, false) } }, MAK.icon('x'))
+        : null);
     };
     const close = () => {
       MAK.fold(host, false);
@@ -240,21 +266,36 @@
       button.setAttribute('aria-expanded', 'false');
       button.focus();
     };
+    // The panel again; the focus stays on the same button (data-key; ✕ and + of a part: the same key).
     function draw() {
-      const shapes = MAK.MYSITE_SHAPES.map((sh) => h('button', { class: 'shape', attrs: { type: 'button', role: 'radio', 'aria-checked': String(sh === layout.shape) },
+      const focused = shadow.activeElement && shadow.activeElement.dataset.key;
+      const shown = layout.order.filter((k) => !layout.hidden.includes(k));
+      const n = String(shown.length);
+      // Two parts: one below the other or side by side (the other shapes are the same then). One part: no shape.
+      const shapes = shown.length === 3 ? MAK.MYSITE_SHAPES : shown.length === 2 ? ['rows', 'cols'] : [];
+      const checked = (sh) => sh === layout.shape || (shapes.length === 2 && sh === 'cols' && layout.shape !== 'rows');
+      const shape = (sh) => h('button', { class: 'shape', data: { key: `shape:${sh}` },
+        attrs: { type: 'button', role: 'radio', 'aria-checked': String(checked(sh)), title: MAK.t(`layout.${sh}`), 'aria-label': MAK.t(`layout.${sh}`) },
         on: { click: () => set(Object.assign({}, layout, { shape: sh }), true) } },
-        h('span', { class: 'mini', data: { shape: sh }, attrs: { 'aria-hidden': 'true' } }, [1, 2, 3].map((n) => h('i', { data: { slot: String(n) } }))),
-        h('span', { text: MAK.t(`layout.${sh}`) })));
+        h('span', { class: 'mini', data: { shape: sh, count: n }, attrs: { 'aria-hidden': 'true' } }, shown.map((k, i) => h('i', { data: { slot: String(i + 1) } }))));
+      const back = (k) => {
+        const name = MAK.t('layout.add', { name: partName(k) });
+        return h('button', { class: 'btn back', data: { key: `toggle:${k}` }, attrs: { type: 'button', title: name, 'aria-label': name }, on: { click: () => show(k, true) } },
+          MAK.icon('plus'), h('span', { text: partName(k) }));
+      };
       MAK.fill(pan,
         h('div', { class: 'top' }, h('strong', { text: MAK.t('layout.title') }),
           h('span', { class: 'acts' },
-            h('button', { class: 'btn', attrs: { type: 'button' }, text: MAK.t('layout.reset'), on: { click: () => set(null, true) } }),
+            h('button', { class: 'btn', data: { key: 'reset' }, attrs: { type: 'button' }, text: MAK.t('layout.reset'), on: { click: () => set(null, true) } }),
             h('button', { class: 'btn primary', attrs: { type: 'button' }, text: MAK.t('layout.done'), on: { click: close } }))),
-        h('div', { class: 'shapes', attrs: { role: 'radiogroup', 'aria-label': MAK.t('layout.shape') } }, shapes),
+        shapes.length ? h('div', { class: 'shapes', attrs: { role: 'radiogroup', 'aria-label': MAK.t('layout.shape') } }, shapes.map(shape)) : null,
         h('p', { class: 'meta', text: MAK.t('layout.help') }),
-        h('div', { class: 'map', data: { shape: layout.shape } }, layout.order.map(slot)),
+        h('div', { class: 'map', data: { shape: layout.shape, count: n } }, shown.map((k, i) => cell(k, i, shown.length > 1))),
+        layout.hidden.length ? h('div', { class: 'gone', attrs: { role: 'group', 'aria-label': MAK.t('layout.gone') } }, layout.order.filter((k) => layout.hidden.includes(k)).map(back)) : null,
         h('p', { class: 'meta', text: MAK.t('layout.narrow') }),
         status);
+      const again = focused && pan.querySelector(`[data-key="${focused}"]`);
+      if (again) again.focus();
     }
     button.addEventListener('click', () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
@@ -268,7 +309,10 @@
     draw();
     place();
     MAK.safeCall(() => ext.storage.local.get('settings'), null)
-      .then((d) => set(MAK.withDefaults(d && d.settings).mysiteLayout, false))
+      .then((d) => {
+        loaded = true;
+        set(MAK.withDefaults(d && d.settings).mysiteLayout, false);
+      })
       .catch(() => {});
     MAK.safeCall(() => ext.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.settings && MAK.extensionAlive()) set(MAK.withDefaults(changes.settings.newValue).mysiteLayout, false);

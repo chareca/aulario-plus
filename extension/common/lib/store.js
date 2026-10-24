@@ -173,8 +173,9 @@
   };
 
   // The parts of the block "Aulario Plus" of Mi sitio: { order: all the parts (the missing ones after the others, in
-  // their usual order), shape: 'rows' (one below the other), 'cols' (three columns), 'left' (the first one on the left of
-  // the other two) or 'right' (the last one on the right of the other two) }.
+  // their usual order), shape: 'rows' (one below the other), 'cols' (in columns), 'left' (the first one on the left of
+  // the other two) or 'right' (the last one on the right of the other two), hidden: the parts that the user took out
+  // (never all of them) }.
   // Each part: the id of its host (the box of its content script, in the block: class "in-block") and the key of its
   // title. A new part of the block: a line here, so it is in the order of the user and in "Exportar mi configuración"
   // (tests/store.test.js checks that every box in the block is here). More than three parts: their shapes in BLOCK_CSS
@@ -189,7 +190,9 @@
   MAK.cleanLayout = function (v) {
     const o = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
     const order = Array.isArray(o.order) ? o.order.filter((k, i, all) => MAK.MYSITE_PARTS.includes(k) && all.indexOf(k) === i) : [];
-    return { order: [...order, ...MAK.MYSITE_PARTS.filter((k) => !order.includes(k))], shape: MAK.MYSITE_SHAPES.includes(o.shape) ? o.shape : 'rows' };
+    const hidden = Array.isArray(o.hidden) ? MAK.MYSITE_PARTS.filter((k) => o.hidden.includes(k)) : [];
+    return { order: [...order, ...MAK.MYSITE_PARTS.filter((k) => !order.includes(k))], shape: MAK.MYSITE_SHAPES.includes(o.shape) ? o.shape : 'rows',
+      hidden: hidden.length < MAK.MYSITE_PARTS.length ? hidden : [] };
   };
 
   // ---- "Tu configuración": a file with the settings, the open or closed boxes of Mi sitio and the photos of the
