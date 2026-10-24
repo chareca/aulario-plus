@@ -9,10 +9,12 @@
 
   MAK.LIBRARY_MS = 12 * MAK.HOUR;
   // The form of the kept hours (storage "library"): another form (an older version) is read again at once.
-  MAK.LIBRARY_FORM = 2;
+  MAK.LIBRARY_FORM = 3;
   MAK.LIBRARY_BOARD = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
   // The hours of the sports facilities of the UPNA (Arrosadía): the access (also the gym) and the pool.
   MAK.SPORTS_HOURS = 'https://www.unavarra.es/deportes/instalaciones/horario?languageId=100000'; // in Spanish
+  // The cafeterias and the dining hall: a table for each place.
+  MAK.FOOD_PAGES = ['https://www.unavarra.es/restauracion/cafeterias?languageId=100000', 'https://www.unavarra.es/restauracion/comedores?languageId=100000'];
   // The campuses: the page with their usual hours, and the words that name them (in a notice, a row, a PDF file).
   MAK.LIBRARY_CAMPUSES = {
     arrosadia: { page: 'https://www.unavarra.es/biblioteca/la-biblioteca/Campus+de+Arrosadia', names: /arrosad[ií]a/i },
@@ -22,14 +24,14 @@
   const named = (text) => Object.keys(MAK.LIBRARY_CAMPUSES).filter((k) => MAK.LIBRARY_CAMPUSES[k].names.test(text));
 
   // An address of the library of the UPNA (its pages, the board) or of its PDF files, or the hours of the sports facilities,
-  // with https; else null.
+  // of the cafeterias or of the dining hall, with https; else null.
   MAK.libraryUrl = function (href) {
     try {
       const u = new URL(String(href).trim(), 'https://www.unavarra.es/biblioteca/');
       if (u.hostname !== 'www.unavarra.es' || (u.protocol !== 'https:' && u.protocol !== 'http:')) return null;
       u.protocol = 'https:';
       u.hash = '';
-      return u.pathname.startsWith('/biblioteca/') || u.pathname === new URL(MAK.SPORTS_HOURS).pathname || /^\/digitalAssets\/[^?#]+\.pdf$/i.test(u.pathname) ? u.href : null;
+      return u.pathname.startsWith('/biblioteca/') || u.pathname === new URL(MAK.SPORTS_HOURS).pathname || /^\/restauracion\/(?:cafeterias|comedores)$/.test(u.pathname) || /^\/digitalAssets\/[^?#]+\.pdf$/i.test(u.pathname) ? u.href : null;
     } catch {
       return null;
     }
@@ -215,6 +217,12 @@
     }
     return week;
   }
+  // The minutes of "9:00–22:45": [540, 1365]; null.
+  const minutes = (hours) => {
+    const m = /^(\d{1,2}):(\d{2})–(\d{1,2}):(\d{2})$/.exec(hours || '');
+    return m ? [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])] : null;
+  };
+
   // A text of hours, shorter: "De lunes a viernes, de 7:30 a 22:00" -> "L-V, de 7:30 a 22:00".
   MAK.shortDays = (text) => String(text).replace(/\b(?:de\s+)?lunes\s+a\s+viernes\b/gi, 'L-V');
 
@@ -222,6 +230,60 @@
   MAK.weekToday = function (week, now = Date.now()) {
     const w = Array.isArray(week) ? week[new Date(now).getDay()] : null;
     return w ? { hours: w.hours || '', closed: !!w.closed, usual: true } : null;
+  };
+
+  // A page of the cafeterias or of the dining hall: a table for each place, with its caption ("Cafetería Aulario
+  // (Aramark)") and a row for each period ("Curso académico", "Vacaciones", "Fines de semana y festivos"): the opening
+  // hours and the hours of the kitchen or of the meals. [{ name, campus, extra ('kitchen', 'meals' or ''), course,
+  // holidays, weekend: { hours, extra } or { closed: true } }].
+  MAK.parseFoodPage = function (html) {
+    const places = [];
+    for (const table of String(html).match(/<table\b[\s\S]*?<\/table>/gi) || []) {
+      const caption = /<caption\b[^>]*>([\s\S]*?)<\/caption>/i.exec(table);
+      if (!caption) continue;
+      const name = lines(caption[1]).join(' ').replace(/\s*\([^)]*\)\s*$/, '').trim().slice(0, 80);
+      const place = { name, campus: /salud/i.test(name) ? 'salud' : /tudela/i.test(name) ? 'tudela' : 'arrosadia', extra: '' };
+      for (const row of table.match(/<tr\b[\s\S]*?<\/tr>/gi) || []) {
+        const cells = [...row.matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((c) => lines(c[1]).join(' '));
+        const head = fold(cells[0] || '');
+        if (/periodo/.test(head)) place.extra = /cocina/.test(fold(cells[2] || '')) ? 'kitchen' : /comida/.test(fold(cells[2] || '')) ? 'meals' : '';
+        const key = /curso/.test(head) ? 'course' : /vacacion/.test(head) ? 'holidays' : /semana|festiv/.test(head) ? 'weekend' : '';
+        if (!key) continue;
+        place[key] = /cerrad/i.test(cells[1] || '') ? { closed: true } : hoursOf(cells[1] || '') ? { hours: hoursOf(cells[1]), extra: hoursOf(cells[2] || '') } : null;
+      }
+      if (place.course || place.holidays) places.push(place);
+    }
+    return places.slice(0, 12);
+  };
+
+  // The period of the hours of the cafeterias on a day: 'weekend' (Saturday and Sunday; the holidays of a place are not
+  // known), 'holidays' (July and August, 24 December to 6 January, and Easter from Holy Thursday to Easter Monday) or
+  // 'course'. shortcut: the vacations are the usual ones, not the calendar of the UPNA of each year (a PDF file).
+  const easter = (y) => {
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    return new Date(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
+  };
+  MAK.foodPeriod = function (when) {
+    const d = new Date(when);
+    if (d.getDay() === 0 || d.getDay() === 6) return 'weekend';
+    const [m, day] = [d.getMonth(), d.getDate()];
+    if (m === 6 || m === 7 || (m === 11 && day >= 24) || (m === 0 && day <= 6)) return 'holidays';
+    const e = easter(d.getFullYear());
+    const t = startOfDay(when);
+    return t >= new Date(e.getFullYear(), e.getMonth(), e.getDate() - 3).getTime() && t <= new Date(e.getFullYear(), e.getMonth(), e.getDate() + 1).getTime() ? 'holidays' : 'course';
+  };
+  // The hours of the places on a day, together: from the first one that opens to the last one that closes.
+  // { hours, closed, period, usual (a weekend), notice ('vacaciones' when all are closed for the holidays) } or null.
+  MAK.foodDay = function (places, when) {
+    const period = MAK.foodPeriod(when);
+    const days = (places || []).map((p) => p[period]).filter(Boolean);
+    if (!days.length) return null;
+    const spans = days.map((x) => (!x.closed && minutes(x.hours)) || null).filter(Boolean);
+    const time = (mins) => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
+    if (!spans.length) return { hours: '', closed: true, period, usual: period === 'weekend', notice: period === 'holidays' ? 'vacaciones' : '' };
+    return { hours: `${time(Math.min(...spans.map((s) => s[0])))}–${time(Math.max(...spans.map((s) => s[1])))}`, closed: false, period };
   };
 
   // The page of the hours of the sports facilities: its table, a part under each head ("Horario de acceso": also the gym;
@@ -377,6 +439,8 @@
     const key = Object.hasOwn(MAK.LIBRARY_CAMPUSES, campus) ? campus : 'arrosadia';
     const c = MAK.LIBRARY_CAMPUSES[key];
     const sports = MAK.parseSportsPage(await getText(MAK.SPORTS_HOURS).catch(() => ''));
+    const food = [];
+    for (const url of MAK.FOOD_PAGES) food.push(...MAK.parseFoodPage(await getText(url).catch(() => '')));
     const page = MAK.parseLibraryPage(await getText(c.page).catch(() => ''));
     if (!page && !sports) throw new Error('library: no hours');
     const first = MAK.parseBoardList(await getText(MAK.LIBRARY_BOARD).catch(() => ''));
@@ -412,7 +476,8 @@
     }
     notices.sort((a, b) => (a.from || a.date) - (b.from || b.date));
     return {
-      v: MAK.LIBRARY_FORM, at: now, campus: key, partial: !page || !sports, notices,
+      v: MAK.LIBRARY_FORM, at: now, campus: key, partial: !page || !sports || !food.length, notices,
+      food: food.length ? { places: food.filter((p) => p.campus === key) } : null,
       page: page ? { url: c.page, lines: page.lines, week: page.week } : null,
       sports: sports ? { url: MAK.SPORTS_HOURS, access: sports.access, pool: sports.pool } : null
     };
@@ -450,17 +515,13 @@
   // Why a notice closes the library, from its title: 'summer', 'easter', 'christmas' or ''.
   MAK.closedReason = (title) => {
     const s = fold(title || '');
-    return /verano/.test(s) ? 'summer' : /semana santa/.test(s) ? 'easter' : /navidad|navide/.test(s) ? 'christmas' : '';
+    return /verano/.test(s) ? 'summer' : /semana santa/.test(s) ? 'easter' : /navidad|navide/.test(s) ? 'christmas' : /vacacion/.test(s) ? 'holidays' : '';
   };
 
   // Open now and until when, or closed and when it opens: { open, at } (at: the time of the change; 0: not known in the
-  // next two weeks). dayOf(time) gives the hours of the day of that time (MAK.libraryDay, MAK.weekToday): { hours: "9:00–
+  // next days, two weeks by default). dayOf(time) gives the hours of the day of that time (MAK.libraryDay, MAK.weekToday): { hours: "9:00–
   // 22:45" } or { closed: true }; null: not known (then null, or at 0 if it is not today).
-  const minutes = (hours) => {
-    const m = /^(\d{1,2}):(\d{2})–(\d{1,2}):(\d{2})$/.exec(hours || '');
-    return m ? [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])] : null;
-  };
-  MAK.openState = function (dayOf, now = Date.now()) {
+  MAK.openState = function (dayOf, now = Date.now(), days = 14) {
     const d = new Date(now);
     const at = (base, mins) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(mins / 60), mins % 60).getTime();
     const today = dayOf(now);
@@ -469,7 +530,7 @@
     const mins = d.getHours() * 60 + d.getMinutes();
     if (span && mins >= span[0] && mins < span[1]) return { open: true, at: at(d, span[1]) };
     if (span && mins < span[0]) return { open: false, at: at(d, span[0]) };
-    for (let k = 1; k <= 14; k++) {
+    for (let k = 1; k <= days; k++) {
       const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + k, 12);
       const day = dayOf(next.getTime());
       const s = day && !day.closed ? minutes(day.hours) : null;

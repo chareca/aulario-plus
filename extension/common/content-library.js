@@ -24,15 +24,23 @@
     .hr-chip svg { width: 14px; height: 14px; }
     .hr-date { margin: 0 0 8px; }
     .hr-date::first-letter { text-transform: uppercase; }
-    /* The cards: one below the other; with room, all in a row on the full width, or the library (with a calendar) on the
-       left and the sports on its right, one below the other. */
+    /* The cards: one below the other; with some room, two in a row (an odd last one on the full width); with more room,
+       all in a row. With a notice of the library (a long card): the library on the left and the others on its right, one
+       below the other, as high as it. */
     .hr-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .hr-side { display: contents; }
+    @container (min-width: 560px) {
+      .hr-cards:not(.with-cal) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hr-cards:not(.with-cal) .hr-card.last-odd { grid-column: 1 / -1; }
+    }
+    @container (min-width: 1400px) {
+      .hr-cards:not(.with-cal) { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+      .hr-cards:not(.with-cal) .hr-card.last-odd { grid-column: auto; }
+    }
     @container (min-width: 700px) {
-      .hr-cards { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } /* as many columns as cards */
-      .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-auto-flow: row; }
+      .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
       .hr-cards.with-cal > .hr-side { display: flex; flex-direction: column; gap: 10px; }
-      .hr-cards.with-cal > .hr-side > .hr-card { flex: 1 1 auto; } /* as high as the library, together */
+      .hr-cards.with-cal > .hr-side > .hr-card { flex: 1 1 auto; }
     }
     .hr-card { min-width: 0; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
     .hr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; }
@@ -54,6 +62,7 @@
     .hr-now { margin: 0 0 6px; }
     .hr-now b { font-size: 1.12em; }
     .hr-usual { margin: 0; padding-left: 18px; }
+    .hr-nw { white-space: nowrap; } /* a time is never cut */
     .hr-notice { margin: 10px 0 0; padding: 8px 0 0; border-top: var(--ap-bw-sm) solid var(--ap-line); }
     .hr-notice h6 { margin: 0; font-size: 1em; line-height: 1.3; }
     .hr-block { margin: 6px 0 0; }
@@ -163,13 +172,13 @@
   }
 
   // A card: its icon, its title and where, open or closed now, the hours of today, the usual ones, and more (notices).
-  function card({ icon, title, place, state, today, lines, more, now }) {
+  function card({ icon, title, place, state, today, note, lines, more, now }) {
     return h('section', { class: 'hr-card' },
       h('div', { class: 'hr-top' },
         h('div', { class: 'hr-id' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
         stateMark(state, now)),
-      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), h('span', { class: 'meta', text: ` (${t(today.usual ? 'lib.usualDay' : 'lib.specialDay')})` })) : null,
-      lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => h('li', { text: MAK.shortDays(l) }))) : null,
+      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), h('span', { class: 'meta', text: ` (${note || t(today.usual ? 'lib.usualDay' : 'lib.specialDay')})` })) : null,
+      lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => (typeof l === 'string' ? h('li', { text: MAK.shortDays(l) }) : l))) : null,
       more);
   }
 
@@ -184,8 +193,15 @@
       return;
     }
     const sports = data.sports || {};
-    const dayOf = { library: (ms) => MAK.libraryDay(data, ms), access: (ms) => MAK.weekToday(sports.access && sports.access.week, ms), pool: (ms) => MAK.weekToday(sports.pool && sports.pool.week, ms) };
-    const parts = [['library', 'book'], ['access', 'dumbbell'], ['pool', 'pool']].map(([k, icon]) => ({ k, icon, today: dayOf[k](now), state: MAK.openState(dayOf[k], now) }));
+    const places = data.food ? data.food.places : [];
+    const dayOf = {
+      library: (ms) => MAK.libraryDay(data, ms),
+      access: (ms) => MAK.weekToday(sports.access && sports.access.week, ms),
+      pool: (ms) => MAK.weekToday(sports.pool && sports.pool.week, ms),
+      food: (ms) => MAK.foodDay(places, ms)
+    };
+    // The cafeterias: also after the holidays of the summer.
+    const parts = [['library', 'book'], ['access', 'dumbbell'], ['pool', 'pool'], ['food', 'coffee']].map(([k, icon]) => ({ k, icon, today: dayOf[k](now), state: MAK.openState(dayOf[k], now, k === 'food' ? 75 : 14) }));
     // The head: the hours of today of each one (green: open now; red: closed now), or one word when the three are closed today.
     const known = parts.filter((x) => x.today);
     MAK.fill(p.chips, known.length === parts.length && known.every((x) => x.today.closed)
@@ -201,10 +217,29 @@
     const sportsCards = data.sports
       ? [parts[1], parts[2]].filter((x) => sports[x.k]).map((x) => card({ icon: x.icon, title: t(`lib.${x.k}`), place: t('lib.sportsPlace'), state: x.state, today: x.today, now, lines: sports[x.k].lines }))
       : [card({ icon: 'dumbbell', title: t('lib.sports'), more: h('p', { text: t('lib.sportsError') }) })];
+    // The cafeterias and the dining hall of the campus: the hours of today of each one (the period: course, holidays,
+    // weekend).
+    const period = MAK.foodPeriod(now);
+    const placeName = (p) => (/comedor/i.test(p.name) ? t('lib.dining') : p.name.replace(/^cafeter[ií]a\s+/i, ''));
+    const nw = (text) => h('span', { class: 'hr-nw', text });
+    const placeLine = (p) => {
+      const x = p[period];
+      return h('li', null, `${placeName(p)}: `, !x ? '?' : x.closed ? t('lib.closed').toLowerCase()
+        : [nw(x.hours), x.extra && p.extra ? [' · ', nw(`${t(`lib.extra.${p.extra}`)} ${x.extra}`)] : null]);
+    };
+    const foodCard = !data.food
+      ? card({ icon: 'coffee', title: t('lib.food'), more: h('p', { text: t('lib.foodError') }) })
+      : places.length
+        ? card({ icon: 'coffee', title: t('lib.food'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), state: parts[3].state, today: parts[3].today, now,
+          note: t(`lib.period.${period}`), lines: places.map(placeLine) })
+        : null;
+    const side = [...sportsCards, foodCard].filter(Boolean);
+    const all = [library, ...side];
+    if (all.length % 2) all.at(-1).classList.add('last-odd'); // two columns: the last one alone on the full width
     MAK.fill(p.content,
       res.error ? h('p', { class: 'meta', text: t('lib.stale', { date: MAK.formatDate(data.at) }) }) : null,
       h('p', { class: 'hr-date meta', text: longDate(now) }),
-      h('div', { class: `hr-cards${data.notices.some((n) => n.cal) ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, sportsCards)));
+      h('div', { class: `hr-cards${data.notices.length ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, side)));
   }
 
   async function run() {

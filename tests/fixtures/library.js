@@ -149,6 +149,20 @@ const SPORTS = `<html><body><div class="texto">
 <tr><td>&nbsp;&nbsp; De lunes a viernes,&nbsp;de 9:00 a 14:30</td><td>&nbsp;</td></tr>
 </tbody></table></div></body></html>`;
 
+// The cafeterias and the dining hall (www.unavarra.es/restauracion): a table for each place.
+const foodTable = (caption, extra, course, holidays) => `<table class="dcf-table"><caption>${caption}</caption>
+<thead><tr><th scope="col">PER&Iacute;ODO</th><th scope="col">HORARIO APERTURA</th><th scope="col">HORARIO ${extra}</th></tr></thead>
+<tbody><tr><th scope="row">Curso acad&eacute;mico</th><td>${course[0]}</td><td>${course[1]}</td></tr>
+<tr><th scope="row">Vacaciones</th><td>${holidays[0]}</td><td>${holidays[1]}</td></tr>
+<tr><th scope="row">Fines de semana y festivos</th><td>Cerrado</td><td><span>&nbsp;</span></td></tr></tbody></table>`;
+const CAFETERIAS = `<html><body><div class="texto"><p><h2><img alt="" src="x.jpg" /></h2>
+${foodTable('Cafeter&iacute;a Aulario (Aramark)', 'COCINA', ['7.30 - 19.30', '8.00 - 19.00'], ['7.30 - 16.30', '9.00 - 16.00'])}
+${foodTable('Cafeter&iacute;a El Sario&nbsp;(The Sario Experience)', 'COMIDAS', ['9.00 - 17.00&nbsp;', '13.00 - 16.00'], ['Cerrado', '&nbsp;'])}
+${foodTable('Cafeter&iacute;a Ciencias de la Salud (El fog&oacute;n errante)', '<strong>COMIDAS</strong>', ['9.00 - 19.00', '13.00 - 16.00'], ['Cerrado', '&nbsp;'])}
+${foodTable('Cafeter&iacute;a Tudela (Aramark)', 'COMIDAS', ['9.00 - 19.00', '13.00 - 16.00'], ['Cerrado', '&nbsp;'])}
+</div></body></html>`;
+const COMEDORES = `<html><body><div class="texto">${foodTable('Edificio comedores (Aramark)', 'COMIDAS', ['9.00 - 16.30', '13.00 - 16.00'], ['Cerrado', '&nbsp;'])}</div></body></html>`;
+
 // The answers of www.unavarra.es: address -> text or bytes.
 function routes() {
   const B = 'https://www.unavarra.es/biblioteca';
@@ -158,6 +172,8 @@ function routes() {
     [`${B}/la-biblioteca/Campus+de+Tudela`]: PAGES.tudela,
     [`${B}/tablon-de-anuncios`]: BOARD,
     'https://www.unavarra.es/deportes/instalaciones/horario?languageId=100000': SPORTS,
+    'https://www.unavarra.es/restauracion/cafeterias?languageId=100000': CAFETERIAS,
+    'https://www.unavarra.es/restauracion/comedores?languageId=100000': COMEDORES,
     [`${B}/tablon-de-anuncios?pagina=1`]: list([]),
     [`${B}/tablon-de-anuncios?opcion=2`]: BOARD_2025,
     'https://www.unavarra.es/digitalAssets/289/289130_1000002026_examenes_arrosadia.pdf': calendarPdf()
@@ -166,4 +182,4 @@ function routes() {
   return out;
 }
 
-module.exports = { canvaPdf, month, calendarPdf, PAGES, BOARD, NOTICES, SPORTS, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };
+module.exports = { canvaPdf, month, calendarPdf, PAGES, BOARD, NOTICES, SPORTS, CAFETERIAS, COMEDORES, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };

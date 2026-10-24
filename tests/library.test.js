@@ -43,6 +43,22 @@ test('parseSportsPage: the access (also the gym) and the pool, each day of the w
     ['L-V, de 7:30 a 22:00', 'L-V: 8:00 a 21:00 horas.'], '"(de) lunes a viernes": "L-V"');
 });
 
+test('parseFoodPage, foodPeriod and foodDay: the cafeterias and the dining hall, in the course, the holidays or a weekend', () => {
+  const places = [...MAK.parseFoodPage(F.CAFETERIAS), ...MAK.parseFoodPage(F.COMEDORES)];
+  assert.deepEqual(places.map((p) => [p.name, p.campus, p.extra]), [['Cafetería Aulario', 'arrosadia', 'kitchen'], ['Cafetería El Sario', 'arrosadia', 'meals'],
+    ['Cafetería Ciencias de la Salud', 'salud', 'meals'], ['Cafetería Tudela', 'tudela', 'meals'], ['Edificio comedores', 'arrosadia', 'meals']]);
+  assert.deepEqual([places[0].course, places[0].holidays, places[1].holidays, places[0].weekend], [{ hours: '7:30–19:30', extra: '8:00–19:00' }, { hours: '7:30–16:30', extra: '9:00–16:00' }, { closed: true }, { closed: true }]);
+  assert.deepEqual([[2026, 10, 26], [2026, 10, 24], [2026, 7, 8], [2026, 4, 2], [2026, 4, 6], [2026, 4, 7], [2026, 12, 28], [2027, 1, 7], [2027, 3, 25]].map(([y, m, d]) => MAK.foodPeriod(at(y, m, d))),
+    ['course', 'weekend', 'holidays', 'holidays', 'holidays', 'course', 'holidays', 'course', 'holidays'], 'Easter 2026: 2 to 6 April; Easter 2027: 25 to 29 March');
+  const arrosadia = places.filter((p) => p.campus === 'arrosadia');
+  assert.deepEqual(MAK.foodDay(arrosadia, at(2026, 10, 26)), { hours: '7:30–19:30', closed: false, period: 'course' }, 'from the first one that opens to the last one that closes');
+  assert.deepEqual(MAK.foodDay(arrosadia, at(2026, 7, 8)), { hours: '7:30–16:30', closed: false, period: 'holidays' });
+  assert.deepEqual(MAK.foodDay(places.filter((p) => p.campus === 'salud'), at(2026, 7, 8)), { hours: '', closed: true, period: 'holidays', usual: false, notice: 'vacaciones' });
+  assert.equal(MAK.closedReason('vacaciones'), 'holidays');
+  assert.deepEqual(MAK.parseFoodPage('<p>nada</p>'), []);
+  assert.equal(MAK.libraryUrl('https://www.unavarra.es/restauracion/sugerencias'), null);
+});
+
 test('parseBoardList and isHoursNotice: the notices with their date, and only the ones about hours of the campus', () => {
   const { items, years } = MAK.parseBoardList(F.BOARD);
   assert.equal(items.length, 5);
@@ -128,6 +144,9 @@ test('openState: open until when, or closed and when it opens (also after a week
   assert.deepEqual(state(at(2026, 10, 24, 12)), [false, 'Mon Oct 26 2026 08:00'], 'a Saturday');
   assert.equal(MAK.openState(() => null, at(2026, 10, 24)), null, 'not known today');
   assert.deepEqual(MAK.openState((ms) => (ms > at(2026, 10, 24, 23) ? null : { closed: true }), at(2026, 10, 24, 12)), { open: false, at: 0 }, 'closed, the next days not known');
+  const holidays = (ms) => (new Date(ms).getMonth() === 7 ? { closed: true } : { hours: '9:00–19:00' }); // closed all August
+  assert.equal(MAK.openState(holidays, at(2026, 8, 10, 12)).at, 0, 'two weeks by default');
+  assert.equal(new Date(MAK.openState(holidays, at(2026, 8, 10, 12), 75).at).toString().slice(0, 21), 'Tue Sep 01 2026 09:00', 'more days');
 });
 
 test('loadLibrary and libraryToday: the notices that did not end, of the campus; the hours of today', async () => {
@@ -182,6 +201,7 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
 
   // The sports facilities and the pool, for all the campuses.
   assert.deepEqual([april.sports.url, april.sports.access.lines.length, april.sports.pool.week[0], april.partial], [MAK.SPORTS_HOURS, 3, { closed: true }, false]);
+  assert.deepEqual(april.food.places.map((p) => p.name), ['Cafetería Aulario', 'Cafetería El Sario', 'Edificio comedores'], 'the places of the campus');
 
   // A campus that does not exist: Arrosadía. A page that fails: the other one, "partial". No page: an error.
   assert.equal((await load('mars', at(2026, 4, 15))).campus, 'arrosadia');
