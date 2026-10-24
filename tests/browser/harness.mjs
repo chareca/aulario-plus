@@ -287,6 +287,35 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { opened: ['true', false], after: 'false' });
   });
 
+  await test('the popup: the tab of before when it opens again within a minute after it closed, else Inicio', async (open) => {
+    const tab = await open('popup.html');
+    const selected = () => run(tab, `
+      await until(() => document.querySelector('nav.tabs [aria-selected="true"]'), 'the tabs');
+      return document.querySelector('nav.tabs [aria-selected="true"]').dataset.tab;
+    `);
+    const go = async (page) => {
+      await tab.evaluate('window.__old = true');
+      await tab.navigate(url(page));
+      if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete'"))) throw new Error(`${page} did not load`);
+    };
+    // The time of the last tab: a minute ago and more (as if it was so long ago).
+    const old = (tab2) => `localStorage.setItem('mak-popup-tab', JSON.stringify({ tab: ${JSON.stringify(tab2)}, at: Date.now() - 61000 }))`;
+    await tab.evaluate("localStorage.removeItem('mak-popup-tab')");
+    await go('popup.html');
+    const first = await selected();
+    await run(tab, `document.getElementById('tabbtn-grades').click();`);
+    await tab.evaluate(old('grades')); // open on "Notas" for more than a minute: the minute starts when it closes
+    await go('popup.html');
+    const back = await selected();
+    await go('_locales/es/messages.json'); // closed
+    await tab.evaluate(old('grades')); // more than a minute ago
+    await go('popup.html');
+    const late = await selected();
+    await tab.evaluate(`localStorage.setItem('mak-popup-tab', JSON.stringify({ tab: '__proto__', at: Date.now() }))`);
+    await go('popup.html');
+    assert.deepEqual([first, back, late, await selected()], ['home', 'grades', 'home', 'home']);
+  });
+
   await test('the popup: a window acts once, also with a second click while it shrinks', async (open) => {
     const tab = await open('popup.html');
     const got = await run(tab, `

@@ -48,9 +48,25 @@ const panels = {
 };
 let current = 'home';
 
+// The tab of before when the popup opens again less than a minute after it closed (each opening starts the minute
+// again), else the main one. In localStorage: a closing popup has no time for the storage of the extension.
+const LAST_TAB = 'mak-popup-tab';
+const rememberTab = () => {
+  try { localStorage.setItem(LAST_TAB, JSON.stringify({ tab: current, at: Date.now() })); } catch {}
+};
+function lastTab() {
+  try {
+    const v = JSON.parse(localStorage.getItem(LAST_TAB));
+    return v && Object.hasOwn(panels, v.tab) && Date.now() - v.at < MAK.MINUTE ? v.tab : 'home';
+  } catch {
+    return 'home';
+  }
+}
+
 function selectTab(name) {
-  if (!panels[name]) name = 'home';
+  if (!Object.hasOwn(panels, name)) name = 'home';
   current = name;
+  rememberTab();
   if (ui.query) setQuery('');
   for (const btn of document.querySelectorAll('nav.tabs [role="tab"]')) {
     btn.setAttribute('aria-selected', String(btn.dataset.tab === name));
@@ -78,7 +94,11 @@ function renderCurrent() {
   const open = new Set(keyed().filter(([, d]) => d.open).map(([k]) => k));
   // The button under the pointer is a new one: it takes the hover at once, without the slow change of its colors
   // (else they come again: a flicker). Until the browser gives it the hover (mouseover) and draws it, or a moment.
-  const go = MAK.holdStill(panel);
+  const still = MAK.holdStill(panel);
+  const go = () => {
+    panel.removeEventListener('mouseover', go); // also after the moment: else a listener for each drawing stays
+    still();
+  };
   panel.addEventListener('mouseover', go, { once: true });
   setTimeout(go, 300);
   panels[current].render(panel);
@@ -1599,11 +1619,14 @@ async function init() {
     checkPermissions();
   });
   recordGranted = await Promise.resolve(ext.permissions.contains(MAK.RECORD_PERMISSION)).catch(() => false);
-  // The popup opens on the main menu (Inicio), or on the tab of ?tab=.
+  // The popup opens on the tab of ?tab=, else on the tab of before (lastTab), else on the main menu (Inicio). The minute
+  // starts when it closes.
   const asked = new URLSearchParams(location.search).get('tab');
   renderHeader();
   renderWhatsNew(); // not in renderHeader (every second): its buttons would change under the mouse
-  selectTab(asked && panels[asked] ? asked : 'home');
+  selectTab(asked && Object.hasOwn(panels, asked) ? asked : lastTab());
+  addEventListener('pagehide', rememberTab);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) rememberTab(); });
   checkPermissions();
   refreshStatus();
   showRecordNews();

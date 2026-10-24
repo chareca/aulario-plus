@@ -52,6 +52,7 @@
         'Cuando la biblioteca publica un horario especial, una ventana te lo cuenta en una línea una sola vez (por ejemplo, «Fines de semana y festivos, 18 de abril – 14 de junio: 9:00–22:45»), aunque falten días para que empiece.',
         'Organiza las secciones de Mi sitio con el botón de la cabecera de Aulario Plus: en el orden que quieras, una debajo de otra, en columnas o una a un lado y dos al otro. Arrastra una sección a otro hueco o pulsa dos para cambiarlas, y quita con ✕ las que no uses (con + vuelven). Con poco ancho (media pantalla, móvil), van una debajo de otra.',
         '«Exámenes finales» también se pliega con su flecha, como las demás secciones.',
+        'Si vuelves a abrir el popup antes de que pase un minuto desde que lo cerraste, se abre en la pestaña donde estabas; si pasa más tiempo, en Inicio.',
         'Todo lo que se despliega y se pliega (las secciones de Mi sitio, el bloque, los semestres, las guías, los avisos del popup) lo hace con una animación corta, y las ventanas pequeñas (cambiar el nombre de una asignatura, elegir a qué profesor escribir, las preguntas) se abren con un pequeño rebote y se cierran encogiéndose; sin animaciones si tu sistema pide reducir el movimiento.'
       ],
       en: [
@@ -60,6 +61,7 @@
         'When the library publishes special hours, a window tells you in one line, only once (for example, "Weekends and holidays, April 18 – June 14: 9:00–22:45"), even days before they start.',
         'Arrange the sections of Mi sitio with the button in the head of Aulario Plus: in the order you like, one below the other, in columns, or one on one side and two on the other. Drag a section to another place or click two to swap them, and take out with ✕ the ones you do not use (+ brings them back). With little width (half a screen, a phone), they go one below the other.',
         '"Exámenes finales" also folds with its arrow, as the other sections.',
+        'If you open the popup again less than a minute after you closed it, it opens on the tab where you were; after that, on Home.',
         'Everything that unfolds and folds (the sections of Mi sitio, the block, the semesters, the guides, the announcements of the popup) does it with a short animation, and the small windows (renaming a subject, choosing the teacher to write to, the questions) open with a small bounce and close shrinking; no animations if your system asks for reduced motion.'
       ]
     },
