@@ -8,6 +8,7 @@
   const MAK = (root.MAK = root.MAK || {});
 
   MAK.LIBRARY_MS = 12 * MAK.HOUR;
+  MAK.NOTICE_LEAD = 7; // a notice is shown from these days before its first day with other hours
   // The form of the kept hours (storage "library"): another form (an older version) is read again at once.
   MAK.LIBRARY_FORM = 3;
   MAK.LIBRARY_BOARD = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
@@ -428,13 +429,44 @@
     return months.length && legend.length ? { legend, months: months.slice(0, 12) } : null;
   };
 
+  // The period of a calendar: from its first day with other hours than the usual ones of its day of the week (week) to
+  // the day after its last one ({ from, to }); null without one. A day closed on a weekend that is always closed does not
+  // count. Without the usual hours: every day with a color of the legend.
+  function calendarPeriod(cal, week) {
+    let from = 0;
+    let to = 0;
+    for (const x of cal.months) {
+      x.days.forEach((i, k) => {
+        const l = cal.legend[i];
+        if (!l) return;
+        const date = new Date(x.y, x.m, k + 1);
+        const u = week && week[date.getDay()];
+        if (u && !!u.closed === !!l.closed && (l.closed || u.hours === l.hours)) return;
+        if (!from || date.getTime() < from) from = date.getTime();
+        to = Math.max(to, new Date(x.y, x.m, k + 2).getTime());
+      });
+    }
+    return from ? { from, to } : null;
+  }
+
+  // The notices shown on a day: from MAK.NOTICE_LEAD days before their first day to their last day; a notice without
+  // dates, 90 days after it was published.
+  MAK.visibleNotices = function (data, when = Date.now()) {
+    const day = startOfDay(when);
+    return ((data && data.notices) || []).filter((n) => {
+      if (!n.from) return when - n.date <= 90 * MAK.DAY;
+      const f = new Date(n.from);
+      return new Date(f.getFullYear(), f.getMonth(), f.getDate() - MAK.NOTICE_LEAD).getTime() <= day && day < n.to;
+    });
+  };
+
   // ---- All of it -------------------------------------------------------------------------------------------------
 
   // The hours of the library for a campus and of the sports facilities: getText(url) and getBytes(url) read the pages and
   // the PDF files (the background checks the addresses). { at, campus, partial (a page failed), page: { url, lines,
   // week } or null, notices: [{ title, date, url, blocks, pdf, cal, from, to }], sports: { url, access, pool } or null }:
   // the notices of the last year about hours, of the campus, that did not end (a notice without dates: 90 days), at most
-  // 4, the first one first. An error when no page answers.
+  // 4, the first one first (MAK.visibleNotices: the ones to show on a day). An error when no page answers.
   MAK.loadLibrary = async function ({ campus, getText, getBytes, now = Date.now() }) {
     const key = Object.hasOwn(MAK.LIBRARY_CAMPUSES, campus) ? campus : 'arrosadia';
     const c = MAK.LIBRARY_CAMPUSES[key];
@@ -468,7 +500,7 @@
       }
       const rules = cal ? null : MAK.noticeRules(n.blocks, it.date);
       const period = cal
-        ? { from: new Date(cal.months[0].y, cal.months[0].m, 1).getTime(), to: new Date(cal.months.at(-1).y, cal.months.at(-1).m + 1, 1).getTime() }
+        ? calendarPeriod(cal, page && page.week) || { from: new Date(cal.months[0].y, cal.months[0].m, 1).getTime(), to: new Date(cal.months.at(-1).y, cal.months.at(-1).m + 1, 1).getTime() }
         : rules || MAK.noticePeriod(n.text, it.date);
       if (period ? period.to <= today : now - it.date > 90 * MAK.DAY) continue;
       notices.push({ title: it.title, date: it.date, url: it.url, blocks: n.blocks, pdf: n.pdf, cal, rules: rules && { rules: rules.rules, weekly: rules.weekly }, from: period ? period.from : 0, to: period ? period.to : 0 });
@@ -494,7 +526,7 @@
     // A day of a notice with the usual hours of its day of the week: also "usual".
     const of = (x, n) => Object.assign({ hours: x.hours, closed: x.closed, notice: n.title },
       usual && usual.closed === !!x.closed && (x.closed || usual.hours === x.hours) ? { usual: true } : {});
-    for (const n of data.notices || []) {
+    for (const n of MAK.visibleNotices(data, when)) {
       const month = n.cal && n.cal.months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
       const l = month && n.cal.legend[month.days[d.getDate() - 1]];
       if (l) return of(l, n);

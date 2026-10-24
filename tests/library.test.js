@@ -164,6 +164,12 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   const april = await load('arrosadia', at(2026, 4, 15));
   assert.deepEqual(april.notices.map((n) => n.title), ['Horario especial de época de exámenes: 18 ABRIL-14 JUNIO']);
   assert.ok(april.notices[0].cal && april.notices[0].pdf.endsWith('_arrosadia.pdf'));
+  // The period of the calendar: its days with other hours (18 April to 10 May), not its months, not the closed weekends.
+  const exams = april.notices[0];
+  assert.deepEqual([new Date(exams.from).toDateString(), new Date(exams.to).toDateString()], [new Date(2026, 3, 18).toDateString(), new Date(2026, 4, 11).toDateString()]);
+  // Shown from 7 days before (11 April) to its last day (10 May).
+  assert.deepEqual([[4, 10], [4, 11], [5, 10], [5, 11]].map(([m, d]) => MAK.visibleNotices(april, at(2026, m, d)).length), [0, 1, 1, 0]);
+  assert.deepEqual(MAK.libraryToday(april, at(2026, 5, 16)), { hours: '', closed: true, usual: true }, 'after it: the usual hours (a Saturday)');
   assert.ok(asked.every((u) => MAK.libraryUrl(u) === u), 'only addresses of the library');
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 18)), { hours: '9:00–22:45', closed: false, notice: 'Horario especial de época de exámenes: 18 ABRIL-14 JUNIO' });
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 15)), { hours: '8:00–21:00', closed: false, notice: april.notices[0].title, usual: true }, 'the blue of the legend: the usual hours of a Wednesday');

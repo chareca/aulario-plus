@@ -209,10 +209,11 @@
       : known.map((x) => h('span', { class: `count hr-chip${x.state && x.state.open ? ' ok' : ' hot'}` }, MAK.icon(x.icon),
         `${t(`lib.short.${x.k}`)} · ${chipText(x.today, now)}`)));
     const week = data.page ? data.page.week : null;
+    const notices = MAK.visibleNotices(data, now);
     const library = card({
       icon: 'book', title: t('lib.libraryTitle'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), state: parts[0].state, today: parts[0].today, now,
       lines: data.page ? data.page.lines : null,
-      more: [data.page ? null : h('p', { text: t('lib.libraryError') }), data.notices.map((n) => notice(n, week, now))]
+      more: [data.page ? null : h('p', { text: t('lib.libraryError') }), notices.map((n) => notice(n, week, now))]
     });
     const sportsCards = data.sports
       ? [parts[1], parts[2]].filter((x) => sports[x.k]).map((x) => card({ icon: x.icon, title: t(`lib.${x.k}`), place: t('lib.sportsPlace'), state: x.state, today: x.today, now, lines: sports[x.k].lines }))
@@ -239,7 +240,7 @@
     MAK.fill(p.content,
       res.error ? h('p', { class: 'meta', text: t('lib.stale', { date: MAK.formatDate(data.at) }) }) : null,
       h('p', { class: 'hr-date meta', text: longDate(now) }),
-      h('div', { class: `hr-cards${data.notices.length ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, side)));
+      h('div', { class: `hr-cards${notices.length ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, side)));
   }
 
   async function run() {

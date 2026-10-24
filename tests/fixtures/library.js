@@ -53,8 +53,11 @@ function canvaPdf(pages) {
   return Buffer.from(`%PDF-1.4\n%\xe2\xe3\xcf\xd3\n${body}trailer\n<< /Root 1 0 R >>\n%%EOF\n`, 'latin1');
 }
 
-// A month: its title, the legend and the days in a grid (green: the days in "green"; red: in "red"; grey: before "from").
+// A month: its title, the legend and the days in a grid (green: the days in "green"; red: in "red" and the other weekends,
+// as in the real ones; grey: before "from").
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 function month(name, year, count, { green = [], red = [], from = 1, form = true, splitLegend = false } = {}) {
+  const weekend = (d) => [0, 6].includes(new Date(year, MONTHS.indexOf(name), d).getDay());
   const legend = splitLegend
     ? [{ text: 'biblioteca / liburutegia', rgb: BLUE }, { text: '8:00 - 21:00 h.', rgb: BLUE }, { text: 'biblioteca / liburutegia', rgb: GREEN }, { text: '9:00 - 22:45 h.', rgb: GREEN }]
     : [{ text: 'biblioteca / liburutegia: 8:00 - 21:00 h.', rgb: BLUE }, { text: 'biblioteca / liburutegia: 9:00 - 22:45 h.', rgb: GREEN }];
@@ -67,7 +70,7 @@ function month(name, year, count, { green = [], red = [], from = 1, form = true,
     { text: '8:00 - 14:45 H.', rgb: [0, 0, 0], x: 940, y: 640, form },
     ...Array.from({ length: count }, (_, i) => {
       const d = i + 1;
-      const rgb = green.includes(d) ? GREEN : red.includes(d) ? RED : d < from ? GREY : BLUE_DAY;
+      const rgb = green.includes(d) ? GREEN : red.includes(d) ? RED : d < from ? GREY : weekend(d) ? RED : BLUE_DAY;
       return { text: String(d), rgb, x: 90 + (i % 7) * 95, y: 560 + Math.floor(i / 7) * 85, form };
     })
   ];
