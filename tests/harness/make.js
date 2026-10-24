@@ -98,6 +98,18 @@ const libs = [.../importScripts\(([^)]*)\)/.exec(background)[1].matchAll(/'([^']
 
 const mock = `// Mock extension API for the test harness. Do not ship this file.
 (function () {
+  // ?now=2026-04-18T11:00: the page (and the background in it) at another time.
+  try {
+    const fake = new URLSearchParams(location.search).get('now');
+    if (fake && !Number.isNaN(Date.parse(fake))) {
+      const Real = Date;
+      const shift = Real.parse(fake) - Real.now();
+      window.Date = class extends Real {
+        constructor(...a) { super(...(a.length ? a : [Real.now() + shift])); }
+        static now() { return Real.now() + shift; }
+      };
+    }
+  } catch {}
   const ROUTES = ${JSON.stringify(routes)};
   const MANIFEST = ${fs.readFileSync(path.join(ROOT, 'extension', 'manifest.chromium.json'), 'utf8').trim()};
   const listeners = { message: [], storage: [], installed: [], startup: [], alarm: [] };
