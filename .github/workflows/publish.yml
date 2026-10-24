@@ -2,7 +2,7 @@ name: Publish to the stores
 
 # A published release of GitHub (tag vX.Y.Z) sends the same version to the Chrome Web Store
 # and to Firefox Add-ons (AMO). Each store does its review before the users get the version.
-# AMO is paused: see the job "firefox".
+# A run by hand can send a tag to one store only ("store"), for example again after a failed upload.
 # A store without its secrets is skipped. To examine the keys without an upload, run the
 # workflow by hand with "check". The jobs with the keys run in the environment "stores": only the
 # branch main and the tags v* reach it. The keys are secrets of the repository (one maintainer);
@@ -16,6 +16,11 @@ on:
       tag:
         description: The tag of the release (for example v1.6.2). Not necessary with "check".
         required: false
+      store:
+        description: The stores of a run by hand
+        type: choice
+        options: [both, chrome, firefox]
+        default: both
       check:
         description: Only examine the keys of the stores (no build, no upload)
         type: boolean
@@ -134,6 +139,7 @@ jobs:
           retention-days: 30
 
   chrome:
+    if: ${{ inputs.store != 'firefox' }}
     needs: build
     runs-on: ubuntu-latest
     environment: stores
@@ -159,8 +165,7 @@ jobs:
         run: scripts/cws.sh publish "dist/aulario-plus-chromium-$TAG.zip"
 
   firefox:
-    # Paused (2026-10-21): no new version to AMO until it accepts the first one. To send them again, remove this line.
-    if: false
+    if: ${{ inputs.store != 'chrome' }}
     needs: build
     runs-on: ubuntu-latest
     environment: stores
