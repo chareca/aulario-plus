@@ -1166,23 +1166,26 @@ function recordSection() {
 
 // A window over the popup: a title, its content and buttons [{ text, primary, click }]. A button closes it,
 // and so do Escape and a click outside the window (as "Cancel": no button acts). It comes with a bounce and goes with
-// a short shrink (MAK.popIn, MAK.popOut).
+// a short shrink (MAK.popIn, MAK.popOut); while it shrinks, its buttons do nothing (a double click acts once).
 function dialog(title, body, buttons) {
   let stop = null;
-  const shut = () => {
-    if (stop) stop();
-    stop = null;
+  let shut = false;
+  const close = () => {
+    if (shut) return false;
+    shut = true;
+    stop();
     if (!MAK.calmMotion()) box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
     MAK.popOut(win, () => box.remove());
+    return true;
   };
   const win = h('div', { class: 'dialog', attrs: { role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title } },
     h('h2', { text: title }), body,
     h('div', { class: 'row' }, buttons.map((b) => h('button', { class: b.primary ? 'btn primary' : 'btn', attrs: { type: 'button' }, text: b.text,
-      on: { click: () => { shut(); if (b.click) b.click(); } } }))));
+      on: { click: () => { if (close() && b.click) b.click(); } } }))));
   const box = h('div', { class: 'dialog-backdrop' }, win);
-  box.addEventListener('mousedown', (e) => { if (e.target === box) shut(); });
+  box.addEventListener('mousedown', (e) => { if (e.target === box) close(); });
   document.body.append(box);
-  stop = MAK.escCloses(box, shut);
+  stop = MAK.escCloses(box, close);
   if (!MAK.calmMotion()) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
   MAK.popIn(win, 'center 30%');
   box.querySelector('button').focus();

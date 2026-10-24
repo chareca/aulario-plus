@@ -221,7 +221,11 @@ async function readLibrary(campus) {
       return bytes;
     }
   });
-  await store.set({ library: data });
+  // Another campus chosen during the reading: its hours stay (a later reading of this one would replace them).
+  await store.transaction(async (tx) => {
+    const { settings } = await tx.get('settings');
+    if (MAK.withDefaults(settings).libraryCampus === campus) await tx.set({ library: data });
+  });
   return data;
 }
 
@@ -234,7 +238,10 @@ async function libraryHours() {
   const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
   if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
   try {
-    if (!libraryReading || libraryReading.campus !== campus) libraryReading = { campus, promise: readLibrary(campus).finally(() => { libraryReading = null; }) };
+    if (!libraryReading || libraryReading.campus !== campus) {
+      const reading = { campus, promise: readLibrary(campus).finally(() => { if (libraryReading === reading) libraryReading = null; }) };
+      libraryReading = reading;
+    }
     return { data: await libraryReading.promise };
   } catch {
     libraryFailed = Date.now();

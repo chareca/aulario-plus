@@ -192,6 +192,11 @@
         more)));
   }
 
+  // The cards follow the clock (open, closed, a new day): drawn again at the next change, which a check of each minute
+  // finds (also after the computer sleeps, when a long timer would be late). shown: the answer drawn last.
+  let shown = null;
+  let due = Infinity;
+  let tick = 0;
   function draw(res) {
     const p = frame();
     if (!p) return;
@@ -212,6 +217,13 @@
     };
     // The cafeterias: also after the holidays of the summer.
     const parts = [['library', 'book'], ['access', 'dumbbell'], ['pool', 'pool'], ['food', 'coffee']].map(([k, icon]) => ({ k, icon, today: dayOf[k](now), state: MAK.openState(dayOf[k], now, k === 'food' ? 75 : 14) }));
+    const day = new Date(now);
+    due = Math.min(new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime(), ...parts.map((x) => (x.state && x.state.at > now ? x.state.at : Infinity)));
+    shown = res;
+    tick = tick || setInterval(() => {
+      if (!MAK.extensionAlive()) clearInterval(tick);
+      else if (Date.now() >= due) draw(shown);
+    }, MAK.MINUTE);
     // The head: the hours of today of each one (green: open now; red: closed now), or one word when the three are closed today.
     const known = parts.filter((x) => x.today);
     MAK.fill(p.chips, known.length === parts.length && known.every((x) => x.today.closed)

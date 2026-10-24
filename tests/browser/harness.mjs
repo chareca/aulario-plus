@@ -270,5 +270,37 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { out: [true, 'none', false, '2'], back: [false, '3', '3', 'arrosadia'] });
   });
 
+  await test('Mi sitio: folding the block folds the panel of the sections too', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await load(tab);
+    const got = await run(tab, `
+      await until(() => document.getElementById('mak-block-body') && document.getElementById('mak-block-body').dataset.shape, 'the block');
+      const organize = document.querySelector('#mak-block .mak-organize');
+      const panel = document.getElementById('mak-layout-host');
+      organize.click();
+      const opened = [organize.getAttribute('aria-expanded'), panel.hidden];
+      document.querySelector('#mak-block .mak-head .mak-fold').click();
+      await until(() => panel.hidden && document.getElementById('mak-block-body').hidden, 'the folds');
+      return { opened, after: organize.getAttribute('aria-expanded') };
+    `);
+    assert.deepEqual(got, { opened: ['true', false], after: 'false' });
+  });
+
+  await test('the popup: a window acts once, also with a second click while it shrinks', async (open) => {
+    const tab = await open('popup.html');
+    const got = await run(tab, `
+      await until(() => typeof dialog === 'function' && document.body, 'the popup');
+      let count = 0;
+      dialog('Prueba', document.createElement('p'), [{ text: 'No' }, { text: 'Sí', primary: true, click: () => count++ }]);
+      const yes = [...document.querySelectorAll('.dialog button')].find((b) => b.textContent === 'Sí');
+      yes.click();
+      yes.click();
+      await until(() => !document.querySelector('.dialog-backdrop'), 'the window gone');
+      return count;
+    `);
+    assert.equal(got, 1);
+  });
+
   return results;
 }

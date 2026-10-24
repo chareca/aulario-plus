@@ -288,6 +288,24 @@ test('libraryHours: the hours of the library of the campus of the settings, kept
   assert.deepEqual(await bg.send({ type: 'libraryHours' }, CONTENT()), { error: 'library.network', fresh: [] }, 'no hours of another campus');
 });
 
+test('libraryHours: another campus during a reading: the slow reading of the campus before does not replace the new one', async () => {
+  const routes = require('./fixtures/library').routes();
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const fetch = async (url) => {
+    if (/Campus\+de\+Tudela/.test(String(url))) await gate; // the reading of Tudela waits on its page
+    return routes[String(url)] === undefined ? new Response('no', { status: 404 }) : new Response(routes[String(url)], { status: 200 });
+  };
+  const bg = loadBackground({ fetch, local: { settings: { libraryCampus: 'tudela' } } });
+  const tudela = bg.send({ type: 'libraryHours' }, CONTENT());
+  await new Promise((r) => setTimeout(r, 20));
+  await bg.ext.storage.local.set({ settings: { libraryCampus: 'salud' } });
+  assert.equal((await bg.send({ type: 'libraryHours' }, CONTENT())).data.campus, 'salud');
+  release();
+  assert.equal((await tudela).data.campus, 'tudela', 'the tab that asked for Tudela gets it');
+  assert.equal((await bg.ext.storage.local.get('library')).library.campus, 'salud', 'kept: the campus of the settings');
+});
+
 test('libraryHours: the notices that a campus did not show yet, once each (also two tabs at once)', async () => {
   const routes = require('./fixtures/library').routes();
   const fetch = async (url) => (routes[String(url)] === undefined ? new Response('no', { status: 404 }) : new Response(routes[String(url)], { status: 200 }));

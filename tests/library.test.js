@@ -216,6 +216,8 @@ test('pdfTextRuns: the text of a PDF of Canva (Identity-H, ToUnicode, forms, hex
     '3 0 obj << /Subtype /Form /Length 5 /Resources << /XObject << /X 3 0 R >> >> >>\nstream\n/X Do\nendstream endobj\n' +
     '4 0 obj << /Type /Font /Subtype /Type0 /ToUnicode 5 0 R >> endobj\n' +
     `5 0 obj << >>\nstream\nbeginbfrange\n${'<0000> <FFFF> <0041>\n'.repeat(2000)}endbfrange\n${'1 '.repeat(100000)}\nendstream endobj\n`));
+  // A tree of pages that names itself in its /Kids (before: it never ended).
+  await MAK.pdfTextRuns(latin(`%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [${'2 0 R '.repeat(10)}] >> endobj\n`));
   assert.ok(Date.now() - start < 2000, `${Date.now() - start} ms`);
 });
 

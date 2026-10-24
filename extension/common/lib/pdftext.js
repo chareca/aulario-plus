@@ -330,11 +330,14 @@
       return out;
     };
 
-    // The pages in their order: the tree of /Pages from the catalog; else the objects /Page.
+    // The pages in their order: the tree of /Pages from the catalog; else the objects /Page. Each node once (a broken
+    // tree that names itself in its /Kids would never end).
     const pages = [];
+    const walked = new Set();
     const walk = (node, inherited, depth) => {
       const d = get(node);
-      if (!d || depth > 20 || pages.length > 500) return;
+      if (!d || walked.has(d) || depth > 20 || pages.length > 500) return;
+      walked.add(d);
       const res = d.Resources || inherited;
       if (d.Type === '/Page') pages.push({ d, res });
       else if (Array.isArray(get(d.Kids))) for (const kid of get(d.Kids)) walk(kid, res, depth + 1);

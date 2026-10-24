@@ -362,6 +362,7 @@
     const fold = MAK.foldButton(!closed, { open: MAK.t('block.open'), close: MAK.t('block.close') }, (open) => {
       closed = !open;
       if (open) block.classList.remove('mak-closed');
+      else if (organize.getAttribute('aria-expanded') === 'true') organize.click(); // the panel of arrange folds too
       MAK.fold(body, open, () => block.classList.toggle('mak-closed', closed)); // the head loses its line after the fold
       MAK.uiSave(BLOCK_CLOSED, closed);
     });
