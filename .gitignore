@@ -15,3 +15,4 @@ store/
 RESEARCH.md
 SECURITY_AUDIT.md
 site/
+node_modules/

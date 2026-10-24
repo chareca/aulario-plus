@@ -1,13 +1,10 @@
 // The tests that need a real DOM (the readers of the MiAulario pages) and the whole pages of the extension
 // (harness.mjs). They run in a headless Chromium with synthetic pages, without network and without a session.
+// The same tests in Firefox: firefox/run.mjs.
 // Usage: node tests/browser/run.mjs   (exit code 0: all tests passed; 2: no browser)
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { findChrome, launch } from './cdp.mjs';
-import { runHarness } from './harness.mjs';
+import { runSuite, report } from './suite.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
 const chrome = findChrome();
 if (!chrome) {
   console.log('No Chromium browser: the browser tests did not run. Set CHROME_PATH, or install the Chrome for Testing of Playwright.');
@@ -16,17 +13,7 @@ if (!chrome) {
 const browser = await launch({ chrome });
 let failed = 0;
 try {
-  const tab = await browser.openTab(pathToFileURL(join(here, 'index.html')).href);
-  if (!(await browser.waitFor(tab, 'window.__done === true', 20000))) throw new Error('The tests did not end in 20 seconds');
-  const results = await tab.evaluate('window.__results');
-  // The whole pages of the extension (tests/harness/out).
-  execFileSync(process.execPath, [join(here, '..', 'harness', 'make.js')], { stdio: 'ignore' });
-  results.push(...(await runHarness(browser, join(here, '..', 'harness', 'out'))));
-  for (const r of results) {
-    console.log(`${r.ok ? 'ok    ' : 'FAILED'} ${r.name}${r.ok ? '' : `\n       ${r.error}`}`);
-    if (!r.ok) failed++;
-  }
-  console.log(`${results.length - failed} passed, ${failed} failed`);
+  failed = report(await runSuite(browser));
 } finally {
   browser.close();
 }

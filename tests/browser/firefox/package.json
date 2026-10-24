@@ -1,0 +1,9 @@
+{
+  "name": "aulario-plus-firefox-tests",
+  "private": true,
+  "type": "module",
+  "description": "The browser tests of tests/browser in the engine of Firefox (Playwright): run.mjs",
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  }
+}
