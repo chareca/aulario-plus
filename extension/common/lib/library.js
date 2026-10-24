@@ -87,7 +87,9 @@
   const TIME = /(\d{1,2})[:.](\d{2})\s*(?:-|–|a)\s*(\d{1,2})[:.](\d{2})/;
   const hoursOf = (text) => {
     const m = TIME.exec(String(text));
-    return m ? `${Number(m[1])}:${m[2]}–${Number(m[3])}:${m[4]}` : '';
+    if (m) return `${Number(m[1])}:${m[2]}–${Number(m[3])}:${m[4]}`;
+    const h = /(\d{1,2})\s*h\b\.?\s*(?:-|–|a)\s*(\d{1,2})\s*h\b/.exec(String(text)); // "de 9h. a 21h."
+    return h ? `${Number(h[1])}:00–${Number(h[2])}:00` : '';
   };
 
   // The days that a text names: "Del 1 de julio al 31 de agosto", "abril: 18, 19 y 26", "24, 25 y 31 de dic. y 1 de
@@ -113,6 +115,63 @@
     }
     if (!days.length) return null;
     return { from: Math.min(...days), to: Math.max(...days) + MAK.DAY };
+  };
+
+  // The days that a line of a notice names, as spans { from, to } (to: the day after): ranges ("Del 1 de julio al 31 de
+  // agosto", "del 6 al 10 de julio", "A partir del sábado 22 de noviembre y hasta el domingo 18 de enero") and single days
+  // ("13 y 14 de julio", "abril: 18, 19 y 26", "24, 25 y 31 de dic. y 1 de enero").
+  function spansIn(line, pub) {
+    const day = (d, month, year) => {
+      if (month < 0 || Number(d) < 1 || Number(d) > 31) return NaN;
+      const t = new Date(year ? Number(year) : pub.getFullYear() + (month < pub.getMonth() - 2 ? 1 : 0), month, Number(d));
+      return t.getMonth() === month ? t.getTime() : NaN;
+    };
+    const out = [];
+    const add = (from, to) => { if (from && to && from <= to) out.push({ from, to: to + MAK.DAY }); };
+    const W = `(${MONTH_WORDS})\\b\\.?`;
+    let s = fold(line);
+    s = s.replace(new RegExp(`\\b(?:del?|desde el|a partir del?)\\s+(?:[a-z]+\\s+)?(\\d{1,2})(?:\\s+de\\s+${W})?(?:\\s+de\\s+(20\\d\\d))?\\s+(?:y\\s+)?(?:al|a|hasta(?:\\s+el)?)\\s+(?:[a-z]+\\s+)?(\\d{1,2})\\s+de\\s+${W}(?:\\s+de\\s+(20\\d\\d))?`, 'g'),
+      (all, d1, m1, y1, d2, m2, y2) => {
+        const end = day(d2, monthIndex(m2), y2);
+        add(day(d1, monthIndex(m1 || m2), y1 || y2), end);
+        return ' ';
+      });
+    const single = (list, m, y) => { for (const d of list.match(/\d{1,2}/g) || []) { const t = day(d, monthIndex(m), y); add(t, t); } };
+    for (const m of s.matchAll(new RegExp(`(\\d{1,2})((?:\\s*(?:,|y)\\s*\\d{1,2})*)\\s+(?:de\\s+)?${W}(?:\\s+(?:de\\s+)?(20\\d\\d))?`, 'g'))) single(m[1] + m[2], m[3], m[4]);
+    for (const m of s.matchAll(new RegExp(`\\b${W}\\s*:\\s*(\\d{1,2}(?:\\s*(?:,|y)\\s*\\d{1,2})*)`, 'g'))) single(m[2], m[1]);
+    return out;
+  }
+
+  // The hours of a notice in words (the blocks of the campus, MAK.parseNotice): rules { from, to, hours, closed, days }
+  // (days: only those days of the week; null: all) and the days of the week of the whole notice ("Sábados, domingos y
+  // festivos permanecerán cerradas": weekly). A line with days and hours (or "cerrado") is a rule; a line with only days
+  // takes the hours of the next line with only hours (a row of a table); a line with days and no hours ("los préstamos ...
+  // hasta el 13 de abril") is not about hours. { rules, weekly, from, to } or null.
+  MAK.noticeRules = function (blocks, published) {
+    const pub = new Date(published);
+    const rules = [];
+    const weekly = [];
+    for (const b of blocks || []) {
+      let waiting = [];
+      for (const line of b.lines) {
+        const spans = spansIn(line, pub);
+        const closed = /cerrad/i.test(line);
+        const hours = closed ? '' : hoursOf(line);
+        const weekends = /fines? de semana/i.test(line) ? [0, 6] : null;
+        if (spans.length) {
+          const list = spans.map((x) => Object.assign(x, { days: weekends }));
+          if (closed || hours) rules.push(...list.map((x) => Object.assign(x, { hours, closed })));
+          else waiting.push(...list);
+        } else if (closed || hours) {
+          const days = [...weekdays(line)];
+          if (days.length) weekly.push({ days, hours, closed });
+          else if (waiting.length) rules.push(...waiting.map((x) => Object.assign(x, { hours, closed })));
+          waiting = [];
+        }
+      }
+    }
+    if (!rules.length) return null;
+    return { rules: rules.slice(0, 60), weekly: weekly.slice(0, 7), from: Math.min(...rules.map((r) => r.from)), to: Math.max(...rules.map((r) => r.to)) };
   };
 
   // ---- The pages -------------------------------------------------------------------------------------------------
@@ -343,11 +402,12 @@
           cal = MAK.libraryCalendar(await MAK.pdfTextRuns(await getBytes(n.pdf)));
         } catch {}
       }
+      const rules = cal ? null : MAK.noticeRules(n.blocks, it.date);
       const period = cal
         ? { from: new Date(cal.months[0].y, cal.months[0].m, 1).getTime(), to: new Date(cal.months.at(-1).y, cal.months.at(-1).m + 1, 1).getTime() }
-        : MAK.noticePeriod(n.text, it.date);
+        : rules || MAK.noticePeriod(n.text, it.date);
       if (period ? period.to <= today : now - it.date > 90 * MAK.DAY) continue;
-      notices.push({ title: it.title, date: it.date, url: it.url, blocks: n.blocks, pdf: n.pdf, cal, from: period ? period.from : 0, to: period ? period.to : 0 });
+      notices.push({ title: it.title, date: it.date, url: it.url, blocks: n.blocks, pdf: n.pdf, cal, rules: rules && { rules: rules.rules, weekly: rules.weekly }, from: period ? period.from : 0, to: period ? period.to : 0 });
       if (notices.length >= 4) break;
     }
     notices.sort((a, b) => (a.from || a.date) - (b.from || b.date));
@@ -365,15 +425,33 @@
     if (!data) return null;
     const d = new Date(when);
     const day = startOfDay(when);
+    const usual = data.page ? MAK.weekToday(data.page.week, when) : null;
+    // A day of a notice with the usual hours of its day of the week: also "usual".
+    const of = (x, n) => Object.assign({ hours: x.hours, closed: x.closed, notice: n.title },
+      usual && usual.closed === !!x.closed && (x.closed || usual.hours === x.hours) ? { usual: true } : {});
     for (const n of data.notices || []) {
       const month = n.cal && n.cal.months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
       const l = month && n.cal.legend[month.days[d.getDate() - 1]];
-      if (l) return { hours: l.hours, closed: l.closed, notice: n.title };
-      if (!n.cal && n.from && n.from <= day && day < n.to) return null;
+      if (l) return of(l, n);
+      if (n.rules && n.from <= day && day < n.to) {
+        // The rule of that day: the shortest one (a few days over a month), a day of the week of the whole notice as a week.
+        const wd = d.getDay();
+        const found = [
+          ...n.rules.rules.filter((r) => r.from <= day && day < r.to && (!r.days || r.days.includes(wd))).map((r) => ({ r, span: r.to - r.from })),
+          ...n.rules.weekly.filter((r) => r.days.includes(wd)).map((r) => ({ r, span: 7 * MAK.DAY }))
+        ].sort((a, b) => a.span - b.span)[0];
+        if (found) return of(found.r, n);
+      } else if (!n.cal && !n.rules && n.from && n.from <= day && day < n.to) return null;
     }
-    return data.page ? MAK.weekToday(data.page.week, when) : null;
+    return usual;
   };
+
   MAK.libraryToday = (data, now = Date.now()) => MAK.libraryDay(data, now);
+  // Why a notice closes the library, from its title: 'summer', 'easter', 'christmas' or ''.
+  MAK.closedReason = (title) => {
+    const s = fold(title || '');
+    return /verano/.test(s) ? 'summer' : /semana santa/.test(s) ? 'easter' : /navidad|navide/.test(s) ? 'christmas' : '';
+  };
 
   // Open now and until when, or closed and when it opens: { open, at } (at: the time of the change; 0: not known in the
   // next two weeks). dayOf(time) gives the hours of the day of that time (MAK.libraryDay, MAK.weekToday): { hours: "9:00–

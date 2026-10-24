@@ -79,7 +79,7 @@ test('noticePeriod: the first and the last day that a notice names, with the yea
     return p && [new Date(p.from).toDateString(), new Date(p.to - MAK.DAY).toDateString()];
   };
   assert.deepEqual(period(290185, at(2026, 6, 17)), [new Date(2026, 6, 1).toDateString(), new Date(2026, 7, 31).toDateString()]);
-  assert.deepEqual(period(288889, at(2026, 3, 24)), [new Date(2026, 3, 2).toDateString(), new Date(2026, 3, 6).toDateString()]);
+  assert.deepEqual(period(288889, at(2026, 3, 24)), [new Date(2026, 2, 26).toDateString(), new Date(2026, 3, 13).toDateString()], 'all the days it names (the loans too): only without rules (MAK.noticeRules)');
   assert.deepEqual(period(286888, at(2025, 10, 28)), [new Date(2025, 10, 22).toDateString(), new Date(2026, 0, 18).toDateString()], 'January: the next year');
   assert.equal(period(290965, at(2026, 9, 16)), null, 'no date');
 });
@@ -147,20 +147,29 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   assert.ok(april.notices[0].cal && april.notices[0].pdf.endsWith('_arrosadia.pdf'));
   assert.ok(asked.every((u) => MAK.libraryUrl(u) === u), 'only addresses of the library');
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 18)), { hours: '9:00–22:45', closed: false, notice: 'Horario especial de época de exámenes: 18 ABRIL-14 JUNIO' });
-  assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 15)), { hours: '8:00–21:00', closed: false, notice: april.notices[0].title }, 'the blue of the legend');
+  assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 15)), { hours: '8:00–21:00', closed: false, notice: april.notices[0].title, usual: true }, 'the blue of the legend: the usual hours of a Wednesday');
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 11)), { hours: '', closed: true, usual: true }, 'a Saturday without a color: the usual hours');
   const opens = MAK.openState((ms) => MAK.libraryDay(april, ms), at(2026, 4, 17, 22));
   assert.equal(new Date(opens.at).toString().slice(0, 21), 'Sat Apr 18 2026 09:00', 'a Friday night before the exams: on Saturday at 9:00 (the calendar)');
 
-  // 3 April 2026: Easter (a notice in words) -> no hours of today.
-  const easter = await load('arrosadia', at(2026, 4, 3));
-  assert.ok(easter.notices.some((n) => n.title.startsWith('Semana Santa')));
-  assert.equal(MAK.libraryToday(easter, at(2026, 4, 3)), null);
+  // Easter (a notice in words): closed on its days, the usual hours the others; the days of the loans do not count.
+  const easter = await load('arrosadia', at(2026, 3, 26));
+  const notice = easter.notices.find((n) => n.title.startsWith('Semana Santa'));
+  assert.deepEqual([new Date(notice.from).getDate(), new Date(notice.to - MAK.DAY).getDate()], [2, 6], 'from 2 to 6 April, not from 26 March to 13 April');
+  assert.deepEqual(MAK.libraryToday(easter, at(2026, 3, 26)), { hours: '8:00–21:00', closed: false, usual: true });
+  assert.deepEqual(MAK.libraryToday(easter, at(2026, 4, 3)), { hours: '', closed: true, notice: notice.title });
+  assert.equal(MAK.closedReason(notice.title), 'easter');
+  const easterSalud = (await load('salud', at(2026, 3, 26))).notices.find((n) => n.title.startsWith('Semana Santa'));
+  assert.deepEqual(MAK.libraryDay({ notices: [easterSalud] }, at(2026, 4, 4)), { hours: '9:00–21:00', closed: false, notice: easterSalud.title }, '"de 9h. a 21h."');
 
   // 8 July 2026, Tudela: the summer, only the row of Tudela.
   const summer = await load('tudela', at(2026, 7, 8));
   assert.deepEqual(summer.notices.map((n) => n.blocks[0].head), ['Tudela']);
   assert.equal(summer.page.url, MAK.LIBRARY_CAMPUSES.tudela.page);
+  // Its days: the summer hours, closed 24 to 31 July and on the weekends, 9:00–13:00 on 3 and 4 August.
+  const day = (m, d) => { const x = MAK.libraryDay(summer, at(2026, m, d)); return x && (x.closed ? 'closed' : x.hours); };
+  assert.deepEqual([day(7, 8), day(7, 11), day(7, 27), day(8, 3), day(8, 31), day(9, 1)], ['8:00–14:30', 'closed', 'closed', '9:00–13:00', '8:00–14:30', '8:00–21:00']);
+  assert.equal(MAK.closedReason(summer.notices[0].title), 'summer');
 
   // 24 October 2026, Salud: the room on weekends (no date: 90 days); the summer and the exams ended.
   const salud = await load('salud', at(2026, 10, 24));

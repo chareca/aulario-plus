@@ -132,7 +132,7 @@ const NOTICES = {
 <p>Biblioteca de Arrosad&iacute;a:&nbsp;<strong>sistema de acceso de tornos. <a href="https://portal.unavarra.es/group/biblioteca/tornos-de-acceso">Reg&iacute;strate</a></strong><br />
 Ciencias de la Salud:&nbsp;<strong>necesario mostrar identificaci&oacute;n acreditativa UPNA para entrar.</strong></p>`),
   288889: notice('Martes 24 de marzo de 2026', 'Semana Santa: horario ',
-    '<p>Los d&iacute;as 2, 3, 4, 5 y 6 de abril las bibliotecas de Arrosadia y Tudela permanecer&aacute;n cerradas.</p><p>Los d&iacute;as 2, 3, 4, 5 y 6 de abril la biblioteca de Ciencias de la Salud abrir&aacute; en horario de 9h. a 21h.</p>'),
+    '<p>Los d&iacute;as 2, 3, 4, 5 y 6 de abril las bibliotecas de Arrosadia y Tudela permanecer&aacute;n cerradas.</p><p>Los d&iacute;as 2, 3, 4, 5 y 6 de abril la biblioteca de Ciencias de la Salud abrir&aacute; en horario de 9h. a 21h.</p><p>Los pr&eacute;stamos realizados desde el 26 de marzo se podr&aacute;n devolver hasta el 13 de abril</p>'),
   286888: notice('Martes 28 de octubre de 2025', 'Horario de las bibliotecas en periodo de ex&aacute;menes (nov. 2025- en. 2026)',
     '<p>A partir del s&aacute;bado 22 de noviembre y hasta el domingo 18 de enero (&eacute;poca de ex&aacute;menes) las bibliotecas abrir&aacute;n los d&iacute;as festivos y fines de semana:</p><p>Campus de Arrosad&iacute;a: de 09:00 a 22:45 h.</p><p>En festivos navide&ntilde;os: 24, 25 y 31 de dic. y 1 de enero CERRADO</p>')
 };

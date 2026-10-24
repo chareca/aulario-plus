@@ -31,8 +31,8 @@
     @container (min-width: 700px) {
       .hr-cards { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } /* as many columns as cards */
       .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-auto-flow: row; }
-      .hr-cards.with-cal { align-items: start; }
       .hr-cards.with-cal > .hr-side { display: flex; flex-direction: column; gap: 10px; }
+      .hr-cards.with-cal > .hr-side > .hr-card { flex: 1 1 auto; } /* as high as the library, together */
     }
     .hr-card { min-width: 0; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
     .hr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; }
@@ -129,11 +129,14 @@
     n.blocks.map((b) => h('div', { class: 'hr-block' }, b.head ? h('strong', { text: b.head }) : null, b.lines.map((l) => h('p', { text: MAK.shortDays(l) })))),
     h('div', { class: 'hr-links' }, MAK.link(n.url, t('lib.notice')), n.pdf ? MAK.link(n.pdf, t('lib.pdf')) : null));
 
-  // The hours of today in the head: "9:00–22:00"; closed: "sábados cerrado" (the usual hours of the day of the week) or
-  // "hoy cerrado" (a notice).
+  // The hours of today in the head: "9:00–22:00"; closed: "sábados cerrado" (also the usual hours of the day of the week),
+  // "verano cerrado" (a notice of the summer, Easter or Christmas) or "hoy cerrado" (another notice).
   function chipText(today, now) {
     if (!today.closed) return today.hours;
-    if (!today.usual) return t('lib.closedToday');
+    if (!today.usual) {
+      const reason = MAK.closedReason(today.notice);
+      return reason ? t('lib.closedFor', { reason: t(`lib.reason.${reason}`) }) : t('lib.closedToday');
+    }
     const day = new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long' }).format(now);
     return t('lib.closedOn', { days: /s$/i.test(day) ? day : `${day}s` });
   }
@@ -165,7 +168,7 @@
       h('div', { class: 'hr-top' },
         h('div', { class: 'hr-id' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
         stateMark(state, now)),
-      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), today.usual ? h('span', { class: 'meta', text: ` (${t('lib.usualDay')})` }) : null) : null,
+      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), h('span', { class: 'meta', text: ` (${t(today.usual ? 'lib.usualDay' : 'lib.specialDay')})` })) : null,
       lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => h('li', { text: MAK.shortDays(l) }))) : null,
       more);
   }
@@ -187,7 +190,8 @@
     const known = parts.filter((x) => x.today);
     MAK.fill(p.chips, known.length === parts.length && known.every((x) => x.today.closed)
       ? h('span', { class: 'count hot', text: t('lib.allClosed') })
-      : known.map((x) => h('span', { class: `count hr-chip${x.state && x.state.open ? ' ok' : ' hot'}` }, MAK.icon(x.icon), `${t(`lib.short.${x.k}`)} · ${chipText(x.today, now)}`)));
+      : known.map((x) => h('span', { class: `count hr-chip${x.state && x.state.open ? ' ok' : ' hot'}` }, MAK.icon(x.icon),
+        `${t(`lib.short.${x.k}`)} · ${chipText(x.today, now)}`)));
     const week = data.page ? data.page.week : null;
     const library = card({
       icon: 'book', title: t('lib.libraryTitle'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), state: parts[0].state, today: parts[0].today, now,
