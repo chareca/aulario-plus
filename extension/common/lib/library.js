@@ -156,6 +156,9 @@
     }
     return week;
   }
+  // A text of hours, shorter: "De lunes a viernes, de 7:30 a 22:00" -> "L-V, de 7:30 a 22:00".
+  MAK.shortDays = (text) => String(text).replace(/\b(?:de\s+)?lunes\s+a\s+viernes\b/gi, 'L-V');
+
   // The hours of today of a week (weekOf), the usual ones: { hours, closed, usual: true } or null.
   MAK.weekToday = function (week, now = Date.now()) {
     const w = Array.isArray(week) ? week[new Date(now).getDay()] : null;

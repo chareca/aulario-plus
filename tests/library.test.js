@@ -39,6 +39,8 @@ test('parseSportsPage: the access (also the gym) and the pool, each day of the w
   assert.deepEqual(MAK.weekToday(s.pool.week, at(2026, 10, 25)), { hours: '', closed: true, usual: true }, 'a Sunday');
   assert.equal(MAK.parseSportsPage('<div class="texto"><p>nada</p></div>'), null);
   assert.equal(MAK.weekToday(null), null);
+  assert.deepEqual([...s.access.lines, ...MAK.parseLibraryPage(F.PAGES.arrosadia).lines].map(MAK.shortDays).filter((l) => l.startsWith('L-V')),
+    ['L-V, de 7:30 a 22:00', 'L-V: 8:00 a 21:00 horas.'], '"(de) lunes a viernes": "L-V"');
 });
 
 test('parseBoardList and isHoursNotice: the notices with their date, and only the ones about hours of the campus', () => {
