@@ -26,8 +26,12 @@ test('parseLibraryPage: the lines of the usual hours and the hours of each day o
   const a = MAK.parseLibraryPage(F.PAGES.arrosadia);
   assert.deepEqual(a.lines, ['Lunes a viernes: 8:00 a 21:00 horas.', 'Sábado y domingo: cerrado.']);
   assert.deepEqual(a.week, [{ closed: true }, ...Array(5).fill({ hours: '8:00–21:00' }), { closed: true }]);
+  // Salud on weekends: an "aula de estudio", not the library (not known).
   const s = MAK.parseLibraryPage(F.PAGES.salud);
-  assert.deepEqual([s.week[0], s.week[3], s.week[6]], [{ hours: '9:00–21:45' }, { hours: '8:00–21:00' }, { hours: '9:00–21:45' }]);
+  assert.deepEqual([s.week[0], s.week[3], s.week[6]], [null, { hours: '8:00–21:00' }, null]);
+  const week = (...l) => MAK.parseLibraryPage(F.campusPage(l)).week;
+  assert.deepEqual(week('Lunes a viernes: de 8:00 a 14:00 y de 16:00 a 20:00', 'Sábados: 9:00 a 14:00')[1], null, 'two ranges');
+  assert.deepEqual(week('Sábados de 9:00 a 14:00, domingos cerrado', 'Sábados: 10:00 a 13:00')[6], null, 'hours and closed together; the first line of a day');
   assert.equal(MAK.parseLibraryPage('<p>Nada</p>'), null);
 });
 
@@ -98,6 +102,100 @@ test('noticePeriod: the first and the last day that a notice names, with the yea
   assert.deepEqual(period(288889, at(2026, 3, 24)), [new Date(2026, 2, 26).toDateString(), new Date(2026, 3, 13).toDateString()], 'all the days it names (the loans too): only without rules (MAK.noticeRules)');
   assert.deepEqual(period(286888, at(2025, 10, 28)), [new Date(2025, 10, 22).toDateString(), new Date(2026, 0, 18).toDateString()], 'January: the next year');
   assert.equal(period(290965, at(2026, 9, 16)), null, 'no date');
+  // The forms of the board since 2015 (titles and lines).
+  const of = (text, published) => {
+    const p = MAK.noticePeriod([text], published);
+    return p && [new Date(p.from).toDateString().slice(4), new Date(p.to - 1).toDateString().slice(4)];
+  };
+  const cases = [
+    ['(diciembre 2016-enero 2017)', at(2016, 12, 8), ['Dec 01 2016', 'Jan 31 2017']],
+    ['Horario especial de época de exámenes: 18 ABRIL-14 JUNIO', at(2026, 4, 12), ['Apr 18 2026', 'Jun 14 2026']],
+    ['Horario de verano JULIO-AGOSTO 2015', at(2015, 6, 30), ['Jul 01 2015', 'Aug 31 2015']],
+    ['(nov. 2025- en. 2026)', at(2025, 10, 27), ['Nov 01 2025', 'Jan 31 2026']],
+    ['mayo: días 6, 7 y 13', at(2026, 4, 20), ['May 06 2026', 'May 13 2026']],
+    ['Del 1 al 5 julio, de 8:00 a 21:30', at(2016, 6, 27), ['Jul 01 2016', 'Jul 05 2016']],
+    ['los días 10 a 20 de julio', at(2026, 6, 20), ['Jul 10 2026', 'Jul 20 2026']],
+    ['entre el 10 y el 20 de julio', at(2026, 6, 20), ['Jul 10 2026', 'Jul 20 2026']],
+    ['10-20 de julio', at(2026, 6, 20), ['Jul 10 2026', 'Jul 20 2026']],
+    ['el 1º de julio', at(2026, 6, 20), ['Jul 01 2026', 'Jul 01 2026']],
+    ['el 13/07 cerrado', at(2026, 6, 20), ['Jul 13 2026', 'Jul 13 2026']],
+    ['24, 25 y 31 de dic. y 1 de ene.', at(2022, 11, 22), ['Dec 24 2022', 'Jan 01 2023']],
+    ['el 20 de diciembre', at(2027, 1, 5), ['Dec 20 2026', 'Dec 20 2026']], // a notice of January: the December before
+    ['el 29 de febrero', at(2028, 1, 10), ['Feb 29 2028', 'Feb 29 2028']],
+    ['a partir del viernes 13', at(2026, 11, 2), ['Nov 13 2026', 'Nov 13 2026']], // the month of the notice
+    ['Semana Internacional de Acceso Abierto 2026 (19-25 de octubre)', at(2026, 10, 14), ['Oct 19 2026', 'Oct 25 2026']]
+  ];
+  for (const [text, published, want] of cases) assert.deepEqual(of(text, published), want, text);
+  assert.equal(of('el 29 de febrero', at(2026, 6, 20)), null, 'no leap year near');
+  assert.equal(of('sábados y domingos de 9 a 19 horas', at(2026, 6, 20)), null, 'hours are not days');
+});
+
+// The hours of a day by the rules of a notice (its blocks) for a campus with the usual hours of Arrosadía: "9:00–14:00",
+// "closed", "usual" (no rule of the notice) or null (not known).
+const ARROSADIA_WEEK = MAK.parseLibraryPage(F.PAGES.arrosadia).week;
+const ruleDay = (blocks, published, campus, title = 'Horario') => {
+  const read = MAK.noticeRules(blocks, published, campus, title);
+  return (y, m, d) => {
+    if (!read || read.uncertain) return read && 'uncertain';
+    const data = { page: { week: ARROSADIA_WEEK }, notices: [{ title, date: published, rules: { rules: read.rules, weekly: read.weekly }, from: read.from, to: read.to }] };
+    const x = MAK.libraryDay(data, at(y, m, d, 12));
+    return !x ? null : !x.notice ? 'usual' : x.closed ? 'closed' : x.hours;
+  };
+};
+const lines = (...l) => ({ head: '', lines: l });
+const row = (head, ...l) => ({ head, lines: l });
+
+test('noticeRules: the notices of the board since 2015, day by day', () => {
+  // Summer 2016: "Del 1 al 5 julio" (no "de"), CERRADO, and the weekends closed over the ranges.
+  let day = ruleDay([lines('A partir del 1 de julio el horario de las Bibliotecas es:'),
+    row('Arrosadía', 'Del 1 al 5 julio, de 8:00 a 21:30', 'Del 14 de julio al 19 de agosto, de 8:00 a 15:30', 'Del 22 al 31 de agosto, de 8:00 a 21:30', 'CERRADO: del 6 al 13 de julio'),
+    lines('Sábados, domingos y festivos permanecerán cerradas.')], at(2016, 6, 27), 'arrosadia');
+  assert.deepEqual([day(2016, 7, 1), day(2016, 7, 2), day(2016, 7, 8), day(2016, 7, 16), day(2016, 7, 18), day(2016, 8, 27), day(2016, 8, 29), day(2016, 9, 1)],
+    ['8:00–21:30', 'closed', 'closed', 'closed', '8:00–15:30', 'closed', '8:00–21:30', 'usual']);
+  // Summer 2018: a day as an exception of a range.
+  day = ruleDay([row('Arrosadía', 'Del 2 de julio al 31 de agosto, de 8.00 a 15.00 horas', 'excepto 13 de julio, de 9.00 a 13.00', 'CERRADO: del 6 al 12 de julio'),
+    lines('Sábados, domingos y festivos permanecerán cerradas.')], at(2018, 6, 27), 'arrosadia');
+  assert.deepEqual([day(2018, 7, 2), day(2018, 7, 9), day(2018, 7, 13), day(2018, 7, 14)], ['8:00–15:00', 'closed', '9:00–13:00', 'closed']);
+  // A range with days of the week ("de lunes a viernes"), not the ones of a date ("del lunes 6").
+  day = ruleDay([lines('Del lunes 6 al viernes 31 de julio, de lunes a viernes de 8:00 a 14:00.')], at(2026, 6, 20), 'arrosadia');
+  assert.deepEqual([day(2026, 7, 6), day(2026, 7, 11)], ['8:00–14:00', 'usual']);
+  // November 2021: one sentence for the three campuses; the one of Salud is an "aula" (the library keeps its hours).
+  const nov = [lines('Los días 27, 28 y 29 de noviembre y 3, 4, 5, 6, 8, 11 y 12 de diciembre la biblioteca del campus de Arrosadía abrirá de 9 a 22:45 y las de los campus de Tudela y Ciencias de la Salud (aula 03), abrirán de 9 a 21:45.', 'El resto de los días seguirá el horario habitual')];
+  assert.deepEqual(['arrosadia', 'tudela', 'salud'].map((c) => ruleDay(nov, at(2021, 11, 14), c)(2021, 11, 29)), ['9:00–22:45', '9:00–21:45', 'usual']);
+  assert.equal(ruleDay(nov, at(2021, 11, 14), 'arrosadia')(2021, 12, 7), 'usual');
+  // Easter 2023: "aulas" in Arrosadía (not the library) and the other two closed that day; the "aulario" on weekends.
+  const easter = [lines('El día 8 de abril se habilitarán aulas en Arrosadía; horario 8-15. Las bibliotecas de Ciencias de la Salud y Tudela permanecerán cerradas.', 'Los días 6, 7, 9 y 10 de abril permanecerán cerradas todas las bibliotecas'),
+    row('Arrosadía (aulario)', 'abril: 22, 23, 29 y 30', '9:00-22:45')];
+  assert.deepEqual(['arrosadia', 'tudela'].map((c) => { const d = ruleDay(easter, at(2023, 3, 28), c); return [d(2023, 4, 6), d(2023, 4, 8), d(2023, 4, 22)]; }),
+    [['closed', 'usual', 'usual'], ['closed', 'closed', 'usual']]);
+  // Exams 2022: from a Saturday on, the weekends with the hours of the next line; the days of Christmas.
+  const start = 'A partir de este sábado 26 de noviembre (época de exámenes) las bibliotecas abrirán los días festivos y fines de semana en el siguiente horario.';
+  day = ruleDay([lines(start, 'Campus de Tudela: abre la biblioteca de 09:00 a 21:45.', 'En festivos navideños:', '24 y 31 de dic. de 9:00 a 15:00', '25 de dic. y 1 de ene. CERRADO')], at(2022, 11, 22), 'tudela');
+  assert.deepEqual([day(2022, 11, 26), day(2022, 11, 28), day(2022, 12, 24), day(2022, 12, 25), day(2023, 1, 1)], ['9:00–21:45', 'usual', '9:00–15:00', 'closed', 'closed']);
+  day = ruleDay([lines(start, 'Arrosadía: aulas en el aulario de 09:00 a 22:45. La biblioteca permanecerá cerrada')], at(2022, 11, 22), 'arrosadia');
+  assert.deepEqual([day(2022, 11, 26), day(2022, 11, 28)], ['closed', 'usual']);
+  // Weekends of 2016: the days in the title; the "aulario" is not the library.
+  day = ruleDay([row('Arrosadia', 'Biblioteca: sábados y domingos de 9 a 23 horas', 'Aulario: sábados de 8 a 16 horas')], at(2016, 5, 2), 'arrosadia', 'Horario de apertura los fines de semana de 7 de mayo a 26 de junio');
+  assert.deepEqual([day(2016, 5, 7), day(2016, 5, 8), day(2016, 5, 9), day(2016, 6, 25), day(2016, 7, 2)], ['9:00–23:00', '9:00–23:00', 'usual', '9:00–23:00', 'usual']);
+  // Easter 2026 for Salud ("de 9h. a 21h."); a day on the change of the time (25 hours) still before the closed weekends.
+  assert.equal(ruleDay([lines('Los días 2, 3, 4, 5 y 6 de abril la biblioteca de Ciencias de la Salud abrirá en horario de 9h. a 21h.')], at(2026, 3, 23), 'salud')(2026, 4, 3), '9:00–21:00');
+  assert.equal(ruleDay([lines('Sábados, domingos y festivos permanecerán cerradas.'), lines('El 25 de octubre la biblioteca abrirá de 9 a 14.')], at(2026, 10, 1), 'arrosadia')(2026, 10, 25), '9:00–14:00');
+  // The closing of 2020, without an end: to 90 days.
+  day = ruleDay([lines('Las bibliotecas de la UPNA permanecerán cerradas a partir del viernes 13 de marzo.')], at(2020, 3, 11), 'salud');
+  assert.deepEqual([day(2020, 3, 12), day(2020, 3, 13), day(2020, 6, 10), day(2020, 6, 12)], ['usual', 'closed', 'closed', 'usual']);
+  assert.ok(MAK.isHoursNotice('Cierre de las bibliotecas de la UPNA', 'tudela'));
+});
+
+test('noticeRules: what it does not understand is not known (uncertain), never other hours', () => {
+  const read = (...l) => MAK.noticeRules([lines(...l)], at(2026, 6, 20), 'arrosadia');
+  assert.equal(read('Del 1 al 5 de julio, de 8:00 a 14:00 y de 16:00 a 20:00').uncertain, true, 'two ranges without their days');
+  assert.equal(read('El 3 de julio, de 8:00 a 14:00; por la tarde, cerrada').uncertain, true, 'hours and closed');
+  assert.deepEqual(read('Del 1 al 31 de julio: sábado de 8.00 a 21:45 - domingo de 9.00 a 21.45').rules.map((r) => [r.hours, r.days]), [['8:00–21:45', [6]], ['9:00–21:45', [0]]], 'each range with its day');
+  assert.equal(read('Semana del acceso abierto: 19-25 de octubre'), null, 'days, no hours');
+  assert.equal(read('Los préstamos realizados desde el 26 de marzo se podrán devolver hasta el 13 de abril'), null, 'the loans');
+  // An uncertain notice: its days are not known (loadLibrary keeps no rules).
+  const data = { page: { week: ARROSADIA_WEEK }, notices: [{ title: 'Horario', date: at(2026, 6, 20), rules: null, from: at(2026, 7, 1, 0), to: at(2026, 7, 6, 0) }] };
+  assert.deepEqual([MAK.libraryDay(data, at(2026, 7, 3)), MAK.libraryDay(data, at(2026, 7, 6)).hours], [null, '8:00–21:00']);
 });
 
 test('pdfTextRuns: the text of a PDF of Canva (Identity-H, ToUnicode, forms, hex strings, FlateDecode) with its color', async () => {
@@ -129,6 +227,21 @@ test('libraryCalendar: each day with the index of its color in the legend; a mon
   assert.deepEqual([april[0], april[12], april[17], april[19], april[20]], [-1, 0, 1, 1, 0], 'grey: no color of the legend; another blue: the blue');
   const may = cal.months[1].days;
   assert.deepEqual([may[0], may[29], may[30], may[4]], [1, 2, 2, 0], 'the legend in two texts');
+});
+
+test('libraryCalendar: "horario habitual", the days of an "aula" or of a color with two hours (not known), the year by the grid', async () => {
+  const read = async (page, published) => MAK.libraryCalendar(await MAK.pdfTextRuns(F.canvaPdf([page])), published);
+  // May 2024 without a year on the page (published in March), "horario habitual" in the legend, the "aula" on a weekend.
+  const a = await read(F.month('mayo', 2024, 31, { yearText: '', usual: true, aula: [4, 5], green: [1] }), at(2024, 3, 19));
+  assert.deepEqual([a.months[0].y, a.months[0].m], [2024, 4]);
+  const usual = a.legend.findIndex((l) => l.usual);
+  assert.deepEqual([a.months[0].days[0], a.months[0].days[1], a.months[0].days[3], a.months[0].days[10]], [a.legend.findIndex((l) => l.hours === '9:00–22:45'), usual, -2, a.legend.findIndex((l) => l.closed)]);
+  const data = { page: { week: ARROSADIA_WEEK }, notices: [{ title: 'Exámenes', date: at(2024, 3, 19), cal: a, from: at(2024, 5, 1, 0), to: at(2024, 6, 1, 0) }] };
+  assert.deepEqual([MAK.libraryDay(data, at(2024, 5, 2)), MAK.libraryDay(data, at(2024, 5, 4))], [{ hours: '8:00–21:00', closed: false, usual: true }, null], 'usual; an "aula": not known');
+  // A year on the page that does not fit the grid ("curso 2025-2026" on January 2026): the year that puts the 1st on a Thursday.
+  assert.equal((await read(F.month('enero', 2026, 31, { yearText: 'curso 2025-2026' }), at(2025, 3, 1))).months[0].y, 2026);
+  // A color with two hours ("8:00 - 21:00" and "8:00 - 14:30"): its days are not known.
+  assert.equal((await read(F.month('diciembre', 2025, 31, { twoHours: true }), at(2025, 10, 27))).months[0].days[1], -2);
 });
 
 test('openState: open until when, or closed and when it opens (also after a weekend or a closed day of a calendar)', () => {
@@ -199,7 +312,8 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   // 24 October 2026, Salud: the room on weekends (no date: 90 days); the summer and the exams ended.
   const salud = await load('salud', at(2026, 10, 24));
   assert.deepEqual(salud.notices.map((n) => n.title), ['Biblioteca de Ciencias de la Salud: aula de estudio abierta los fines de semana']);
-  assert.deepEqual(MAK.libraryToday(salud, at(2026, 10, 24)), { hours: '9:00–21:45', closed: false, usual: true });
+  assert.equal(MAK.libraryToday(salud, at(2026, 10, 24)), null, 'a Saturday: only the "aula de estudio"');
+  assert.deepEqual(MAK.libraryToday(salud, at(2026, 10, 26)), { hours: '8:00–21:00', closed: false, usual: true });
 
   // 10 January 2026: the notice of the year before (November to January), from the link of 2025.
   const dec = await load('arrosadia', at(2026, 1, 10));
@@ -216,4 +330,32 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   const noLibrary = await MAK.loadLibrary({ campus: 'tudela', getText: (url) => (url === MAK.LIBRARY_CAMPUSES.tudela.page ? Promise.reject(new Error('503')) : getText(url)), getBytes, now: at(2026, 4, 15) });
   assert.deepEqual([noLibrary.page, !!noLibrary.sports, MAK.libraryToday(noLibrary, at(2026, 4, 11))], [null, true, null]);
   await assert.rejects(MAK.loadLibrary({ campus: 'tudela', getText: async () => '<p>no</p>', getBytes, now: at(2026, 4, 15) }));
+
+  // The board does not answer: no day is known (a closing could be there), read again soon.
+  const fail = (bad) => (url) => (bad(url) ? Promise.reject(new Error('503')) : getText(url));
+  const noBoard = await MAK.loadLibrary({ campus: 'arrosadia', getText: fail((url) => url === MAK.LIBRARY_BOARD), getBytes, now: at(2026, 7, 8) });
+  assert.deepEqual([noBoard.board, noBoard.partial, MAK.libraryToday(noBoard, at(2026, 7, 8))], [false, true, null]);
+  // A notice that does not answer: its days by its title (or its season), not known; read again soon.
+  const noNotice = await MAK.loadLibrary({ campus: 'arrosadia', getText: fail((url) => url.endsWith('contentId=289130')), getBytes, now: at(2026, 4, 15) });
+  assert.deepEqual([noNotice.partial, noNotice.notices[0].rules, MAK.libraryToday(noNotice, at(2026, 4, 18)), MAK.libraryToday(noNotice, at(2026, 4, 15)).usual], [true, null, null, true]);
+  // A newer notice about the same days corrects the one before it; a notice only about other campuses is not shown.
+  const B = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
+  const more = Object.assign(F.routes(), {
+    [B]: F.list([
+      F.entry('Lunes 20 de julio de 2026', 291000, 'Horario de verano: cambio'),
+      F.entry('Domingo 19 de julio de 2026', 291001, 'Horario fines de semana de julio'),
+      F.entry('Mi&eacute;rcoles 17 de junio de 2026', 290185, 'Horario de verano de las Bibliotecas: Arrosadia, Ciencias de la Salud y Tudela')
+    ]),
+    [`${B}?contentId=291000`]: F.notice('Lunes 20 de julio de 2026', 'Horario de verano: cambio', '<p>El 22 de julio la biblioteca de Arrosad&iacute;a abrir&aacute; de 9:00 a 13:00.</p>'),
+    [`${B}?contentId=291001`]: F.notice('Domingo 19 de julio de 2026', 'Horario fines de semana de julio', '<p>Los d&iacute;as 25 y 26 de julio se abrir&aacute;n aulas en el Aulario de Arrosad&iacute;a y la Biblioteca de Tudela de 9.00 a 21.45.</p>')
+  });
+  const getMore = async (url) => {
+    if (!(url in more)) throw new Error(`404 ${url}`);
+    return String(more[url]);
+  };
+  const two = await MAK.loadLibrary({ campus: 'arrosadia', getText: getMore, getBytes, now: at(2026, 7, 21) });
+  assert.equal(MAK.libraryToday(two, at(2026, 7, 22)).hours, '9:00–13:00', 'the newer notice');
+  assert.equal(MAK.libraryToday(two, at(2026, 7, 23)).hours, '8:00–15:00', 'the summer');
+  const salud2 = await MAK.loadLibrary({ campus: 'salud', getText: getMore, getBytes, now: at(2026, 7, 21) });
+  assert.ok(!salud2.notices.some((n) => n.title === 'Horario fines de semana de julio'), 'only Arrosadía and Tudela');
 });

@@ -10,6 +10,7 @@ const BLUE_DAY = [0.039, 0.4, 0.553]; // the numbers of the usual days: another 
 const GREEN = [0.51, 0.722, 0.259]; // 9:00 - 22:45
 const RED = [0.855, 0.161, 0.11]; // cerrado
 const GREY = [0.357, 0.365, 0.384]; // days before the period: no color of the legend
+const AULA = [0.902, 0.569, 0.176]; // an "aula" (not the library): its days are not known
 
 // A PDF file: pages of texts { text, x, y, rgb, form (a form XObject, a literal string) or not (a hex string in the page;
 // the content of the page compressed) }.
@@ -53,25 +54,30 @@ function canvaPdf(pages) {
   return Buffer.from(`%PDF-1.4\n%\xe2\xe3\xcf\xd3\n${body}trailer\n<< /Root 1 0 R >>\n%%EOF\n`, 'latin1');
 }
 
-// A month: its title, the legend and the days in a grid (green: the days in "green"; red: in "red" and the other weekends,
-// as in the real ones; grey: before "from").
+// A month: its title, the legend and the days in a grid of weeks from Monday (green: the days in "green"; red: in "red"
+// and the other weekends, as in the real ones; grey: before "from"; aula: in the color of an "aula"). yearText: the year
+// on the page ('' without one); usual: the blue of the legend is "horario habitual" (no hours); twoHours: the blue of the
+// legend has two hours.
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-function month(name, year, count, { green = [], red = [], from = 1, form = true, splitLegend = false } = {}) {
+function month(name, year, count, { green = [], red = [], aula = [], from = 1, form = true, splitLegend = false, yearText = String(year), usual = false, twoHours = false } = {}) {
   const weekend = (d) => [0, 6].includes(new Date(year, MONTHS.indexOf(name), d).getDay());
+  const blue = usual ? [{ text: 'horario habitual de la biblioteca', rgb: BLUE }]
+    : [{ text: 'biblioteca / liburutegia: 8:00 - 21:00 h.', rgb: BLUE }, ...(twoHours ? [{ text: 'biblioteca / liburutegia: 8:00 - 14:30 h.', rgb: BLUE }] : [])];
   const legend = splitLegend
     ? [{ text: 'biblioteca / liburutegia', rgb: BLUE }, { text: '8:00 - 21:00 h.', rgb: BLUE }, { text: 'biblioteca / liburutegia', rgb: GREEN }, { text: '9:00 - 22:45 h.', rgb: GREEN }]
-    : [{ text: 'biblioteca / liburutegia: 8:00 - 21:00 h.', rgb: BLUE }, { text: 'biblioteca / liburutegia: 9:00 - 22:45 h.', rgb: GREEN }];
+    : [...blue, { text: 'biblioteca / liburutegia: 9:00 - 22:45 h.', rgb: GREEN }, ...(aula.length ? [{ text: 'aula 03 / gela 03', rgb: AULA }, { text: '9:00 - 21:45 h.', rgb: AULA }] : [])];
   return [
     { text: `${name} / apirila`, rgb: BLUE, x: 270, y: 100, form },
-    { text: String(year), rgb: BLUE, x: 740, y: 100, form },
+    ...(yearText ? [{ text: yearText, rgb: BLUE, x: 740, y: 100, form }] : []),
     ...legend.map((l, i) => ({ ...l, x: 180, y: 330 + i * 40, form })),
     { text: 'cerrado/itxita', rgb: RED, x: 180, y: 500, form },
     { text: 'AULA 04 / 04 GELA', rgb: [0, 0, 0], x: 940, y: 600, form },
     { text: '8:00 - 14:45 H.', rgb: [0, 0, 0], x: 940, y: 640, form },
     ...Array.from({ length: count }, (_, i) => {
       const d = i + 1;
-      const rgb = green.includes(d) ? GREEN : red.includes(d) ? RED : d < from ? GREY : weekend(d) ? RED : BLUE_DAY;
-      return { text: String(d), rgb, x: 90 + (i % 7) * 95, y: 560 + Math.floor(i / 7) * 85, form };
+      const rgb = green.includes(d) ? GREEN : red.includes(d) ? RED : aula.includes(d) ? AULA : d < from ? GREY : weekend(d) ? RED : BLUE_DAY;
+      const cell = i + (new Date(year, MONTHS.indexOf(name), 1).getDay() + 6) % 7; // Monday first, as in the real ones
+      return { text: String(d), rgb, x: 90 + (cell % 7) * 95, y: 560 + Math.floor(cell / 7) * 85, form };
     })
   ];
 }
@@ -185,4 +191,4 @@ function routes() {
   return out;
 }
 
-module.exports = { canvaPdf, month, calendarPdf, PAGES, BOARD, NOTICES, SPORTS, CAFETERIAS, COMEDORES, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };
+module.exports = { canvaPdf, month, calendarPdf, campusPage, PAGES, BOARD, NOTICES, SPORTS, CAFETERIAS, COMEDORES, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };

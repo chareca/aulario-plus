@@ -72,6 +72,8 @@
     .cal-day.closed, .cal-key.closed { background: color-mix(in srgb, var(--ap-red) 26%, transparent); }
     .cal-day.closed { color: var(--ap-muted); text-decoration: line-through; }
     .cal-key.usual { box-shadow: inset 0 0 0 1px var(--ap-muted); }
+    /* A day whose hours the reader does not know (the color of an "aula"): striped. */
+    .cal-day.unknown, .cal-key.unknown { background: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--ap-muted) 35%, transparent) 3px 5px); }
   `;
 
   const longDate = (ms) => new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long', day: 'numeric', month: 'long' }).format(ms);
@@ -100,7 +102,7 @@
   }
 
   // The months of a calendar from this one on: each day in the color of its hours (the usual hours of its day of the week:
-  // no color), with its hours on hover; the legend.
+  // no color; not known: striped), with its hours on hover; the legend.
   function calendar(cal, week, now) {
     const current = new Date(now).getFullYear() * 12 + new Date(now).getMonth();
     const months = cal.months.filter((x) => x.y * 12 + x.m >= current);
@@ -116,10 +118,11 @@
         const date = new Date(x.y, x.m, day);
         const usual = week && week[date.getDay()];
         const l = cal.legend[x.days[day - 1]];
-        const kind = !l || (usual && !usual.closed && !l.closed && usual.hours === l.hours) ? 'usual' : l.closed ? 'closed' : 'special';
-        const shown = l || usual;
-        if (kind !== 'usual') used.set(`${kind}:${l.hours}`, { kind, text: hoursText(l) });
-        const tip = `${longDate(date)}: ${shown ? hoursText(shown) : '?'}`;
+        const unknown = x.days[day - 1] === -2;
+        const kind = unknown ? 'unknown' : !l || l.usual || (usual && !usual.closed && !l.closed && usual.hours === l.hours) ? 'usual' : l.closed ? 'closed' : 'special';
+        const shown = unknown ? null : l && !l.usual ? l : usual;
+        if (kind !== 'usual') used.set(`${kind}:${unknown ? '' : l.hours}`, { kind, text: unknown ? t('lib.seePdf') : hoursText(l) });
+        const tip = `${longDate(date)}: ${shown ? hoursText(shown) : unknown ? t('lib.seePdf') : '?'}`;
         return h('span', { class: ['cal-day', kind === 'usual' ? '' : kind, date.toDateString() === today ? 'today' : ''].filter(Boolean).join(' '), text: String(day), attrs: { title: tip, 'aria-label': tip } });
       });
       return h('div', { class: 'cal-month' }, h('div', { class: 'cal-title', text: title }),
