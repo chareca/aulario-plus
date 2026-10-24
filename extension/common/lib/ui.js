@@ -281,8 +281,10 @@
       const shown = mine.length ? mine : list; // the days of the other subjects: grey, with their tooltip
       const cls = ['cal-day', ...new Set(shown.map((d) => d.kind)), !mine.length && list.length ? 'dim' : '', key === today ? 'today' : ''];
       if (!shown.length) return h('span', { class: cls.filter(Boolean).join(' '), text: String(day) });
-      const tip = shown.map((d) => `${d.name} · ${kindName(d.kind)} · ${MAK.formatDate(d.ms)}${d.room ? ` · ${d.room}` : ''}`).join('\n');
-      return h('span', { class: cls.filter(Boolean).join(' '), text: String(day), data: { tip }, attrs: { tabindex: '0', 'aria-label': `${day}: ${tip}` } });
+      // The tooltip: all the exams of the day, the ones of the subject first and in bold (data-mine: how many; its color
+      // is the color of the day).
+      const tip = [...mine, ...list.filter((d) => !mine.includes(d))].map((d) => `${d.name} · ${kindName(d.kind)} · ${MAK.formatDate(d.ms)}${d.room ? ` · ${d.room}` : ''}`).join('\n');
+      return h('span', { class: cls.filter(Boolean).join(' '), text: String(day), data: { tip, mine: focus ? String(mine.length) : '0' }, attrs: { tabindex: '0', 'aria-label': `${day}: ${tip}` } });
     };
     const month = (k) => {
       const [year, m] = [Math.floor(k / 12), k % 12];
@@ -299,7 +301,7 @@
       const day = e.target instanceof Element ? e.target.closest('.cal-day[data-tip]') : null;
       tip.hidden = !day;
       if (!day) return;
-      tip.textContent = day.dataset.tip;
+      MAK.fill(tip, day.dataset.tip.split('\n').map((line, i) => [i ? '\n' : null, i < Number(day.dataset.mine) ? h('b', { text: line }) : line]));
       const box = cal.getBoundingClientRect();
       const r = day.getBoundingClientRect();
       tip.style.left = `${Math.max(0, Math.min(box.width - tip.offsetWidth, r.left - box.left + (r.width - tip.offsetWidth) / 2))}px`;

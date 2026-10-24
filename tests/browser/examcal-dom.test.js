@@ -41,6 +41,14 @@
     assert.ok(other.classList.contains('dim') && other.classList.contains('final'), 'another subject: its color, grey');
     assert.ok(/^Procesadores · Final · .*15.* · A1$/.test(other.dataset.tip), 'which subject and when, on hover');
     assert.equal(other.getAttribute('tabindex'), '0', 'also with the keyboard');
+    // A day of the subject with an exam of another one too: both in the tooltip, the subject first (before: only it).
+    const shared = MAK.examCalendar(days(), { focus: 'cc', now: at(2026, 9, 21) });
+    const fifteen = day(shared, 'enero', 15);
+    assert.ok(!fifteen.classList.contains('dim'));
+    assert.deepEqual(fifteen.dataset.tip.split('\n').map((l) => l.split(' · ')[0]), ['Complejidad', 'Procesadores']);
+    fifteen.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    assert.deepEqual([...shared.querySelectorAll('.cal-tip b')].map((b) => b.textContent.split(' · ')[0]), ['Complejidad'], 'the subject in bold, the other not');
+    assert.equal(shared.querySelector('.cal-tip').textContent.split('\n').length, 2);
     const style = document.createElement('style');
     style.textContent = MAK.EXAM_CAL_CSS;
     document.head.append(style);
