@@ -1,12 +1,13 @@
-// Aulario Plus: the box "Horarios de la biblioteca" in "Mi sitio", below the course guides, folded at the start: the
-// hours of today (also in its head), the usual hours of the campus of the user (the setting "libraryCampus", in the
-// settings of the popup) and the notices of the board of the library with other hours (exams, summer, Easter), with
-// their calendar. The background reads them (libraryHours, lib/library.js). The box is in a closed shadow root.
+// Aulario Plus: the part "Horarios" of "Mi sitio", below the course guides, folded at the start: a card with an icon for
+// the library of the campus of the user (the setting "libraryCampus", in the settings of the popup: the hours of today,
+// the usual ones and the notices of its board with other hours, with their calendar), for the sports facilities and the
+// gym, and for the pool. The hours of today of the three also in its head. The background reads them (libraryHours,
+// lib/library.js). The part is in a closed shadow root.
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
   const HOST_ID = 'mak-library-host';
-  const OPEN = `${HOST_ID}:open`; // '1': open (the box starts folded)
+  const OPEN = `${HOST_ID}:open`; // '1': open (the part starts folded)
   const where = MAK.parsePortalPath(location.pathname);
   const onRoot = /^\/portal\/?$/.test(location.pathname);
   if (!(onRoot || (where && where.siteId && where.siteId.startsWith('~')))) return;
@@ -17,15 +18,35 @@
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.LINK_CSS}
     ${MAK.EXAM_CAL_CSS}
-    .head .count { margin: 0 2px; }
-    .today { margin: 0 0 8px; font-weight: 700; }
-    h4 { margin: 0 0 4px; font-size: calc(15px * var(--ap-head-zoom)); line-height: 1.25; }
-    .usual { margin: 0 0 6px; padding-left: 18px; }
-    .notice { margin: 10px 0 0; padding: 9px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
-    .notice h5 { margin: 0; font-size: 1em; line-height: 1.3; }
-    .notice .block { margin: 6px 0 0; }
-    .notice .block p { margin: 0; }
-    .links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
+    ${MAK.TILE_CSS}
+    .hr-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .hr-chip { display: inline-flex; align-items: center; gap: 4px; }
+    .hr-chip svg { width: 14px; height: 14px; }
+    .hr-date { margin: 0 0 8px; }
+    .hr-date::first-letter { text-transform: uppercase; }
+    /* The cards: one below the other; with room, the three in a row, or the library (with a calendar) on the left and the
+       sports on its right, one below the other. */
+    .hr-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: start; }
+    .hr-side { display: contents; }
+    @container (min-width: 700px) {
+      .hr-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+      .hr-cards.with-cal > .hr-side { display: flex; flex-direction: column; gap: 10px; }
+    }
+    .hr-card { min-width: 0; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
+    .hr-top { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+    .hr-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
+      color: var(--ap-accent); background: var(--ap-accent-soft); }
+    .hr-ico svg { width: 21px; height: 21px; }
+    .hr-top h5 { margin: 0; font-size: 1.02em; line-height: 1.25; }
+    .hr-now { margin: 0 0 6px; }
+    .hr-now b { font-size: 1.12em; }
+    .hr-usual { margin: 0; padding-left: 18px; }
+    .hr-notice { margin: 10px 0 0; padding: 8px 0 0; border-top: var(--ap-bw-sm) solid var(--ap-line); }
+    .hr-notice h6 { margin: 0; font-size: 1em; line-height: 1.3; }
+    .hr-block { margin: 6px 0 0; }
+    .hr-block p { margin: 0; }
+    .hr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
     .cal-day.special, .cal-key.special { background: color-mix(in srgb, var(--ap-green) 34%, transparent); font-weight: 800; }
     .cal-day.closed, .cal-key.closed { background: color-mix(in srgb, var(--ap-red) 26%, transparent); }
     .cal-day.closed { color: var(--ap-muted); text-decoration: line-through; }
@@ -35,30 +56,26 @@
   const longDate = (ms) => new Intl.DateTimeFormat(MAK.locale(), { weekday: 'long', day: 'numeric', month: 'long' }).format(ms);
   const hoursText = (x) => (x.closed ? t('lib.closed') : x.hours);
 
-  // The box: in the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), last (content-guide.js puts the guides before it).
-  let box = null;
+  // The part: a tile in the block "Aulario Plus" of "Mi sitio" (MAK.mySiteSlot), last (content-guide.js puts the guides
+  // before it).
+  let part = null;
   function frame() {
-    if (box) return box;
+    if (part) return part;
     const slot = MAK.mySiteSlot();
     if (!slot) return null;
     const host = document.createElement('div');
     host.id = HOST_ID;
     host.classList.add('in-block');
     const shadow = host.attachShadow({ mode: 'closed' });
-    const title = t('lib.title');
     let open = false;
     try { open = localStorage.getItem(OPEN) === '1'; } catch {}
-    const content = h('div', { class: 'content', hidden: !open });
-    const chip = h('span', { class: 'count', hidden: true });
-    const toggle = MAK.foldButton(open, { open: t('fold.open', { name: title }), close: t('fold.close', { name: title }) }, (o) => {
-      content.hidden = !o;
-      MAK.uiSave(OPEN, o);
-    });
-    shadow.append(MAK.themedStyle(CSS()), h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } },
-      h('div', { class: 'head' }, h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } }), chip, toggle), content));
+    const content = h('div');
+    const chips = h('span', { class: 'hr-chips' });
+    shadow.append(MAK.themedStyle(CSS()), h('div', { class: 'box', attrs: { role: 'region', 'aria-label': t('lib.title') } },
+      h('div', { class: 'tiles' }, MAK.foldTile(t('lib.title'), content, open, (o) => MAK.uiSave(OPEN, o), chips))));
     slot.append(host);
-    box = { content, chip };
-    return box;
+    part = { content, chips };
+    return part;
   }
 
   // The months of a calendar from this one on: each day in the color of its hours (the usual hours of its day of the week:
@@ -93,38 +110,60 @@
       h('div', { class: 'cal-legend meta' }, [...used.values()].map((u) => key(u.kind, u.text)), key('usual', t('lib.usual')))));
   }
 
-  function notice(n, week, now) {
-    return h('section', { class: 'notice' },
-      h('h5', { text: n.title }),
-      h('div', { class: 'meta', text: t('lib.published', { date: MAK.formatDay(n.date) }) }),
-      n.cal ? calendar(n.cal, week, now) : null,
-      n.blocks.map((b) => h('div', { class: 'block' }, b.head ? h('strong', { text: b.head }) : null, b.lines.map((l) => h('p', { text: l })))),
-      h('div', { class: 'links' }, MAK.link(n.url, t('lib.notice')), n.pdf ? MAK.link(n.pdf, t('lib.pdf')) : null));
+  const notice = (n, week, now) => h('div', { class: 'hr-notice' },
+    h('h6', { text: n.title }),
+    h('div', { class: 'meta', text: t('lib.published', { date: MAK.formatDay(n.date) }) }),
+    n.cal ? calendar(n.cal, week, now) : null,
+    n.blocks.map((b) => h('div', { class: 'hr-block' }, b.head ? h('strong', { text: b.head }) : null, b.lines.map((l) => h('p', { text: l })))),
+    h('div', { class: 'hr-links' }, MAK.link(n.url, t('lib.notice')), n.pdf ? MAK.link(n.pdf, t('lib.pdf')) : null));
+
+  // A card: its icon, its title and where, the hours of today, the usual ones, and more (notices, links).
+  function card({ icon, title, place, today, lines, more }) {
+    return h('section', { class: 'hr-card' },
+      h('div', { class: 'hr-top' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
+      today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), today.usual ? h('span', { class: 'meta', text: ` (${t('lib.usualDay')})` }) : null) : null,
+      lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => h('li', { text: l }))) : null,
+      more);
   }
 
   function draw(res) {
-    const b = frame();
-    if (!b) return;
+    const p = frame();
+    if (!p) return;
     const data = res && res.data;
     const now = Date.now();
-    const today = data ? MAK.libraryToday(data, now) : null;
-    b.chip.hidden = !today;
-    if (today) {
-      b.chip.textContent = today.closed ? t('lib.todayClosed') : t('lib.today', { hours: today.hours });
-      b.chip.className = `count${today.closed ? ' hot' : ''}`;
-    }
     if (!data) {
-      MAK.fill(b.content, h('p', { text: t('lib.error') }), h('div', { class: 'links' }, MAK.link(MAK.LIBRARY_BOARD, t('lib.board'))));
+      MAK.fill(p.chips);
+      MAK.fill(p.content, h('p', { text: t('lib.error') }), h('div', { class: 'hr-links' }, MAK.link(MAK.LIBRARY_BOARD, t('lib.board')), MAK.link(MAK.SPORTS_HOURS, t('lib.sportsPage'))));
       return;
     }
-    MAK.fill(b.content,
+    const sports = data.sports || {};
+    const parts = [
+      { icon: 'book', name: t('lib.libraryTitle'), today: MAK.libraryToday(data, now) },
+      { icon: 'dumbbell', name: t('lib.access'), today: sports.access ? MAK.weekToday(sports.access.week, now) : null },
+      { icon: 'pool', name: t('lib.pool'), today: sports.pool ? MAK.weekToday(sports.pool.week, now) : null }
+    ];
+    // The head: the hours of today of the three, with their icon.
+    MAK.fill(p.chips, parts.filter((x) => x.today).map((x) => h('span', { class: `count hr-chip${x.today.closed ? ' hot' : ''}`,
+      title: t('lib.chip', { name: x.name, hours: hoursText(x.today) }), attrs: { 'aria-label': t('lib.chip', { name: x.name, hours: hoursText(x.today) }) } }, MAK.icon(x.icon), hoursText(x.today))));
+    const week = data.page ? data.page.week : null;
+    const library = card({
+      icon: 'book', title: t('lib.libraryTitle'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), today: parts[0].today,
+      lines: data.page ? data.page.lines : null,
+      more: [
+        data.page ? null : h('p', { text: t('lib.libraryError') }),
+        data.notices.map((n) => notice(n, week, now)),
+        h('div', { class: 'hr-links' }, data.page ? MAK.link(data.page.url, t('lib.page')) : null, MAK.link(MAK.LIBRARY_BOARD, t('lib.board'))),
+        h('p', { class: 'meta', text: t('lib.campusHint') })
+      ]
+    });
+    const sportsLink = h('div', { class: 'hr-links' }, MAK.link(MAK.SPORTS_HOURS, t('lib.sportsPage')));
+    const sportsCards = data.sports
+      ? [['access', 'dumbbell'], ['pool', 'pool']].filter(([k]) => sports[k]).map(([k, icon]) => card({ icon, title: t(`lib.${k}`), place: t('lib.sportsPlace'), today: parts[k === 'access' ? 1 : 2].today, lines: sports[k].lines, more: sportsLink.cloneNode(true) }))
+      : [card({ icon: 'dumbbell', title: t('lib.sports'), more: [h('p', { text: t('lib.sportsError') }), sportsLink] })];
+    MAK.fill(p.content,
       res.error ? h('p', { class: 'meta', text: t('lib.stale', { date: MAK.formatDate(data.at) }) }) : null,
-      today ? h('p', { class: 'today', text: `${t('lib.todayIs', { date: longDate(now) })}: ${hoursText(today)}${today.usual ? ` (${t('lib.usualDay')})` : ''}` }) : null,
-      h('h4', { text: t('lib.library', { campus: t(`lib.campus.${data.campus}`) }) }),
-      h('ul', { class: 'usual' }, data.page.lines.map((l) => h('li', { text: l }))),
-      data.notices.map((n) => notice(n, data.page.week, now)),
-      h('div', { class: 'links' }, MAK.link(data.page.url, t('lib.page')), MAK.link(MAK.LIBRARY_BOARD, t('lib.board'))),
-      h('p', { class: 'meta', text: t('lib.campusHint') }));
+      h('p', { class: 'hr-date meta', text: longDate(now) }),
+      h('div', { class: `hr-cards${data.notices.some((n) => n.cal) ? ' with-cal' : ''}` }, library, h('div', { class: 'hr-side' }, sportsCards)));
   }
 
   async function run() {

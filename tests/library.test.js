@@ -13,6 +13,8 @@ const near = (a, b) => a.every((x, i) => Math.abs(x - b[i]) < 0.01);
 test('libraryUrl: only the library of www.unavarra.es and its PDF files, with https', () => {
   assert.equal(MAK.libraryUrl('http://www.unavarra.es/biblioteca/tablon-de-anuncios?contentId=1'), 'https://www.unavarra.es/biblioteca/tablon-de-anuncios?contentId=1');
   assert.equal(MAK.libraryUrl('/digitalAssets/289/a_b.pdf'), 'https://www.unavarra.es/digitalAssets/289/a_b.pdf');
+  assert.equal(MAK.libraryUrl('http://www.unavarra.es/deportes/instalaciones/horario?languageId=100000'), 'https://www.unavarra.es/deportes/instalaciones/horario?languageId=100000');
+  assert.equal(MAK.libraryUrl('https://www.unavarra.es/deportes/instalaciones/precios'), null, 'only the page of the hours of Sports');
   for (const bad of ['https://evil.example/biblioteca/x', 'javascript:alert(1)', '/digitalAssets/1/x.exe', 'https://www.unavarra.es/sites/grados/x', 'https://www.unavarra.es.evil.example/biblioteca/']) {
     assert.equal(MAK.libraryUrl(bad), null, bad);
   }
@@ -27,6 +29,16 @@ test('parseLibraryPage: the lines of the usual hours and the hours of each day o
   const s = MAK.parseLibraryPage(F.PAGES.salud);
   assert.deepEqual([s.week[0], s.week[3], s.week[6]], [{ hours: '9:00–21:45' }, { hours: '8:00–21:00' }, { hours: '9:00–21:45' }]);
   assert.equal(MAK.parseLibraryPage('<p>Nada</p>'), null);
+});
+
+test('parseSportsPage: the access (also the gym) and the pool, each day of the week; not the office', () => {
+  const s = MAK.parseSportsPage(F.SPORTS);
+  assert.deepEqual(s.access.lines, ['De lunes a viernes, de 7:30 a 22:00', 'Sábados, de 9:00 a 22:00', 'Domingos y festivos, de 9:00 a 14:00']);
+  assert.deepEqual([s.access.week[0], s.access.week[2], s.access.week[6]], [{ hours: '9:00–14:00' }, { hours: '7:30–22:00' }, { hours: '9:00–22:00' }]);
+  assert.deepEqual([s.pool.week[0], s.pool.week[5], s.pool.week[6]], [{ closed: true }, { hours: '7:30–21:00' }, { hours: '9:00–14:00' }]);
+  assert.deepEqual(MAK.weekToday(s.pool.week, at(2026, 10, 25)), { hours: '', closed: true, usual: true }, 'a Sunday');
+  assert.equal(MAK.parseSportsPage('<div class="texto"><p>nada</p></div>'), null);
+  assert.equal(MAK.weekToday(null), null);
 });
 
 test('parseBoardList and isHoursNotice: the notices with their date, and only the ones about hours of the campus', () => {
@@ -140,7 +152,14 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   const dec = await load('arrosadia', at(2026, 1, 10));
   assert.deepEqual(dec.notices.map((n) => n.title), ['Horario de las bibliotecas en periodo de exámenes (nov. 2025- en. 2026)']);
 
-  // A campus that does not exist: Arrosadía. No page of the campus: an error.
+  // The sports facilities and the pool, for all the campuses.
+  assert.deepEqual([april.sports.url, april.sports.access.lines.length, april.sports.pool.week[0], april.partial], [MAK.SPORTS_HOURS, 3, { closed: true }, false]);
+
+  // A campus that does not exist: Arrosadía. A page that fails: the other one, "partial". No page: an error.
   assert.equal((await load('mars', at(2026, 4, 15))).campus, 'arrosadia');
+  const noSports = await MAK.loadLibrary({ campus: 'tudela', getText: (url) => (url === MAK.SPORTS_HOURS ? Promise.reject(new Error('503')) : getText(url)), getBytes, now: at(2026, 4, 15) });
+  assert.deepEqual([noSports.sports, !!noSports.page, noSports.partial], [null, true, true]);
+  const noLibrary = await MAK.loadLibrary({ campus: 'tudela', getText: (url) => (url === MAK.LIBRARY_CAMPUSES.tudela.page ? Promise.reject(new Error('503')) : getText(url)), getBytes, now: at(2026, 4, 15) });
+  assert.deepEqual([noLibrary.page, !!noLibrary.sports, MAK.libraryToday(noLibrary, at(2026, 4, 11))], [null, true, null]);
   await assert.rejects(MAK.loadLibrary({ campus: 'tudela', getText: async () => '<p>no</p>', getBytes, now: at(2026, 4, 15) }));
 });

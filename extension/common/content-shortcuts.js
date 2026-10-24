@@ -26,10 +26,7 @@
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
     /* The exams on the full width, with the actions as small buttons in their head. */
-    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; container-type: inline-size; }
-    .tile { min-width: 0; padding: 12px 14px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
-    .tile h4 { margin: 0 0 8px; font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
-    .tile h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.8em; }
+    ${MAK.TILE_CSS}
     .period { margin: 2px 0; }
     /* The next exam of the user: the day in large, the subject, and the days to it. */
     .next-exam { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 10px; padding: 8px 12px;

@@ -25,6 +25,7 @@
   // The look comes from the theme (lib/themes.js, MAK.themedStyle) and MAK.BOX_CSS.
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.SEMESTERS_CSS}
+    ${MAK.TILE_CSS}
     .content { max-width: 1400px; }
     /* The home page of a site: the guide keeps its width (900px at most), and the calendar goes in the free space
        to its right, centered, when one month fits there (the months one below the other when two do not); else on
@@ -203,19 +204,25 @@
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = MAK.themedStyle(CSS(), mySite ? null : { photo: siteId }); // in a subject: the photo of the subject
     const content = h('div', { class: `content${mySite ? '' : ' one'}` }, body);
+    const key = `${HOST_ID}:${mySite ? 'mine' : siteId}`;
     let hidden = false;
-    try { hidden = localStorage.getItem(`${HOST_ID}:${mySite ? 'mine' : siteId}`) === '1'; } catch {}
-    content.hidden = hidden;
-    // The arrow folds the box (the title too); the box stays folded when the page opens again.
-    const toggle = MAK.foldButton(!hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
-      content.hidden = !open;
-      MAK.uiSave(`${HOST_ID}:${mySite ? 'mine' : siteId}`, !open); // '1': folded
-    });
-    const name = h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } });
-    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, h('div', { class: 'head' }, name, extra || null, toggle), content));
-    // "Mi sitio": in the block "Aulario Plus" (MAK.mySiteSlot), after the shortcuts. Else below the
-    // shortcuts (content-shortcuts.js) or the banner of new items, or at the top of the content.
+    try { hidden = localStorage.getItem(key) === '1'; } catch {}
+    const save = (open) => MAK.uiSave(key, !open); // '1': folded
+    // The arrow folds the box (the title too); the box stays folded when the page opens again. "Mi sitio": in the block
+    // "Aulario Plus" (MAK.mySiteSlot), a tile as "Exámenes finales", after the shortcuts. Else a box below the shortcuts
+    // (content-shortcuts.js) or the banner of new items, or at the top of the content.
     const slot = mySite ? MAK.mySiteSlot() : null;
+    let box;
+    if (slot) box = h('div', { class: 'tiles' }, MAK.foldTile(title, content, !hidden, save, extra));
+    else {
+      content.hidden = hidden;
+      const toggle = MAK.foldButton(!hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
+        content.hidden = !open;
+        save(open);
+      });
+      box = [h('div', { class: 'head' }, h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } }), extra || null, toggle), content];
+    }
+    shadow.append(style, h('div', { class: 'box', attrs: { role: 'region', 'aria-label': title } }, box));
     const shortcuts = document.getElementById(SHORTCUTS_ID);
     const above = shortcuts || document.getElementById(BANNER_ID);
     if (slot) host.classList.add('in-block');

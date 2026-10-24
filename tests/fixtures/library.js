@@ -137,6 +137,18 @@ Ciencias de la Salud:&nbsp;<strong>necesario mostrar identificaci&oacute;n acred
     '<p>A partir del s&aacute;bado 22 de noviembre y hasta el domingo 18 de enero (&eacute;poca de ex&aacute;menes) las bibliotecas abrir&aacute;n los d&iacute;as festivos y fines de semana:</p><p>Campus de Arrosad&iacute;a: de 09:00 a 22:45 h.</p><p>En festivos navide&ntilde;os: 24, 25 y 31 de dic. y 1 de enero CERRADO</p>')
 };
 
+// The hours of the sports facilities (www.unavarra.es/deportes/instalaciones/horario).
+const SPORTS = `<html><body><div class="texto">
+<h2 class="tituloPagina">Horario de las instalaciones deportivas</h2>
+<table style="width:70%"><caption>HORARIO</caption><tbody>
+<tr><th>Horario de acceso</th><th>&nbsp;</th></tr>
+<tr><td>&nbsp;&nbsp; De lunes a viernes, de 7:30 a 22:00<br />&nbsp;&nbsp; S&aacute;bados, de 9:00 a 22:00<br />&nbsp;&nbsp; Domingos y festivos, de 9:00 a 14:00</td><td>&nbsp;</td></tr>
+<tr><th>Piscina</th><th>&nbsp;</th></tr>
+<tr><td>&nbsp;&nbsp; De lunes a viernes, de 7:30 a 21:00<br />&nbsp;&nbsp; S&aacute;bados, 9:00 a 14:00<br />&nbsp;&nbsp; Domingos y festivos, cerrada</td><td>&nbsp;</td></tr>
+<tr><th colspan="2">Atenci&oacute;n al p&uacute;blico de la Oficina de Deportes</th></tr>
+<tr><td>&nbsp;&nbsp; De lunes a viernes,&nbsp;de 9:00 a 14:30</td><td>&nbsp;</td></tr>
+</tbody></table></div></body></html>`;
+
 // The answers of www.unavarra.es: address -> text or bytes.
 function routes() {
   const B = 'https://www.unavarra.es/biblioteca';
@@ -145,6 +157,7 @@ function routes() {
     [`${B}/la-biblioteca/Campus+de+Ciencias+de+la+Salud`]: PAGES.salud,
     [`${B}/la-biblioteca/Campus+de+Tudela`]: PAGES.tudela,
     [`${B}/tablon-de-anuncios`]: BOARD,
+    'https://www.unavarra.es/deportes/instalaciones/horario': SPORTS,
     [`${B}/tablon-de-anuncios?pagina=1`]: list([]),
     [`${B}/tablon-de-anuncios?opcion=2`]: BOARD_2025,
     'https://www.unavarra.es/digitalAssets/289/289130_1000002026_examenes_arrosadia.pdf': calendarPdf()
@@ -153,4 +166,4 @@ function routes() {
   return out;
 }
 
-module.exports = { canvaPdf, month, calendarPdf, PAGES, BOARD, NOTICES, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };
+module.exports = { canvaPdf, month, calendarPdf, PAGES, BOARD, NOTICES, SPORTS, routes, entry, list, notice, colors: { BLUE, BLUE_DAY, GREEN, RED, GREY } };

@@ -9,6 +9,8 @@
 
   MAK.LIBRARY_MS = 12 * MAK.HOUR;
   MAK.LIBRARY_BOARD = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
+  // The hours of the sports facilities of the UPNA (Arrosadía): the access (also the gym) and the pool.
+  MAK.SPORTS_HOURS = 'https://www.unavarra.es/deportes/instalaciones/horario';
   // The campuses: the page with their usual hours, and the words that name them (in a notice, a row, a PDF file).
   MAK.LIBRARY_CAMPUSES = {
     arrosadia: { page: 'https://www.unavarra.es/biblioteca/la-biblioteca/Campus+de+Arrosadia', names: /arrosad[ií]a/i },
@@ -17,14 +19,15 @@
   };
   const named = (text) => Object.keys(MAK.LIBRARY_CAMPUSES).filter((k) => MAK.LIBRARY_CAMPUSES[k].names.test(text));
 
-  // An address of the library of the UPNA (its pages, the board) or of its PDF files, with https; else null.
+  // An address of the library of the UPNA (its pages, the board) or of its PDF files, or the hours of the sports facilities,
+  // with https; else null.
   MAK.libraryUrl = function (href) {
     try {
       const u = new URL(String(href).trim(), 'https://www.unavarra.es/biblioteca/');
       if (u.hostname !== 'www.unavarra.es' || (u.protocol !== 'https:' && u.protocol !== 'http:')) return null;
       u.protocol = 'https:';
       u.hash = '';
-      return u.pathname.startsWith('/biblioteca/') || /^\/digitalAssets\/[^?#]+\.pdf$/i.test(u.pathname) ? u.href : null;
+      return u.pathname.startsWith('/biblioteca/') || u.pathname === new URL(MAK.SPORTS_HOURS).pathname || /^\/digitalAssets\/[^?#]+\.pdf$/i.test(u.pathname) ? u.href : null;
     } catch {
       return null;
     }
@@ -138,16 +141,46 @@
     const end = s.indexOf('</ul>', at);
     const found = lines(s.slice(at, end < 0 ? at + 3000 : end)).slice(1)
       .filter((l) => !/extraordinari|tabl[oó]n de anuncios/i.test(l)).slice(0, 8);
-    if (!found.length) return null;
+    return found.length ? { lines: found, week: weekOf(found) } : null;
+  };
+
+  // The hours of each day of the week (0 = Sunday) in lines as "Lunes a viernes: 8:00 a 21:00 horas.", "Sábados, 9:00 a
+  // 14:00", "Domingos y festivos, cerrada": { hours: "8:00–21:00" } or { closed: true }; null if no line says.
+  function weekOf(found) {
     const week = Array(7).fill(null);
     for (const l of found) {
-      const colon = l.indexOf(':');
-      if (colon < 0) continue;
-      const value = l.slice(colon + 1);
-      const day = /cerrad/i.test(value) ? { closed: true } : hoursOf(value) ? { hours: hoursOf(value) } : null;
-      if (day) for (const d of weekdays(l.slice(0, colon))) if (!week[d]) week[d] = day;
+      const day = /cerrad/i.test(l) ? { closed: true } : hoursOf(l) ? { hours: hoursOf(l) } : null;
+      if (day) for (const d of weekdays(l)) if (!week[d]) week[d] = day;
     }
-    return { lines: found, week };
+    return week;
+  }
+  // The hours of today of a week (weekOf), the usual ones: { hours, closed, usual: true } or null.
+  MAK.weekToday = function (week, now = Date.now()) {
+    const w = Array.isArray(week) ? week[new Date(now).getDay()] : null;
+    return w ? { hours: w.hours || '', closed: !!w.closed, usual: true } : null;
+  };
+
+  // The page of the hours of the sports facilities: its table, a part under each head ("Horario de acceso": also the gym;
+  // "Piscina"; the office is left out). { access: { lines, week }, pool: { lines, week } } (a part can be null) or null.
+  MAK.parseSportsPage = function (html) {
+    const s = String(html);
+    const at = s.indexOf('class="texto"');
+    const end = at < 0 ? -1 : s.indexOf('</table>', at);
+    if (end < 0) return null;
+    const parts = { access: [], pool: [] };
+    let part = null;
+    for (const row of s.slice(at, end).matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+      if (/<th\b/i.test(row[1])) {
+        const head = fold(lines(row[1]).join(' '));
+        part = /acceso/.test(head) ? 'access' : /piscina/.test(head) ? 'pool' : null;
+      } else if (part) {
+        const cell = /<td\b[^>]*>([\s\S]*?)<\/td>/i.exec(row[1]);
+        if (cell) parts[part].push(...lines(cell[1]).slice(0, 8));
+      }
+    }
+    const of = (found) => (found.length ? { lines: found.slice(0, 8), week: weekOf(found) } : null);
+    const out = { access: of(parts.access), pool: of(parts.pool) };
+    return out.access || out.pool ? out : null;
   };
 
   // A page of the list of the board: its notices [{ id, date, title, url }] and the links to the other years.
@@ -271,16 +304,18 @@
 
   // ---- All of it -------------------------------------------------------------------------------------------------
 
-  // The hours of the library for a campus: getText(url) and getBytes(url) read the pages and the PDF files (the
-  // background checks the addresses). { at, campus, page: { url, lines, week }, notices: [{ title, date, url, blocks,
-  // pdf, cal, from, to }] }: the notices of the last year about hours, of the campus, that did not end (a notice without
-  // dates: 90 days), at most 4, the first one first.
+  // The hours of the library for a campus and of the sports facilities: getText(url) and getBytes(url) read the pages and
+  // the PDF files (the background checks the addresses). { at, campus, partial (a page failed), page: { url, lines,
+  // week } or null, notices: [{ title, date, url, blocks, pdf, cal, from, to }], sports: { url, access, pool } or null }:
+  // the notices of the last year about hours, of the campus, that did not end (a notice without dates: 90 days), at most
+  // 4, the first one first. An error when no page answers.
   MAK.loadLibrary = async function ({ campus, getText, getBytes, now = Date.now() }) {
     const key = Object.hasOwn(MAK.LIBRARY_CAMPUSES, campus) ? campus : 'arrosadia';
     const c = MAK.LIBRARY_CAMPUSES[key];
-    const page = MAK.parseLibraryPage(await getText(c.page));
-    if (!page) throw new Error('library: no hours');
-    const first = MAK.parseBoardList(await getText(MAK.LIBRARY_BOARD));
+    const sports = MAK.parseSportsPage(await getText(MAK.SPORTS_HOURS).catch(() => ''));
+    const page = MAK.parseLibraryPage(await getText(c.page).catch(() => ''));
+    if (!page && !sports) throw new Error('library: no hours');
+    const first = MAK.parseBoardList(await getText(MAK.LIBRARY_BOARD).catch(() => ''));
     const more = [`${MAK.LIBRARY_BOARD}?pagina=1`];
     const before = first.years.find((x) => x.year === new Date(now).getFullYear() - 1);
     if (before) more.push(before.url);
@@ -311,7 +346,11 @@
       if (notices.length >= 4) break;
     }
     notices.sort((a, b) => (a.from || a.date) - (b.from || b.date));
-    return { at: now, campus: key, page: { url: c.page, lines: page.lines, week: page.week }, notices };
+    return {
+      at: now, campus: key, partial: !page || !sports, notices,
+      page: page ? { url: c.page, lines: page.lines, week: page.week } : null,
+      sports: sports ? { url: MAK.SPORTS_HOURS, access: sports.access, pool: sports.pool } : null
+    };
   };
 
   // The hours of today: from the calendar of a notice (a day with a color of its legend), else the usual hours of the
@@ -327,8 +366,7 @@
       if (l) return { hours: l.hours, closed: l.closed, notice: n.title };
       if (!n.cal && n.from && n.from <= today && today < n.to) return null;
     }
-    const w = data.page && data.page.week ? data.page.week[d.getDay()] : null;
-    return w ? { hours: w.hours || '', closed: !!w.closed, usual: true } : null;
+    return data.page ? MAK.weekToday(data.page.week, now) : null;
   };
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;

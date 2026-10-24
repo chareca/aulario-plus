@@ -89,7 +89,12 @@
     school: [['path', { d: 'M2.5 9.5L12 5l9.5 4.5L12 14z' }], ['path', { d: 'M6.5 11.6v4.2c0 1.5 2.5 2.9 5.5 2.9s5.5-1.4 5.5-2.9v-4.2' }], ['path', { d: 'M21.5 9.5v5' }]],
     news: [['path', { d: 'M11 3.5l1.9 5.3 5.3 1.9-5.3 1.9L11 17.9l-1.9-5.3-5.3-1.9 5.3-1.9z' }], ['path', { d: 'M18.5 15v5M16 17.5h5' }]],
     help: [['circle', { cx: 12, cy: 12, r: 8.5 }], ['path', { d: 'M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.3' }], ['path', { d: 'M12 16.8h.01' }]],
-    bug: [['rect', { x: 8, y: 8, width: 8, height: 11.5, rx: 4 }], ['path', { d: 'M12 11v8.5M8 12.5H4.5M19.5 12.5H16M8 16.5l-3 1.5M16 16.5l3 1.5M9 9L6.5 6.5M15 9l2.5-2.5' }]]
+    bug: [['rect', { x: 8, y: 8, width: 8, height: 11.5, rx: 4 }], ['path', { d: 'M12 11v8.5M8 12.5H4.5M19.5 12.5H16M8 16.5l-3 1.5M16 16.5l3 1.5M9 9L6.5 6.5M15 9l2.5-2.5' }]],
+    // "Horarios" in Mi sitio (content-library.js): the library, the gym (and the sports facilities), the pool
+    book: [['path', { d: 'M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z' }], ['path', { d: 'M12 6.5v13' }]],
+    dumbbell: [['path', { d: 'M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11' }]],
+    pool: [['circle', { cx: 16.5, cy: 5.5, r: 1.8 }], ['path', { d: 'M4.5 12l5-3.5 3.5 3 3-2' }], ['path', { d: 'M3 15.5c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0' }],
+      ['path', { d: 'M3 19.5c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0' }]]
   };
   MAK.icon = function (name) {
     const ns = 'http://www.w3.org/2000/svg';
@@ -328,6 +333,31 @@
     .mak-fold[aria-expanded="false"] svg { transform: rotate(-90deg); }
     @media (prefers-reduced-motion: reduce) { .mak-fold svg { transition: none; } }
   `;
+  // A part of the block "Aulario Plus" of "Mi sitio" ("Exámenes finales", "Guías docentes", "Horarios"): a tile with its
+  // own frame and background (the look of ".tile" in each theme), and a head with its title and its buttons.
+  MAK.TILE_CSS = `
+    .tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; container-type: inline-size; }
+    .tile { min-width: 0; padding: 12px 14px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
+    .tile h4 { margin: 0 0 8px; font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
+    .tile h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.8em; }
+    .tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .tile-head > h4 { flex: 1 1 auto; margin: 0; cursor: pointer; }
+    .tile-head + * { margin-top: 10px; }
+    .tile-head > .actions { display: flex; flex-flow: row wrap; gap: 6px; align-items: center; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+  `;
+  // A tile that folds: its title, its content, the state at the start (open), onToggle(open) after each click, and
+  // other buttons (or tags) for the head, before the arrow.
+  MAK.foldTile = function (title, content, open, onToggle, extra) {
+    const toggle = MAK.foldButton(open, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (o) => {
+      content.hidden = !o;
+      onToggle(o);
+    });
+    content.hidden = !open;
+    return MAK.h('section', { class: 'tile' },
+      MAK.h('div', { class: 'tile-head' }, MAK.h('h4', { text: title, on: { click: () => toggle.click() } }), MAK.h('div', { class: 'actions' }, extra || null, toggle)),
+      content);
+  };
+
   // A button with the arrow. open: the state at the start. labels: { open, close }, the texts for the
   // screen readers and the tooltip. onToggle(open) after each click.
   MAK.foldButton = function (open, labels, onToggle) {
