@@ -342,10 +342,19 @@
     .tile { min-width: 0; padding: 12px 14px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }
     .tile h4 { margin: 0 0 8px; font-size: calc(16px * var(--ap-head-zoom)); line-height: 1.2; }
     .tile h4 .meta { font-family: var(--ap-font); font-style: normal; font-weight: 400; letter-spacing: normal; font-size: 0.8em; }
-    .tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .tile-head > h4 { flex: 1 1 auto; margin: 0; cursor: pointer; }
+    /* The head: the title on the left, the arrow always at the top right, the other buttons (or tags) between them; with
+       little room, the other buttons on a row of their own below. */
+    .tile-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "title extra fold"; align-items: start; gap: 8px; }
+    .tile-head > h4 { grid-area: title; min-width: 0; min-height: 30px; display: flex; align-items: center; margin: 0; cursor: pointer; }
+    .tile-head > .mak-fold { grid-area: fold; }
     .tile-head + * { margin-top: 10px; }
-    .tile-head > .actions { display: flex; flex-flow: row wrap; gap: 6px; align-items: center; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+    .tile-head > .actions { grid-area: extra; display: flex; flex-flow: row wrap; justify-content: flex-end; gap: 6px; align-items: center; align-content: center; min-height: 30px;
+      margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+    .tile-head > .actions:empty { display: none; }
+    @container (max-width: 560px) {
+      .tile-head { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title fold" "extra extra"; }
+      .tile-head > .actions { justify-content: flex-start; }
+    }
   `;
   // A tile that folds: its title, its content, the state at the start (open), onToggle(open) after each click, and
   // other buttons (or tags) for the head, before the arrow.
@@ -356,7 +365,7 @@
     });
     content.hidden = !open;
     return MAK.h('section', { class: 'tile' },
-      MAK.h('div', { class: 'tile-head' }, MAK.h('h4', { text: title, on: { click: () => toggle.click() } }), MAK.h('div', { class: 'actions' }, extra || null, toggle)),
+      MAK.h('div', { class: 'tile-head' }, MAK.h('h4', { text: title, on: { click: () => toggle.click() } }), MAK.h('div', { class: 'actions' }, extra || null), toggle),
       content);
   };
 

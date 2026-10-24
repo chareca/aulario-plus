@@ -19,7 +19,7 @@
     ${MAK.LINK_CSS}
     ${MAK.EXAM_CAL_CSS}
     ${MAK.TILE_CSS}
-    .hr-chips { display: inline-flex; flex-wrap: wrap; gap: 8px; margin-right: 10px; }
+    .hr-chips { display: inline-flex; flex-wrap: wrap; justify-content: inherit; gap: 6px 10px; }
     .hr-chip { display: inline-flex; align-items: center; gap: 4px; }
     .hr-chip svg { width: 14px; height: 14px; }
     .hr-date { margin: 0 0 8px; }
