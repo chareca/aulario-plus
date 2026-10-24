@@ -8,9 +8,11 @@
   const MAK = (root.MAK = root.MAK || {});
 
   MAK.LIBRARY_MS = 12 * MAK.HOUR;
+  // The form of the kept hours (storage "library"): another form (an older version) is read again at once.
+  MAK.LIBRARY_FORM = 2;
   MAK.LIBRARY_BOARD = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
   // The hours of the sports facilities of the UPNA (Arrosadía): the access (also the gym) and the pool.
-  MAK.SPORTS_HOURS = 'https://www.unavarra.es/deportes/instalaciones/horario';
+  MAK.SPORTS_HOURS = 'https://www.unavarra.es/deportes/instalaciones/horario?languageId=100000'; // in Spanish
   // The campuses: the page with their usual hours, and the words that name them (in a notice, a row, a PDF file).
   MAK.LIBRARY_CAMPUSES = {
     arrosadia: { page: 'https://www.unavarra.es/biblioteca/la-biblioteca/Campus+de+Arrosadia', names: /arrosad[ií]a/i },
@@ -347,27 +349,55 @@
     }
     notices.sort((a, b) => (a.from || a.date) - (b.from || b.date));
     return {
-      at: now, campus: key, partial: !page || !sports, notices,
+      v: MAK.LIBRARY_FORM, at: now, campus: key, partial: !page || !sports, notices,
       page: page ? { url: c.page, lines: page.lines, week: page.week } : null,
       sports: sports ? { url: MAK.SPORTS_HOURS, access: sports.access, pool: sports.pool } : null
     };
   };
 
-  // The hours of today: from the calendar of a notice (a day with a color of its legend), else the usual hours of the
-  // day of the week. null: a notice without a calendar is about today (its text says it), or nothing is known.
-  // { hours, closed, notice (its title) } or { hours, closed, usual: true }.
-  MAK.libraryToday = function (data, now = Date.now()) {
+  // The hours of the library on a day: from the calendar of a notice (a day with a color of its legend), else the usual
+  // hours of its day of the week. null: a notice without a calendar is about that day (its text says it), or nothing is
+  // known. { hours, closed, notice (its title) } or { hours, closed, usual: true }.
+  MAK.libraryDay = function (data, when = Date.now()) {
     if (!data) return null;
-    const d = new Date(now);
-    const today = startOfDay(now);
+    const d = new Date(when);
+    const day = startOfDay(when);
     for (const n of data.notices || []) {
       const month = n.cal && n.cal.months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
       const l = month && n.cal.legend[month.days[d.getDate() - 1]];
       if (l) return { hours: l.hours, closed: l.closed, notice: n.title };
-      if (!n.cal && n.from && n.from <= today && today < n.to) return null;
+      if (!n.cal && n.from && n.from <= day && day < n.to) return null;
     }
-    return data.page ? MAK.weekToday(data.page.week, now) : null;
+    return data.page ? MAK.weekToday(data.page.week, when) : null;
   };
+  MAK.libraryToday = (data, now = Date.now()) => MAK.libraryDay(data, now);
+
+  // Open now and until when, or closed and when it opens: { open, at } (at: the time of the change; 0: not known in the
+  // next two weeks). dayOf(time) gives the hours of the day of that time (MAK.libraryDay, MAK.weekToday): { hours: "9:00–
+  // 22:45" } or { closed: true }; null: not known (then null, or at 0 if it is not today).
+  const minutes = (hours) => {
+    const m = /^(\d{1,2}):(\d{2})–(\d{1,2}):(\d{2})$/.exec(hours || '');
+    return m ? [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])] : null;
+  };
+  MAK.openState = function (dayOf, now = Date.now()) {
+    const d = new Date(now);
+    const at = (base, mins) => new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(mins / 60), mins % 60).getTime();
+    const today = dayOf(now);
+    const span = today && !today.closed ? minutes(today.hours) : null;
+    if (!today || (!today.closed && !span)) return null;
+    const mins = d.getHours() * 60 + d.getMinutes();
+    if (span && mins >= span[0] && mins < span[1]) return { open: true, at: at(d, span[1]) };
+    if (span && mins < span[0]) return { open: false, at: at(d, span[0]) };
+    for (let k = 1; k <= 14; k++) {
+      const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + k, 12);
+      const day = dayOf(next.getTime());
+      const s = day && !day.closed ? minutes(day.hours) : null;
+      if (!day || (!day.closed && !s)) break;
+      if (s) return { open: false, at: at(next, s[0]) };
+    }
+    return { open: false, at: 0 };
+  };
+
 
   if (typeof module === 'object' && module.exports) module.exports = MAK;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -91,6 +91,8 @@
     help: [['circle', { cx: 12, cy: 12, r: 8.5 }], ['path', { d: 'M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.3' }], ['path', { d: 'M12 16.8h.01' }]],
     bug: [['rect', { x: 8, y: 8, width: 8, height: 11.5, rx: 4 }], ['path', { d: 'M12 11v8.5M8 12.5H4.5M19.5 12.5H16M8 16.5l-3 1.5M16 16.5l3 1.5M9 9L6.5 6.5M15 9l2.5-2.5' }]],
     // "Horarios" in Mi sitio (content-library.js): the library, the gym (and the sports facilities), the pool
+    check: [['path', { d: 'M5.5 12.5l4.2 4.2L18.5 8' }]],
+    x: [['path', { d: 'M7 7l10 10M17 7L7 17' }]],
     book: [['path', { d: 'M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z' }], ['path', { d: 'M12 6.5v13' }]],
     dumbbell: [['path', { d: 'M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11' }]],
     pool: [['circle', { cx: 16.5, cy: 5.5, r: 1.8 }], ['path', { d: 'M4.5 12l5-3.5 3.5 3 3-2' }], ['path', { d: 'M3 15.5c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0' }],

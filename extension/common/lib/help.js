@@ -47,11 +47,11 @@
         en: 'New in Mi sitio: "Hours", with the library of your campus (also in exams, summer and Easter), the gym and the pool.'
       },
       es: [
-        'Mi sitio tiene una sección nueva, «Horarios», cerrada al empezar: una tarjeta para la biblioteca de tu campus (el horario de hoy, el habitual y los avisos de su tablón con horarios especiales de exámenes, verano o Semana Santa, con su calendario en colores), otra para las instalaciones deportivas y el gimnasio y otra para la piscina. Su cabecera enseña el horario de hoy de las tres. Elige el campus de la biblioteca (Arrosadía, Ciencias de la Salud o Tudela) en Ajustes → Biblioteca.',
+        'Mi sitio tiene una sección nueva, «Horarios», cerrada al empezar: una tarjeta para la biblioteca de tu campus (el horario de hoy, el habitual y los avisos de su tablón con horarios especiales de exámenes, verano o Semana Santa, con su calendario en colores), otra para las instalaciones deportivas y el gimnasio y otra para la piscina. Cada tarjeta dice si está abierto ahora y hasta qué hora, o cuándo abre, y la cabecera enseña el horario de hoy de las tres. Elige el campus de la biblioteca (Arrosadía, Ciencias de la Salud o Tudela) en Ajustes → Biblioteca.',
         'En Mi sitio, «Guías docentes» y «Horarios» tienen su propio recuadro, como «Exámenes finales».'
       ],
       en: [
-        'Mi sitio has a new section, "Hours", closed at the start: a card for the library of your campus (the hours of today, the usual ones and the notices of its board with special hours for exams, summer or Easter, with their calendar in colors), another one for the sports facilities and the gym, and another one for the pool. Its head shows the hours of today of the three. Choose the campus of the library (Arrosadía, Ciencias de la Salud or Tudela) in Settings → Library.',
+        'Mi sitio has a new section, "Hours", closed at the start: a card for the library of your campus (the hours of today, the usual ones and the notices of its board with special hours for exams, summer or Easter, with their calendar in colors), another one for the sports facilities and the gym, and another one for the pool. Each card says if it is open now and until when, or when it opens, and the head shows the hours of today of the three. Choose the campus of the library (Arrosadía, Ciencias de la Salud or Tudela) in Settings → Library.',
         'In Mi sitio, "Guías docentes" and "Hours" have their own box, as "Exámenes finales".'
       ]
     },

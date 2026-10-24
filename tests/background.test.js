@@ -277,3 +277,12 @@ test('libraryHours: the hours of the library of the campus of the settings, kept
   await bg.ext.storage.local.set({ settings: { libraryCampus: 'arrosadia' } });
   assert.deepEqual(await bg.send({ type: 'libraryHours' }, CONTENT()), { error: 'library.network' }, 'no hours of another campus');
 });
+
+test('libraryHours: hours kept by an older version (without the sports) are read again at once', async () => {
+  const routes = require('./fixtures/library').routes();
+  const fetch = async (url) => (routes[String(url)] === undefined ? new Response('no', { status: 404 }) : new Response(routes[String(url)], { status: 200 }));
+  const old = { at: Date.now(), campus: 'arrosadia', page: { url: 'x', lines: ['Lunes a viernes: 8:00 a 21:00 horas.'], week: [] }, notices: [] };
+  const bg = loadBackground({ fetch, local: { library: old } });
+  const got = await bg.send({ type: 'libraryHours' }, CONTENT());
+  assert.deepEqual([got.data.v, !!got.data.sports, got.data.sports.pool.lines.length], [bg.MAK.LIBRARY_FORM, true, 3]);
+});

@@ -1012,7 +1012,7 @@ const handlers = {
       const { settings, library } = await store.get(['settings', 'library']);
       const campus = MAK.withDefaults(settings).libraryCampus;
       // A reading where a page failed: again after 30 minutes.
-      if (library && library.campus === campus && Date.now() - library.at < (library.partial ? 30 * MAK.MINUTE : MAK.LIBRARY_MS)) return { data: library };
+      if (library && library.v === MAK.LIBRARY_FORM && library.campus === campus && Date.now() - library.at < (library.partial ? 30 * MAK.MINUTE : MAK.LIBRARY_MS)) return { data: library };
       const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
       if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
       try {

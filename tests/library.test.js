@@ -113,6 +113,21 @@ test('libraryCalendar: each day with the index of its color in the legend; a mon
   assert.deepEqual([may[0], may[29], may[30], may[4]], [1, 2, 2, 0], 'the legend in two texts');
 });
 
+test('openState: open until when, or closed and when it opens (also after a weekend or a closed day of a calendar)', () => {
+  const week = MAK.parseLibraryPage(F.PAGES.arrosadia).week; // Monday to Friday 8:00–21:00, weekends closed
+  const usual = (ms) => MAK.weekToday(week, ms);
+  const state = (when, dayOf = usual) => {
+    const s = MAK.openState(dayOf, when);
+    return s && [s.open, s.at && new Date(s.at).toString().slice(0, 21)];
+  };
+  assert.deepEqual(state(at(2026, 10, 22, 10)), [true, 'Thu Oct 22 2026 21:00'], 'a Thursday at 10:00');
+  assert.deepEqual(state(at(2026, 10, 22, 7)), [false, 'Thu Oct 22 2026 08:00'], 'before it opens');
+  assert.deepEqual(state(at(2026, 10, 23, 22)), [false, 'Mon Oct 26 2026 08:00'], 'a Friday night: on Monday');
+  assert.deepEqual(state(at(2026, 10, 24, 12)), [false, 'Mon Oct 26 2026 08:00'], 'a Saturday');
+  assert.equal(MAK.openState(() => null, at(2026, 10, 24)), null, 'not known today');
+  assert.deepEqual(MAK.openState((ms) => (ms > at(2026, 10, 24, 23) ? null : { closed: true }), at(2026, 10, 24, 12)), { open: false, at: 0 }, 'closed, the next days not known');
+});
+
 test('loadLibrary and libraryToday: the notices that did not end, of the campus; the hours of today', async () => {
   const routes = F.routes();
   const asked = [];
@@ -132,6 +147,8 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 18)), { hours: '9:00–22:45', closed: false, notice: 'Horario especial de época de exámenes: 18 ABRIL-14 JUNIO' });
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 15)), { hours: '8:00–21:00', closed: false, notice: april.notices[0].title }, 'the blue of the legend');
   assert.deepEqual(MAK.libraryToday(april, at(2026, 4, 11)), { hours: '', closed: true, usual: true }, 'a Saturday without a color: the usual hours');
+  const opens = MAK.openState((ms) => MAK.libraryDay(april, ms), at(2026, 4, 17, 22));
+  assert.equal(new Date(opens.at).toString().slice(0, 21), 'Sat Apr 18 2026 09:00', 'a Friday night before the exams: on Saturday at 9:00 (the calendar)');
 
   // 3 April 2026: Easter (a notice in words) -> no hours of today.
   const easter = await load('arrosadia', at(2026, 4, 3));

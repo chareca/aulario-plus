@@ -157,7 +157,7 @@ function routes() {
     [`${B}/la-biblioteca/Campus+de+Ciencias+de+la+Salud`]: PAGES.salud,
     [`${B}/la-biblioteca/Campus+de+Tudela`]: PAGES.tudela,
     [`${B}/tablon-de-anuncios`]: BOARD,
-    'https://www.unavarra.es/deportes/instalaciones/horario': SPORTS,
+    'https://www.unavarra.es/deportes/instalaciones/horario?languageId=100000': SPORTS,
     [`${B}/tablon-de-anuncios?pagina=1`]: list([]),
     [`${B}/tablon-de-anuncios?opcion=2`]: BOARD_2025,
     'https://www.unavarra.es/digitalAssets/289/289130_1000002026_examenes_arrosadia.pdf': calendarPdf()

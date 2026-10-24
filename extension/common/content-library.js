@@ -19,22 +19,31 @@
     ${MAK.LINK_CSS}
     ${MAK.EXAM_CAL_CSS}
     ${MAK.TILE_CSS}
-    .hr-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .hr-chips { display: inline-flex; flex-wrap: wrap; gap: 8px; margin-right: 10px; }
     .hr-chip { display: inline-flex; align-items: center; gap: 4px; }
     .hr-chip svg { width: 14px; height: 14px; }
     .hr-date { margin: 0 0 8px; }
     .hr-date::first-letter { text-transform: uppercase; }
-    /* The cards: one below the other; with room, the three in a row, or the library (with a calendar) on the left and the
-       sports on its right, one below the other. */
+    /* The cards: one below the other; with room, all in a row on the full width, or the library (with a calendar) on the
+       left and the sports on its right, one below the other. */
     .hr-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: start; }
     .hr-side { display: contents; }
     @container (min-width: 700px) {
-      .hr-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+      .hr-cards { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); } /* as many columns as cards */
+      .hr-cards.with-cal { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-auto-flow: row; }
       .hr-cards.with-cal > .hr-side { display: flex; flex-direction: column; gap: 10px; }
     }
     .hr-card { min-width: 0; padding: 10px 12px; background: var(--ap-item-bg); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius-box); }
-    .hr-top { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+    .hr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; }
+    .hr-id { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; } /* the icon stays with its title */
+    /* Open or closed now: a round check (white on green) or cross (white on red), and the text in that color. */
+    .hr-state { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; font-weight: 700; font-size: 0.93em; }
+    .hr-state.open { color: var(--ap-green); }
+    .hr-state.shut { color: var(--ap-red); }
+    .hr-dot { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; color: #ffffff; }
+    .hr-state.open .hr-dot { background: #1f9d55; }
+    .hr-state.shut .hr-dot { background: #d93d3d; }
+    .hr-dot svg { width: 15px; height: 15px; stroke-width: 3; }
     .hr-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
       color: var(--ap-accent); background: var(--ap-accent-soft); }
     .hr-ico svg { width: 21px; height: 21px; }
@@ -117,10 +126,27 @@
     n.blocks.map((b) => h('div', { class: 'hr-block' }, b.head ? h('strong', { text: b.head }) : null, b.lines.map((l) => h('p', { text: l })))),
     h('div', { class: 'hr-links' }, MAK.link(n.url, t('lib.notice')), n.pdf ? MAK.link(n.pdf, t('lib.pdf')) : null));
 
-  // A card: its icon, its title and where, the hours of today, the usual ones, and more (notices, links).
-  function card({ icon, title, place, today, lines, more }) {
+  // Open now (until when) or closed (when it opens): "Abierto hasta las 22:00", "Cerrado · abre el lunes a las 8:00".
+  const time = (ms) => new Intl.DateTimeFormat(MAK.locale(), { hour: 'numeric', minute: '2-digit' }).format(ms);
+  function stateText(st, now) {
+    if (st.open) return t('lib.openUntil', { time: time(st.at) });
+    if (!st.at) return t('lib.closed');
+    const day = (ms) => new Date(new Date(ms).toDateString()).getTime();
+    const days = Math.round((day(st.at) - day(now)) / MAK.DAY);
+    if (days === 0) return t('lib.opensToday', { time: time(st.at) });
+    if (days === 1) return t('lib.opensTomorrow', { time: time(st.at) });
+    const when = new Intl.DateTimeFormat(MAK.locale(), days < 7 ? { weekday: 'long' } : { day: 'numeric', month: 'long' }).format(st.at);
+    return t('lib.opensOn', { day: when, time: time(st.at) });
+  }
+  const stateMark = (st, now) => (st ? h('div', { class: `hr-state ${st.open ? 'open' : 'shut'}` },
+    h('span', { class: 'hr-dot' }, MAK.icon(st.open ? 'check' : 'x')), h('span', { text: stateText(st, now) })) : null);
+
+  // A card: its icon, its title and where, open or closed now, the hours of today, the usual ones, and more (notices).
+  function card({ icon, title, place, state, today, lines, more, now }) {
     return h('section', { class: 'hr-card' },
-      h('div', { class: 'hr-top' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
+      h('div', { class: 'hr-top' },
+        h('div', { class: 'hr-id' }, h('span', { class: 'hr-ico' }, MAK.icon(icon)), h('div', null, h('h5', { text: title }), place ? h('div', { class: 'meta', text: place }) : null)),
+        stateMark(state, now)),
       today ? h('p', { class: 'hr-now' }, `${t('lib.now')}: `, h('b', { text: hoursText(today) }), today.usual ? h('span', { class: 'meta', text: ` (${t('lib.usualDay')})` }) : null) : null,
       lines && lines.length ? h('ul', { class: 'hr-usual' }, lines.map((l) => h('li', { text: l }))) : null,
       more);
@@ -133,33 +159,26 @@
     const now = Date.now();
     if (!data) {
       MAK.fill(p.chips);
-      MAK.fill(p.content, h('p', { text: t('lib.error') }), h('div', { class: 'hr-links' }, MAK.link(MAK.LIBRARY_BOARD, t('lib.board')), MAK.link(MAK.SPORTS_HOURS, t('lib.sportsPage'))));
+      MAK.fill(p.content, h('p', { text: t('lib.error') }));
       return;
     }
     const sports = data.sports || {};
-    const parts = [
-      { icon: 'book', name: t('lib.libraryTitle'), today: MAK.libraryToday(data, now) },
-      { icon: 'dumbbell', name: t('lib.access'), today: sports.access ? MAK.weekToday(sports.access.week, now) : null },
-      { icon: 'pool', name: t('lib.pool'), today: sports.pool ? MAK.weekToday(sports.pool.week, now) : null }
-    ];
-    // The head: the hours of today of the three, with their icon.
-    MAK.fill(p.chips, parts.filter((x) => x.today).map((x) => h('span', { class: `count hr-chip${x.today.closed ? ' hot' : ''}`,
-      title: t('lib.chip', { name: x.name, hours: hoursText(x.today) }), attrs: { 'aria-label': t('lib.chip', { name: x.name, hours: hoursText(x.today) }) } }, MAK.icon(x.icon), hoursText(x.today))));
+    const dayOf = { library: (ms) => MAK.libraryDay(data, ms), access: (ms) => MAK.weekToday(sports.access && sports.access.week, ms), pool: (ms) => MAK.weekToday(sports.pool && sports.pool.week, ms) };
+    const parts = [['library', 'book'], ['access', 'dumbbell'], ['pool', 'pool']].map(([k, icon]) => ({ k, icon, today: dayOf[k](now), state: MAK.openState(dayOf[k], now) }));
+    // The head: the hours of today of each one (green: open now; red: closed now), or one word when the three are closed today.
+    const known = parts.filter((x) => x.today);
+    MAK.fill(p.chips, known.length === parts.length && known.every((x) => x.today.closed)
+      ? h('span', { class: 'count hot', text: t('lib.allClosed') })
+      : known.map((x) => h('span', { class: `count hr-chip${x.state && x.state.open ? ' ok' : ' hot'}` }, MAK.icon(x.icon), `${t(`lib.short.${x.k}`)} · ${hoursText(x.today)}`)));
     const week = data.page ? data.page.week : null;
     const library = card({
-      icon: 'book', title: t('lib.libraryTitle'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), today: parts[0].today,
+      icon: 'book', title: t('lib.libraryTitle'), place: t('lib.campusOf', { campus: t(`lib.campus.${data.campus}`) }), state: parts[0].state, today: parts[0].today, now,
       lines: data.page ? data.page.lines : null,
-      more: [
-        data.page ? null : h('p', { text: t('lib.libraryError') }),
-        data.notices.map((n) => notice(n, week, now)),
-        h('div', { class: 'hr-links' }, data.page ? MAK.link(data.page.url, t('lib.page')) : null, MAK.link(MAK.LIBRARY_BOARD, t('lib.board'))),
-        h('p', { class: 'meta', text: t('lib.campusHint') })
-      ]
+      more: [data.page ? null : h('p', { text: t('lib.libraryError') }), data.notices.map((n) => notice(n, week, now))]
     });
-    const sportsLink = h('div', { class: 'hr-links' }, MAK.link(MAK.SPORTS_HOURS, t('lib.sportsPage')));
     const sportsCards = data.sports
-      ? [['access', 'dumbbell'], ['pool', 'pool']].filter(([k]) => sports[k]).map(([k, icon]) => card({ icon, title: t(`lib.${k}`), place: t('lib.sportsPlace'), today: parts[k === 'access' ? 1 : 2].today, lines: sports[k].lines, more: sportsLink.cloneNode(true) }))
-      : [card({ icon: 'dumbbell', title: t('lib.sports'), more: [h('p', { text: t('lib.sportsError') }), sportsLink] })];
+      ? [parts[1], parts[2]].filter((x) => sports[x.k]).map((x) => card({ icon: x.icon, title: t(`lib.${x.k}`), place: t('lib.sportsPlace'), state: x.state, today: x.today, now, lines: sports[x.k].lines }))
+      : [card({ icon: 'dumbbell', title: t('lib.sports'), more: h('p', { text: t('lib.sportsError') }) })];
     MAK.fill(p.content,
       res.error ? h('p', { class: 'meta', text: t('lib.stale', { date: MAK.formatDate(data.at) }) }) : null,
       h('p', { class: 'hr-date meta', text: longDate(now) }),
