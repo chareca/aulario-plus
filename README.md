@@ -22,7 +22,7 @@
 - **Todo en un clic:** un menú de inicio con tu sesión y lo pendiente; entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus asignaturas, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
 - **Ctrl+K / ⌘K:** encuentra cualquier asignatura, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno, en una columna o a todo el ancho.
-- **Horarios:** en Mi sitio, el horario de hoy de la biblioteca de tu campus (Arrosadía, Ciencias de la Salud o Tudela), con sus horarios especiales de exámenes, verano y Semana Santa y su calendario, y el de las instalaciones deportivas, el gimnasio y la piscina.
+- **Horarios:** en Mi sitio, si está abierto ahora y hasta cuándo: la biblioteca de tu campus (Arrosadía, Ciencias de la Salud o Tudela), con sus horarios especiales de exámenes, verano y Semana Santa y su calendario, el gimnasio, la piscina y las cafeterías y el comedor.
 - **Calendario de exámenes:** tus finales y recuperaciones en un calendario por meses, en cada semestre de Mi sitio y junto a la guía de cada asignatura.
 - **Notas oficiales (SIGMA):** si lo activas, tu media y tu rango junto a tu foto: ocho rangos con su gema según tus créditos aprobados, y lo que te falta para el siguiente.
 - **Historial:** todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario del profesor, y la nota oficial de cada asignatura de cada curso.
