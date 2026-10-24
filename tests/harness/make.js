@@ -53,6 +53,31 @@ routes['/ficha-asignaturaDOA/?languageId=100000&codPlan=240&codAsig=240998&anio=
 // (Computer Science) and its exam calendar (a small PDF with the two subjects of the guides).
 const DEGREE = { window: {} };
 require('node:vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'browser', 'fixtures-degree.js'), 'utf8'), DEGREE);
+// The library of the UPNA ("Horarios de la biblioteca" in Mi sitio): its pages, the board and a calendar (tests/fixtures/library.js).
+for (const [url, body] of Object.entries(require('../fixtures/library').routes())) {
+  const u = new URL(url);
+  routes[u.pathname + u.search] = Buffer.isBuffer(body) ? { __bytes: body.toString('base64'), type: 'application/pdf' } : { __file: body, type: 'text/html; charset=utf-8' };
+}
+// And a notice of exams of this month and the next one (the weekends in green, the first day of the next month closed),
+// so that the box shows a calendar on any day.
+{
+  const L = require('../fixtures/library');
+  const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const now = new Date();
+  const months = [0, 1].map((k) => new Date(now.getFullYear(), now.getMonth() + k, 1));
+  const count = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const weekends = (d) => Array.from({ length: count(d) }, (_, i) => i + 1).filter((x) => [0, 6].includes(new Date(d.getFullYear(), d.getMonth(), x).getDay()));
+  const pdf = L.canvaPdf(months.map((d, k) => L.month(MES[d.getMonth()], d.getFullYear(), count(d), { green: weekends(d).filter((x) => !k || x !== 1), red: k ? [1] : [] })));
+  routes['/digitalAssets/999/999_examenes_arrosadia.pdf'] = { __bytes: pdf.toString('base64'), type: 'application/pdf' };
+  const fecha = `Lunes ${now.getDate()} de ${MES[now.getMonth()]} de ${now.getFullYear()}`;
+  routes['/biblioteca/tablon-de-anuncios'] = { __file: L.list([L.entry(fecha, 999, 'Horario especial de &eacute;poca de ex&aacute;menes'), L.entry('Mi&eacute;rcoles 16 de septiembre de 2026', 290965, 'Biblioteca de Ciencias de la Salud: aula de estudio abierta los fines de semana')], '<li><a href="http://www.unavarra.es/biblioteca/tablon-de-anuncios?opcion=2">2025</a></li>'), type: 'text/html; charset=utf-8' };
+  routes['/biblioteca/tablon-de-anuncios?contentId=999'] = { __file: L.notice(fecha, 'Horario especial de &eacute;poca de ex&aacute;menes', `<table><tbody>
+<tr><td>Periodo</td><td>D&iacute;as</td><td>Horario</td><td>Calendario</td></tr>
+<tr><td>Arrosad&iacute;a (biblioteca)</td><td>s&aacute;bados y domingos</td><td>9:00-22:45</td><td><a href="/digitalAssets/999/999_examenes_arrosadia.pdf">calendario</a></td></tr>
+<tr><td>Arrosad&iacute;a (aula 04)</td><td>s&aacute;bados</td><td>8:00-14:45</td></tr>
+<tr><td>Ciencias de la Salud y Tudela</td><td>s&aacute;bados y domingos</td><td>9:00-21:45</td></tr></tbody></table>
+<p>Biblioteca de Arrosad&iacute;a: sistema de acceso de tornos.</p>`), type: 'text/html; charset=utf-8' };
+}
 routes['/sites/grados/home.html'] = { __file: DEGREE.window.DEGREE_LIST_HTML.replace('>Grado en Ingeniería Informática<', '>Grado en Computer Science<'), type: 'text/html; charset=utf-8' };
 routes['/sites/grados/informatica-y-telecomunicacion/ingenieria-informatica/evaluacion.html'] = { __file: DEGREE.window.EVALUATION_INF_HTML, type: 'text/html; charset=utf-8' };
 {
@@ -197,7 +222,7 @@ for (const page of ['popup.html', 'tools.html']) {
 // A page with the same structure as a MiAulario site, to see the banner of new items.
 // Open site.html?theme=dark for the dark theme of Sakai.
 // content-early.js before the other content scripts, as in the manifest (document_start; the others: document_idle).
-const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/record.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-early.js', 'content-theme.js', 'content-banner.js', 'content-rank.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
+const siteTags = ['mock-ext.js', ...libs, 'bg-harness.js', 'send-harness.js', 'lib/core.js', 'lib/i18n.js', 'lib/ui.js', 'lib/pm.js', 'lib/teachers.js', 'lib/grades.js', 'lib/guide.js', 'lib/degree.js', 'lib/record.js', 'lib/mail-ui.js', 'lib/themes.js', 'content-early.js', 'content-theme.js', 'content-banner.js', 'content-rank.js', 'content-calc.js', 'content-guide.js', 'content-shortcuts.js', 'lib/library.js', 'content-library.js', 'content-names.js', 'content-search.js', 'content-mail.js', 'content-forward.js', 'fixtures-pm.js'].map((s) => `<script src="${s}"></script>`).join('\n');
 fs.mkdirSync(path.join(OUT, 'direct/profile/chareca.1/image'), { recursive: true });
 fs.writeFileSync(path.join(OUT, 'direct/profile/chareca.1/image/thumb.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#5b7083"/><circle cx="16" cy="12" r="6" fill="#dfe6ec"/><path d="M4 30c2-8 22-8 24 0" fill="#dfe6ec"/></svg>`);
 fs.writeFileSync(path.join(OUT, 'site.html'), `<!doctype html>

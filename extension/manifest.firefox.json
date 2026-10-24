@@ -51,6 +51,7 @@
       "lib/record.js",
       "lib/history.js",
       "lib/help.js",
+      "lib/library.js",
       "background.js"
     ]
   },
@@ -91,6 +92,8 @@
         "content-calc.js",
         "content-guide.js",
         "content-shortcuts.js",
+        "lib/library.js",
+        "content-library.js",
         "content-names.js",
         "content-search.js",
         "content-mail.js",

@@ -13,7 +13,7 @@
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
 if (typeof importScripts === 'function') {
-  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js', 'lib/history.js', 'lib/help.js');
+  importScripts('lib/core.js', 'lib/store.js', 'lib/names.js', 'lib/api.js', 'lib/grades.js', 'lib/sync.js', 'lib/i18n.js', 'lib/due.js', 'lib/inbox.js', 'lib/news.js', 'lib/search.js', 'lib/zip.js', 'lib/send.js', 'lib/guide.js', 'lib/pdftext.js', 'lib/degree.js', 'lib/record.js', 'lib/history.js', 'lib/help.js', 'lib/library.js');
 }
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -193,6 +193,36 @@ if (ext.tabs && ext.tabs.onUpdated) {
   ext.tabs.onRemoved.addListener((tabId) => {
     recordRun().then((run) => (run && run.tabId === tabId ? runArea.remove('recordRun') : null)).catch(() => {});
   });
+}
+
+// ---- The hours of the library (lib/library.js) ------------------------------------------------------------------
+// One reading at a time for a campus: the pages and the PDF files of www.unavarra.es (only the library, MAK.libraryUrl).
+let libraryReading = null;
+let libraryFailed = 0; // the time of the last reading that failed
+async function readLibrary(campus) {
+  const open = async (url, max) => {
+    const u = MAK.libraryUrl(url);
+    if (!u) throw new Error('library.url');
+    const r = await fetch(u, { credentials: 'omit', cache: 'no-store' });
+    if (!r.ok) throw new Error('library.http');
+    if (Number(r.headers.get('content-length')) > max) throw new Error('library.size'); // before reading it
+    return r;
+  };
+  const data = await MAK.loadLibrary({
+    campus,
+    getText: async (url) => {
+      const text = await (await open(url, 2000000)).text();
+      if (text.length > 2000000) throw new Error('library.size');
+      return text;
+    },
+    getBytes: async (url) => {
+      const bytes = await (await open(url, 5000000)).arrayBuffer();
+      if (bytes.byteLength > 5000000) throw new Error('library.size');
+      return bytes;
+    }
+  });
+  await store.set({ library: data });
+  return data;
 }
 
 // ---- The history of the tasks and the exams (lib/history.js) ----------------------------------------
@@ -972,6 +1002,25 @@ const handlers = {
       await store.update('settings', (cur) => MAK.withDefaults(Object.assign({}, MAK.withDefaults(cur), { degree: base })));
       await store.remove(['degree']); // read the degree again
       return { ok: true };
+    }
+  },
+  // The hours of the library for "Mi sitio" (content-library.js, lib/library.js): the campus of the settings, read
+  // again after MAK.LIBRARY_MS. When a reading fails, the last one (with "error").
+  libraryHours: {
+    content: true,
+    run: async () => {
+      const { settings, library } = await store.get(['settings', 'library']);
+      const campus = MAK.withDefaults(settings).libraryCampus;
+      if (library && library.campus === campus && Date.now() - library.at < MAK.LIBRARY_MS) return { data: library };
+      const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
+      if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
+      try {
+        if (!libraryReading || libraryReading.campus !== campus) libraryReading = { campus, promise: readLibrary(campus).finally(() => { libraryReading = null; }) };
+        return { data: await libraryReading.promise };
+      } catch {
+        libraryFailed = Date.now();
+        return stale;
+      }
     }
   },
   // The exams of an exam calendar (a PDF file on www2.unavarra.es): its rows. The file is read again

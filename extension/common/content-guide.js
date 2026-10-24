@@ -11,6 +11,7 @@
   const HOST_ID = 'mak-guide-host';
   const BANNER_ID = 'mak-news-host'; // content-banner.js
   const SHORTCUTS_ID = 'mak-shortcuts-host'; // content-shortcuts.js
+  const LIBRARY_ID = 'mak-library-host'; // content-library.js: the box after the guides
   const where = MAK.parsePortalPath(location.pathname);
   const onRoot = /^\/portal\/?$/.test(location.pathname);
   const mySite = onRoot || !!(where && where.siteId && where.siteId.startsWith('~'));
@@ -218,7 +219,9 @@
     const shortcuts = document.getElementById(SHORTCUTS_ID);
     const above = shortcuts || document.getElementById(BANNER_ID);
     if (slot) host.classList.add('in-block');
+    const library = document.getElementById(LIBRARY_ID);
     if (shortcuts && slot && slot.contains(shortcuts)) shortcuts.after(host);
+    else if (library && slot && slot.contains(library)) library.before(host);
     else if (slot) slot.append(host);
     else if (above) above.after(host);
     else MAK.insertAtTop(host);

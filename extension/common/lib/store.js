@@ -33,7 +33,8 @@
       colorMode: 'auto', // 'auto' (the light or dark theme of MiAulario, else of the system), 'light' or 'dark'
       confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
       rankBar: true, // the rank of the degree (lib/record.js) in the bar of MiAulario
-      examCalendar: false // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
+      examCalendar: false, // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
+      libraryCampus: 'arrosadia' // the library of "Horarios de la biblioteca" in Mi sitio (lib/library.js): arrosadia, salud or tudela
     };
   };
 
@@ -164,7 +165,8 @@
       colorMode: s.colorMode === 'light' || s.colorMode === 'dark' ? s.colorMode : 'auto',
       confetti: 'confetti' in s ? !!s.confetti : d.confetti,
       rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar,
-      examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar
+      examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar,
+      libraryCampus: ['arrosadia', 'salud', 'tudela'].includes(s.libraryCampus) ? s.libraryCampus : d.libraryCampus
     };
   };
 

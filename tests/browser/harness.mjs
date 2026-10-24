@@ -210,5 +210,20 @@ async function runTests(browser, base) {
     assert.deepEqual(next, { closed: false, page: '0', kept: '0' });
   });
 
+  await test('Mi sitio: the box of the hours of the library goes after the guides, with the hours of the notice of today', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await load(tab);
+    const got = await run(tab, `
+      const slot = await until(() => document.getElementById('mak-block-body'), 'the block');
+      await until(() => slot.querySelector('#mak-library-host') && slot.querySelector('#mak-guide-host'), 'the boxes');
+      const lib = await until(async () => (await ext.storage.local.get('library')).library, 'the hours');
+      return { order: [...slot.children].map((c) => c.id), campus: lib.campus, usual: lib.page.lines, notices: lib.notices.map((n) => [n.title, n.cal ? n.cal.months.length : 0]),
+        today: MAK.libraryToday(lib) && MAK.libraryToday(lib).notice, open: localStorage.getItem('mak-library-host:open') };
+    `);
+    assert.deepEqual(got.order.slice(-2), ['mak-guide-host', 'mak-library-host']);
+    assert.deepEqual([got.campus, got.usual.length, got.notices, got.today, got.open], ['arrosadia', 2, [['Horario especial de época de exámenes', 2]], 'Horario especial de época de exámenes', null]);
+  });
+
   return results;
 }

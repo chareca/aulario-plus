@@ -71,6 +71,8 @@
         "content-calc.js",
         "content-guide.js",
         "content-shortcuts.js",
+        "lib/library.js",
+        "content-library.js",
         "content-names.js",
         "content-search.js",
         "content-mail.js",

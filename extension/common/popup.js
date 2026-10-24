@@ -1363,6 +1363,15 @@ function renderSettings(el) {
     h(
       'div',
       { class: 'section' },
+      h('h2', { text: t('lib.section') }),
+      h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('lib.campusLabel') }),
+        h('select', { on: { change: (e) => send({ type: 'setSettings', patch: { libraryCampus: e.target.value } }) } },
+          ['arrosadia', 'salud', 'tudela'].map((c) => h('option', { attrs: { value: c, selected: c === s.libraryCampus }, text: t(`lib.campus.${c}`) })))),
+      h('p', { class: 'small', text: t('lib.campusHelp') })
+    ),
+    h(
+      'div',
+      { class: 'section' },
       h('h2', { text: t('names.section') }),
       checkbox(t('names.short'), t('names.shortHelp'), s.shortNames, (v) => send({ type: 'setSettings', patch: { shortNames: v } }))
     ),

@@ -247,3 +247,33 @@ test('a paused extension resumes when the user logs in again, and only then ping
   const status = await bg.send({ type: 'getStatus' });
   assert.deepEqual(Object.keys(status).sort(), ['autoLogin', 'nextPing', 'paused']);
 });
+
+test('libraryHours: the hours of the library of the campus of the settings, kept for 12 hours; after an error, the last ones', async () => {
+  const L = require('./fixtures/library');
+  const routes = L.routes();
+  let up = true;
+  const asked = [];
+  const fetch = async (url) => {
+    asked.push(String(url));
+    const body = routes[String(url)];
+    if (!up || body === undefined) return new Response('no', { status: up ? 404 : 503 });
+    return new Response(body, { status: 200 });
+  };
+  const bg = loadBackground({ fetch, local: { settings: { libraryCampus: 'tudela' } } });
+  const first = await bg.send({ type: 'libraryHours' }, CONTENT());
+  assert.deepEqual([first.data.campus, first.data.page.lines[0], first.error], ['tudela', 'Lunes a viernes: 8:00 a 21:00 horas.', undefined]);
+  assert.ok(asked.length && asked.every((u) => u.startsWith('https://www.unavarra.es/')), 'only the website of the UPNA');
+  const n = asked.length;
+  assert.equal((await bg.send({ type: 'libraryHours' }, CONTENT())).data.at, first.data.at, 'kept');
+  assert.equal(asked.length, n, 'no request while it is kept');
+  // Another campus: read again. The website does not answer: the last hours of that campus, with the error.
+  await bg.ext.storage.local.set({ settings: Object.assign({}, (await bg.ext.storage.local.get('settings')).settings, { libraryCampus: 'salud' }) });
+  const salud = await bg.send({ type: 'libraryHours' }, CONTENT());
+  assert.equal(salud.data.campus, 'salud');
+  up = false;
+  await bg.ext.storage.local.set({ library: Object.assign({}, salud.data, { at: Date.now() - 13 * 3600000 }) });
+  const stale = await bg.send({ type: 'libraryHours' }, CONTENT());
+  assert.deepEqual([stale.data.campus, stale.error], ['salud', 'library.network']);
+  await bg.ext.storage.local.set({ settings: { libraryCampus: 'arrosadia' } });
+  assert.deepEqual(await bg.send({ type: 'libraryHours' }, CONTENT()), { error: 'library.network' }, 'no hours of another campus');
+});
