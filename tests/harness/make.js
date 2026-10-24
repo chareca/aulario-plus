@@ -98,6 +98,11 @@ const libs = [.../importScripts\(([^)]*)\)/.exec(background)[1].matchAll(/'([^']
 
 const mock = `// Mock extension API for the test harness. Do not ship this file.
 (function () {
+  // ?open: the shadow roots of the boxes open, for the tests that measure what is in them.
+  if (new URLSearchParams(location.search).has('open')) {
+    const attach = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function (o) { return attach.call(this, Object.assign({}, o, { mode: 'open' })); };
+  }
   // ?now=2026-04-18T11:00: the page (and the background in it) at another time.
   try {
     const fake = new URLSearchParams(location.search).get('now');

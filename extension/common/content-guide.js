@@ -35,6 +35,8 @@
     .guide-main { flex: 0 1 900px; min-width: 0; }
     .guide-flow > .cal-wrap { flex: 1 1 0; min-width: min-content; margin: 0; display: flex; justify-content: center; }
     .guide-flow .cal-grid { grid-template-columns: repeat(7, 32px); } /* a month does not shrink: its width is the least of the calendar */
+    /* So two months go side by side only when both fit (else the second one went out of the box). */
+    .guide-flow .cal-month { flex: 0 0 auto; max-width: none; }
     /* "Mi sitio": one card for each site, in 1, 2 or 3 columns. */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 12px; margin-top: 4px; align-items: start; }
     .guide-card { min-width: 0; padding: 10px 12px; background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: var(--ap-radius); }

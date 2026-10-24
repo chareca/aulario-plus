@@ -270,6 +270,37 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { out: [true, 'none', false, '2'], back: [false, '3', '3', 'arrosadia'] });
   });
 
+  await test('a subject: a calendar of two months stays in its box at every width (side by side only when both fit)', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await tab.evaluate('window.__old = true');
+    await tab.navigate(url('site.html?open'));
+    if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete' && !!window.MAK"))) throw new Error('site.html did not load');
+    const got = await run(tab, `
+      const host = await until(() => { const e = document.getElementById('mak-guide-host'); return e && e.shadowRoot && e.shadowRoot.querySelector('.guide-flow > .cal-wrap') && e; }, 'the guide');
+      const s = host.shadowRoot;
+      const at = (y, m, d, hh) => new Date(y, m, d, hh).getTime();
+      const days = MAK.examDays([{ siteId: 'gp', name: 'GP', final: at(2026, 11, 22, 12), recovery: at(2027, 0, 21, 8), finalRoom: '', recoveryRoom: '' }], (r) => r.name);
+      const place = s.querySelector('.guide-flow > .cal-wrap');
+      place.hidden = false;
+      MAK.fill(place, MAK.examCalendar(days, { focus: 'gp' }));
+      const out = [];
+      let sides = 0;
+      for (let w = 900; w <= 1700; w += 20) {
+        host.style.width = w + 'px';
+        const box = s.querySelector('.box');
+        const cs = getComputedStyle(box);
+        const inner = box.getBoundingClientRect().right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
+        if (Math.max(...[...s.querySelectorAll('.cal-day')].map((d) => d.getBoundingClientRect().right)) > inner + 0.5) out.push(w);
+        const tops = [...s.querySelectorAll('.cal-month')].map((m) => m.getBoundingClientRect().top);
+        if (Math.abs(tops[0] - tops[1]) < 2) sides++;
+      }
+      return { out, sides };
+    `);
+    assert.deepEqual(got.out, [], 'the widths where a day goes out of the box');
+    assert.ok(got.sides > 0, 'side by side when both fit');
+  });
+
   await test('Mi sitio: folding the block folds the panel of the sections too', async (open) => {
     const tab = await open('tools.html');
     await prepare(tab, {}, {});
