@@ -538,13 +538,13 @@
     [hidden] { display: none !important; } /* the arrows: the rules with "display" must not show it */
     * { box-sizing: border-box; }
     .box { font: var(--ap-weight) calc(14px * var(--ap-zoom))/1.45 var(--ap-font); color: var(--ap-fg); background: var(--ap-win-bg);
-      border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow); padding: 12px 14px;
+      border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow); --box-x: clamp(14px, 1.6vw, 20px); padding: 12px var(--box-x); /* room on the sides (less on a phone) */
       -webkit-backdrop-filter: var(--ap-blur); backdrop-filter: var(--ap-blur); }
     :host(.in-block) .box { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 6px 0;
       -webkit-backdrop-filter: none; backdrop-filter: none; }
     .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     /* The head of a box: a band in the colors of the head of the theme (not in the block: the block has one). */
-    .box > .head { margin: -12px -14px 10px; padding: 9px 14px; background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line);
+    .box > .head { margin: -12px calc(-1 * var(--box-x)) 10px; padding: 9px var(--box-x); background: var(--ap-head-bg); color: var(--ap-head-fg); border-bottom: var(--ap-head-line);
       border-top-left-radius: calc(var(--ap-radius) - var(--ap-bw)); border-top-right-radius: calc(var(--ap-radius) - var(--ap-bw)); }
     .box > .head:last-child, .box > .head:has(+ [hidden]) { margin-bottom: -12px; border-bottom: 0; border-radius: calc(var(--ap-radius) - var(--ap-bw)); }
     :host(.in-block) .box > .head { margin: 0 0 8px; padding: 0; background: none; color: inherit; border: 0; border-radius: 0; }
