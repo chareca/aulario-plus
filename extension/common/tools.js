@@ -512,8 +512,9 @@ async function runHistory() {
       const more = files || comment ? h('div', { class: 'history-more', hidden: true }, files, comment) : null;
       const toggle = more ? h('button', { class: 'history-icon', attrs: { type: 'button', 'aria-expanded': 'false', title: t('history.more'), 'aria-label': t('history.more') } }, MAK.icon('chevron')) : null;
       if (toggle) toggle.addEventListener('click', () => {
-        more.hidden = !more.hidden;
-        toggle.setAttribute('aria-expanded', String(!more.hidden));
+        const open = toggle.getAttribute('aria-expanded') !== 'true';
+        MAK.fold(more, open);
+        toggle.setAttribute('aria-expanded', String(open));
       });
       return h('li', { class: 'history-row' },
         h('span', { class: 'history-kind', text: t(it.kind === 'task' ? 'history.task' : 'history.exam') }),
@@ -568,6 +569,7 @@ async function runHistory() {
 }
 
 async function init() {
+  MAK.animateDetails();
   const store = await ext.storage.local.get(['settings', 'sites', 'pages', 'assignments', 'sakaiMode']);
   store.sites = MAK.namedSites(store.sites, MAK.withDefaults(store.settings));
   const { settings, sites } = store;

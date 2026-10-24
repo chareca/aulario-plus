@@ -235,7 +235,7 @@
       return b;
     };
     const close = () => {
-      host.hidden = true;
+      MAK.fold(host, false);
       picked = null;
       button.setAttribute('aria-expanded', 'false');
       button.focus();
@@ -257,12 +257,13 @@
         status);
     }
     button.addEventListener('click', () => {
-      host.hidden = !host.hidden;
-      button.setAttribute('aria-expanded', String(!host.hidden));
-      if (!host.hidden) draw();
+      const open = button.getAttribute('aria-expanded') !== 'true';
+      if (open) draw();
+      MAK.fold(host, open);
+      button.setAttribute('aria-expanded', String(open));
     });
     host.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !host.hidden) close();
+      if (e.key === 'Escape' && button.getAttribute('aria-expanded') === 'true') close();
     });
     draw();
     place();
@@ -316,7 +317,8 @@
     };
     const fold = MAK.foldButton(!closed, { open: MAK.t('block.open'), close: MAK.t('block.close') }, (open) => {
       closed = !open;
-      draw();
+      if (open) block.classList.remove('mak-closed');
+      MAK.fold(body, open, () => block.classList.toggle('mak-closed', closed)); // the head loses its line after the fold
       MAK.uiSave(BLOCK_CLOSED, closed);
     });
     fold.setAttribute('aria-controls', 'mak-block-body');
@@ -463,7 +465,7 @@
         : MAK.t('news.title', { date: new Intl.DateTimeFormat(MAK.locale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(result.since).replace(/,/g, '') });
     // The arrow shows the list (the title too), as in the other boxes of the extension.
     const toggle = MAK.foldButton(!list.hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
-      list.hidden = !open;
+      MAK.fold(list, open);
     });
     const close = h('button', {
       class: 'close',

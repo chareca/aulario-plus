@@ -150,6 +150,31 @@
     try { for (const k of keys) localStorage.removeItem(k); } catch {}
   });
 
+  test('a fold moves its height and then hides; a click during it goes back from where it is; at once with reduced motion', async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const el = document.createElement('div');
+    el.append(Object.assign(document.createElement('p'), { style: 'height: 100px; margin: 0' }));
+    document.body.append(el);
+    MAK.fold(el, false);
+    assert.equal(el.hidden, false, 'shown while it folds');
+    await wait(90);
+    const mid = el.getBoundingClientRect().height;
+    assert.ok(mid > 0 && mid < 100, `half folded: ${mid}`);
+    MAK.fold(el, true); // back, from there
+    assert.ok(Math.abs(el.getBoundingClientRect().height - mid) < 25, 'no jump');
+    await wait(450);
+    assert.deepEqual([el.hidden, el.getBoundingClientRect().height, el.style.overflow], [false, 100, '']);
+    MAK.fold(el, false);
+    await wait(450);
+    assert.equal(el.hidden, true, 'hidden at the end');
+    const real = window.matchMedia;
+    window.matchMedia = () => ({ matches: true }); // prefers-reduced-motion
+    MAK.fold(el, true);
+    window.matchMedia = real;
+    assert.deepEqual([el.hidden, el.getBoundingClientRect().height], [false, 100], 'at once');
+    el.remove();
+  });
+
   test('a window over the page: Escape closes it as Cancel, also when the focus is not in it; the page does not get the key', async () => {
     const before = document.documentElement.children.length;
     const answer = MAK.askWindow('Borrar', 'Seguro?', 'Sí');

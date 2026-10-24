@@ -165,6 +165,7 @@
     if (picker) return picker;
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'closed' });
+    MAK.animateDetails(shadow); // the other teaching staff
     const style = MAK.themedStyle(PICKER_CSS);
     const title = h('h2');
     const list = h('div');

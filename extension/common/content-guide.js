@@ -176,8 +176,9 @@
       weightBar(rows),
       more
     );
-    const draw = () => {
-      more.hidden = !open;
+    const draw = (animate) => {
+      if (animate) MAK.fold(more, open);
+      else more.hidden = !open;
       card.classList.toggle('open', open);
       const label = MAK.t(open ? 'guide.close' : 'guide.open', { site: name });
       arrow.setAttribute('aria-expanded', String(open));
@@ -186,7 +187,7 @@
     };
     const flip = () => {
       open = !open;
-      draw();
+      draw(true);
       MAK.uiSave(key, open);
     };
     arrow.addEventListener('click', flip);
@@ -202,6 +203,7 @@
     const host = document.createElement('div');
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: 'closed' });
+    MAK.animateDetails(shadow); // the notes of a guide
     const style = MAK.themedStyle(CSS(), mySite ? null : { photo: siteId }); // in a subject: the photo of the subject
     const content = h('div', { class: `content${mySite ? '' : ' one'}` }, body);
     const key = `${HOST_ID}:${mySite ? 'mine' : siteId}`;
@@ -217,7 +219,7 @@
     else {
       content.hidden = hidden;
       const toggle = MAK.foldButton(!hidden, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (open) => {
-        content.hidden = !open;
+        MAK.fold(content, open);
         save(open);
       });
       box = [h('div', { class: 'head' }, h('strong', { class: 'title', text: title, on: { click: () => toggle.click() } }), extra || null, toggle), content];

@@ -151,7 +151,7 @@
       font-size: calc(14px * var(--ap-head-zoom)); }
     .sem-head .sem-title .meta { font-weight: 400; }
     .sem-body { margin-top: 4px; }
-    .sem.closed .sem-body { display: none; }
+    .sem-body[hidden] { display: none; }
     .sem .mak-fold { width: 26px; height: 26px; }
   `;
   // key: the name of the part ("exams", "guides"). parts: { autumn, spring }, each { body }
@@ -170,14 +170,16 @@
         const v = localStorage.getItem(store);
         if (v !== null && season !== current) open = v === '1';
       } catch {}
-      const body = MAK.h('div', { class: 'sem-body' }, parts[season].body);
+      const body = MAK.h('div', { class: 'sem-body', hidden: !open }, parts[season].body);
       const sem = MAK.h('section', { class: `sem ${open ? 'open' : 'closed'}` });
       const label = title(season);
       const fold = MAK.foldButton(open, { open: MAK.t('fold.open', { name: label }), close: MAK.t('fold.close', { name: label }) }, (o) => {
         sem.classList.toggle('open', o);
         sem.classList.toggle('closed', !o);
         MAK.uiSave(store, o);
-        layout();
+        // Two open semesters side by side: at once when one opens, after the fold when one closes.
+        if (o) layout();
+        MAK.fold(body, o, o ? null : layout);
       });
       sem.append(MAK.h('div', { class: 'sem-head' }, MAK.h('span', { class: 'sem-title', text: label, on: { click: () => fold.click() } }), fold), body);
       sems.append(sem);
@@ -362,13 +364,84 @@
   // other buttons (or tags) for the head, before the arrow.
   MAK.foldTile = function (title, content, open, onToggle, extra) {
     const toggle = MAK.foldButton(open, { open: MAK.t('fold.open', { name: title }), close: MAK.t('fold.close', { name: title }) }, (o) => {
-      content.hidden = !o;
+      MAK.fold(content, o);
       onToggle(o);
     });
     content.hidden = !open;
     return MAK.h('section', { class: 'tile' },
       MAK.h('div', { class: 'tile-head' }, MAK.h('h4', { text: title, on: { click: () => toggle.click() } }), MAK.h('div', { class: 'actions' }, extra || null), toggle),
       content);
+  };
+
+  // Fold or unfold an element (its "hidden") with a short animation of its height, padding, margins and opacity; done()
+  // when it ends. A new call during an animation goes back from where it is. At once with reduced motion, or when the
+  // element is not shown (a folded parent).
+  const folds = new WeakMap();
+  const frameOf = (el) => {
+    const cs = getComputedStyle(el);
+    return { height: `${el.getBoundingClientRect().height}px`, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: cs.opacity };
+  };
+  const SHUT = { height: '0px', paddingTop: '0px', paddingBottom: '0px', marginTop: '0px', marginBottom: '0px', opacity: '0' };
+  MAK.fold = function (el, open, done) {
+    const running = folds.get(el);
+    const now = running ? frameOf(el) : null;
+    if (running) running.cancel();
+    folds.delete(el);
+    const end = () => {
+      el.hidden = !open;
+      el.style.overflow = '';
+      el.style.boxSizing = '';
+      if (done) done();
+    };
+    const already = !running && el.hidden === !open; // nothing to move
+    el.hidden = false;
+    const full = frameOf(el);
+    const calm = typeof el.animate !== 'function' || (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (already || calm || !parseFloat(full.height)) return end();
+    el.style.overflow = 'hidden';
+    el.style.boxSizing = 'border-box';
+    const anim = el.animate([now || (open ? SHUT : full), open ? full : SHUT],
+      { duration: open ? 240 : 190, easing: open ? 'cubic-bezier(0.2, 0.7, 0.3, 1)' : 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' });
+    folds.set(el, anim);
+    anim.onfinish = () => {
+      folds.delete(el);
+      end();
+      anim.cancel();
+    };
+  };
+
+  // The <details> of a page (the popup, tools.html) or of a shadow root: they open and close with an animation of their
+  // height (from the height of their summary), as MAK.fold. At once with reduced motion.
+  MAK.animateDetails = function (doc = document) {
+    const running = new WeakMap();
+    doc.addEventListener('click', (e) => {
+      const summary = e.target.closest && e.target.closest('summary');
+      const d = summary && summary.parentElement;
+      if (!d || d.tagName !== 'DETAILS' || d.firstElementChild !== summary || typeof d.animate !== 'function') return;
+      if (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      e.preventDefault();
+      const cs = getComputedStyle(d);
+      const shut = `${summary.getBoundingClientRect().height + ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + (parseFloat(cs[k]) || 0), 0)}px`;
+      const before = running.get(d);
+      const now = before ? `${d.getBoundingClientRect().height}px` : null;
+      if (before) before.cancel();
+      const open = before ? !before.opening : !d.open;
+      d.open = true;
+      const full = `${d.getBoundingClientRect().height}px`;
+      d.style.overflow = 'hidden';
+      d.style.boxSizing = 'border-box';
+      const anim = d.animate([{ height: now || (open ? shut : full) }, { height: open ? full : shut }],
+        { duration: open ? 240 : 190, easing: open ? 'cubic-bezier(0.2, 0.7, 0.3, 1)' : 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' });
+      anim.opening = open;
+      running.set(d, anim);
+      anim.onfinish = () => {
+        running.delete(d);
+        d.open = open;
+        d.style.overflow = '';
+        d.style.boxSizing = '';
+        anim.cancel();
+      };
+    });
   };
 
   // A button with the arrow. open: the state at the start. labels: { open, close }, the texts for the

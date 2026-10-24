@@ -497,13 +497,21 @@ function inboxModel() {
   });
 }
 
+// An announcement opens and closes with the animation of MAK.fold (its text below its title).
 function toggleAnnouncement(x) {
-  if (ui.openAnn.has(x.id)) ui.openAnn.delete(x.id);
-  else {
-    ui.openAnn.add(x.id);
-    if (x.unread) send({ type: 'markAnnRead', ids: [x.id] });
+  const body = () => document.querySelector(`[data-ann="${CSS.escape(String(x.id))}"]`);
+  if (ui.openAnn.has(x.id)) {
+    ui.openAnn.delete(x.id);
+    return body() ? MAK.fold(body(), false, renderInboxList) : renderInboxList();
   }
+  ui.openAnn.add(x.id);
+  if (x.unread) send({ type: 'markAnnRead', ids: [x.id] });
   renderInboxList();
+  const opened = body();
+  if (opened) {
+    opened.hidden = true;
+    MAK.fold(opened, true);
+  }
 }
 
 function inboxRow(x) {
@@ -525,7 +533,7 @@ function inboxRow(x) {
         open
           ? h(
               'div',
-              null,
+              { data: { ann: String(x.id) } },
               x.text ? h('p', { class: 'ann-text', text: x.text }) : null,
               x.attachments.length
                 ? h('div', { class: 'links' }, h('span', { class: 'meta', text: t('inbox.attachments') }), x.attachments.map((f) => MAK.link(f.url, f.name)))
@@ -1529,6 +1537,7 @@ function applyLanguage() {
 }
 
 async function init() {
+  MAK.animateDetails();
   if (WIDE) {
     document.body.classList.add('wide');
     $('openTab').hidden = true;
