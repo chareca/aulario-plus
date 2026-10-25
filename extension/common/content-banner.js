@@ -126,7 +126,7 @@
     .mini, .map { display: grid; grid-template-columns: minmax(0, 1fr); }
     .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
     .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
-    .map { gap: 8px; max-width: 640px; }
+    .map { position: relative; gap: 8px; max-width: 640px; } /* relative: the offsets of a part (homeOf) */
     [data-count="3"][data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"], [data-count="3"][data-shape="right"], [data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
@@ -136,8 +136,11 @@
     .cell { position: relative; min-width: 0; display: grid; }
     .slot { min-height: 46px; padding: 8px 32px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
       background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); transition: background-color 0.2s, border-color 0.2s; }
-    .slot:hover, .slot[aria-pressed="true"], .over > .slot { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
-    .drag > .slot { opacity: 0.5; cursor: grabbing; }
+    .slot:hover, .slot[aria-pressed="true"] { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
+    /* The part in a drag: above the others, lifted, under the pointer. */
+    .cell.drag { z-index: 2; }
+    .drag > .slot { cursor: grabbing; border-style: solid; border-color: var(--ap-accent); box-shadow: var(--ap-shadow-pop);
+      background: color-mix(in srgb, var(--ap-accent) 16%, var(--ap-solid)); } /* opaque: the part below does not show through */
     /* ✕ of a part: at its top right. */
     .drop { position: absolute; top: 5px; right: 5px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; cursor: pointer;
       color: var(--ap-muted); background: var(--ap-surface); border: var(--ap-bw-sm) solid var(--ap-line); border-radius: 50%; }
@@ -187,11 +190,20 @@
     const pan = h('div', { class: 'pan', attrs: { role: 'region', 'aria-label': MAK.t('layout.title') } });
     shadow.append(MAK.themedStyle(ARRANGE_CSS()), pan);
     const status = h('p', { class: 'meta', attrs: { role: 'status' } });
+    // The panel again only for another layout (not for the echo of a save or another setting: a drag or a slide goes on).
     const set = (next, save) => {
-      layout = MAK.cleanLayout(next);
+      const clean = MAK.cleanLayout(next);
+      const same = JSON.stringify(clean) === JSON.stringify(layout);
+      layout = clean;
       place();
-      draw();
+      if (save || !same) draw();
       if (save) MAK.safeCall(() => ext.runtime.sendMessage({ type: 'setMySiteLayout', layout }), null);
+    };
+    const shownParts = () => layout.order.filter((k) => !layout.hidden.includes(k));
+    // A new order of the parts shown, with the parts out at their places in the order.
+    const withShown = (shown) => {
+      const next = shown[Symbol.iterator]();
+      return layout.order.map((k) => (layout.hidden.includes(k) ? k : next.next().value));
     };
     const swap = (a, b) => {
       const order = layout.order.slice();
@@ -206,37 +218,76 @@
       status.textContent = MAK.t(on ? 'layout.added' : 'layout.removed', { name: partName(k) });
       set(Object.assign({}, layout, { hidden: on ? layout.hidden.filter((x) => x !== k) : [...layout.hidden, k] }), true);
     };
-    const partAt = (x, y) => {
-      const el = shadow.elementFromPoint(x, y);
-      const cell = el && el.closest && el.closest('.cell');
-      return cell ? cell.dataset.part : null;
+    // The place of a part in the map without its moves (a transform): its offsets in the map.
+    const homeOf = (c) => {
+      const m = c.parentElement.getBoundingClientRect();
+      return { left: m.left + c.offsetLeft, top: m.top + c.offsetTop, right: m.left + c.offsetLeft + c.offsetWidth, bottom: m.top + c.offsetTop + c.offsetHeight };
     };
+    const put = (c, i) => {
+      c.dataset.slot = String(i + 1);
+      c.style.order = String(i + 1);
+    };
+    // Parts from where they were seen (before: part -> its box) to their places now, with a short slide.
+    const slide = (cells, before) => {
+      if (MAK.calmMotion()) return;
+      for (const c of cells) {
+        const a = before.get(c.dataset.part);
+        const b = c.getBoundingClientRect();
+        if (a && Math.abs(a.left - b.left) + Math.abs(a.top - b.top) > 1) {
+          c.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+        }
+      }
+    };
+    const boxes = (cells) => new Map(cells.map((c) => [c.dataset.part, c.getBoundingClientRect()]));
     // A part in the map: its button (drag it, or click it) and ✕ (not on the last part shown).
     const cell = (k, i, removable) => {
       const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { key: `part:${k}` }, text: partName(k) });
+      // A drag: the part follows the pointer; over the place of another part, it takes that place and the others make
+      // room at once (they slide to the places of the new order). The drop keeps the order that the user sees (also out
+      // of the parts); a cancelled drag goes back. A part in its place: its home (the offsets, not the moves), so it
+      // never jumps back.
       b.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
-        drag = { from: k, x: e.clientX, y: e.clientY, moved: false };
-        b.setPointerCapture(e.pointerId);
+        const c = b.parentElement;
+        const r = homeOf(c);
+        drag = { k, cell: c, x: e.clientX, y: e.clientY, gx: e.clientX - r.left, gy: e.clientY - r.top, order: shownParts(), moved: false };
+        try { b.setPointerCapture(e.pointerId); } catch {} // a pen or a touch that ended
       });
       b.addEventListener('pointermove', (e) => {
-        if (!drag) return;
-        drag.moved = drag.moved || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6;
-        if (!drag.moved) return;
-        const over = partAt(e.clientX, e.clientY);
-        for (const c of pan.querySelectorAll('.cell')) {
-          c.classList.toggle('drag', c.dataset.part === drag.from);
-          c.classList.toggle('over', c.dataset.part === over && over !== drag.from);
+        const d = drag;
+        if (!d) return;
+        d.moved = d.moved || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6;
+        if (!d.moved) return;
+        d.cell.classList.add('drag');
+        const cells = [...pan.querySelectorAll('.cell')];
+        const over = cells.find((c) => {
+          const r = c !== d.cell && homeOf(c);
+          return r && e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom;
+        });
+        if (over) {
+          const others = cells.filter((c) => c !== d.cell);
+          const before = boxes(others);
+          for (const c of others) for (const a of c.getAnimations()) a.cancel();
+          const to = d.order.indexOf(over.dataset.part);
+          d.order = d.order.filter((x) => x !== d.k);
+          d.order.splice(to, 0, d.k);
+          for (const c of cells) put(c, d.order.indexOf(c.dataset.part));
+          slide(others, before);
         }
+        const home = homeOf(d.cell);
+        d.cell.style.transform = `translate(${e.clientX - d.gx - home.left}px, ${e.clientY - d.gy - home.top}px) scale(1.03)`;
       });
       const end = (e) => {
         const d = drag;
         drag = null;
         if (!d || !d.moved) return;
         dragged = true;
-        const over = e.type === 'pointerup' ? partAt(e.clientX, e.clientY) : null;
-        if (over && over !== d.from) swap(d.from, over);
-        else draw();
+        const before = boxes([...pan.querySelectorAll('.cell')]);
+        if (e.type === 'pointerup' && d.order.join() !== shownParts().join()) {
+          status.textContent = MAK.t('layout.moved', { name: partName(d.k), n: d.order.indexOf(d.k) + 1 });
+          set(Object.assign({}, layout, { order: withShown(d.order) }), true);
+        } else draw();
+        slide([...pan.querySelectorAll('.cell')], before); // the part from where it was let go to its place
       };
       b.addEventListener('pointerup', end);
       b.addEventListener('pointercancel', end);
@@ -256,9 +307,11 @@
         draw();
       });
       const name = MAK.t('layout.remove', { name: partName(k) });
-      return h('div', { class: 'cell', data: { slot: String(i + 1), part: k } }, b, removable
+      const c = h('div', { class: 'cell', data: { part: k } }, b, removable
         ? h('button', { class: 'drop', data: { key: `toggle:${k}` }, attrs: { type: 'button', title: name, 'aria-label': name }, on: { click: () => show(k, false) } }, MAK.icon('x'))
         : null);
+      put(c, i);
+      return c;
     };
     const close = () => {
       MAK.fold(host, false);
@@ -269,7 +322,7 @@
     // The panel again; the focus stays on the same button (data-key; ✕ and + of a part: the same key).
     function draw() {
       const focused = shadow.activeElement && shadow.activeElement.dataset.key;
-      const shown = layout.order.filter((k) => !layout.hidden.includes(k));
+      const shown = shownParts();
       const n = String(shown.length);
       // Two parts: one below the other or side by side (the other shapes are the same then). One part: no shape.
       const shapes = shown.length === 3 ? MAK.MYSITE_SHAPES : shown.length === 2 ? ['rows', 'cols'] : [];

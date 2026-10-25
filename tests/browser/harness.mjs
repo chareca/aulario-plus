@@ -270,7 +270,7 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { out: [true, 'none', false, '2'], back: [false, '3', '3', 'arrosadia'] });
   });
 
-  await test('a subject: a calendar of two months stays in its box at every width (side by side only when both fit)', async (open) => {
+  await test('a subject: a calendar of two months stays in its box at every width; side by side when both fit (the table gives up its room)', async (open) => {
     const tab = await open('tools.html');
     await prepare(tab, {}, {});
     await tab.evaluate('window.__old = true');
@@ -285,7 +285,7 @@ async function runTests(browser, base) {
       place.hidden = false;
       MAK.fill(place, MAK.examCalendar(days, { focus: 'gp' }));
       const out = [];
-      let sides = 0;
+      const sides = [];
       for (let w = 900; w <= 1700; w += 20) {
         host.style.width = w + 'px';
         const box = s.querySelector('.box');
@@ -293,12 +293,48 @@ async function runTests(browser, base) {
         const inner = box.getBoundingClientRect().right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
         if (Math.max(...[...s.querySelectorAll('.cal-day')].map((d) => d.getBoundingClientRect().right)) > inner + 0.5) out.push(w);
         const tops = [...s.querySelectorAll('.cal-month')].map((m) => m.getBoundingClientRect().top);
-        if (Math.abs(tops[0] - tops[1]) < 2) sides++;
+        if (Math.abs(tops[0] - tops[1]) < 2) sides.push(w);
       }
       return { out, sides };
     `);
     assert.deepEqual(got.out, [], 'the widths where a day goes out of the box');
-    assert.ok(got.sides > 0, 'side by side when both fit');
+    assert.ok([1200, 1440, 1700].every((w) => got.sides.includes(w)), `side by side next to the guide from 1200 px: ${got.sides}`);
+  });
+
+  await test('Mi sitio: a drag in the panel moves the part under the pointer, the others make room before the drop; a drag only out of the parts changes nothing', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await tab.evaluate('window.__old = true');
+    await tab.navigate(url('site.html?mine&seed&open'));
+    if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete' && !!window.MAK"))) throw new Error('site.html did not load');
+    const got = await run(tab, `
+      await until(() => { const b = document.getElementById('mak-block-body'); return b && b.dataset.count === '3'; }, 'the three parts');
+      document.querySelector('#mak-block .mak-organize').click();
+      await new Promise((r) => setTimeout(r, 400));
+      const s = document.getElementById('mak-layout-host').shadowRoot;
+      const cell = (k) => s.querySelector('.cell[data-part="' + k + '"]');
+      const slots = () => ['exams', 'guides', 'hours'].map((k) => cell(k).dataset.slot).join('');
+      const at = (k) => { const r = cell(k).getBoundingClientRect(); return { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }; };
+      const fire = (el, type, p) => el.dispatchEvent(new PointerEvent(type, Object.assign({ bubbles: true, button: 0, pointerId: 7 }, p)));
+      const order = async () => String((await chrome.storage.local.get('settings')).settings?.mysiteLayout?.order); // none before the first save
+      const first = slots();
+      let b = cell('exams').querySelector('.slot');
+      const [from, to] = [at('exams'), at('hours')];
+      fire(b, 'pointerdown', from);
+      fire(b, 'pointermove', { clientX: from.clientX + 20, clientY: from.clientY + 20 });
+      fire(b, 'pointermove', to);
+      const during = [slots(), cell('exams').classList.contains('drag'), /translate/.test(cell('exams').style.transform)];
+      fire(b, 'pointerup', to);
+      const saved = await until(async () => (await order()) === 'guides,hours,exams' && 'guides,hours,exams', 'the new order saved');
+      b = cell('guides').querySelector('.slot');
+      const g = at('guides');
+      fire(b, 'pointerdown', g);
+      fire(b, 'pointermove', { clientX: g.clientX + 900, clientY: g.clientY + 900 });
+      fire(b, 'pointerup', { clientX: g.clientX + 900, clientY: g.clientY + 900 });
+      await new Promise((r) => setTimeout(r, 300));
+      return { first, during, saved, out: [await order(), slots()] };
+    `);
+    assert.deepEqual(got, { first: '123', during: ['312', true, true], saved: 'guides,hours,exams', out: ['guides,hours,exams', '312'] });
   });
 
   await test('Mi sitio: folding the block folds the panel of the sections too', async (open) => {
