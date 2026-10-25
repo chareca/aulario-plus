@@ -126,7 +126,7 @@
     .mini, .map { display: grid; grid-template-columns: minmax(0, 1fr); }
     .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
     .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
-    .map { position: relative; gap: 8px; max-width: 640px; } /* relative: the offsets of a part (homeOf) */
+    .map { position: relative; gap: 8px; max-width: 640px; } /* relative: the offsets of a part (homes) */
     [data-count="3"][data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"], [data-count="3"][data-shape="right"], [data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
@@ -138,7 +138,7 @@
       background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); transition: background-color 0.2s, border-color 0.2s; }
     .slot:hover, .slot[aria-pressed="true"] { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
     /* The part in a drag: above the others, lifted, under the pointer. */
-    .cell.drag { z-index: 2; }
+    .cell.drag { z-index: 2; transition: none; will-change: transform; } /* at once under the pointer (the themes move a transform slowly) */
     .drag > .slot { cursor: grabbing; border-style: solid; border-color: var(--ap-accent); box-shadow: var(--ap-shadow-pop);
       background: color-mix(in srgb, var(--ap-accent) 16%, var(--ap-solid)); } /* opaque: the part below does not show through */
     /* ✕ of a part: at its top right. */
@@ -218,11 +218,8 @@
       status.textContent = MAK.t(on ? 'layout.added' : 'layout.removed', { name: partName(k) });
       set(Object.assign({}, layout, { hidden: on ? layout.hidden.filter((x) => x !== k) : [...layout.hidden, k] }), true);
     };
-    // The place of a part in the map without its moves (a transform): its offsets in the map.
-    const homeOf = (c) => {
-      const m = c.parentElement.getBoundingClientRect();
-      return { left: m.left + c.offsetLeft, top: m.top + c.offsetTop, right: m.left + c.offsetLeft + c.offsetWidth, bottom: m.top + c.offsetTop + c.offsetHeight };
-    };
+    // The places of parts in the map without their moves (a transform): their offsets in the map.
+    const homes = (cells) => new Map(cells.map((c) => [c, { left: c.offsetLeft, top: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight }]));
     const put = (c, i) => {
       c.dataset.slot = String(i + 1);
       c.style.order = String(i + 1);
@@ -234,7 +231,7 @@
         const a = before.get(c.dataset.part);
         const b = c.getBoundingClientRect();
         if (a && Math.abs(a.left - b.left) + Math.abs(a.top - b.top) > 1) {
-          c.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+          c.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)' });
         }
       }
     };
@@ -242,40 +239,49 @@
     // A part in the map: its button (drag it, or click it) and ✕ (not on the last part shown).
     const cell = (k, i, removable) => {
       const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { key: `part:${k}` }, text: partName(k) });
-      // A drag: the part follows the pointer; over the place of another part, it takes that place and the others make
-      // room at once (they slide to the places of the new order). The drop keeps the order that the user sees (also out
-      // of the parts); a cancelled drag goes back. A part in its place: its home (the offsets, not the moves), so it
-      // never jumps back.
+      // A drag: the part follows the pointer at once (no transition, its own layer: .cell.drag), held where it was taken.
+      // When its center is over the place of another part, it takes that place and the others make room (they slide to
+      // the places of the new order). The drop keeps the order that the user sees (also out of the parts); a cancelled
+      // drag goes back. The places (homes) are measured only when the order changes, not at each move.
       b.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         const c = b.parentElement;
-        const r = homeOf(c);
-        drag = { k, cell: c, x: e.clientX, y: e.clientY, gx: e.clientX - r.left, gy: e.clientY - r.top, order: shownParts(), moved: false };
+        const m = c.parentElement.getBoundingClientRect();
+        drag = { k, cell: c, x: e.clientX, y: e.clientY, gx: e.clientX - m.left - c.offsetLeft, gy: e.clientY - m.top - c.offsetTop, order: shownParts(), moved: false };
         try { b.setPointerCapture(e.pointerId); } catch {} // a pen or a touch that ended
       });
       b.addEventListener('pointermove', (e) => {
         const d = drag;
         if (!d) return;
-        d.moved = d.moved || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6;
-        if (!d.moved) return;
-        d.cell.classList.add('drag');
-        const cells = [...pan.querySelectorAll('.cell')];
-        const over = cells.find((c) => {
-          const r = c !== d.cell && homeOf(c);
-          return r && e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom;
+        if (!d.moved) {
+          if (Math.hypot(e.clientX - d.x, e.clientY - d.y) <= 6) return;
+          d.moved = true;
+          d.cells = [...pan.querySelectorAll('.cell')];
+          for (const a of d.cell.getAnimations()) a.cancel(); // a slide of before would hold it
+          d.cell.classList.add('drag');
+          d.homes = homes(d.cells);
+        }
+        const m = d.cell.parentElement.getBoundingClientRect();
+        const [x, y] = [e.clientX - m.left - d.gx, e.clientY - m.top - d.gy]; // where it is drawn, in the map
+        const own = d.homes.get(d.cell);
+        const [cx, cy] = [x + own.w / 2, y + own.h / 2];
+        const over = d.cells.find((c) => {
+          const r = c !== d.cell && d.homes.get(c);
+          return r && cx >= r.left && cx < r.left + r.w && cy >= r.top && cy < r.top + r.h;
         });
         if (over) {
-          const others = cells.filter((c) => c !== d.cell);
+          const others = d.cells.filter((c) => c !== d.cell);
           const before = boxes(others);
           for (const c of others) for (const a of c.getAnimations()) a.cancel();
           const to = d.order.indexOf(over.dataset.part);
-          d.order = d.order.filter((x) => x !== d.k);
+          d.order = d.order.filter((p) => p !== d.k);
           d.order.splice(to, 0, d.k);
-          for (const c of cells) put(c, d.order.indexOf(c.dataset.part));
+          for (const c of d.cells) put(c, d.order.indexOf(c.dataset.part));
+          d.homes = homes(d.cells);
           slide(others, before);
         }
-        const home = homeOf(d.cell);
-        d.cell.style.transform = `translate(${e.clientX - d.gx - home.left}px, ${e.clientY - d.gy - home.top}px) scale(1.03)`;
+        const home = d.homes.get(d.cell);
+        d.cell.style.transform = `translate(${x - home.left}px, ${y - home.top}px)`;
       });
       const end = (e) => {
         const d = drag;

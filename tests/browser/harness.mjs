@@ -323,7 +323,9 @@ async function runTests(browser, base) {
       fire(b, 'pointerdown', from);
       fire(b, 'pointermove', { clientX: from.clientX + 20, clientY: from.clientY + 20 });
       fire(b, 'pointermove', to);
-      const during = [slots(), cell('exams').classList.contains('drag'), /translate/.test(cell('exams').style.transform)];
+      // At once under the pointer: no transition (the one of the themes for a transform made it trail behind the mouse).
+      const still = getComputedStyle(cell('exams')).transitionDuration.split(',').every((d) => parseFloat(d) === 0);
+      const during = [slots(), cell('exams').classList.contains('drag'), still];
       fire(b, 'pointerup', to);
       const saved = await until(async () => (await order()) === 'guides,hours,exams' && 'guides,hours,exams', 'the new order saved');
       b = cell('guides').querySelector('.slot');
