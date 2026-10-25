@@ -27,13 +27,14 @@
     ${MAK.SEMESTERS_CSS}
     ${MAK.TILE_CSS}
     .content { max-width: 1400px; }
-    /* The home page of a site: the guide keeps its width (900px at most), and the calendar goes in the free space
-       to its right, centered, when one month fits there (the months one below the other when two do not); else on
-       its own line below, centered. */
+    /* The home page of a site: the guide, and the calendar in the free space to its right, centered, when one month fits
+       there (the months one below the other when two do not); else on its own line below, centered. */
     .content.one { max-width: none; }
     .guide-flow { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; }
-    .guide-main { flex: 0 1 900px; min-width: 0; }
-    .guide-flow > .cal-wrap { flex: 1 1 0; min-width: min-content; margin: 0; display: flex; justify-content: center; }
+    /* The guide from 560px (its table still reads well) to 900px; the calendar takes first the room of its months side by
+       side (its table gives up its free space), the guide the rest. */
+    .guide-main { flex: 1 1 560px; max-width: 900px; min-width: 0; }
+    .guide-flow > .cal-wrap { flex: 100 0 0; min-width: min-content; max-width: max-content; margin: 0 auto; display: flex; justify-content: center; }
     .guide-flow .cal-grid { grid-template-columns: repeat(7, 32px); } /* a month does not shrink: its width is the least of the calendar */
     /* So two months go side by side only when both fit (else the second one went out of the box). */
     .guide-flow .cal-month { flex: 0 0 auto; max-width: none; }
