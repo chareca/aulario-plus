@@ -58,6 +58,8 @@
     ${MAK.LINK_CSS}
     .person .mak-link { font-size: 0.86em; white-space: nowrap; }
     .tag { font-size: 0.8em; margin-left: 6px; padding: 0 6px; border-radius: var(--ap-radius-sm); background: var(--ap-green-bg); color: var(--ap-green); white-space: nowrap; }
+    /* On a teacher under the mouse (its colors turn): the tag in the color of the text, with a line. */
+    .people button:hover .tag, .people button:focus-visible .tag { color: inherit; background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
     .help, .status { font-size: 0.86em; color: var(--ap-muted); margin: 8px 0 0; }
     .status.error { color: var(--ap-red); }
     input[type=search] { margin-bottom: 4px; }

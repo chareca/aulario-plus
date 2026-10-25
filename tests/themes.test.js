@@ -154,13 +154,19 @@ test('the hover of all the buttons: the colors change places, slowly, with one s
       }
       const css = MAK.hoverCss(th, dark);
       assert.match(css, /transition-duration: 0\.3s/, th.id);
-      for (const sel of ['.btn:hover', 'button.x:hover', '.win button.plain:hover', '.icon-btn:hover', '.mak-icon:hover', '.chips button:hover']) assert.ok(css.includes(sel), `${th.id}: ${sel}`);
+      // A selector of the list: with :not(the kept ones) when the theme keeps some (a burst that is a .btn too); a kept one: none.
+      for (const sel of ['.btn', 'button.x', '.win button.plain', '.icon-btn', '.mak-icon', '.chips button']) {
+        const own = (th.keepHover || []).includes(sel);
+        const re = new RegExp(`${sel.replace(/\./g, '\\.')}(:not\\([^)]*\\))?:hover`);
+        assert.equal(re.test(css), !own, `${th.id}: ${sel}:hover`);
+      }
       assert.doesNotMatch(css, /box-shadow: none, /, 'no "none" in a list of shadows');
       assert.match(css, /button\.x \{ border-radius: var\(--ap-radius-sm\); \}/, 'the ✕ fills with the shape of the buttons, not a square');
     }
   }
   assert.ok(!MAK.hoverCss(MAK.theme('bloques'), false).includes('.actions .action:hover'), 'the bursts of Cómic: their own hover');
   assert.ok(MAK.hoverCss(MAK.theme('miaulario'), false).includes('.actions .action:hover'));
+  assert.ok(MAK.hoverCss(MAK.theme('bloques'), false).includes('.btn:not(.actions .action, .btn.primary'), 'a primary button of Cómic (a burst, also a .btn): not the ink fill');
   const page = MAK.pageThemeCss('miaulario', (f) => `fonts/${f}`, 'light');
   assert.match(page, /\.btn\.primary:hover, \.btn\.primary:focus-visible[^{]*\{\s*color: var\(--ap-primary-solid\) !important/, 'over the hover rules of the theme: they do not hide the text');
 });

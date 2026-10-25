@@ -251,7 +251,7 @@
   // The tick of a check box, in ink; the arrow of a list; a magnifier (yellow glass, an ink frame).
   const INK_CHECK = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.5 8.6l3.6 3.6L13.8 3" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
   const INK_DOWN = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 8"><path d="M1.5 1.5L6 6l4.5-4.5" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
-  const INK_LENS = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 15.4l5.6 5.4" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/><circle cx="10" cy="10" r="6.5" fill="#ffd43b" stroke="${INK}" stroke-width="2.4"/><path d="M7 8.4a3.4 3.4 0 0 1 3-2.4" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/></svg>`);
+  const INK_LENS = svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="none" stroke="#fffcf3" stroke-linecap="round"><path d="M15 15.4l5.6 5.4" stroke-width="6.4"/><circle cx="10" cy="10" r="6.5" stroke-width="5.4"/></g><path d="M15 15.4l5.6 5.4" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/><circle cx="10" cy="10" r="6.5" fill="#ffd43b" stroke="${INK}" stroke-width="2.4"/><path d="M7 8.4a3.4 3.4 0 0 1 3-2.4" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/></svg>`);
 
   // ---- The drawings of "AulaXP" (our own, in the style of the desktop of 2002) ----
   const XP = {
@@ -478,7 +478,8 @@
     // balloons and the bursts stay as they are).
     {
       id: 'bloques',
-      keepHover: ['.actions .action'], // the bursts: their own hover (they turn and grow)
+      // The bursts (the actions, the main buttons, the icons): their own hover, they turn and grow (not the ink fill of MAK.hoverCss).
+      keepHover: ['.actions .action', '.btn.primary', '.mak-btn', '.mak-icon', '.win button.primary', '.mail button.primary', '.pop button.save'],
       name: { es: 'Cómic', en: 'Comic' },
       about: { es: 'Viñetas en tinta, tramas de puntos, globos de diálogo y explosiones.', en: 'Panels in ink, halftone dots, speech balloons and bursts.' },
       fonts: [
@@ -631,7 +632,7 @@
         header.top, :host(:not(.in-block)) .box > .head, .win > header, .mail > header, .panel > .bar, .pop > header {
           background: radial-gradient(ellipse at 15% 50%, rgba(255, 255, 255, 0.26) 0%, transparent 60%), ${RAYS('rgba(255, 255, 255, 0.12)', '15% 50%')}, var(--ap-win-head-bg); }
         /* ---- The captions (the voice of the narrator): yellow boxes, the letters in capitals ---- */
-        .tile > h4, :host(.in-block) .box > .head .title, .sem-head .sem-title, h2.group, .section h2, .panel h3, .pop h3, header.top .status-line {
+        .tile-head > h4, :host(.in-block) .box > .head .title, .sem-head .sem-title, .pan .top strong, h2.group, .section h2, .panel h3, .pop h3, header.top .status-line {
           color: ${INK}; background: #ffe27a; border: 2.5px solid ${INK}; border-radius: 0; font-family: var(--ap-font); font-weight: 700; font-style: normal;
           font-size: 12.5px; line-height: 1.3; letter-spacing: 0.05em; text-transform: uppercase; text-shadow: none; }
         h2.group, .section h2, .panel h3, .pop h3, :host(.in-block) .box > .head .title { display: inline-block; margin: 14px 0 8px; padding: 3px 9px 2px; }
@@ -666,7 +667,7 @@
         /* The countdowns and the tags: captions of ink */
         .countdown, .count, .tag { border: 2px solid var(--ap-count-edge); letter-spacing: 0.04em; }
         .u-overdue .countdown, .u-red .countdown, .count.hot { text-shadow: ${LETTERING(0.8)}; }
-        .tag { font-weight: 700; font-size: 10.5px; border-width: 1.5px; border-radius: 1px; text-transform: uppercase; }
+        .tag { font-weight: 700; font-size: 10.5px; border-width: 1.5px; border-color: var(--ap-edge); border-radius: 1px; text-transform: uppercase; }
         /* The weeks: small panels; the selected one in yellow */
         .week { color: var(--ap-fg); background: var(--ap-surface); border: 2.5px solid var(--ap-edge); border-radius: 2px; box-shadow: none; }
         .week:hover { filter: none; background: ${DOTS('rgba(21, 18, 15, 0.1)', 6)}, #fff3bf; color: ${INK}; }
@@ -694,7 +695,7 @@
         .btn.primary, .mak-btn, .win button.primary, .mail button.primary, .pop button.save { position: relative; padding: 13px 30px; color: ${INK}; font-family: var(--ap-font-head);
           font-size: 1.12em; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; border: 0; border-radius: 0; box-shadow: none;
           background: ${BURST('#ffd43b', '#e8302a')} center / 100% 100% no-repeat; }
-        .btn.primary:hover, .mak-btn:hover, .btn.primary:focus-visible, .mak-btn:focus-visible, .win button.primary:hover, .mail button.primary:hover {
+        .btn.primary:hover, .mak-btn:hover, .btn.primary:focus-visible, .mak-btn:focus-visible, .win button.primary:hover, .mail button.primary:hover, .pop button.save:hover {
           filter: none; transform: rotate(-2deg) scale(1.05); }
         .btn.primary:active, .mak-btn:active, .win button.primary:active, .mail button.primary:active, .actions .action:active { color: #ffffff; transform: scale(0.97);
           background: ${BURST('#e8302a')} center / 100% 100% no-repeat; text-shadow: ${LETTERING(1)}; }
@@ -758,8 +759,8 @@
         .panel > .foot { border-top: 2.5px solid var(--ap-edge); font-weight: 700; }
 
         /* ---- Mi sitio and the sites: panels of ink with the dots of the shade; a caption in the corner ---- */
-        .tile { position: relative; padding: 38px 14px 14px; background: ${SHADE('var(--ap-surface)', 'rgba(21, 18, 15, 0.1)')}; border: 3px solid var(--ap-edge); border-radius: 2px; }
-        .tile > h4 { position: absolute; top: -3px; left: -3px; margin: 0; padding: 4px 11px 3px; }
+        .tile { position: relative; padding: 12px 14px 14px; background: ${SHADE('var(--ap-surface)', 'rgba(21, 18, 15, 0.1)')}; border: 3px solid var(--ap-edge); border-radius: 2px; }
+        .tile-head > h4 { position: absolute; top: -3px; left: -3px; min-height: 0; margin: 0; padding: 4px 11px 3px; }
         :host(.in-block) .box > .head { align-items: center; }
         :host(.in-block) .box > .head .title { margin: 4px 0; }
         /* The next exam: a splash panel. The sky and the rays, the days lettered in yellow, a caption, a burst */
@@ -808,6 +809,26 @@
         .content table { border: 2.5px solid var(--ap-edge); background: var(--ap-surface); }
         th, td { border: 1.5px solid var(--ap-line); }
         th { color: ${INK}; background: #ffe27a; text-transform: uppercase; letter-spacing: 0.04em; }
+        /* The head of a tile: its bursts a little larger (else the spikes touch the letters), the calendar a burst */
+        .tile-head .actions .action:nth-child(n) { padding: 6px 18px; }
+        .tile-head .cal-toggle { padding: 6px 18px; font-size: 0.86em; }
+        .mak-btn.cal-toggle[aria-pressed="true"] { background: ${BURST('#ffd43b')} center / 100% 100% no-repeat; }
+        .mak-btn.cal-toggle[aria-pressed="false"] { color: ${INK}; background: ${BURST('#ffffff')} center / 100% 100% no-repeat; }
+        /* The calendars and the cards of the hours: small panels, as the exams; the days of the exams lettered */
+        .cal-wrap:not(:empty), .hr-card { background: ${SHADE('var(--ap-surface)', 'rgba(21, 18, 15, 0.1)')}; border: 2.5px solid var(--ap-edge); border-radius: 2px; }
+        .cal-wrap:not(:empty) { padding: 8px 10px; }
+        .hr-card .cal-wrap:not(:empty) { padding: 0; background: none; border: 0; }
+        .cal-day.final, .cal-day.rec { box-shadow: inset 0 0 0 2px ${INK}; text-shadow: ${LETTERING(0.8)}; }
+        /* The panel that arranges the sections: a panel of ink, its title a caption; the drawings in ink; a part, a caption */
+        .pan { margin: 12px 12px 0; background: ${SHADE('var(--ap-surface)', 'rgba(21, 18, 15, 0.1)')}; border: 3px solid var(--ap-edge); border-radius: 2px; }
+        .pan .top strong { padding: 3px 9px 2px; }
+        .mini > i { opacity: 1; border-radius: 0; }
+        .slot:hover, .slot[aria-pressed="true"] { color: ${INK}; }
+        .drop { color: #ffffff; background: #e8302a; border: 2px solid ${INK}; }
+        .drop:hover { color: #ffffff; border-color: ${INK}; transform: rotate(-10deg) scale(1.08); }
+        /* A balloon filled with ink (hover, focus): its tail in ink too */
+        .btn:not(.primary):hover::after, .btn:not(.primary):focus-visible::after, .win button.plain:not(.primary):hover::after, .win button.btn:not(.primary):hover::after,
+        .mail button:not(.x):not(.primary):hover::after, .pop button:not(.x):not(.save):hover::after, .pop button:not(.x):not(.save):focus-visible::after { filter: brightness(0); }
       `
     },
 
@@ -821,6 +842,7 @@
         { family: 'AP Nunito', file: 'nunito.woff2', weight: '400 900' }
       ],
       light: {
+        'mark-fg': 'var(--ap-fg)', // a match in grey text stays readable (also in dark)
         font: '"AP Nunito", "Nunito", system-ui, sans-serif',
         'font-head': '"AP Fredoka", "Fredoka", "AP Nunito", system-ui, sans-serif',
         'font-num': '"AP Fredoka", "Fredoka", system-ui, sans-serif',
@@ -839,9 +861,9 @@
         'accent-soft': '#fff3c9',
         link: '#2f5bd0',
         red: '#c8324f', 'red-bg': '#ffd9df',
-        orange: '#b4581a', 'orange-bg': '#ffe2cf',
+        orange: '#9c4a12', 'orange-bg': '#ffe2cf',
         yellow: '#8a6400', 'yellow-bg': '#fff3c9',
-        green: '#2c7f50', 'green-bg': '#d6f5e2',
+        green: '#277548', 'green-bg': '#d6f5e2',
         blue: '#2f5bd0', 'blue-bg': '#dbe8ff',
         grey: '#6d6880', 'grey-bg': '#ece9f2',
         'mark-bg': '#ffe7a0',
@@ -876,7 +898,7 @@
         'count-soon-bg': '#ffcdb2',
         'count-soon-fg': '#2e2a3a',
         'count-hot-bg': '#ff8fa3',
-        'count-hot-fg': '#ffffff',
+        'count-hot-fg': '#2e2a3a', // dark text on the pink, as the other pills
         'count-ok-bg': '#bdecce',
         'count-ok-fg': '#2e2a3a',
         'input-bg': '#f8f5fb',
@@ -908,6 +930,7 @@
         red: '#ff9fb1', 'red-bg': '#4a2a33',
         orange: '#ffb98c', 'orange-bg': '#45301f',
         green: '#8fe0b0', 'green-bg': '#21392e',
+        yellow: '#f2cf63', 'yellow-bg': '#4a4330',
         blue: '#9dbaff', 'blue-bg': '#263452',
         grey: '#b6b2c8', 'grey-bg': '#343a4b',
         accent: '#f2cf63',
@@ -922,7 +945,8 @@
         'count-fg': '#ffffff',
         'count-soon-bg': '#8a5a3c',
         'count-soon-fg': '#ffffff',
-        'count-hot-bg': '#c9506a',
+        'count-hot-bg': '#b8455f',
+        'count-hot-fg': '#ffffff',
         'count-ok-bg': '#2f6b4a',
         'count-ok-fg': '#ffffff',
         'input-bg': '#252a37',
@@ -935,7 +959,11 @@
         nav.tabs button { border: 0; border-radius: 13px; padding: 6px 4px; font-family: var(--ap-font-head); }
         nav.tabs button[aria-selected="true"] { background: var(--ap-surface2); box-shadow: var(--ap-shadow-sm); }
         .mak-logo { border-radius: 12px; box-shadow: var(--ap-shadow-sm); }
-        .exams li, .guide-card, .sem, .tile { background: var(--ap-surface2); box-shadow: var(--ap-shadow-sm); border: 0; }
+        .exams li, .guide-card, .sem, .tile, .hr-card { background: var(--ap-surface2); box-shadow: var(--ap-shadow-sm); border: 0; }
+        /* Hours: the icon in a puffy yellow circle. The organizer: puffy shapes, parts and buttons. */
+        .hr-ico { color: var(--ap-accent-fg); background: var(--ap-accent); box-shadow: var(--ap-shadow-sm); }
+        .shape, .slot, .drop, .pan .btn { box-shadow: var(--ap-shadow-sm); }
+        .dot { border-color: color-mix(in srgb, var(--ap-fg) 30%, transparent); } /* the pastel dots of the guide on the light page */
         .next-exam { --ap-fg: #2e2a3a; --ap-muted: #5e5970; background: #ffe7a0; color: #2e2a3a; box-shadow: var(--ap-shadow-sm); }
         .next-exam .count { background: #c4dcff; color: #2e2a3a; }
         .actions .action:nth-child(3n+1) { background: #c4dcff; }
@@ -945,6 +973,10 @@
         .actions .action .label { display: none; }
         .bar.weights { height: 26px; border-radius: 14px; gap: 3px; }
         .bar.weights span { border-radius: 10px; }
+      `,
+      // The corner that widens the block: bigger, so the round corner of the block does not cut it to a sliver.
+      blockCss: `
+        #mak-block .mak-widen { width: 32px; height: 32px; }
       `
     },
 
@@ -959,6 +991,7 @@
         { family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }
       ],
       light: {
+        'shadow-sm': '0 6px 14px -8px rgba(70, 50, 120, 0.4)', // the pill buttons lift off the white glass
         font: '"AP Manrope", "Manrope", system-ui, sans-serif',
         'font-head': '"AP Cormorant", "Cormorant Garamond", Georgia, serif',
         'font-num': '"AP Cormorant", "Cormorant Garamond", Georgia, serif',
@@ -970,7 +1003,7 @@
         surface: 'rgba(255, 255, 255, 0.38)',
         solid: '#f6f0f7',
         'btn-solid': 'var(--ap-solid)',
-        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%), radial-gradient(640px 420px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(640px 440px at 100% 45%, #c6dcfb, transparent 60%), radial-gradient(640px 420px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
+        'win-bg': 'linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #fff4f7 0%, #ffd6e4 48%, #b9c8f5 98%, transparent 100%) no-repeat, radial-gradient(640px 420px at 0% 0%, #ffd9c6, transparent 62%), radial-gradient(640px 440px at 100% 45%, #c6dcfb, transparent 60%), radial-gradient(640px 420px at 40% 100%, #f5c9e0, transparent 62%), #f1ecf5',
         surface2: 'rgba(255, 255, 255, 0.62)',
         fg: '#2a2740',
         muted: '#5c5778',
@@ -1028,7 +1061,7 @@
         page: 'radial-gradient(circle 64px at 88% 250px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%), radial-gradient(460px 380px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(460px 380px at 100% 100%, #3d2348, transparent 60%), #13142a',
         surface: 'rgba(36, 34, 70, 0.48)',
         solid: '#1f1e3d',
-        'win-bg': 'linear-gradient(rgba(19, 20, 42, 0.35), rgba(19, 20, 42, 0.35)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%), radial-gradient(640px 460px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(640px 460px at 100% 100%, #3d2348, transparent 60%), #13142a',
+        'win-bg': 'linear-gradient(rgba(19, 20, 42, 0.35), rgba(19, 20, 42, 0.35)), radial-gradient(circle 44px at calc(100% - 150px) -14px, #d9ccb0 0%, #a89a7e 50%, #4f5888 98%, transparent 100%) no-repeat, radial-gradient(640px 460px at 10% 0%, #2b2d5a, transparent 60%), radial-gradient(640px 460px at 100% 100%, #3d2348, transparent 60%), #13142a',
         surface2: 'rgba(255, 255, 255, 0.1)',
         'accent-soft': 'rgba(255, 255, 255, 0.08)',
         fg: '#ecebff',
@@ -1065,10 +1098,10 @@
         'logo-bg': '#13142a',
         'logo-ring': '#f2e2bd',
         'logo-dot': '#ff94b4',
-        'k-exam': 'linear-gradient(90deg, #c76b8f, #c98a6a)', 'k-exam-fg': '#ffffff',
+        'k-exam': 'linear-gradient(90deg, #c76b8f, #c98a6a)', 'k-exam-fg': '#13142a',
         'k-practice': 'linear-gradient(90deg, #6f82c9, #6a74b8)', 'k-practice-fg': '#ffffff',
         'k-work': '#4f8f78', 'k-work-fg': '#ffffff',
-        'k-participation': '#b39a4a', 'k-participation-fg': '#ffffff',
+        'k-participation': '#b39a4a', 'k-participation-fg': '#13142a',
         'k-presentation': '#8a6fc0', 'k-presentation-fg': '#ffffff',
         'k-other': '#5f5c78', 'k-other-fg': '#ffffff'
       },
@@ -1077,19 +1110,25 @@
         nav.tabs { border-bottom: 1px solid var(--ap-line); }
         .mak-logo { border-radius: 50%; }
         /* One level of glass (a tile, a card of a guide); in it, rows with thin lines, not more glass. */
-        .tile, .guide-card { background: var(--ap-surface2); border: 1px solid var(--ap-edge); }
+        .tile, .guide-card, .hr-card { background: var(--ap-surface2); border: 1px solid var(--ap-edge); }
+        .hr-id h5 { font-size: calc(1.02em * var(--ap-head-zoom)); } /* the titles of the hours in the size of the heads of the theme */
+
         .sem { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 0 4px; }
         .sems.two .sem { border-top: 0; }
         .exams { gap: 0 18px; }
         .exams li { background: transparent; border: 0; border-top: 1px solid var(--ap-line); border-radius: 0; padding: 8px 2px; }
         .exams .when { color: var(--ap-muted); }
         .next-exam .day { width: 64px; height: 64px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%;
-          background: radial-gradient(circle at 34% 28%, #fff 0%, #ffe3ec 42%, #c9d6fb 100%); box-shadow: 0 14px 24px -12px rgba(110, 80, 160, 0.5); color: #2a2740; font-size: 24px; line-height: 0.9; }
+          background: radial-gradient(circle at 34% 28%, #fff 0%, #ffe3ec 42%, var(--ap-logo-ring) 100%); /* the moon of each mode */ box-shadow: 0 14px 24px -12px rgba(110, 80, 160, 0.5); color: #2a2740; font-size: 24px; line-height: 0.9; }
         .next-exam .day small { font-size: 12px; }
         .actions .action { color: var(--ap-btn-fg); background: var(--ap-btn-bg); border: 1px solid var(--ap-btn-edge); border-radius: 999px; }
         .actions .action .label { display: none; }
         .bar.weights { height: 10px; border-radius: 99px; gap: 0; }
         .bar.weights span { color: transparent; }
+      `,
+      // The corner that widens the block: a tab in the colors of the moon (else the round corner cut it to a sliver).
+      blockCss: `
+        #mak-block .mak-widen { width: 30px; height: 30px; background: var(--ap-logo-ring); opacity: 0.75; }
       `
     },
 
@@ -1349,12 +1388,12 @@
         /* A pane: the head (white to blue, the title in blue, a round button), the body in light blue */
         .tile, :host(.in-block) .box > .head + *, .actions { background: var(--ap-accent-soft); border: 1px solid #ffffff; border-radius: 5px 5px 0 0; }
         .tile { padding: 0 12px 12px; }
-        .tile > h4, :host(.in-block) .box > .head { margin: 0 -12px 10px; padding: 6px 8px 6px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%);
+        .tile > .tile-head, :host(.in-block) .box > .head { margin: 0 -12px 10px; padding: 6px 8px 6px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%);
           color: #215dc6; border-radius: 4px 4px 0 0; }
         :host(.in-block) .box > .head { margin: 0; border-radius: 5px 5px 0 0; }
-        .tile > h4, :host(.in-block) .box > .head .title { font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
+        .tile-head > h4, :host(.in-block) .box > .head .title { min-height: 0; font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
         :host(.in-block) .box > .head + * { padding: 10px; border-top: 0; border-radius: 0; }
-        :host(.in-block) .box > .head .mak-fold, .sem .mak-fold { width: 20px; height: 20px; border-radius: 50%; color: #215dc6; border: 1px solid #ffffff;
+        :host(.in-block) .box > .head .mak-fold, .sem .mak-fold, .tile-head > .mak-fold { width: 20px; height: 20px; border-radius: 50%; color: #215dc6; border: 1px solid #ffffff;
           background: linear-gradient(180deg, #ffffff 0%, #c6d3f7 100%); box-shadow: 0 0 0 1px #8aa4d8; }
         .mak-fold svg { width: 14px; height: 14px; }
         /* Group boxes: the title on the border */
@@ -1550,6 +1589,7 @@
         #mak-block::before { ${SPIRAL} }
         #mak-block > .mak-head { padding: 12px 14px 2px 46px; }
         #mak-block > #mak-block-body { padding: 4px 16px 16px 46px; }
+        #mak-block > #mak-layout-host { padding-left: 32px; }
         #mak-block .mak-title { font-size: calc(21px * var(--ap-head-zoom)); }
         #mak-block .mak-head .mak-fold { border-width: 1.6px; border-radius: 5px 8px 6px 7px / 7px 5px 8px 6px; box-shadow: none; }
       `,
@@ -1586,7 +1626,7 @@
         /* A note after an update: a sticky note */
         .whatsnew { --ap-fg: #1d2a78; color: #1d2a78; border: 0; border-radius: 2px; transform: rotate(-0.8deg); ${NOTE('var(--ap-accent-soft)')} }
         .notice { border: 2px solid var(--ap-red); border-radius: 12px 16px 10px 14px / 14px 10px 16px 12px; background: none; }
-        .tag { font-family: var(--ap-font-head); font-size: 1.1em; background: none; border: 1.5px solid currentColor; border-radius: 10px 14px 9px 12px / 12px 9px 14px 10px; }
+        .tag { width: fit-content; padding: 0 7px; font-family: var(--ap-font-head); font-size: 1.1em; background: none; border: 1.5px solid currentColor; border-radius: 10px 14px 9px 12px / 12px 9px 14px 10px; }
 
         /* ---- The parts in MiAulario ---- */
         /* The titles: written on the page, a line in pen under them */
@@ -1615,7 +1655,7 @@
         .sem .mak-fold { width: 24px; height: 24px; }
         /* The exams: index cards */
         .exams { gap: 12px; }
-        .exams li { padding: 8px 10px; border: 0; border-radius: 2px; background: var(--ap-surface);
+        .exams li, .hr-card { padding: 8px 10px; border: 0; border-radius: 2px; background: var(--ap-surface);
           box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), 0 5px 8px -5px rgba(0, 0, 0, 0.4); }
         .exams li:nth-child(odd) { transform: rotate(-0.6deg); }
         .exams li:nth-child(even) { transform: rotate(0.5deg); }
@@ -1632,8 +1672,11 @@
         .actions .action:nth-child(3n+2) { background: ${RUBBER('linear-gradient(90deg, #5a82c8 0 24%, #f5f2ea 24%)')}; padding-left: calc(24% + 10px); transform: rotate(1deg); }
         .actions .action:nth-child(3n+3) { background: ${RUBBER('linear-gradient(90deg, #f5f2ea 0 12%, #a3cbaa 12% 88%, #f5f2ea 88%)')}; transform: rotate(-0.6deg); }
         .actions .action:hover, .actions .action:focus-visible { filter: brightness(0.97); translate: 0 -1px; }
+        /* The erasers in the head of "Exámenes finales": the size of the others; the blue sleeve of Wuolah under no letter. */
+        .tile-head .actions .action:nth-child(n) { font-size: 1.05em; }
+        .tile-head .actions .action:nth-child(3n+2) { padding-left: 24px; background: ${RUBBER('linear-gradient(90deg, #5a82c8 0 15px, #f5f2ea 15px)')}; }
         /* The course guides: sticky notes of colors, with tape */
-        .guide-card { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-link: #1f45c0; --ap-line: rgba(29, 42, 120, 0.25);
+        .guide-card { --ap-fg: #1d2a78; --ap-muted: #353d78; --ap-link: #1a3aa6; --ap-line: rgba(29, 42, 120, 0.25); --ap-title-deco: ${PEN_LINE('#2b3fae')} left bottom / 100% 8px no-repeat;
           position: relative; margin-top: 10px; padding: 14px 14px 12px; color: #1d2a78; border: 0; ${NOTE('var(--nb-note)')} }
         .guide-card:nth-child(4n+1) { --nb-note: color-mix(in srgb, #ddd0f4 85%, var(--ap-solid)); --nb-tape: rgba(150, 200, 175, 0.62); transform: rotate(-0.7deg); }
         .guide-card:nth-child(4n+2) { --nb-note: color-mix(in srgb, #cdeacf 85%, var(--ap-solid)); --nb-tape: rgba(240, 150, 168, 0.6); transform: rotate(0.6deg); }
@@ -1655,6 +1698,19 @@
         /* The windows and the search: a sheet of paper; the selection with the highlighter */
         .backdrop .win > header, .mail > header { border-bottom: 0; }
         a.item.sel, .result.sel { background: var(--ap-mark-bg); }
+        :is(a.item, .result).sel .meta { color: var(--ap-fg); }
+        :is(a.item, .result).sel mark { background: none; }
+        /* The new parts of Mi sitio on the notebook: the hours and the organizer as index cards; on the yellow sticky notes
+           (the summary of the calculator, a switch that is on, a picked part) always the blue pen, also in the dark. */
+        .hr-ico { color: #d8434b; }
+        .person button .tag { color: inherit; }
+        .sum { --ap-fg: #1d2a78; --ap-muted: #4c5590; --ap-red: #cf2b2b; --ap-green: #2c7a3a; color: #1d2a78; border: 0; ${NOTE('var(--ap-accent-soft)')} }
+        .switch[aria-pressed="true"], .switch:not([aria-pressed]), .slot:hover, .slot[aria-pressed="true"] { --ap-fg: #1d2a78; color: #1d2a78; }
+        .slot { background: var(--ap-surface); border-color: var(--ap-line); border-radius: 2px; font-family: var(--ap-font-head); font-size: 1.3em;
+          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15), 0 5px 8px -5px rgba(0, 0, 0, 0.4); }
+        /* The calendar of the exams: the months in the hand of the titles, the days marked with a highlighter. */
+        .cal-title { font-family: var(--ap-font-head); font-size: 1.3em; line-height: 1.1; }
+        .cal-day.final, .cal-day.rec, .cal-key { border-radius: 3px 11px 4px 12px / 11px 3px 12px 4px; }
         .panel > input { margin: 12px 14px 4px; padding: 6px 12px; border: 1.6px solid var(--ap-input-edge); border-radius: var(--ap-input-radius); background: var(--ap-input-bg); }
         .panel > .foot { border-top: 0; }
       `
@@ -1877,8 +1933,8 @@
         'logo-ring': '#8839ef',
         'logo-dot': '#fe640b',
         'k-exam': '#8839ef', 'k-exam-fg': '#eff1f5',
-        'k-practice': '#179299', 'k-practice-fg': '#eff1f5',
-        'k-work': '#40a02b', 'k-work-fg': '#eff1f5',
+        'k-practice': '#179299', 'k-practice-fg': '#11111b', // dark text, as the other pastels (white was 3:1)
+        'k-work': '#40a02b', 'k-work-fg': '#11111b',
         'k-participation': '#df8e1d', 'k-participation-fg': '#11111b',
         'k-presentation': '#ea76cb', 'k-presentation-fg': '#11111b',
         'k-other': '#9ca0b0', 'k-other-fg': '#11111b'
@@ -1903,7 +1959,8 @@
         green: '#a6e3a1', 'green-bg': 'rgba(166, 227, 161, 0.14)',
         blue: '#89b4fa', 'blue-bg': 'rgba(137, 180, 250, 0.15)',
         grey: '#9399b2', 'grey-bg': '#313244',
-        'mark-bg': 'rgba(249, 226, 175, 0.28)',
+        'mark-bg': '#f9e2af',
+        'mark-fg': '#11111b',
         'head-fg': '#cdd6f4',
         'btn-bg': '#313244',
         'btn-fg': '#cdd6f4',
@@ -1930,9 +1987,15 @@
         'k-other': '#9399b2', 'k-other-fg': '#11111b'
       },
       css: `
-        /* The titles: a gradient peach, pink, mauve, as the title of catppuccin.com */
-        header.top h1, .tile h4, .box > .head .title { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation), var(--ap-accent)); color: transparent;
+        /* The titles: a gradient peach, pink, mauve, as the title of catppuccin.com; its colors in the first letters (em: a
+           wide title ends in mauve, not only in peach). */
+        header.top h1, .tile h4, .box > .head .title, .pan .top strong { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation) 3.5em, var(--ap-accent) 7em); color: transparent;
           -webkit-background-clip: text; background-clip: text; }
+        .notice { color: var(--ap-fg); } /* peach text on peach was 2.3:1; its border and background still say "warning" */
+        a.item.sel, .result:hover, .result.sel { background: var(--ap-accent-soft); } /* the selected result, clear also in Latte */
+        /* Open now: the green of Latte is 3:1 on its base; a little darker (Mocha stays pastel). */
+        .hr-state.open .hr-say, .count.ok { color: color-mix(in srgb, var(--ap-green) 50%, var(--ap-fg)); }
+        .hr-state.open .hr-dot { background: color-mix(in srgb, var(--ap-green) 50%, var(--ap-fg)); }
         /* The pills of the actions in the colors of Mocha, with the dark text (crust), as the buttons of catppuccin.com.
            On hover the colors change places (MAK.hoverCss): these variables are the colors of each pill. */
         ${CAT_PASTELS.slice(0, 4).map((c, i) => `.actions .action:nth-child(4n+${i + 1}) { --ap-primary-bg: ${c}; --ap-primary-edge: ${c}; --ap-primary-solid: ${c}; --ap-primary-fg: #11111b; }`).join('\n        ')}
@@ -1942,9 +2005,11 @@
         .mak-logo { background: ${CAT_CUP} center / contain no-repeat; }
         .mak-logo > * { display: none; }
       `,
+      // The block: the title in the gradient; the corner that widens it in mauve, big enough for the round corner.
       blockCss: `
-        #mak-block .mak-title { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation), var(--ap-accent)); color: transparent;
+        #mak-block .mak-title { background: linear-gradient(90deg, var(--ap-orange), var(--ap-k-presentation) 3.5em, var(--ap-accent) 7em); color: transparent;
           -webkit-background-clip: text; background-clip: text; }
+        #mak-block .mak-widen { width: 28px; height: 28px; background: var(--ap-accent); }
         #mak-block .mak-logo { background: ${CAT_CUP} center / contain no-repeat; }
         #mak-block .mak-logo > * { display: none; }
       `
@@ -2003,8 +2068,13 @@
     const v = MAK.themeValues(th.id, dark);
     const keep = ['shadow-sm', 'hover-shadow'].filter((k) => v[k] && v[k].trim() !== 'none').map((k) => `var(--ap-${k}), `).join('');
     // A ✕ has no frame: it fills with the shape of the buttons (a theme with its own ✕ keeps it).
-    return `button.x { border-radius: var(--ap-radius-sm); }\n${INVERT.map(([all, kind]) => {
-      const sel = all.filter((s) => !(th.keepHover || []).includes(s));
+    // The ✕ of a search field (Chromium): a thin one in the color of the theme, not its own blue one.
+    const cancel = 'input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; cursor: pointer; '
+      + 'background: var(--ap-muted); -webkit-mask: linear-gradient(45deg, transparent 45%, #000 45% 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, #000 45% 55%, transparent 55%); }';
+    return `button.x { border-radius: var(--ap-radius-sm); }\n${cancel}\n${INVERT.map(([all, kind]) => {
+      // A button that is also one of the kept ones (a burst that is a .btn too) keeps its own hover.
+      const kept = th.keepHover || [];
+      const sel = all.filter((s) => !kept.includes(s)).map((s) => (kept.length ? `${s}:not(${kept.join(', ')})` : s));
       return `${sel.join(', ')} { transition-duration: 0.3s; }
     ${sel.flatMap((s) => [`${s}:hover`, `${s}:focus-visible`]).join(', ')} {
       color: var(--ap-${kind}-solid) !important; filter: none !important; box-shadow: ${keep}inset 0 0 0 40px var(--ap-${kind}-fg) !important; }`;

@@ -52,15 +52,16 @@
       .hr-in { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; grid-template-areas: "id" "body" "state"; }
       .hr-in > .hr-state { justify-self: start; align-self: end; margin: 2px 0 0; }
     }
-    /* Open or closed now: a round check (white on green) or cross (white on red), and the text in that color. */
+    /* Open or closed now: a round check or cross in the green or red of the theme (its mark in the solid color of the theme:
+       white on a light theme, dark on a dark one), and the text in that color. */
     .hr-state { grid-area: state; align-self: center; display: inline-flex; align-items: center; gap: 7px; }
     .hr-say { display: flex; flex-direction: column; line-height: 1.2; }
     .hr-say small { font-size: 0.86em; font-weight: 600; }
     .hr-state.open { color: var(--ap-green); }
     .hr-state.shut { color: var(--ap-red); }
-    .hr-dot { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; color: #ffffff; }
-    .hr-state.open .hr-dot { background: #1f9d55; }
-    .hr-state.shut .hr-dot { background: #d93d3d; }
+    .hr-dot { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; color: var(--ap-solid); }
+    .hr-state.open .hr-dot { background: var(--ap-green); }
+    .hr-state.shut .hr-dot { background: var(--ap-red); }
     .hr-dot svg { width: 15px; height: 15px; stroke-width: 3; }
     .hr-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
       color: var(--ap-accent); background: var(--ap-accent-soft); }
