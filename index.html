@@ -54,7 +54,11 @@
   .shot img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; }
   .media { display: grid; gap: 16px; justify-items: start; }
   .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 520px) { .themes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .themes > a:last-child:nth-child(3n+1) { grid-column: 2; } /* a theme alone in the last row: in the middle */
+  @media (max-width: 520px) {
+    .themes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .themes > a:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px); }
+  }
 
   /* The popup at the top: a picture for each tab, and the tabs of the picture change it. */
   .demo { position: relative; width: 100%; max-width: 460px; }
@@ -114,11 +118,12 @@
     <h2>Qué hace</h2>
     <ul class="list2">
       <li>Mantiene tu <strong>sesión</strong> de MiAulario <strong>abierta</strong> mientras el navegador está abierto.</li>
+      <li>Los <strong>horarios de hoy</strong> en Mi sitio: la biblioteca de tu campus (también en exámenes, verano y Semana Santa), el gimnasio, la piscina y la cafetería, y si están <strong>abiertos ahora</strong>.</li>
       <li>Un <strong>calendario de tus exámenes</strong> por meses, en Mi sitio y en cada asignatura.</li>
       <li><strong>Entregas</strong> con <strong>cuenta atrás</strong>, y avisos antes de las que no entregaste.</li>
-      <li>En Mi sitio: tus <strong>exámenes finales</strong>, cómo se evalúa cada asignatura y una <strong>calculadora de notas</strong>.</li>
+      <li>En Mi sitio: tus <strong>exámenes finales</strong>, cómo se evalúa cada asignatura y una <strong>calculadora de notas</strong>, en las secciones y el <strong>orden que quieras</strong>.</li>
       <li>Un <strong>buscador</strong> para todas tus asignaturas: herramientas, archivos, contenidos, entregas y anuncios.</li>
-      <li>Ocho <strong>temas</strong> para elegir, cada uno en <strong>light</strong> y <strong>dark mode</strong>.</li>
+      <li>Siete <strong>temas</strong> para elegir, cada uno en <strong>light</strong> y <strong>dark mode</strong>.</li>
       <li>Anuncios, mensajes, <strong>novedades</strong> desde tu última visita y <strong>notas nuevas</strong> de todas tus asignaturas.</li>
       <li>Descarga una asignatura entera en <strong>ZIP</strong> y envía archivos por el <strong>correo interno</strong>.</li>
       <li>Tu <strong>media</strong> y tu <strong>rango</strong> con las notas oficiales de SIGMA, si lo activas.</li>
@@ -136,12 +141,18 @@
   <section class="row">
     <div>
       <h2>En Mi sitio</h2>
-      <p>Arriba de tu página de Mi sitio aparece un bloque con tu próximo examen final, las fechas de los exámenes de cada asignatura y la guía docente de cada una: quién la da y cuánto vale cada parte. Con la calculadora ves qué nota te falta para aprobar.</p>
-      <p>Cada semestre tiene su calendario de exámenes por meses. El triángulo de la esquina pone el bloque a todo el ancho de la página, con el calendario de MiAulario debajo.</p>
+      <p>Arriba de tu página de Mi sitio aparece un bloque con tres secciones: tus <strong>exámenes finales</strong> (el próximo, las fechas de cada asignatura y su calendario por meses), las <strong>guías docentes</strong> (quién da cada asignatura y cuánto vale cada parte, con una calculadora que te dice qué nota te falta) y los <strong>horarios</strong> de hoy.</p>
+      <p>Con el botón de su cabecera las <strong>ordenas</strong> como quieras: arrástralas a otro hueco, ponlas en columnas, una debajo de otra o una a un lado y dos al otro, y quita con ✕ las que no uses. El triángulo de la esquina pone el bloque a todo el ancho de la página.</p>
     </div>
     <div class="media">
-      <a class="shot" href="img/misitio.png"><img src="img/misitio.png" alt="El bloque de Aulario Plus en Mi sitio, a todo el ancho: el próximo examen en 57 días, los exámenes del primer semestre con su calendario de diciembre y enero, y las guías docentes con el peso de cada parte." width="1000" height="900"></a>
+      <a class="shot" href="img/misitio.png"><img src="img/misitio.png" alt="El bloque de Aulario Plus en Mi sitio con el panel para organizar sus secciones abierto, y debajo las tres secciones en columnas: los exámenes finales con su calendario, las guías docentes y los horarios de hoy." width="1400" height="1536"></a>
     </div>
+  </section>
+
+  <section class="full">
+    <h2>Horarios</h2>
+    <p>En Mi sitio ves si la <strong>biblioteca</strong> de tu campus (Arrosadía, Ciencias de la Salud o Tudela), el <strong>gimnasio</strong>, la <strong>piscina</strong> y la <strong>cafetería</strong> están abiertos ahora y hasta qué hora, o cuándo abren. La biblioteca incluye los horarios especiales de su tablón de anuncios (exámenes, verano, Semana Santa) con su calendario, y cuando publica uno nuevo te lo cuenta en breve. El campus se elige en Ajustes.</p>
+    <a class="shot" href="img/horarios.png"><img src="img/horarios.png" alt="La sección Horarios de Mi sitio: la biblioteca de Arrosadía con el horario especial de exámenes y su calendario, y a su derecha el gimnasio, la piscina y la cafetería, cada uno abierto o cerrado ahora." width="1368" height="720"></a>
   </section>
 
   <section class="row">
@@ -157,13 +168,12 @@
   <section class="row">
     <div>
       <h2>Temas</h2>
-      <p>Ocho temas para que la extensión se vea como prefieras, cada uno en light y dark mode: MiAulario (el de siempre, igual que MiAulario), Cómic, Malvavisco, Aurora, AulaXP, Folio, Vía Láctea y Catppuccin. Se eligen en Ajustes.</p>
+      <p>Siete temas para que la extensión se vea como prefieras, cada uno en light y dark mode: MiAulario (el de siempre, igual que MiAulario), Malvavisco, Aurora, AulaXP, Folio, Vía Láctea y Catppuccin. Se eligen en Ajustes.</p>
       <p class="small">Vía Láctea: fotos de ESO/S. Brunier (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Catppuccin: los colores de <a href="https://catppuccin.com">Catppuccin</a> (licencia MIT).</p>
       <button class="btn" type="button" id="dark" aria-pressed="false">Ver en dark mode</button>
     </div>
     <div class="themes">
       <a class="shot" href="img/tema-miaulario.jpg" data-dark="img/tema-miaulario-oscuro.jpg"><img src="img/tema-miaulario.jpg" alt="El popup con el tema MiAulario" title="MiAulario" width="460" height="340"></a>
-      <a class="shot" href="img/tema-bloques.jpg" data-start-light data-dark="img/tema-bloques-oscuro.jpg"><img src="img/tema-bloques.jpg" alt="El popup con el tema Cómic" title="Cómic" width="460" height="340"></a>
       <a class="shot" href="img/tema-plastilina.jpg" data-dark="img/tema-plastilina-oscuro.jpg"><img src="img/tema-plastilina.jpg" alt="El popup con el tema Malvavisco" title="Malvavisco" width="460" height="340"></a>
       <a class="shot" href="img/tema-eterea.jpg" data-dark="img/tema-eterea-oscuro.jpg"><img src="img/tema-eterea.jpg" alt="El popup con el tema Aurora" title="Aurora" width="460" height="340"></a>
       <a class="shot" href="img/tema-cromo.jpg" data-start-light data-dark="img/tema-cromo-oscuro.jpg"><img src="img/tema-cromo.jpg" alt="El popup con el tema AulaXP" title="AulaXP" width="460" height="340"></a>
@@ -229,7 +239,7 @@
 </footer>
 <script>
   // The themes: the pictures of the light mode or of the dark mode. At the start, the mode of the system
-  // (Cómic, AulaXP and Folio in light, they are made for it); the button: all of them in the other mode.
+  // (AulaXP and Folio in light, they are made for it); the button: all of them in the other mode.
   const dark = document.getElementById('dark');
   const show = (on, start) => {
     dark.setAttribute('aria-pressed', String(on));
