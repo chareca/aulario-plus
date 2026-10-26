@@ -328,15 +328,19 @@ async function runTests(browser, base) {
       const during = [slots(), cell('exams').classList.contains('drag'), still];
       fire(b, 'pointerup', to);
       const saved = await until(async () => (await order()) === 'guides,hours,exams' && 'guides,hours,exams', 'the new order saved');
+      // The first click after a drop picks a part (before: a flag of the drag ate it).
+      cell('guides').querySelector('.slot').click();
+      const picked = cell('guides').querySelector('.slot').getAttribute('aria-pressed');
+      cell('guides').querySelector('.slot').click(); // and again: not picked
       b = cell('guides').querySelector('.slot');
       const g = at('guides');
       fire(b, 'pointerdown', g);
       fire(b, 'pointermove', { clientX: g.clientX + 900, clientY: g.clientY + 900 });
       fire(b, 'pointerup', { clientX: g.clientX + 900, clientY: g.clientY + 900 });
       await new Promise((r) => setTimeout(r, 300));
-      return { first, during, saved, out: [await order(), slots()] };
+      return { first, during, saved, picked, out: [await order(), slots()] };
     `);
-    assert.deepEqual(got, { first: '123', during: ['312', true, true], saved: 'guides,hours,exams', out: ['guides,hours,exams', '312'] });
+    assert.deepEqual(got, { first: '123', during: ['312', true, true], saved: 'guides,hours,exams', picked: 'true', out: ['guides,hours,exams', '312'] });
   });
 
   await test('Mi sitio: folding the block folds the panel of the sections too', async (open) => {

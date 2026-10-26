@@ -127,6 +127,8 @@
     .mini { flex: none; width: 34px; height: 24px; gap: 2px; }
     .mini > i { min-height: 0; border-radius: 2px; background: currentColor; opacity: 0.55; }
     .map { position: relative; gap: 8px; max-width: 640px; } /* relative: the offsets of a part (homes) */
+    .pan { container-type: inline-size; }
+    .parts { display: contents; } /* drawn again at each change; the status after it stays (a live region) */
     [data-count="3"][data-shape="cols"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"], [data-count="3"][data-shape="right"], [data-count="2"]:not([data-shape="rows"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     [data-count="3"][data-shape="left"] > [data-slot="1"] { grid-column: 1; grid-row: 1 / span 2; }
@@ -134,8 +136,9 @@
     [data-count="3"][data-shape="right"] > [data-slot="2"] { grid-column: 1; grid-row: 2; }
     [data-count="3"][data-shape="right"] > [data-slot="3"] { grid-column: 2; grid-row: 1 / span 2; }
     .cell { position: relative; min-width: 0; display: grid; }
-    .slot { min-height: 46px; padding: 8px 32px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
+    .slot { min-width: 0; overflow-wrap: anywhere; min-height: 46px; padding: 8px 32px; cursor: grab; touch-action: none; user-select: none; font: inherit; font-weight: 700; text-align: center; color: var(--ap-fg);
       background: var(--ap-item-bg); border: var(--ap-bw-sm) dashed var(--ap-muted); border-radius: var(--ap-radius-box); transition: background-color 0.2s, border-color 0.2s; }
+    @container (max-width: 480px) { .slot { padding: 30px 4px 8px; font-size: 0.82em; } } /* a phone: the name below the ✕, whole */
     .slot:hover, .slot[aria-pressed="true"] { border-style: solid; border-color: var(--ap-accent); background: var(--ap-accent-soft); }
     /* The part in a drag: above the others, lifted, under the pointer. */
     .cell.drag { z-index: 2; transition: none; will-change: transform; } /* at once under the pointer (the themes move a transform slowly) */
@@ -166,7 +169,6 @@
     let layout = MAK.cleanLayout(null);
     let picked = null; // a part clicked first: the next click swaps it
     let drag = null;
-    let dragged = false; // a drag ended on a part: not a click
     let loaded = false; // the setting is read: then the body has its shape (BLOCK_CSS shows the parts)
     const place = () => {
       const shown = layout.order.filter((k) => {
@@ -182,14 +184,19 @@
       body.dataset.shape = layout.shape;
       body.dataset.count = String(shown.length);
     };
-    new MutationObserver(place).observe(body, { childList: true });
+    // A part that comes later (its data): its place, and the panel (open) with it.
+    new MutationObserver(() => {
+      place();
+      if (!host.hidden) draw();
+    }).observe(body, { childList: true });
     const host = h('div', { attrs: { id: 'mak-layout-host' } });
     host.classList.add('in-block');
     host.hidden = true;
     const shadow = host.attachShadow({ mode: 'closed' });
-    const pan = h('div', { class: 'pan', attrs: { role: 'region', 'aria-label': MAK.t('layout.title') } });
-    shadow.append(MAK.themedStyle(ARRANGE_CSS()), pan);
+    const parts = h('div', { class: 'parts' });
     const status = h('p', { class: 'meta', attrs: { role: 'status' } });
+    const pan = h('div', { class: 'pan', attrs: { role: 'region', 'aria-label': MAK.t('layout.title') } }, parts, status);
+    shadow.append(MAK.themedStyle(ARRANGE_CSS()), pan);
     // The panel again only for another layout (not for the echo of a save or another setting: a drag or a slide goes on).
     const set = (next, save) => {
       const clean = MAK.cleanLayout(next);
@@ -199,11 +206,12 @@
       if (save || !same) draw();
       if (save) MAK.safeCall(() => ext.runtime.sendMessage({ type: 'setMySiteLayout', layout }), null);
     };
-    const shownParts = () => layout.order.filter((k) => !layout.hidden.includes(k));
-    // A new order of the parts shown, with the parts out at their places in the order.
+    // The parts shown: not taken out, and on this page (a user without guides has no box of the guides).
+    const shownParts = () => layout.order.filter((k) => !layout.hidden.includes(k) && hostOf(k) && hostOf(k).parentElement === body);
+    // A new order of the parts shown, the others (out, or not on this page) at their places in the order.
     const withShown = (shown) => {
       const next = shown[Symbol.iterator]();
-      return layout.order.map((k) => (layout.hidden.includes(k) ? k : next.next().value));
+      return layout.order.map((k) => (shown.includes(k) ? next.next().value : k));
     };
     const swap = (a, b) => {
       const order = layout.order.slice();
@@ -240,9 +248,10 @@
     const cell = (k, i, removable) => {
       const b = h('button', { class: 'slot', attrs: { type: 'button', 'aria-pressed': String(picked === k) }, data: { key: `part:${k}` }, text: partName(k) });
       // A drag: the part follows the pointer at once (no transition, its own layer: .cell.drag), held where it was taken.
-      // When its center is over the place of another part, it takes that place and the others make room (they slide to
-      // the places of the new order). The drop keeps the order that the user sees (also out of the parts); a cancelled
-      // drag goes back. The places (homes) are measured only when the order changes, not at each move.
+      // When the pointer is over the place of another part, it takes that place and the others make room (they slide to
+      // the places of the new order); a part that becomes smaller keeps the pointer on it. The drop keeps the order that
+      // the user sees (also out of the parts); a cancelled drag goes back. The places (homes) are measured only when the
+      // order changes, not at each move.
       b.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         const c = b.parentElement;
@@ -262,12 +271,10 @@
           d.homes = homes(d.cells);
         }
         const m = d.cell.parentElement.getBoundingClientRect();
-        const [x, y] = [e.clientX - m.left - d.gx, e.clientY - m.top - d.gy]; // where it is drawn, in the map
-        const own = d.homes.get(d.cell);
-        const [cx, cy] = [x + own.w / 2, y + own.h / 2];
+        const [px, py] = [e.clientX - m.left, e.clientY - m.top]; // the pointer, in the map
         const over = d.cells.find((c) => {
           const r = c !== d.cell && d.homes.get(c);
-          return r && cx >= r.left && cx < r.left + r.w && cy >= r.top && cy < r.top + r.h;
+          return r && px >= r.left && px < r.left + r.w && py >= r.top && py < r.top + r.h;
         });
         if (over) {
           const others = d.cells.filter((c) => c !== d.cell);
@@ -278,16 +285,17 @@
           d.order.splice(to, 0, d.k);
           for (const c of d.cells) put(c, d.order.indexOf(c.dataset.part));
           d.homes = homes(d.cells);
+          const own = d.homes.get(d.cell);
+          [d.gx, d.gy] = [Math.min(d.gx, own.w - 4), Math.min(d.gy, own.h - 4)];
           slide(others, before);
         }
         const home = d.homes.get(d.cell);
-        d.cell.style.transform = `translate(${x - home.left}px, ${y - home.top}px)`;
+        d.cell.style.transform = `translate(${px - d.gx - home.left}px, ${py - d.gy - home.top}px)`;
       });
       const end = (e) => {
         const d = drag;
         drag = null;
-        if (!d || !d.moved) return;
-        dragged = true;
+        if (!d || !d.moved) return; // a click (no move): the click below
         const before = boxes([...pan.querySelectorAll('.cell')]);
         if (e.type === 'pointerup' && d.order.join() !== shownParts().join()) {
           status.textContent = MAK.t('layout.moved', { name: partName(d.k), n: d.order.indexOf(d.k) + 1 });
@@ -298,10 +306,6 @@
       b.addEventListener('pointerup', end);
       b.addEventListener('pointercancel', end);
       b.addEventListener('click', () => {
-        if (dragged) {
-          dragged = false;
-          return;
-        }
         if (picked && picked !== k) {
           const first = picked;
           picked = null;
@@ -327,6 +331,7 @@
     };
     // The panel again; the focus stays on the same button (data-key; ✕ and + of a part: the same key).
     function draw() {
+      drag = null; // its part goes (the button of its pointer too): a drag never goes on in new parts
       const focused = shadow.activeElement && shadow.activeElement.dataset.key;
       const shown = shownParts();
       const n = String(shown.length);
@@ -342,7 +347,7 @@
         return h('button', { class: 'btn back', data: { key: `toggle:${k}` }, attrs: { type: 'button', title: name, 'aria-label': name }, on: { click: () => show(k, true) } },
           MAK.icon('plus'), h('span', { text: partName(k) }));
       };
-      MAK.fill(pan,
+      MAK.fill(parts,
         h('div', { class: 'top' }, h('strong', { text: MAK.t('layout.title') }),
           h('span', { class: 'acts' },
             h('button', { class: 'btn', data: { key: 'reset' }, attrs: { type: 'button' }, text: MAK.t('layout.reset'), on: { click: () => set(null, true) } }),
@@ -351,14 +356,16 @@
         h('p', { class: 'meta', text: MAK.t('layout.help') }),
         h('div', { class: 'map', data: { shape: layout.shape, count: n } }, shown.map((k, i) => cell(k, i, shown.length > 1))),
         layout.hidden.length ? h('div', { class: 'gone', attrs: { role: 'group', 'aria-label': MAK.t('layout.gone') } }, layout.order.filter((k) => layout.hidden.includes(k)).map(back)) : null,
-        h('p', { class: 'meta', text: MAK.t('layout.narrow') }),
-        status);
+        h('p', { class: 'meta', text: MAK.t('layout.narrow') }));
       const again = focused && pan.querySelector(`[data-key="${focused}"]`);
       if (again) again.focus();
     }
     button.addEventListener('click', () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
-      if (open) draw();
+      if (open) {
+        status.textContent = '';
+        draw();
+      }
       MAK.fold(host, open);
       button.setAttribute('aria-expanded', String(open));
     });

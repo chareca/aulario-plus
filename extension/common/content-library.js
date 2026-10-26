@@ -14,6 +14,15 @@
   const h = MAK.h;
   const t = (k, p) => MAK.t(k, p);
   const send = (msg) => MAK.safeCall(() => ext.runtime.sendMessage(msg), null);
+  const pageFetch = globalThis.content && typeof globalThis.content.fetch === 'function' ? globalThis.content.fetch.bind(globalThis.content) : fetch;
+  // Only the home page of Mi sitio (not its tools), with a session (/portal without one is the page of the login), as the
+  // guides and the exams: else the block (with only the hours) and the window of a notice on any page.
+  const home = (async () => {
+    if (where && where.pageOrTool && !/^(inicio|home|overview|hasiera)$/i.test(document.title.split(':').pop().trim())) return false;
+    if (!onRoot) return true;
+    const s = await pageFetch('/direct/session/current.json?auto=true', { cache: 'no-store', credentials: 'include' }).then((r) => r.json()).catch(() => null);
+    return !!(s && s.userId);
+  })();
 
   const CSS = () => `${MAK.BOX_CSS()}
     ${MAK.LINK_CSS}
@@ -177,9 +186,10 @@
   function stateMark(st, now) {
     if (!st) return null;
     const [word, detail] = stateText(st, now);
-    return h('div', { class: `hr-state ${st.open ? 'open' : 'shut'}`, attrs: { 'aria-label': detail ? `${word}, ${detail}` : word } },
+    // Read as it is shown ("Abierto", "hasta las 22:00"): a label on a plain box is not read by the screen readers.
+    return h('div', { class: `hr-state ${st.open ? 'open' : 'shut'}` },
       h('span', { class: 'hr-dot' }, MAK.icon(st.open ? 'check' : 'x')),
-      h('span', { class: 'hr-say', attrs: { 'aria-hidden': 'true' } }, h('b', { text: word }), detail ? h('small', { text: detail }) : null));
+      h('span', { class: 'hr-say' }, h('b', { text: word }), detail ? h('small', { text: detail }) : null));
   }
 
   // A card: its icon, its title and where, open or closed now, the hours of today, the usual ones, and more (notices).
@@ -319,6 +329,7 @@
   // The part taken out of the block (the organizer of content-banner.js): nothing is read, no window.
   const off = (settings) => MAK.withDefaults(settings).mysiteLayout.hidden.includes('hours');
   async function run() {
+    if (!(await home)) return;
     const data = (await MAK.safeCall(() => ext.storage.local.get(['settings']), null)) || {};
     MAK.setLang(MAK.withDefaults(data.settings).lang);
     if (!frame() || off(data.settings)) return; // no block on this page: nothing is asked (a new notice keeps its window for later)
