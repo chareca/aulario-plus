@@ -52,6 +52,7 @@ let current = 'home';
 // again), else the main one. In localStorage: a closing popup has no time for the storage of the extension.
 const LAST_TAB = 'mak-popup-tab';
 const rememberTab = () => {
+  if (WIDE) return; // the popup in a tab (also from a notification) is not the popup of the button
   try { localStorage.setItem(LAST_TAB, JSON.stringify({ tab: current, at: Date.now() })); } catch {}
 };
 function lastTab() {
@@ -525,13 +526,13 @@ function toggleAnnouncement(x) {
     return body() ? MAK.fold(body(), false, renderInboxList) : renderInboxList();
   }
   ui.openAnn.add(x.id);
-  if (x.unread) send({ type: 'markAnnRead', ids: [x.id] });
+  const read = () => { if (x.unread) send({ type: 'markAnnRead', ids: [x.id] }); }; // after the fold: the new drawing would cut it
   renderInboxList();
   const opened = body();
   if (opened) {
     opened.hidden = true;
-    MAK.fold(opened, true);
-  }
+    MAK.fold(opened, true, read);
+  } else read();
 }
 
 function inboxRow(x) {
@@ -1624,7 +1625,7 @@ async function init() {
   const asked = new URLSearchParams(location.search).get('tab');
   renderHeader();
   renderWhatsNew(); // not in renderHeader (every second): its buttons would change under the mouse
-  selectTab(asked && Object.hasOwn(panels, asked) ? asked : lastTab());
+  selectTab(asked && Object.hasOwn(panels, asked) ? asked : S.paused === 'reset' ? 'home' : lastTab()); // after "Borrar todos mis datos": its notice is on Inicio
   addEventListener('pagehide', rememberTab);
   document.addEventListener('visibilitychange', () => { if (document.hidden) rememberTab(); });
   checkPermissions();

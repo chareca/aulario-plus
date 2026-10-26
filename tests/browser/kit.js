@@ -27,6 +27,8 @@
   };
   // HTML text -> a document, as the extension does with a response of MiAulario.
   window.parse = (html) => new DOMParser().parseFromString(html, 'text/html');
+  // A file of tests or a library that does not load (a syntax error): a test that fails (else its tests are only missing).
+  window.addEventListener('error', (e) => window.__results.push({ name: `load: ${e.filename || 'a script'}`, ok: false, error: e.message }));
   window.addEventListener('load', async () => {
     for (const t of tests) {
       try {

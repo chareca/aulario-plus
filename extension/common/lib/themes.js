@@ -1004,6 +1004,7 @@
         .tile { padding: 0 12px 12px; }
         .tile > .tile-head, :host(.in-block) .box > .head { margin: 0 -12px 10px; padding: 6px 8px 6px 12px; background: linear-gradient(90deg, #ffffff 0%, #c6d3f7 100%);
           color: #215dc6; border-radius: 4px 4px 0 0; }
+        .tile > .tile-head { align-items: center; }
         :host(.in-block) .box > .head { margin: 0; border-radius: 5px 5px 0 0; }
         .tile-head > h4, :host(.in-block) .box > .head .title { min-height: 0; font-family: var(--ap-font); font-size: 12px; font-weight: 700; text-shadow: none; }
         :host(.in-block) .box > .head + * { padding: 10px; border-top: 0; border-radius: 0; }
@@ -1537,9 +1538,9 @@
         'shadow-pop': '0 24px 60px -24px rgba(76, 79, 105, 0.55)',
         backdrop: 'rgba(76, 79, 105, 0.35)',
         'count-weight': '800',
-        'count-soon-fg': '#fe640b',
+        'count-soon-fg': '#a55a3a', // the peach and the green of Latte, a little darker: 2.6:1 and 3:1 on its base
         'count-hot-fg': '#d20f39',
-        'count-ok-fg': '#40a02b',
+        'count-ok-fg': '#46784a',
         'input-bg': '#eff1f5',
         'input-edge': '#bcc0cc',
         'input-radius': '12px',
@@ -1608,7 +1609,7 @@
         .notice { color: var(--ap-fg); } /* peach text on peach was 2.3:1; its border and background still say "warning" */
         a.item.sel, .result:hover, .result.sel { background: var(--ap-accent-soft); } /* the selected result, clear also in Latte */
         /* Open now: the green of Latte is 3:1 on its base; a little darker (Mocha stays pastel). */
-        .hr-state.open .hr-say, .count.ok { color: color-mix(in srgb, var(--ap-green) 50%, var(--ap-fg)); }
+        .hr-state.open .hr-say { color: color-mix(in srgb, var(--ap-green) 50%, var(--ap-fg)); }
         .hr-state.open .hr-dot { background: color-mix(in srgb, var(--ap-green) 50%, var(--ap-fg)); }
         /* The pills of the actions in the colors of Mocha, with the dark text (crust), as the buttons of catppuccin.com.
            On hover the colors change places (MAK.hoverCss): these variables are the colors of each pill. */
