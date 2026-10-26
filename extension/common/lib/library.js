@@ -27,6 +27,7 @@
   // An address of the library of the UPNA (its pages, the board) or of its PDF files, or the hours of the sports facilities,
   // of the cafeterias or of the dining hall, with https; else null.
   MAK.libraryUrl = function (href) {
+    if (String(href).length > 2000) return null; // no address of a page is so long (it is kept in the storage)
     try {
       const u = new URL(String(href).trim(), 'https://www.unavarra.es/biblioteca/');
       if (u.hostname !== 'www.unavarra.es' || (u.protocol !== 'https:' && u.protocol !== 'http:')) return null;
@@ -506,7 +507,7 @@
     const top = at < 0 ? -1 : s.indexOf('</h2>', at);
     if (top < 0) return { blocks: [], text: [], pdf: '' };
     let end = s.indexOf('class="volver"', top);
-    end = end < 0 ? Math.min(s.length, top + 30000) : s.lastIndexOf('<', end); // up to the tag of "Volver"
+    end = Math.min(end < 0 ? s.length : s.lastIndexOf('<', end), top + 30000); // up to the tag of "Volver", 30000 characters at most
     const blocks = [];
     const text = [];
     const pdfs = [];
@@ -530,18 +531,23 @@
         for (const l of links) pdfs.push({ url: l.url, words: `${l.url} ${l.label}` });
         const found = lines(part).filter((l) => !labels.has(l));
         text.push(...found);
-        // A line that names a campus and ends with ":" heads the lines after it (up to a line that names a campus).
+        // A line that names a campus and ends with ":", or without a number (a heading: "Campus de Tudela"), heads the
+        // lines after it (up to a line that names a campus).
         let owner = null;
         const mine = found.filter((l) => {
           const n = named(l);
-          if (n.length) owner = /:$/.test(l) ? n : null;
+          if (n.length) owner = /:$/.test(l) || !/\d/.test(l) ? n : null;
           const of = n.length ? n : owner;
           return !of || of.includes(campus);
         });
         if (mine.length) blocks.push({ head: '', lines: mine });
       }
     }
-    const pick = pdfs.find((p) => named(p.words).includes(campus)) || (pdfs.length === 1 && !named(pdfs[0].words).length ? pdfs[0] : null);
+    // The PDF file of the campus: one that names it; else the only one, when it names no campus and the notice names no
+    // campus or this one (a notice about another campus is not about this one).
+    const about = named(text.join(' '));
+    const pick = pdfs.find((p) => named(p.words).includes(campus))
+      || (pdfs.length === 1 && !named(pdfs[0].words).length && (!about.length || about.includes(campus)) ? pdfs[0] : null);
     return { blocks: blocks.slice(0, 12).map((b) => ({ head: b.head, lines: b.lines.slice(0, 12) })), text, pdf: pick ? pick.url : '' };
   };
 
@@ -711,7 +717,7 @@
     const before = first.years.find((x) => x.year === new Date(now).getFullYear() - 1);
     if (before) more.push(before.url);
     const lists = [first];
-    for (const url of more) lists.push(MAK.parseBoardList(await getText(url).catch(() => '')));
+    for (const url of more) lists.push(MAK.parseBoardList(await getText(url).catch(() => { failed = true; return ''; }))); // a list missing: read again soon
     const seen = new Set();
     const items = lists.flatMap((l) => l.items)
       .filter((it) => !seen.has(it.id) && seen.add(it.id) && MAK.isHoursNotice(it.title, key) && it.date <= now && now - it.date < 365 * MAK.DAY)
@@ -720,29 +726,34 @@
     const today = startOfDay(now);
     const notices = [];
     for (const it of items) {
-      // A notice that does not answer: only its title (its days, or its season: then they are not known).
-      const html = await getText(it.url).catch(() => '');
-      if (!html) failed = true;
-      const n = MAK.parseNotice(html, key);
-      if (!n.blocks.length && !n.pdf && n.text.length && !named(n.text.join(' ')).includes(key)) continue; // only about other campuses
-      let cal = null;
-      if (n.pdf) {
-        try {
-          cal = MAK.libraryCalendar(await MAK.pdfContent(await getBytes(n.pdf)), it.date);
-        } catch {
-          failed = true;
+      // A notice that the reader cannot read (a page too odd): left out, the others stay; read again soon.
+      try {
+        // A notice that does not answer: only its title (its days, or its season: then they are not known).
+        const html = await getText(it.url).catch(() => '');
+        if (!html) failed = true;
+        const n = MAK.parseNotice(html, key);
+        if (!n.blocks.length && !n.pdf && n.text.length && !named(n.text.join(' ')).includes(key)) continue; // only about other campuses
+        let cal = null;
+        if (n.pdf) {
+          try {
+            cal = MAK.libraryCalendar(await MAK.pdfContent(await getBytes(n.pdf)), it.date);
+          } catch {
+            failed = true;
+          }
         }
+        // A notice that the reader does not understand (uncertain, no rules): no rules, its days come from all its text, the
+        // title or the season ("Horario de Navidad"); then the hours of those days are not known (MAK.libraryDay).
+        const read = cal ? null : MAK.noticeRules(n.blocks, it.date, key, it.title);
+        const rules = read && (read.rules.length || read.other) && !read.uncertain ? read : null;
+        const text = MAK.noticePeriod([it.title, ...n.text], it.date);
+        const period = cal
+          ? calendarPeriod(cal, page && page.week) || { from: new Date(cal.months[0].y, cal.months[0].m, 1).getTime(), to: new Date(cal.months.at(-1).y, cal.months.at(-1).m + 1, 1).getTime() }
+          : (rules && rules.rules.length ? rules : null) || (read && read.rules.length && text ? { from: Math.min(read.from, text.from), to: Math.max(read.to, text.to) } : text) || seasonPeriod(it.title, it.date);
+        if (period ? period.to <= today : now - it.date > 90 * MAK.DAY) continue;
+        notices.push({ title: it.title, date: it.date, url: it.url, blocks: n.blocks, pdf: n.pdf, cal, rules: rules && { rules: rules.rules, weekly: rules.weekly }, from: period ? period.from : 0, to: period ? period.to : 0 });
+      } catch {
+        failed = true;
       }
-      // A notice that the reader does not understand (uncertain, no rules): no rules, its days come from all its text, the
-      // title or the season ("Horario de Navidad"); then the hours of those days are not known (MAK.libraryDay).
-      const read = cal ? null : MAK.noticeRules(n.blocks, it.date, key, it.title);
-      const rules = read && (read.rules.length || read.other) && !read.uncertain ? read : null;
-      const text = MAK.noticePeriod([it.title, ...n.text], it.date);
-      const period = cal
-        ? calendarPeriod(cal, page && page.week) || { from: new Date(cal.months[0].y, cal.months[0].m, 1).getTime(), to: new Date(cal.months.at(-1).y, cal.months.at(-1).m + 1, 1).getTime() }
-        : (rules && rules.rules.length ? rules : null) || (read && read.rules.length && text ? { from: Math.min(read.from, text.from), to: Math.max(read.to, text.to) } : text) || seasonPeriod(it.title, it.date);
-      if (period ? period.to <= today : now - it.date > 90 * MAK.DAY) continue;
-      notices.push({ title: it.title, date: it.date, url: it.url, blocks: n.blocks, pdf: n.pdf, cal, rules: rules && { rules: rules.rules, weekly: rules.weekly }, from: period ? period.from : 0, to: period ? period.to : 0 });
       if (notices.length >= 4) break;
     }
     notices.sort((a, b) => (a.from || a.date) - (b.from || b.date));

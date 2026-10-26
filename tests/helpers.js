@@ -180,6 +180,7 @@ function loadBackground({ fetch, local, now, web, keepSession } = {}) {
     Blob,
     Response,
     DecompressionStream,
+    AbortSignal,
     setTimeout,
     clearTimeout,
     Date: now ? fixedDate(now) : Date,

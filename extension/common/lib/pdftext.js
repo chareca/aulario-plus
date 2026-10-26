@@ -140,7 +140,7 @@
   // forms (XObject), the fonts with a map ToUnicode (also Identity-H: 2 bytes for each character) and the fill color.
 
   const MAX_OBJECTS = 20000;
-  const MAX_OPS = 300000; // the operators of all the pages
+  const MAX_OPS = 2000000; // the values and operators of all the pages (a flood of numbers is work too)
   const MAX_DEPTH = 8; // forms in forms
   const MAX_CODES = 70000; // the codes of the map of a font
   const MAX_ARGS = 64; // the operands of an operator
@@ -382,11 +382,11 @@
         if (r.end <= i) break;
         i = r.end;
         if (r.v === undefined) break;
+        ops++;
         if (!(r.v && typeof r.v === 'object' && 'op' in r.v)) {
           if (args.push(r.v) > MAX_ARGS) args.shift();
           continue;
         }
-        ops++;
         const op = r.v.op;
         const num = (k) => (typeof args[k] === 'number' ? args[k] : 0);
         if (op === 'BI') { // an inline image: up to "EI"

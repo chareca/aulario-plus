@@ -91,6 +91,15 @@ test('parseNotice: the rows of the campus, the lines that name no other campus, 
   assert.equal(exams.pdf, 'https://www.unavarra.es/digitalAssets/289/289130_1000002026_examenes_arrosadia.pdf');
   assert.equal(MAK.parseNotice(F.NOTICES[289130], 'tudela').pdf, 'https://www.unavarra.es/digitalAssets/289/289130_1000002026_examenes_sani_tudela.pdf');
   assert.deepEqual(MAK.parseNotice('<html>nada</html>', 'tudela'), { blocks: [], text: [], pdf: '' });
+  // The only PDF of a notice about another campus is not the calendar of this one; a heading without ":" ("Campus de
+  // Tudela") gives its lines only to its campus.
+  const one = F.notice('Lunes 13 de abril de 2026', 'Horario especial de época de exámenes',
+    '<p>La biblioteca de Arrosadía abrirá los fines de semana según este calendario:</p><p><a href="/digitalAssets/1/1_calendario.pdf">Calendario</a></p>');
+  assert.deepEqual([MAK.parseNotice(one, 'arrosadia').pdf, MAK.parseNotice(one, 'tudela').pdf], ['https://www.unavarra.es/digitalAssets/1/1_calendario.pdf', '']);
+  const heads = F.notice('Lunes 13 de abril de 2026', 'Horario de las bibliotecas',
+    '<p><strong>Campus de Arrosadía</strong></p><p>Del 10 al 20 de enero, de 8:00 a 22:00.</p><p><strong>Campus de Tudela</strong></p><p>Del 10 al 20 de enero, de 9:00 a 14:00.</p>');
+  assert.deepEqual(MAK.parseNotice(heads, 'tudela').blocks.flatMap((x) => x.lines), ['Campus de Tudela', 'Del 10 al 20 de enero, de 9:00 a 14:00.']);
+  assert.deepEqual(MAK.parseNotice(heads, 'salud').blocks, []);
 });
 
 test('noticePeriod: the first and the last day that a notice names, with the year of the notice', () => {
@@ -218,7 +227,11 @@ test('pdfTextRuns: the text of a PDF of Canva (Identity-H, ToUnicode, forms, hex
     `5 0 obj << >>\nstream\nbeginbfrange\n${'<0000> <FFFF> <0041>\n'.repeat(2000)}endbfrange\n${'1 '.repeat(100000)}\nendstream endobj\n`));
   // A tree of pages that names itself in its /Kids (before: it never ended).
   await MAK.pdfTextRuns(latin(`%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [${'2 0 R '.repeat(10)}] >> endobj\n`));
-  assert.ok(Date.now() - start < 2000, `${Date.now() - start} ms`);
+  // A flood of numbers (no operator) that 40 pages read 10 times each: every value counts (before: minutes).
+  const flood = '0 '.repeat(400000);
+  const pages = Array.from({ length: 40 }, (_, k) => `${10 + k} 0 obj << /Type /Page /Contents [${'4 0 R '.repeat(10)}] >> endobj\n`).join('');
+  await MAK.pdfTextRuns(latin(`%PDF-1.4\n${pages}4 0 obj << /Length ${flood.length} >>\nstream\n${flood}\nendstream endobj\n`));
+  assert.ok(Date.now() - start < 3000, `${Date.now() - start} ms`);
 });
 
 test('libraryCalendar: each day with the index of its color in the legend; a month with a missing number is out', async () => {
@@ -348,6 +361,14 @@ test('loadLibrary and libraryToday: the notices that did not end, of the campus;
   // A notice that does not answer: its days by its title (or its season), not known; read again soon.
   const noNotice = await MAK.loadLibrary({ campus: 'arrosadia', getText: fail((url) => url.endsWith('contentId=289130')), getBytes, now: at(2026, 4, 15) });
   assert.deepEqual([noNotice.partial, noNotice.notices[0].rules, MAK.libraryToday(noNotice, at(2026, 4, 18)), MAK.libraryToday(noNotice, at(2026, 4, 15)).usual], [true, null, null, true]);
+  // A list of the board that does not answer (the second page): read again soon, it may hide a notice.
+  const noList = await MAK.loadLibrary({ campus: 'arrosadia', getText: fail((url) => url.includes('pagina=1')), getBytes, now: at(2026, 4, 15) });
+  assert.deepEqual([noList.board, noList.partial], [true, true]);
+  // A notice that the reader cannot read: left out, the other parts and notices stay; read again soon.
+  const rules = MAK.noticeRules;
+  MAK.noticeRules = () => { throw new RangeError('too many'); };
+  const odd = await MAK.loadLibrary({ campus: 'arrosadia', getText, getBytes, now: at(2026, 4, 15) }).finally(() => { MAK.noticeRules = rules; });
+  assert.deepEqual([odd.partial, !!odd.page, !!odd.sports], [true, true, true]);
   // A newer notice about the same days corrects the one before it; a notice only about other campuses is not shown.
   const B = 'https://www.unavarra.es/biblioteca/tablon-de-anuncios';
   const more = Object.assign(F.routes(), {

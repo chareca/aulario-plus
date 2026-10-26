@@ -203,7 +203,7 @@ async function readLibrary(campus) {
   const open = async (url, max) => {
     const u = MAK.libraryUrl(url);
     if (!u) throw new Error('library.url');
-    const r = await fetch(u, { credentials: 'omit', cache: 'no-store' });
+    const r = await fetch(u, { credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(30000) }); // a server that never answers
     if (!r.ok) throw new Error('library.http');
     if (Number(r.headers.get('content-length')) > max) throw new Error('library.size'); // before reading it
     return r;
@@ -235,7 +235,7 @@ async function libraryHours() {
   const { settings, library } = await store.get(['settings', 'library']);
   const campus = MAK.withDefaults(settings).libraryCampus;
   if (library && library.v === MAK.LIBRARY_FORM && library.campus === campus && Date.now() - library.at < (library.partial ? 30 * MAK.MINUTE : MAK.LIBRARY_MS)) return { data: library };
-  const stale = library && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
+  const stale = library && library.v === MAK.LIBRARY_FORM && library.campus === campus ? { data: library, error: 'library.network' } : { error: 'library.network' };
   if (Date.now() - libraryFailed < 15 * MAK.MINUTE) return stale; // the website failed a moment ago
   try {
     if (!libraryReading || libraryReading.campus !== campus) {
