@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(COMMON, f), 'utf8');
 
 test('each theme: a unique id, a name and a text in Spanish and English, light and dark values, its CSS', () => {
   const ids = MAK.themeIds();
-  assert.deepEqual(ids, ['miaulario', 'bloques', 'plastilina', 'eterea', 'cromo', 'cuaderno', 'galaxia', 'catppuccin']);
+  assert.deepEqual(ids, ['miaulario', 'plastilina', 'eterea', 'cromo', 'cuaderno', 'galaxia', 'catppuccin']);
   assert.equal(MAK.DEFAULT_THEME, 'miaulario', 'the default: the look of MiAulario');
   assert.equal(new Set(ids).size, ids.length);
   for (const th of MAK.THEMES) {
@@ -72,7 +72,7 @@ test('the name in the titles: "AulaXP" with AulaXP, "Vía Aulactea" with Vía L�
   assert.equal(MAK.brandName(MAK.theme('cromo')), 'AulaXP');
   assert.equal(MAK.brandName(MAK.theme('galaxia')), 'Vía Aulactea');
   assert.equal(MAK.brandName(MAK.theme('catppuccin')), 'Aulappuccin');
-  for (const id of ['miaulario', 'bloques', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
+  for (const id of ['miaulario', 'plastilina', 'eterea', 'cuaderno']) assert.equal(MAK.brandName(MAK.theme(id)), 'Aulario Plus', id);
   const popup = read('popup.html');
   assert.match(popup, /<title data-brand>Aulario Plus<\/title>/, 'the title of the tab');
   assert.match(popup, /<h1 data-brand>Aulario Plus<\/h1>/);
@@ -89,8 +89,9 @@ test('the fonts of the themes are files of the extension, with the OFL license',
     }
   }
   const css = MAK.fontFaceCss(MAK.THEMES, (f) => `fonts/${f}`);
-  assert.match(css, /@font-face \{ font-family: "AP Bangers"; src: url\("fonts\/bangers\.woff2"\) format\("woff2"\); font-weight: 400; font-style: normal; font-display: swap; \}/);
-  assert.match(css, /font-family: "AP Comic Neue"; src: url\("fonts\/comic-neue-bold\.woff2"\) format\("woff2"\); font-weight: 700;/, 'one family, a file for each weight');
+  assert.match(css, /@font-face \{ font-family: "AP Fredoka"; src: url\("fonts\/fredoka\.woff2"\) format\("woff2"\); font-weight: 400 700; font-style: normal; font-display: swap; \}/);
+  const used = new Set(MAK.THEMES.flatMap((th) => th.fonts.map((f) => f.file)));
+  assert.deepEqual(fs.readdirSync(path.join(COMMON, 'fonts')).filter((f) => f.endsWith('.woff2') && !used.has(f)), [], 'no file of a font that no theme uses');
   assert.match(css, /font-family: "AP Cormorant"; src: url\("fonts\/cormorant-italic\.woff2"\) format\("woff2"\); font-weight: 400 700; font-style: italic;/);
   for (const name of ['chromium', 'firefox']) {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', `manifest.${name}.json`), 'utf8'));
@@ -154,19 +155,13 @@ test('the hover of all the buttons: the colors change places, slowly, with one s
       }
       const css = MAK.hoverCss(th, dark);
       assert.match(css, /transition-duration: 0\.3s/, th.id);
-      // A selector of the list: with :not(the kept ones) when the theme keeps some (a burst that is a .btn too); a kept one: none.
-      for (const sel of ['.btn', 'button.x', '.win button.plain', '.icon-btn', '.mak-icon', '.chips button']) {
-        const own = (th.keepHover || []).includes(sel);
-        const re = new RegExp(`${sel.replace(/\./g, '\\.')}(:not\\([^)]*\\))?:hover`);
-        assert.equal(re.test(css), !own, `${th.id}: ${sel}:hover`);
-      }
+      for (const sel of ['.btn:hover', 'button.x:hover', '.win button.plain:hover', '.icon-btn:hover', '.mak-icon:hover', '.chips button:hover']) assert.ok(css.includes(sel), `${th.id}: ${sel}`);
       assert.doesNotMatch(css, /box-shadow: none, /, 'no "none" in a list of shadows');
       assert.match(css, /button\.x \{ border-radius: var\(--ap-radius-sm\); \}/, 'the ✕ fills with the shape of the buttons, not a square');
     }
   }
-  assert.ok(!MAK.hoverCss(MAK.theme('bloques'), false).includes('.actions .action:hover'), 'the bursts of Cómic: their own hover');
+  assert.ok(!MAK.hoverCss(MAK.theme('cuaderno'), false).includes('.actions .action:hover'), 'the erasers of Folio: their own hover');
   assert.ok(MAK.hoverCss(MAK.theme('miaulario'), false).includes('.actions .action:hover'));
-  assert.ok(MAK.hoverCss(MAK.theme('bloques'), false).includes('.btn:not(.actions .action, .btn.primary'), 'a primary button of Cómic (a burst, also a .btn): not the ink fill');
   const page = MAK.pageThemeCss('miaulario', (f) => `fonts/${f}`, 'light');
   assert.match(page, /\.btn\.primary:hover, \.btn\.primary:focus-visible[^{]*\{\s*color: var\(--ap-primary-solid\) !important/, 'over the hover rules of the theme: they do not hide the text');
 });
@@ -182,7 +177,7 @@ test('the icons of a theme: known names, a drawing of its own, nothing from othe
   const css = MAK.themeIconCss(MAK.theme('cuaderno'));
   assert.match(css, /svg\.ap-icon-mail \{ background: url\("data:image\/svg\+xml,%3Csvg/);
   assert.match(css, /svg\.ap-icon-mail > \* \{ display: none; \}/);
-  assert.equal(MAK.themeIconCss(MAK.theme('bloques')), '', 'no icons: the lines of MAK.icon');
+  assert.equal(MAK.themeIconCss(MAK.theme('plastilina')), '', 'no icons: the lines of MAK.icon');
 });
 
 test('the variables of a theme: the values of BASE where the theme has none, the dark ones in the dark mode', () => {
@@ -193,9 +188,9 @@ test('the variables of a theme: the values of BASE where the theme has none, the
   assert.equal(dark.fg, '#eef2f8');
   assert.equal(dark['head-bg'], light['head-bg'], 'a light value that the dark mode does not change (the title bar)');
   assert.equal(light['item-gap'], '0px', 'a value of BASE');
-  const vars = MAK.themeVars('bloques', false);
-  assert.match(vars, /--ap-font-head: "AP Bangers"/);
-  assert.match(vars, /--ap-page: url\("data:image\/svg\+xml,[^;]*radial-gradient\(circle, rgba\(205, 150, 60, 0\.12\) 30%, transparent 34%\) 0 0 \/ 7px 7px/, 'the newsprint: its grain and its dots');
+  const vars = MAK.themeVars('cuaderno', false);
+  assert.match(vars, /--ap-font-head: "AP Caveat"/);
+  assert.match(vars, /--ap-page: url\("data:image\/svg\+xml,[^;]*#fbf8ef;/, 'the page: its grain, its lines and its paper');
   assert.doesNotMatch(vars, /undefined/);
   assert.equal(MAK.theme('').id, MAK.DEFAULT_THEME);
   assert.equal(MAK.theme('no-such-theme').id, MAK.DEFAULT_THEME);
@@ -218,7 +213,7 @@ test('the CSS of a page: the fonts, the values of the mode, the CSS of the theme
 });
 
 test('the motion: every change on hover or focus takes 0.18 s, none with reduced motion', () => {
-  const css = MAK.pageThemeCss('bloques', (f) => `fonts/${f}`, 'light');
+  const css = MAK.pageThemeCss('plastilina', (f) => `fonts/${f}`, 'light');
   assert.match(css, /\*, \*::before, \*::after \{ transition: color 0\.18s ease, background-color 0\.18s ease/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \*, \*::before, \*::after \{ transition: none !important; \} \}/);
   assert.match(MAK.motionCss('#mak-block'), /^#mak-block \{ transition: /, 'the block in the page: only its elements');

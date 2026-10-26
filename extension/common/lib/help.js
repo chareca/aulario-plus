@@ -53,6 +53,7 @@
         'Organiza las secciones de Mi sitio con el botón de la cabecera de Aulario Plus: en el orden que quieras, una debajo de otra, en columnas o una a un lado y dos al otro. Arrastra una sección a otro hueco o pulsa dos para cambiarlas, y quita con ✕ las que no uses (con + vuelven). Con poco ancho (media pantalla, móvil), van una debajo de otra.',
         '«Exámenes finales» también se pliega con su flecha, como las demás secciones.',
         'Si vuelves a abrir el popup antes de que pase un minuto desde que lo cerraste, se abre en la pestaña donde estabas; si pasa más tiempo, en Inicio.',
+        'El tema Cómic ya no está: si lo tenías elegido, verás el tema MiAulario, y puedes elegir otro en Ajustes.',
         'Todo lo que se despliega y se pliega (las secciones de Mi sitio, el bloque, los semestres, las guías, los avisos del popup) lo hace con una animación corta, y las ventanas pequeñas (cambiar el nombre de una asignatura, elegir a qué profesor escribir, las preguntas) se abren con un pequeño rebote y se cierran encogiéndose; sin animaciones si tu sistema pide reducir el movimiento.'
       ],
       en: [
@@ -62,6 +63,7 @@
         'Arrange the sections of Mi sitio with the button in the head of Aulario Plus: in the order you like, one below the other, in columns, or one on one side and two on the other. Drag a section to another place or click two to swap them, and take out with ✕ the ones you do not use (+ brings them back). With little width (half a screen, a phone), they go one below the other.',
         '"Exámenes finales" also folds with its arrow, as the other sections.',
         'If you open the popup again less than a minute after you closed it, it opens on the tab where you were; after that, on Home.',
+        'The Comic theme is gone: if you had chosen it, you see the MiAulario theme, and you can choose another one in the settings.',
         'Everything that unfolds and folds (the sections of Mi sitio, the block, the semesters, the guides, the announcements of the popup) does it with a short animation, and the small windows (renaming a subject, choosing the teacher to write to, the questions) open with a small bounce and close shrinking; no animations if your system asks for reduced motion.'
       ]
     },
