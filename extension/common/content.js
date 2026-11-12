@@ -111,10 +111,24 @@
     if (course) MAK.showResourceButtons([{ text: MAK.t('zip.button'), onClick: () => send({ type: 'openZip', siteId: here.siteId }) }]);
     else {
       MAK.showResourceButtons([
+        { text: MAK.t('drive.upload'), title: MAK.t('drive.uploadHelp'), big: true, onClick: () => driveUpload(form, id.value) },
         { text: MAK.t('zip.button'), title: MAK.t('drive.zipHelp'), onClick: (ui) => driveAction(form, root, 'zipDownload', ui) },
         { text: MAK.t('drive.trash'), title: MAK.t('drive.trashHelp'), onClick: (ui) => driveAction(form, root, 'delete', ui) }
       ]);
     }
+  }
+
+  // "Mi sitio" → Recursos: "Subir archivos", the action "Subir archivo(s)" of the folder on the screen, which MiAulario
+  // keeps in its menu "Acciones". Its own link of the list (the first one: the folder of the top); without it, the
+  // same action in the form of the list.
+  function driveUpload(form, folder) {
+    const link = form.querySelector('a[onclick*="fileUpload"]');
+    if (link) return link.click();
+    const item = form.querySelector('#selectedItemId') || form.appendChild(MAK.h('input', { attrs: { type: 'hidden', name: 'selectedItemId' } }));
+    item.value = folder;
+    form.querySelector('#sakai_action').value = 'doDispatchAction';
+    form.querySelector('#rt_action').value = 'org.sakaiproject.content.types.fileUpload:create';
+    form.submit();
   }
 
   // "Mi sitio" → Recursos: the files of the user, as a personal drive. Download all of them as one ZIP, or

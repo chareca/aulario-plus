@@ -50,13 +50,15 @@
         'Aulario Plus vuelve a mantener tu sesión de MiAulario. Cuando MiAulario avisa de que tu sesión se cerrará en 10 minutos, Aulario Plus pulsa «Mantenme activo» por ti (con una pestaña de MiAulario abierta).',
         'En Ajustes → «Mantener la sesión» eliges el método: pulsar el aviso de MiAulario, un ping cada pocos minutos (no necesita ninguna pestaña abierta), los dos o ninguno.',
         'Si tu sesión ya terminó cuando abres MiAulario, Aulario Plus borra las cookies de MiAulario y después abre la página de inicio de sesión, para que el inicio no falle. Se puede apagar en Ajustes.',
-        'El botón de encendido de Inicio vuelve a pausar y reanudar el mantenimiento de la sesión.'
+        'El botón de encendido de Inicio vuelve a pausar y reanudar el mantenimiento de la sesión.',
+        'En Mi sitio hay un botón «Recursos» que abre directamente tus archivos, y en Recursos de Mi sitio un botón grande «Subir archivos», sin pasar por el menú Acciones.'
       ],
       en: [
         'Aulario Plus keeps your session of MiAulario again. When MiAulario warns that your session ends in 10 minutes, Aulario Plus presses "Keep me active" for you (with an open tab of MiAulario).',
         'In Settings → "Keep-alive" you choose the method: press the warning of MiAulario, a ping every few minutes (it needs no open tab), both or none.',
         'If your session has ended when you open MiAulario, Aulario Plus deletes the cookies of MiAulario and then opens the login page, so that the login does not fail. You can turn it off in Settings.',
-        'The power button of Home pauses and resumes the keep-alive again.'
+        'The power button of Home pauses and resumes the keep-alive again.',
+        'Mi sitio has a button «Recursos» that opens your files directly, and Recursos of Mi sitio has a big button «Subir archivos», without the menu Acciones.'
       ]
     },
     {

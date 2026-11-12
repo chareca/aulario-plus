@@ -540,10 +540,11 @@
     host.id = 'mak-zip-host';
     const shadow = host.attachShadow({ mode: 'closed' });
     const style = MAK.themedStyle(`:host { all: initial; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
-      .note { font: var(--ap-weight) calc(13px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-muted); } ${MAK.EXT_BUTTON_CSS}`);
+      .note { font: var(--ap-weight) calc(13px * var(--ap-zoom))/1.4 var(--ap-font); color: var(--ap-muted); } ${MAK.EXT_BUTTON_CSS}
+      .mak-btn.big { font-size: calc(17px * var(--ap-zoom)); padding: 10px 22px; }`);
     const note = MAK.h('span', { class: 'note', attrs: { role: 'status' } });
     const ui = { say: (text) => { note.textContent = text; }, ask: askWindow };
-    shadow.append(style, ...buttons.map((b) => MAK.h('button', { class: MAK.extButtonClass('btn'), attrs: { type: 'button', title: b.title }, text: b.text, on: { click: () => b.onClick(ui) } })), note);
+    shadow.append(style, ...buttons.map((b) => MAK.h('button', { class: `${MAK.extButtonClass('btn')}${b.big ? ' big' : ''}`, attrs: { type: 'button', title: b.title }, text: b.text, on: { click: () => b.onClick(ui) } })), note);
     insertAtTop(host);
   };
 

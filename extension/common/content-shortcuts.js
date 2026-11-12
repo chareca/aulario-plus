@@ -315,6 +315,23 @@
     return h('a', { class: 'action', href: url, title: help || undefined }, h('span', { class: 'go', text }), arrow);
   }
 
+  // "Recursos" of Mi sitio (the files of the user), which MiAulario keeps inside the menu of Mi sitio: a link to it,
+  // in this tab. Its address from the pages of the site of the user ("~<id>"); null without it.
+  async function driveAction(userId) {
+    try {
+      const r = await pageFetch(`/direct/site/${encodeURIComponent(`~${userId}`)}/pages.json`, { credentials: 'include' });
+      const page = r.ok && ((await r.json()) || []).find((p) => p && (p.tools || []).some((x) => x && x.toolId === 'sakai.resources'));
+      const url = page && MAK.safeSiteUrl(page.url);
+      if (!url) return null;
+      const a = h('a', { class: 'action', href: url, title: t('short.driveHelp') }, h('span', { class: 'go', text: t('short.driveGo') }));
+      a.removeAttribute('target');
+      a.removeAttribute('rel');
+      return a;
+    } catch {
+      return null;
+    }
+  }
+
   function recordAction() {
     return actionLink(MAK.EXPEDIENTE_URL, t('short.recordGo'), t('short.recordHelp'));
   }
@@ -351,8 +368,11 @@
     const guides = MAK.userGuides(data, MAK.hiddenEverywhere(settings));
     const now = Date.now();
     const actions = h('div', { class: 'actions' });
-    const drawActions = (wuolah) => MAK.fill(actions, recordAction(), wuolahActions(wuolah), mailAction());
+    let drive = null;
+    let lastWuolah = null;
+    const drawActions = (wuolah) => MAK.fill(actions, drive, recordAction(), wuolahActions((lastWuolah = wuolah)), mailAction());
     drawActions(null);
+    driveAction(s.userId).then((a) => { drive = a; if (a) drawActions(lastWuolah); });
     // The tile folds as the guides and the hours (its arrow, its title); it stays folded when the page opens again.
     const calendar = h('span', { class: 'actions' });
     const body = h('div', null, h('p', { class: 'meta', text: t('short.loading') }));

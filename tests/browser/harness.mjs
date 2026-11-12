@@ -343,6 +343,21 @@ async function runTests(browser, base) {
     assert.deepEqual(got, { first: '123', during: ['312', true, true], saved: 'guides,hours,exams', picked: 'true', out: ['guides,hours,exams', '312'] });
   });
 
+  await test('Mi sitio: the button "Recursos" opens the files of the user in this tab, first in its row', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await tab.evaluate('window.__old = true');
+    await tab.navigate(url('site.html?mine&seed&open'));
+    if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete' && !!window.MAK && !!window.chrome"))) throw new Error('site.html did not load');
+    const got = await run(tab, `
+      const row = () => document.getElementById('mak-shortcuts-host') && document.getElementById('mak-shortcuts-host').shadowRoot.querySelector('.actions');
+      await until(() => row() && row().querySelector('a[href*="~user-1"]'), 'the button');
+      const a = row().querySelector('.action');
+      return [a.textContent, a.getAttribute('href'), a.getAttribute('target'), row().querySelectorAll('a[href*="~user-1"]').length];
+    `);
+    assert.deepEqual(got, ['Recursos', 'https://miaulario.unavarra.es/portal/site/~user-1/page/p1', null, 1]);
+  });
+
   await test('Mi sitio: folding the block folds the panel of the sections too', async (open) => {
     const tab = await open('tools.html');
     await prepare(tab, {}, {});

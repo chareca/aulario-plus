@@ -78,6 +78,11 @@ for (const [url, body] of Object.entries(require('../fixtures/library').routes()
 <tr><td>Ciencias de la Salud y Tudela</td><td>s&aacute;bados y domingos</td><td>9:00-21:45</td></tr></tbody></table>
 <p>Biblioteca de Arrosad&iacute;a: sistema de acceso de tornos.</p>`), type: 'text/html; charset=utf-8' };
 }
+// The pages of Mi sitio of the user (the site "~<id>"): its tool "Recursos", for the button of Mi sitio.
+routes['/direct/site/~user-1/pages.json'] = [
+  { id: 'p0', title: 'Overview', url: 'https://miaulario.unavarra.es/portal/site/~user-1/page/p0', tools: [{ id: 't0', toolId: 'sakai.motd' }] },
+  { id: 'p1', title: 'Recursos', url: 'https://miaulario.unavarra.es/portal/site/~user-1/page/p1', tools: [{ id: 't1', toolId: 'sakai.resources' }] }
+];
 routes['/sites/grados/home.html'] = { __file: DEGREE.window.DEGREE_LIST_HTML.replace('>Grado en Ingeniería Informática<', '>Grado en Computer Science<'), type: 'text/html; charset=utf-8' };
 routes['/sites/grados/informatica-y-telecomunicacion/ingenieria-informatica/evaluacion.html'] = { __file: DEGREE.window.EVALUATION_INF_HTML, type: 'text/html; charset=utf-8' };
 {
