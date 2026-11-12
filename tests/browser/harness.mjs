@@ -500,6 +500,7 @@ async function runTests(browser, base) {
     if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete'"))) throw new Error('popup.html did not load');
     const got = await run(tab, `
       const saved = async () => { const s = (await ext.storage.local.get('settings')).settings; return [s.hiddenSections.map((x) => x.title), s.mysiteLayout.hidden]; };
+      (await until(() => document.getElementById('cat-mysite'), 'the categories')).click();
       const restore = await until(() => document.getElementById('sections-restore'), 'the settings');
       const label = restore.textContent;
       restore.click();
@@ -522,6 +523,44 @@ async function runTests(browser, base) {
     assert.deepEqual(got.one, [['Calendario · MiAulario', 'Evaluación · Aulario Plus'], [['Calendario', 'Evaluación'], []], 'Recuperar «Calendario»']);
   });
 
+  await test('the popup: Ajustes is a grid of categories; a tile opens its settings, and "Ajustes" (the button or the tab) goes back', async (open) => {
+    const tab = await open('popup.html');
+    const got = await run(tab, `
+      await until(() => document.getElementById('tabbtn-settings'), 'the tabs');
+      document.getElementById('tabbtn-settings').click();
+      const tiles = () => [...document.querySelectorAll('#tab-settings .cat')];
+      await until(() => tiles().length, 'the categories');
+      const names = tiles().map((b) => b.querySelector('strong').textContent);
+      const wide = tiles().filter((b) => getComputedStyle(b).gridColumnStart === '1' && getComputedStyle(b).gridColumnEnd === '-1').map((b) => b.id);
+      const columns = getComputedStyle(document.querySelector('.cats')).gridTemplateColumns.split(' ').length;
+      const values = tiles().filter((b) => b.querySelector('small')).length;
+      const none = document.querySelectorAll('#tab-settings .section').length;
+      document.getElementById('cat-lang').click();
+      await until(() => document.getElementById('settings-back'), 'the language');
+      const inside = [document.querySelectorAll('#tab-settings .section').length, tiles().length, document.querySelector('.cat-head strong').textContent, document.activeElement.id];
+      // A change of a setting draws the popup again: the category stays open.
+      document.querySelector('#tab-settings select').value = 'en';
+      document.querySelector('#tab-settings select').dispatchEvent(new Event('change', { bubbles: true }));
+      await until(() => document.querySelector('.cat-head strong') && document.querySelector('.cat-head strong').textContent === 'Language', 'the language in English');
+      document.querySelector('#tab-settings select').value = 'es';
+      document.querySelector('#tab-settings select').dispatchEvent(new Event('change', { bubbles: true }));
+      await until(() => document.querySelector('.cat-head strong') && document.querySelector('.cat-head strong').textContent === 'Idioma', 'Spanish again');
+      document.getElementById('settings-back').click();
+      await until(() => tiles().length, 'the grid again');
+      const back = document.activeElement.id;
+      document.getElementById('cat-danger').click();
+      await until(() => document.getElementById('settings-back'), 'the danger zone');
+      document.getElementById('tabbtn-settings').click();
+      await until(() => tiles().length, 'the grid by the tab');
+      return { names, wide, columns, values, none, inside, back };
+    `);
+    assert.deepEqual(got.names, ['Tema', 'Sesión', 'Avisos', 'Datos', 'Mi sitio', 'Notas oficiales', 'Buscador', 'Correo', 'Idioma', 'Copia', 'Ayuda', 'Borrar todo']);
+    assert.deepEqual([got.wide, got.columns, got.none], [['cat-help', 'cat-danger'], 2, 0]);
+    assert.ok(got.values >= 10, `${got.values} tiles with a value`);
+    assert.deepEqual(got.inside, [1, 0, 'Idioma', 'settings-back']);
+    assert.equal(got.back, 'cat-lang');
+  });
+
   await test('the popup: the method that keeps the session in Ajustes; Inicio says how', async (open) => {
     const tab = await open('popup.html');
     const got = await run(tab, `
@@ -531,8 +570,12 @@ async function runTests(browser, base) {
       await until(() => document.querySelector('#home-session') && document.querySelector('.power.on'), 'a session in Inicio');
       const power = document.querySelector('.power');
       const first = [line(), power.getAttribute('aria-disabled'), power.getAttribute('aria-pressed')];
-      document.getElementById('tabbtn-settings').click();
-      await until(() => document.getElementById('ka-method'), 'the settings');
+      const session = async () => {
+        document.getElementById('tabbtn-settings').click();
+        (await until(() => document.getElementById('cat-session'), 'the categories')).click();
+        return until(() => document.getElementById('ka-method'), 'the settings of the session');
+      };
+      await session();
       const options = [...document.getElementById('ka-method').options].map((o) => o.value + (o.selected ? '*' : ''));
       const choose = async (m) => {
         const sel = document.getElementById('ka-method');
@@ -543,8 +586,8 @@ async function runTests(browser, base) {
         await until(() => document.querySelector('#home-session small'), 'Inicio');
         await new Promise((r) => setTimeout(r, 150));
         const text = line();
-        document.getElementById('tabbtn-settings').click();
-        await until(() => document.getElementById('ka-method') && document.getElementById('ka-method').value === m, 'the settings again');
+        await session();
+        await until(() => document.getElementById('ka-method').value === m, 'the settings again');
         return text;
       };
       return { first, options, none: await choose('none'), ping: await choose('ping'), left: !!document.getElementById('ka-left') };

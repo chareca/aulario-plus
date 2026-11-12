@@ -44,7 +44,7 @@ const panels = {
   new: { render: renderNew, open: openNew },
   grades: { render: renderGrades, open: openGrades },
   sites: { render: renderSites },
-  settings: { render: renderSettings }
+  settings: { render: renderSettings, open: () => { settingsView = null; } } // the tab: back to the grid
 };
 let current = 'home';
 
@@ -1399,128 +1399,185 @@ function sectionsSection(s) {
       h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-restore', 'aria-haspopup': 'dialog' }, text: t('sections.restore', { n }), on: { click: openRemovedSections } })));
 }
 
+// Ajustes: a grid of categories (a tile for each one: its drawing, its name and its value now); a tile opens its
+// settings, and "Ajustes" (the button at the top of them, or the tab) goes back to the grid. settingsView: the open
+// category, or null (the grid); it stays open while the popup draws again.
+let settingsView = null;
+function openSettings(id) {
+  settingsView = id;
+  renderCurrent();
+  $('tab-settings').scrollIntoView({ block: 'start' });
+  const to = id ? $('settings-back') : null;
+  if (to) to.focus();
+}
+
 function renderSettings(el) {
   const s = settings();
-  fill(
-    el,
-    themeSection(s),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('set.keepAlive') }),
-      // How the session is kept (MAK.KEEP_METHODS), with what each method needs.
-      h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('set.keepMethod') }),
-        h('select', { attrs: { id: 'ka-method' }, on: { change: (e) => send({ type: 'setSettings', patch: { keepMethod: e.target.value } }) } },
-          MAK.KEEP_METHODS.map((m) => h('option', { attrs: { value: m, selected: m === s.keepMethod }, text: t(`set.keep.${m}`) })))),
-      h('p', { class: 'small', text: t(`set.keepHelp.${s.keepMethod}`) }),
+  const removed = removedSections(s).length;
+  const cats = [
+    { id: 'theme', icon: 'mode', value: `${MAK.themeName(MAK.theme(s.theme), s.lang)} · ${t(`theme.mode.${s.colorMode}`)}`, parts: () => [
+      themeSection(s)
+    ] },
+    { id: 'session', icon: 'power', value: t(S.paused ? 'status.paused' : `cat.keep.${s.keepMethod}`), parts: () => [
       h(
-        'dl',
-        { class: 'kv' },
-        h('dt', { text: t('set.session') }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
-        h('dt', { text: t('set.lastPing') }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
-        // The time before Sakai ends the session: only while the pings keep it (else the pings do not move it).
-        MAK.keepsBy(s.keepMethod, 'ping') ? [h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' })] : null,
-        h('dt', { text: t('set.nextPing') }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('set.keepAlive') }),
+        // How the session is kept (MAK.KEEP_METHODS), with what each method needs.
+        h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('set.keepMethod') }),
+          h('select', { attrs: { id: 'ka-method' }, on: { change: (e) => send({ type: 'setSettings', patch: { keepMethod: e.target.value } }) } },
+            MAK.KEEP_METHODS.map((m) => h('option', { attrs: { value: m, selected: m === s.keepMethod }, text: t(`set.keep.${m}`) })))),
+        h('p', { class: 'small', text: t(`set.keepHelp.${s.keepMethod}`) }),
+        h(
+          'dl',
+          { class: 'kv' },
+          h('dt', { text: t('set.session') }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
+          h('dt', { text: t('set.lastPing') }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
+          // The time before Sakai ends the session: only while the pings keep it (else the pings do not move it).
+          MAK.keepsBy(s.keepMethod, 'ping') ? [h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' })] : null,
+          h('dt', { text: t('set.nextPing') }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
+        ),
+        h(
+          'div',
+          { class: 'row' },
+          h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: t('set.pingNow'), on: { click: pingNow } }),
+          h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } })
+        ),
+        checkbox(t('set.autoLogin'), t('set.autoLoginHelp'), S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
+      )
+    ] },
+    { id: 'notify', icon: 'bell', value: [s.notifyGrades && t('cat.grades'), s.notifyDue && t('cat.due')].filter(Boolean).join(' · ') || t('cat.off'), parts: () => [
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('cat.notify') }),
+        checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } })),
+        checkbox(t('set.notifyDue'), t('set.notifyDueHelp'), s.notifyDue, (v) => send({ type: 'setSettings', patch: { notifyDue: v } })),
+        dueOffsetsField(s)
       ),
       h(
         'div',
-        { class: 'row' },
-        h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: t('set.pingNow'), on: { click: pingNow } }),
-        h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } })
-      ),
-      checkbox(t('set.autoLogin'), t('set.autoLoginHelp'), S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('set.courseData') }),
-      checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } })),
-      checkbox(t('set.notifyGrades'), t('set.notifyGradesHelp'), s.notifyGrades, (v) => send({ type: 'setSettings', patch: { notifyGrades: v } })),
-      checkbox(t('set.notifyDue'), t('set.notifyDueHelp'), s.notifyDue, (v) => send({ type: 'setSettings', patch: { notifyDue: v } })),
-      dueOffsetsField(s)
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('set.calendar') }),
-      h('button', { class: 'btn', text: t('ics.button'), on: { click: openIcs } })
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('lib.section') }),
-      h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('lib.campusLabel') }),
-        h('select', { on: { change: (e) => send({ type: 'setSettings', patch: { libraryCampus: e.target.value } }) } },
-          ['arrosadia', 'salud', 'tudela'].map((c) => h('option', { attrs: { value: c, selected: c === s.libraryCampus }, text: t(`lib.campus.${c}`) })))),
-      h('p', { class: 'small', text: t('lib.campusHelp') })
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('names.section') }),
-      checkbox(t('names.short'), t('names.shortHelp'), s.shortNames, (v) => send({ type: 'setSettings', patch: { shortNames: v } }))
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('search.section') }),
-      checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
-    ),
-    sectionsSection(s),
-    recordSection(),
-    teacherSection(),
-    linksSection(),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('diag.title') }),
-      h('p', { class: 'small', text: t('diag.help') }),
-      h('div', { class: 'row' }, h('button', { class: 'btn', text: t('diag.open'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?check=1') }); closePopup(); } } }))
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('set.badge') }),
-      checkbox(t('set.badgeShow'), t('set.badgeHelp'), s.badge.enabled, (v) => send({ type: 'setSettings', patch: { badge: { enabled: v } } })),
+        { class: 'section' },
+        h('h2', { text: t('set.badge') }),
+        checkbox(t('set.badgeShow'), t('set.badgeHelp'), s.badge.enabled, (v) => send({ type: 'setSettings', patch: { badge: { enabled: v } } })),
+        h(
+          'div',
+          { class: 'indent' },
+          [
+            ['deliveries', 'set.badgeDeliveries'],
+            ['announcements', 'set.badgeAnnouncements'],
+            ['messages', 'set.badgeMessages'],
+            ['forums', 'set.badgeForums'],
+            ['grades', 'set.badgeGrades']
+          ].map(([key, label]) => {
+            const box = checkbox(t(label), null, s.badge[key], (v) => send({ type: 'setSettings', patch: { badge: { [key]: v } } }));
+            if (!s.badge.enabled) box.querySelector('input').disabled = true;
+            return box;
+          })
+        )
+      )
+    ] },
+    { id: 'data', icon: 'sync', value: !s.syncEnabled ? t('cat.off') : S.meta && S.meta.lastSync ? MAK.ago(S.meta.lastSync, Date.now()) : '', parts: () => [
       h(
         'div',
-        { class: 'indent' },
-        [
-          ['deliveries', 'set.badgeDeliveries'],
-          ['announcements', 'set.badgeAnnouncements'],
-          ['messages', 'set.badgeMessages'],
-          ['forums', 'set.badgeForums'],
-          ['grades', 'set.badgeGrades']
-        ].map(([key, label]) => {
-          const box = checkbox(t(label), null, s.badge[key], (v) => send({ type: 'setSettings', patch: { badge: { [key]: v } } }));
-          if (!s.badge.enabled) box.querySelector('input').disabled = true;
-          return box;
-        })
-      )
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('set.language') }),
+        { class: 'section' },
+        h('h2', { text: t('set.courseData') }),
+        checkbox(t('set.sync'), t('set.syncHelp'), s.syncEnabled, (v) => send({ type: 'setSettings', patch: { syncEnabled: v } }))
+      ),
       h(
-        'select',
-        { attrs: { 'aria-label': t('set.language') }, on: { change: (e) => send({ type: 'setSettings', patch: { lang: e.target.value } }) } },
-        Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('set.calendar') }),
+        h('button', { class: 'btn', text: t('ics.button'), on: { click: openIcs } })
       )
-    ),
-    h(
-      'div',
-      { class: 'section' },
-      h('h2', { text: t('config.title') }),
-      h('p', { class: 'small', text: t('config.help') }),
-      h('div', { class: 'row' },
-        h('button', { class: 'btn', text: t('config.export'), attrs: { type: 'button' }, on: { click: exportConfig } }),
-        // In a page: the popup closes when the window of the files opens.
-        h('button', { class: 'btn', text: t('config.import'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?import') }); closePopup(); } } }))
-    ),
-    helpSection(),
-    dangerSection()
-  );
+    ] },
+    { id: 'mysite', icon: 'layout', value: removed ? t('cat.removed', { n: removed }) : t(`lib.campus.${s.libraryCampus}`), parts: () => [
+      sectionsSection(s),
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('lib.section') }),
+        h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('lib.campusLabel') }),
+          h('select', { on: { change: (e) => send({ type: 'setSettings', patch: { libraryCampus: e.target.value } }) } },
+            ['arrosadia', 'salud', 'tudela'].map((c) => h('option', { attrs: { value: c, selected: c === s.libraryCampus }, text: t(`lib.campus.${c}`) })))),
+        h('p', { class: 'small', text: t('lib.campusHelp') })
+      )
+    ] },
+    { id: 'record', icon: 'school', value: t(recordGranted ? 'cat.on' : 'cat.off'), parts: () => [
+      recordSection()
+    ] },
+    { id: 'search', icon: 'search', value: [s.searchShortcut && SEARCH_KEY, s.shortNames && t('cat.shortNames')].filter(Boolean).join(' · ') || t('cat.off'), parts: () => [
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('search.section') }),
+        checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
+      ),
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('names.section') }),
+        checkbox(t('names.short'), t('names.shortHelp'), s.shortNames, (v) => send({ type: 'setSettings', patch: { shortNames: v } }))
+      )
+    ] },
+    { id: 'mail', icon: 'mail', value: t('cat.mailValue'), parts: () => [
+      teacherSection(),
+      linksSection()
+    ] },
+    { id: 'lang', icon: 'globe', value: MAK.LANGUAGES[s.lang], parts: () => [
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('set.language') }),
+        h(
+          'select',
+          { attrs: { 'aria-label': t('set.language') }, on: { change: (e) => send({ type: 'setSettings', patch: { lang: e.target.value } }) } },
+          Object.entries(MAK.LANGUAGES).map(([code, name]) => h('option', { attrs: { value: code, selected: code === s.lang, lang: code }, text: name }))
+        )
+      )
+    ] },
+    { id: 'config', icon: 'save', value: t('cat.configValue'), parts: () => [
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('config.title') }),
+        h('p', { class: 'small', text: t('config.help') }),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', text: t('config.export'), attrs: { type: 'button' }, on: { click: exportConfig } }),
+          // In a page: the popup closes when the window of the files opens.
+          h('button', { class: 'btn', text: t('config.import'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?import') }); closePopup(); } } }))
+      )
+    ] },
+    { id: 'help', icon: 'help', value: `v${ext.runtime.getManifest().version}`, parts: () => [
+      helpSection(),
+      h(
+        'div',
+        { class: 'section' },
+        h('h2', { text: t('diag.title') }),
+        h('p', { class: 'small', text: t('diag.help') }),
+        h('div', { class: 'row' }, h('button', { class: 'btn', text: t('diag.open'), attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url: ext.runtime.getURL('tools.html?check=1') }); closePopup(); } } }))
+      )
+    ] },
+    { id: 'danger', icon: 'trash', value: '', parts: () => [
+      dangerSection()
+    ] }
+  ];
+  const open = cats.find((c) => c.id === settingsView);
+  if (!open) {
+    settingsView = null;
+    // Two columns; "Ayuda" and the danger zone at the end, each one in a row of its own.
+    fill(el, h('div', { class: 'cats' }, cats.map((c) => h('button', { class: `cat${c.id === 'help' || c.id === 'danger' ? ' wide' : ''}${c.id === 'danger' ? ' danger' : ''}`,
+      attrs: { type: 'button', id: `cat-${c.id}` }, on: { click: () => openSettings(c.id) } },
+      MAK.icon(c.icon), h('span', { class: 'text' }, h('strong', { text: t(`cat.${c.id}`) }), c.value ? h('small', { text: c.value }) : null)))));
+    return;
+  }
+  const back = MAK.icon('chevron');
+  back.classList.add('back');
+  fill(el,
+    h('div', { class: 'cat-head' },
+      h('button', { class: 'btn', attrs: { type: 'button', id: 'settings-back' }, on: { click: () => { const id = settingsView; openSettings(null); if ($(`cat-${id}`)) $(`cat-${id}`).focus(); } } }, back, t('tab.settings')),
+      h('strong', { text: t(`cat.${open.id}`) })),
+    open.parts());
   updateKeepAlive(Date.now());
 }
 
