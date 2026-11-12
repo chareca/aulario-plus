@@ -192,3 +192,14 @@ test('the confetti after a submission: on by default; the user can set it off', 
   assert.equal(MAK.withDefaults({ confetti: false }).confetti, false);
   assert.equal(MAK.withDefaults({ confetti: 0 }).confetti, false);
 });
+
+test('the removed sections: only known keys, each one once, with a clean title; they go in the file of the configuration and come back', () => {
+  const tool = { key: 'tool:Mrphs-sakai-summary-calendar|calendario', title: 'Calendario' };
+  const s = MAK.withDefaults({ hiddenSections: [tool, tool, { key: 'mak:block', title: 'Bloque\u0000 de  Aulario Plus' }, { key: 'mak:other', title: 'x' }, { key: 'tool:' }, { key: 'evil', title: 'x' }, { key: `tool:${'a'.repeat(400)}` }, null, 'x', { key: 7 }] });
+  assert.deepEqual(s.hiddenSections, [tool, { key: 'mak:block', title: 'Bloque de Aulario Plus' }]);
+  assert.deepEqual(MAK.withDefaults({ hiddenSections: 'x' }).hiddenSections, []);
+  assert.equal(MAK.withDefaults({ hiddenSections: Array.from({ length: 300 }, (_, i) => ({ key: `tool:t|${i}` })) }).hiddenSections.length, 200);
+  const file = MAK.configImport(JSON.stringify(MAK.configExport({ settings: s }, '1.7.0', new Date(2026, 10, 12)))).file;
+  assert.deepEqual(MAK.configMerge({ settings: {} }, file).settings.hiddenSections, s.hiddenSections);
+  assert.deepEqual(MAK.configMerge({ settings: s }, { settings: { hiddenSections: 'x' } }).settings.hiddenSections, s.hiddenSections, 'a wrong list in the file: the current one stays');
+});

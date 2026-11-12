@@ -1,7 +1,9 @@
 // Aulario Plus: content script at document_start.
 // 1. Hide the sites that the user selected, before the page shows them (no flash).
 // 2. Show the names of the sites (short names or names from the user) in place of the full titles.
-// Both change at once when the settings change.
+// 3. Hide the sections that the user removed (MAK.hideSections), also before the page shows them: from a copy of
+//    the list in the page, then from the settings.
+// All change at once when the settings change.
 (function () {
   'use strict';
   const ext = globalThis.browser ?? globalThis.chrome;
@@ -98,7 +100,41 @@
     renameTree(document);
   }
 
+  // ---- Removed sections -----------------------------------------------------------
+  // The copy of the list in the page (localStorage "mak.sections"): the storage of the extension answers after
+  // the first blocks show.
+  const SECTIONS_KEY = 'mak.sections';
+  let sections = [];
+  try { sections = MAK.cleanSections(JSON.parse(localStorage.getItem(SECTIONS_KEY) || '[]')); } catch {}
+  let waiting = false;
+  function hideSections() {
+    waiting = false;
+    let el = document.getElementById('mak-hide-sections');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'mak-hide-sections';
+      (document.head || document.documentElement).append(el);
+    }
+    const css = MAK.hideSections(sections);
+    if (el.textContent !== css) el.textContent = css;
+  }
+  function setSections(list) {
+    sections = list;
+    try {
+      if (list.length) localStorage.setItem(SECTIONS_KEY, JSON.stringify(list));
+      else localStorage.removeItem(SECTIONS_KEY);
+    } catch {} // the page blocks its storage
+    hideSections();
+  }
+  hideSections();
+  document.addEventListener('DOMContentLoaded', hideSections);
+
   new MutationObserver((records) => {
+    // New blocks (the page loads, or MiAulario draws one again): once for each frame.
+    if (sections.length && !waiting && records.some((r) => r.addedNodes.length)) {
+      waiting = true;
+      requestAnimationFrame(hideSections);
+    }
     if (!pairs.length) return;
     for (const r of records) {
       if (r.type === 'characterData') renameNode(r.target);
@@ -110,6 +146,7 @@
 
   const state = { settings: MAK.withDefaults(null), sites: [] };
   function apply() {
+    setSections(state.settings.hiddenSections);
     hideSites(state.settings);
     setNames(state.sites, state.settings);
   }

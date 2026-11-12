@@ -40,6 +40,7 @@
       confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
       rankBar: true, // the rank of the degree (lib/record.js) in the bar of MiAulario
       examCalendar: false, // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
+      hiddenSections: [], // the sections that the user removed with the selector (MAK.cleanSections)
       keepMethod: 'button', // how the session of MiAulario is kept (MAK.KEEP_METHODS)
       libraryCampus: 'arrosadia', // the library of "Horarios de la biblioteca" in Mi sitio (lib/library.js): arrosadia, salud or tudela
       mysiteLayout: MAK.cleanLayout(null) // the parts of the block "Aulario Plus" of Mi sitio (content-banner.js): MAK.cleanLayout
@@ -174,10 +175,49 @@
       confetti: 'confetti' in s ? !!s.confetti : d.confetti,
       rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar,
       examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar,
+      hiddenSections: MAK.cleanSections(s.hiddenSections),
       keepMethod: MAK.KEEP_METHODS.includes(s.keepMethod) ? s.keepMethod : d.keepMethod,
       libraryCampus: ['arrosadia', 'salud', 'tudela'].includes(s.libraryCampus) ? s.libraryCampus : d.libraryCampus,
       mysiteLayout: MAK.cleanLayout(s.mysiteLayout)
     };
+  };
+
+  // ---- The sections that the user removed ------------------------------------------------------------
+  // With the selector of the pages of MiAulario (content-picker.js; "Eliminar secciones" in the settings), for all
+  // the sites: [{ key, title }]. key: "tool:<its classes>|<its title>" (a block of MiAulario: the same tool with the
+  // same title, in every site) or "mak:<name>" (a box of Aulario Plus: MAK.MAK_SECTIONS). title: its name in the list
+  // of the settings ("Recuperar secciones eliminadas"). The parts of the block of Mi sitio are not here: mysiteLayout.hidden.
+  // The boxes of Aulario Plus that the selector removes: where each one is on the page.
+  MAK.MAK_SECTIONS = { block: '#mak-block', guide: '#mak-guide-host:not(.in-block)', news: '#mak-news-host' };
+  MAK.cleanSections = function (list) {
+    const out = new Map();
+    for (const x of Array.isArray(list) ? list : []) {
+      const key = x && typeof x.key === 'string' ? x.key : '';
+      const known = key.startsWith('tool:') ? key.length > 5 && key.length <= 300 && key === MAK.cleanText(key, 300, false) : key.startsWith('mak:') && Object.hasOwn(MAK.MAK_SECTIONS, key.slice(4));
+      if (!known || out.has(key)) continue;
+      out.set(key, { key, title: MAK.cleanText(x.title, 200, false) });
+      if (out.size === 200) break;
+    }
+    return [...out.values()];
+  };
+  // The blocks of MiAulario on the page (a tool with its bar of the title), and the key and the title of one.
+  MAK.toolBlocks = () => [...document.querySelectorAll('.Mrphs-container')].filter((el) => el.querySelector(':scope > .Mrphs-toolTitleNav'));
+  MAK.toolTitle = (el) => MAK.cleanText((el.querySelector(':scope > .Mrphs-toolTitleNav .Mrphs-toolTitleNav__title') || el).textContent, 200, false);
+  MAK.toolKey = function (el) {
+    const tool = [...el.classList].filter((c) => c.startsWith('Mrphs-') && c !== 'Mrphs-container').sort().join(' ');
+    return MAK.cleanText(`tool:${tool}|${MAK.toolTitle(el).toLowerCase()}`, 300, false);
+  };
+  // The removed sections go from the page. The boxes of Aulario Plus by a rule (the text of the result); the blocks
+  // of MiAulario by an attribute (the rule hides it): a block that is alone on its page stays (it is the page: a
+  // removed "Recursos" would leave its own page empty), once the page is whole (before that, no flash of the others).
+  MAK.SECTION_OFF = 'data-mak-off';
+  MAK.hideSections = function (sections) {
+    const keys = new Set(sections.map((x) => x.key));
+    const blocks = keys.size ? MAK.toolBlocks() : document.querySelectorAll(`[${MAK.SECTION_OFF}]`);
+    const whole = document.readyState !== 'loading';
+    for (const el of blocks) el.toggleAttribute(MAK.SECTION_OFF, keys.size > 0 && keys.has(MAK.toolKey(el)) && !(whole && blocks.length < 2));
+    const boxes = Object.entries(MAK.MAK_SECTIONS).filter(([name]) => keys.has(`mak:${name}`)).map(([, css]) => css);
+    return [`[${MAK.SECTION_OFF}]`, ...boxes].join(', ') + ' { display: none !important; }';
   };
 
   // The parts of the block "Aulario Plus" of Mi sitio: { order: all the parts (the missing ones after the others, in

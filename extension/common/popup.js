@@ -1359,6 +1359,46 @@ function checkbox(label, help, checked, onChange) {
   return h('label', { class: 'check' }, input, h('span', null, label, help ? h('small', { text: help }) : null));
 }
 
+// The sections that the user removed from the pages of MiAulario: the blocks of MiAulario and the boxes of
+// Aulario Plus (the setting hiddenSections) and the parts of the block of Mi sitio (mysiteLayout.hidden).
+function removedSections(s) {
+  return [
+    ...s.mysiteLayout.hidden.map((part) => ({ part, title: t(MAK.MYSITE_HOSTS[part].title), from: 'Aulario Plus' })),
+    ...s.hiddenSections.map((x) => ({ key: x.key, title: x.title || x.key, from: x.key.startsWith('tool:') ? 'MiAulario' : 'Aulario Plus' }))
+  ];
+}
+
+// "Recuperar secciones eliminadas": the list, a ✕ for each one (it leaves the list: the section shows again), and
+// "Restaurar original" (all of them).
+function openRemovedSections() {
+  let items = removedSections(settings());
+  const list = h('ul', { class: 'removed' });
+  const save = () => send({ type: 'setSettings', patch: {
+    hiddenSections: items.filter((x) => x.key).map((x) => ({ key: x.key, title: x.title })),
+    mysiteLayout: Object.assign({}, settings().mysiteLayout, { hidden: items.filter((x) => x.part).map((x) => x.part) })
+  } });
+  const draw = () => {
+    fill(list, items.length ? items.map((x) => h('li', null,
+      h('span', null, x.title, h('small', { text: ` · ${x.from}` })),
+      h('button', { class: 'btn', text: '✕', attrs: { type: 'button', title: t('sections.back', { name: x.title }), 'aria-label': t('sections.back', { name: x.title }) },
+        on: { click: () => { items = items.filter((y) => y !== x); save(); draw(); (list.querySelector('button') || list.closest('.dialog').querySelector('.row button')).focus(); } } })))
+      : h('li', { class: 'small', text: t('sections.none') }));
+  };
+  draw();
+  dialog(t('sections.restoreTitle'), list, [{ text: t('sections.all'), click: () => { items = []; save(); } }, { text: t('mail.close'), primary: true }]);
+}
+
+// "Eliminar secciones": the selector starts in a tab of MiAulario (the background), and the popup closes.
+function sectionsSection(s) {
+  const n = removedSections(s).length;
+  return h('div', { class: 'section' },
+    h('h2', { text: t('sections.title') }),
+    h('p', { class: 'small', text: t('sections.help') }),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-pick' }, text: t('sections.pick'), on: { click: async () => { await send({ type: 'pickSections' }); closePopup(); } } }),
+      h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-restore', 'aria-haspopup': 'dialog' }, text: t('sections.restore', { n }), on: { click: openRemovedSections } })));
+}
+
 function renderSettings(el) {
   const s = settings();
   fill(
@@ -1426,6 +1466,7 @@ function renderSettings(el) {
       h('h2', { text: t('search.section') }),
       checkbox(t('search.shortcut', { key: SEARCH_KEY }), t('search.shortcutHelp'), s.searchShortcut, (v) => send({ type: 'setSettings', patch: { searchShortcut: v } }))
     ),
+    sectionsSection(s),
     recordSection(),
     teacherSection(),
     linksSection(),

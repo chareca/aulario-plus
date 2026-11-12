@@ -419,10 +419,115 @@ async function runTests(browser, base) {
     assert.equal(got, 1);
   });
 
+  await test('the selector of sections: a click removes a block of MiAulario or a box of Aulario Plus after the question, the page does not get the click, and it stays removed', async (open) => {
+    const tab = await open('tools.html');
+    const page = async () => {
+      await tab.evaluate('window.__old = true');
+      await tab.navigate(url('site.html?mine&seed&open'));
+      if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete' && !!window.MAK && !!window.chrome"))) throw new Error('site.html did not load');
+    };
+    await prepare(tab, {}, {});
+    await page();
+    const got = await run(tab, `
+      const bar = () => document.getElementById('mak-picker-host') && document.getElementById('mak-picker-host').shadowRoot;
+      const titles = () => [...bar().querySelectorAll('select option')].map((o) => o.textContent);
+      const gone = (el) => getComputedStyle(el).display === 'none';
+      const answer = async (yes) => {
+        const win = await until(() => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('[role=alertdialog]')).find(Boolean), 'the question');
+        const asked = win.getAttribute('aria-label');
+        win.querySelector(yes ? '.btn.primary' : '.btn:not(.primary)').click();
+        await until(() => !document.documentElement.contains(win.getRootNode().host), 'the question gone');
+        return asked;
+      };
+      await until(() => { const b = document.getElementById('mak-block-body'); return b && b.dataset.count === '3'; }, 'the three parts');
+      // The window of the new hours of the library (the notice of today) opens first: closed, the questions can open.
+      const opened = () => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('[role=alertdialog]')).find(Boolean);
+      for (let i = 0; i < 40 && !opened(); i++) await sleep(50);
+      while (opened()) { opened().querySelector('.btn.primary').click(); await sleep(400); }
+      const calendar = document.querySelector('.Mrphs-sakai-summary-calendar');
+      let clicks = 0;
+      calendar.addEventListener('click', () => clicks++);
+      calendar.click();
+      const before = clicks;
+      await ext.runtime.sendMessage({ type: 'pickSections' });
+      await until(() => bar() && titles().length, 'the selector');
+      const first = titles();
+      // "Cancelar" keeps it; then "Eliminar".
+      calendar.querySelector('.Mrphs-toolBody').click();
+      const asked = await answer(false);
+      const kept = !gone(calendar);
+      calendar.querySelector('.Mrphs-toolBody').click();
+      await answer(true);
+      await until(() => gone(calendar) && !titles().includes('Calendario'), 'the calendar gone');
+      // The list of the bar, for the keyboard: a part of the block of Mi sitio.
+      const list = bar().querySelector('select');
+      list.selectedIndex = titles().indexOf('Horarios');
+      list.dispatchEvent(new Event('change'));
+      [...bar().querySelectorAll('button')].find((b) => b.textContent === 'Eliminar').click();
+      await answer(true);
+      await until(() => gone(document.getElementById('mak-library-host')) && !titles().includes('Horarios'), 'the hours gone');
+      // The only block of MiAulario left: not in the list (alone on its page). Then the whole block of Aulario Plus.
+      const left = titles();
+      document.getElementById('mak-block').querySelector('.mak-head').click();
+      await answer(true);
+      await until(() => gone(document.getElementById('mak-block')), 'the block gone');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const s = (await ext.storage.local.get('settings')).settings;
+      return { first, asked, kept, clicks: clicks - before, left, off: !document.getElementById('mak-picker-host'), keys: s.hiddenSections.map((x) => x.key), hidden: s.mysiteLayout.hidden, copy: localStorage.getItem('mak.sections') };
+    `);
+    assert.deepEqual(got.first, ['Mostrar información de Mi Sitio', 'Calendario', 'Exámenes finales', 'Guías docentes', 'Horarios', 'Bloque de Aulario Plus']);
+    assert.deepEqual([got.asked, got.kept, got.clicks, got.off], ['¿Eliminar «Calendario»?', true, 0, true]);
+    assert.deepEqual(got.left, ['Mostrar información de Mi Sitio', 'Exámenes finales', 'Guías docentes', 'Bloque de Aulario Plus']);
+    assert.deepEqual([got.keys, got.hidden], [['tool:Mrphs-sakai-summary-calendar|calendario', 'mak:block'], ['hours']]);
+    assert.ok(got.copy.includes('summary-calendar'), 'the copy of the list in the page');
+    // The next page: removed from its first moment (the copy of the page), and the settings keep it.
+    await tab.evaluate(`localStorage.setItem('mak-harness-seed', JSON.stringify({ settings: ${JSON.stringify({ hiddenSections: [{ key: 'tool:Mrphs-sakai-summary-calendar|calendario', title: 'Calendario' }] })} }))`);
+    await page();
+    const again = await run(tab, `
+      await until(() => document.getElementById('mak-block'), 'the block');
+      const gone = (el) => getComputedStyle(el).display === 'none';
+      return [gone(document.querySelector('.Mrphs-sakai-summary-calendar')), gone(document.querySelector('.Mrphs-sakai-iframe-myworkspace')), gone(document.getElementById('mak-block'))];
+    `);
+    assert.deepEqual(again, [true, false, false]);
+  });
+
+  await test('the popup: "Recuperar secciones eliminadas" lists them; ✕ brings one back, "Restaurar original" all of them', async (open) => {
+    const tab = await open('popup.html');
+    const seed = { settings: { hiddenSections: [{ key: 'tool:Mrphs-sakai-summary-calendar|calendario', title: 'Calendario' }, { key: 'mak:guide', title: 'Evaluación' }], mysiteLayout: { order: ['exams', 'guides', 'hours'], shape: 'rows', hidden: ['hours'] } } };
+    await tab.evaluate(`localStorage.setItem('mak-harness-seed', JSON.stringify(${JSON.stringify(seed)}))`);
+    await tab.evaluate('window.__old = true');
+    await tab.navigate(url('popup.html?seed&tab=settings'));
+    if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete'"))) throw new Error('popup.html did not load');
+    const got = await run(tab, `
+      const saved = async () => { const s = (await ext.storage.local.get('settings')).settings; return [s.hiddenSections.map((x) => x.title), s.mysiteLayout.hidden]; };
+      const restore = await until(() => document.getElementById('sections-restore'), 'the settings');
+      const label = restore.textContent;
+      restore.click();
+      const rows = () => [...document.querySelectorAll('.dialog .removed li')].map((li) => li.querySelector('span').textContent);
+      await until(() => rows().length === 3, 'the list');
+      const first = rows();
+      const x = document.querySelector('.dialog .removed button');
+      const name = x.getAttribute('aria-label');
+      x.click();
+      await until(async () => (await saved())[1].length === 0, 'the hours back');
+      const one = [rows(), await saved(), document.activeElement.getAttribute('aria-label')];
+      [...document.querySelectorAll('.dialog .row button')].find((b) => b.textContent === 'Restaurar original').click();
+      await until(async () => (await saved())[0].length === 0, 'all back');
+      await until(() => !document.querySelector('.dialog') && document.getElementById('sections-restore').textContent.includes('(0)'), 'the window gone');
+      return { label, first, name, one };
+    `);
+    assert.equal(got.label, 'Recuperar secciones eliminadas (3)');
+    assert.deepEqual(got.first, ['Horarios · Aulario Plus', 'Calendario · MiAulario', 'Evaluación · Aulario Plus']);
+    assert.equal(got.name, 'Recuperar «Horarios»');
+    assert.deepEqual(got.one, [['Calendario · MiAulario', 'Evaluación · Aulario Plus'], [['Calendario', 'Evaluación'], []], 'Recuperar «Calendario»']);
+  });
+
   await test('the popup: the method that keeps the session in Ajustes; Inicio says how', async (open) => {
     const tab = await open('popup.html');
     const got = await run(tab, `
       const line = () => document.querySelector('#home-session small').textContent;
+      await until(() => document.getElementById('tabbtn-home'), 'the tabs');
+      document.getElementById('tabbtn-home').click(); // the popup remembers the tab of the test before
       await until(() => document.querySelector('#home-session') && document.querySelector('.power.on'), 'a session in Inicio');
       const power = document.querySelector('.power');
       const first = [line(), power.getAttribute('aria-disabled'), power.getAttribute('aria-pressed')];

@@ -98,6 +98,7 @@
         "content-search.js",
         "content-mail.js",
         "content-forward.js",
+        "content-picker.js",
         "content.js"
       ],
       "run_at": "document_idle"

@@ -183,6 +183,10 @@ dl.kv dt { color: var(--ap-muted); } dl.kv dd { margin: 0; text-align: right; fo
 .dialog-backdrop { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--ap-backdrop); }
 .dialog { width: 100%; max-height: 100%; overflow: auto; padding: 4px 16px 12px; background: var(--ap-win-bg); color: var(--ap-fg);
   border: var(--ap-bw) solid var(--ap-edge); border-radius: var(--ap-radius); box-shadow: var(--ap-shadow-pop); }
+.removed { list-style: none; margin: 0 0 4px; padding: 0; max-height: 280px; overflow: auto; }
+.removed li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--ap-line); }
+.removed li > span { min-width: 0; overflow-wrap: anywhere; }
+.removed small { color: var(--ap-muted); }
 .dialog h2 { font-size: calc(16px * var(--ap-head-zoom)); margin: 12px 0 8px; }
 .dialog .row { margin-top: 14px; }
 label.check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; cursor: pointer; }

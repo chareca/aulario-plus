@@ -830,6 +830,43 @@ const handlers = {
     }
   },
   // The order and the shape of the parts of the block "Aulario Plus" of Mi sitio (content-banner.js): only this setting.
+  // The selector of the pages of MiAulario (content-picker.js): a section more in the list of the removed ones.
+  hideSection: {
+    content: true,
+    run: async (msg) => {
+      const next = await store.update('settings', (cur) => {
+        const base = MAK.withDefaults(cur);
+        return MAK.withDefaults(Object.assign({}, base, { hiddenSections: [...base.hiddenSections, { key: msg && msg.key, title: msg && msg.title }] }));
+      });
+      return { ok: next.hiddenSections.some((x) => x.key === (msg && msg.key)) };
+    }
+  },
+  // "Eliminar secciones" (the settings of the popup): the selector starts in a tab of MiAulario, which comes to the
+  // front: the active tab if it is one, else another one; without one, a new tab, and its page asks when it loads
+  // (pickPending). { ok, opened: a new tab }.
+  pickSections: {
+    run: async () => {
+      const tabs = await Promise.resolve(ext.tabs.query({ url: `${MAK.BASE}/*` })).catch(() => []);
+      const tab = tabs.find((x) => x.active && x.highlighted !== false) || tabs.find((x) => x.active) || tabs[0];
+      if (tab && (await Promise.resolve(ext.tabs.sendMessage(tab.id, { type: 'pickSections' })).catch(() => false))) {
+        await Promise.resolve(ext.tabs.update(tab.id, { active: true })).catch(() => {});
+        return { ok: true, opened: false };
+      }
+      const made = await ext.tabs.create({ url: `${MAK.BASE}/portal` });
+      await (ext.storage.session || ext.storage.local).set({ pickTab: made.id });
+      return { ok: true, opened: true };
+    }
+  },
+  pickPending: {
+    content: true,
+    run: async (msg, sender) => {
+      const area = ext.storage.session || ext.storage.local;
+      const { pickTab } = await area.get('pickTab');
+      if (pickTab === undefined || !sender.tab || sender.tab.id !== pickTab) return { ok: false };
+      await area.remove('pickTab');
+      return { ok: true };
+    }
+  },
   setMySiteLayout: {
     content: true,
     run: async (msg) => {

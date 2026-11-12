@@ -326,3 +326,29 @@ test('libraryHours: hours kept by an older version (without the sports) are read
   const got = await bg.send({ type: 'libraryHours' }, CONTENT());
   assert.deepEqual([got.data.v, !!got.data.sports, got.data.sports.pool.lines.length], [bg.MAK.LIBRARY_FORM, true, 3]);
 });
+
+test('the selector of sections: a page of MiAulario adds a section to the list; "Eliminar secciones" starts it in a tab of MiAulario, or opens one', async () => {
+  const bg = loadBackground();
+  const key = 'tool:Mrphs-sakai-summary-calendar|calendario';
+  assert.deepEqual(await bg.send({ type: 'hideSection', key, title: 'Calendario' }, CONTENT()), { ok: true });
+  assert.deepEqual(await bg.send({ type: 'hideSection', key, title: 'Calendario' }, CONTENT()), { ok: true }, 'twice: once in the list');
+  assert.deepEqual(await bg.send({ type: 'hideSection', key: 'x', title: 'x' }, CONTENT()), { ok: false });
+  assert.deepEqual(bg.ext.storage.local.data.settings.hiddenSections, [{ key, title: 'Calendario' }]);
+  assert.equal(await bg.send({ type: 'pickSections' }, CONTENT()), null, 'only the pages of the extension start it');
+  // No tab of MiAulario: a new one, and only its page starts the selector, once.
+  assert.deepEqual(await bg.send({ type: 'pickSections' }), { ok: true, opened: true });
+  const made = bg.ext._tabs.length;
+  assert.equal(bg.ext._tabs.at(-1).url, 'https://miaulario.unavarra.es/portal');
+  assert.deepEqual(await bg.send({ type: 'pickPending' }, CONTENT({ tab: { id: made + 5 } })), { ok: false }, 'another tab');
+  assert.deepEqual(await bg.send({ type: 'pickPending' }, CONTENT({ tab: { id: made } })), { ok: true });
+  assert.deepEqual(await bg.send({ type: 'pickPending' }, CONTENT({ tab: { id: made } })), { ok: false }, 'once');
+  // A tab of MiAulario that answers: the selector starts there (the active one first), and no tab opens.
+  const asked = [];
+  bg.ext.tabs.query = async () => [{ id: 31, active: false }, { id: 32, active: true }];
+  bg.ext.tabs.sendMessage = async (id, msg) => { asked.push([id, msg.type]); return true; };
+  assert.deepEqual(await bg.send({ type: 'pickSections' }), { ok: true, opened: false });
+  assert.deepEqual([asked, bg.ext._tabs.length], [[[32, 'pickSections']], made]);
+  // A tab from before an update (no script answers): a new tab.
+  bg.ext.tabs.sendMessage = async () => { throw new Error('no receiver'); };
+  assert.deepEqual(await bg.send({ type: 'pickSections' }), { ok: true, opened: true });
+});
