@@ -1,7 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { loadBackground } = require('./helpers');
+const { loadBackground, fakeFetch } = require('./helpers');
+const F = require('./fixtures/miaulario');
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // The extension waits 1500 ms without a change before it writes a cookie: 5 ms in the tests.
@@ -25,8 +26,12 @@ function withJar(bg) {
   // A cookie of the server: a session cookie (no expiration date), host-only if no domain is given.
   const server = (name, value, o = {}) =>
     put(Object.assign({ name, value, domain: 'miaulario.unavarra.es', hostOnly: true, path: '/', secure: true, httpOnly: true, sameSite: 'no_restriction' }, o));
+  bg.ext.cookies.remove = async (d) => {
+    const i = jar.findIndex((c) => c.name === d.name && c.path === new URL(d.url).pathname && c.domain.replace(/^\./, '') === new URL(d.url).hostname);
+    if (i >= 0) emit(jar.splice(i, 1)[0], true, 'explicit');
+  };
   bg.ext.cookies.getAll = async ({ domain, name }) =>
-    jar.filter((c) => c.name === name && (c.domain.replace(/^\./, '') === domain || c.domain.endsWith(`.${domain}`))).map((c) => Object.assign({}, c));
+    jar.filter((c) => (!name || c.name === name) && (c.domain.replace(/^\./, '') === domain || c.domain.endsWith(`.${domain}`))).map((c) => Object.assign({}, c));
   bg.ext.cookies.set = async (d) => {
     const host = new URL(d.url).hostname;
     put({
@@ -38,9 +43,8 @@ function withJar(bg) {
   return { jar, server, named, put };
 }
 
-test('keeping the session off (MAK.KEEP_SESSION): no persistent copy; at an update, the old copies become session cookies', async () => {
-  const bg = loadBackground({ web: fastTimers });
-  assert.equal(bg.MAK.KEEP_SESSION, false, 'off in lib/core.js');
+test('no method keeps the session ("none"): no persistent copy; the old copies become session cookies, also the ones of the SSO at an update', async () => {
+  const bg = loadBackground({ web: fastTimers, keepMethod: 'none', fetch: fakeFetch(F.routes()) });
   const { server, named, put } = withJar(bg);
   const later = Date.now() / 1000 + 9 * 86400;
   server('SERVERID', 'h31');
@@ -54,15 +58,35 @@ test('keeping the session off (MAK.KEEP_SESSION): no persistent copy; at an upda
   assert.deepEqual(named('idpsession').map((c) => [c.value, c.domain, c.expirationDate]), [['sso', '.sso.unavarra.es', undefined]]);
 });
 
-const { fakeFetch } = require('./helpers');
-const F = require('./fixtures/miaulario');
+test('before an automatic login, all the cookies of MiAulario go (every path), not the ones of the SSO; not at a login of the user', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  const { server, jar } = withJar(bg);
+  const fill = () => {
+    server('SAKAISESSIONID', 'dead');
+    server('SERVERID', 'h31');
+    server('JSESSIONID', 'login', { path: '/sakai-login-tool' });
+    server('_pk_id.1', 'x', { httpOnly: false });
+    server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false });
+  };
+  fill();
+  assert.deepEqual(await bg.send({ type: 'loginStart', user: true }, CONTENT), { ok: true });
+  assert.equal(jar.length, 5, 'the user logs in: the cookies stay');
+  bg.ext.storage.local.data.loginAt = 0;
+  if (bg.ext.storage.session) await bg.ext.storage.session.set({ loginAt: 0 });
+  assert.deepEqual(await bg.send({ type: 'loginStart' }, CONTENT), { ok: true });
+  assert.deepEqual(jar.map((c) => c.name), ['idpsession'], 'gone before the answer: the login page opens after it');
+  fill();
+  assert.equal(await bg.send({ type: 'loginStart' }, CONTENT), null, 'a login of the last minutes: no login');
+  assert.equal(jar.length, 5, 'and its cookies stay');
+});
+
 const later = () => Date.now() / 1000 + 1e6;
 // A background with the session kept, a cookie jar, and the requests (a session with or without a user).
 function kept({ user = 'user-1', local } = {}) {
   const log = [];
   const routes = F.routes();
   routes['/direct/session/current.json'] = { userId: user, userEid: user ? 'eid' : null };
-  const bg = loadBackground({ keepSession: true, fetch: fakeFetch(routes, log), local });
+  const bg = loadBackground({ keepMethod: 'ping', fetch: fakeFetch(routes, log), local });
   return Object.assign({ bg, log, keepAlive: () => log.filter((x) => x.url.includes('/direct/session/current.json') && !x.url.includes('auto=true')).length }, withJar(bg));
 }
 

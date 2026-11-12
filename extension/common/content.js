@@ -1,12 +1,13 @@
 // Aulario Plus: content script for miaulario.unavarra.es (top frame only).
 //
-// - If you open MiAulario and the Sakai session is not active, the script sends you to
-//   the SAML login. If the SSO session is active, you come back logged in. If not, the
+// - If you open MiAulario and the Sakai session is not active, the background script removes the
+//   cookies of MiAulario (the ones of a session that ended break the login) and then the script
+//   sends you to the SAML login. If the SSO session is active, you come back logged in. If not, the
 //   login form of sso.unavarra.es opens. The password manager of the browser can fill it.
 //   One login at a time for all the tabs, and none in the 3 minutes after a login (background.js):
 //   a login that gave no session is not repeated, and the page stays as MiAulario shows it.
-// - This only with MAK.KEEP_SESSION (lib/core.js). Without it, a window says once that keeping the
-//   session is off for now.
+// - When MiAulario warns that the session ends in 10 minutes, the script presses the button of the
+//   warning (the setting "keepMethod": 'button' or 'both').
 // - If you click "Log out", the script tells the background script to pause.
 // - If you open the Announcements tool of a site, the script tells the background script.
 //   The extension marks these announcements as read, also in the bell of MiAulario.
@@ -39,7 +40,6 @@
 
   // Return true if the script sends the user to the login page.
   async function reloginIfNeeded() {
-    if (!MAK.KEEP_SESSION) return false;
     const status = await send({ type: 'getStatus' });
     if (!status || status.paused || !status.autoLogin) return false;
     let loggedIn;
@@ -51,9 +51,31 @@
       return false;
     }
     if (loggedIn) return false;
-    if (!(await send({ type: 'loginStart' }))) return false; // another tab logs in, or a login of the last minutes
+    // Another tab logs in, or a login of the last minutes: no login. Else the background removed the cookies of
+    // MiAulario before its answer: the login page opens only after it.
+    if (!(await send({ type: 'loginStart' }))) return false;
     location.assign(SAML_LOGIN);
     return true;
+  }
+
+  // The warning of MiAulario 10 minutes before the end of the session (#timeout_alert_body, which the portal adds to
+  // the body): with the method of the button, the script presses its button "Mantenme activo" (keep_session_alive()
+  // of the portal: a request that Sakai counts as activity; the warning goes). A warning without that button: the
+  // background sends the request. Each warning once.
+  function watchTimeout() {
+    let seen = null;
+    const check = async () => {
+      const box = document.getElementById('timeout_alert_body');
+      if (!box || box === seen) return;
+      seen = box;
+      const d = (await MAK.safeCall(() => ext.storage.local.get(['settings', 'paused']), null)) || {};
+      if (d.paused || !MAK.keepsBy(MAK.withDefaults(d.settings).keepMethod, 'button')) return;
+      const button = box.querySelector('[onclick*="keep_session_alive"]');
+      if (button && box.isConnected) button.click();
+      else send({ type: 'keepAlive' });
+    };
+    new MutationObserver(check).observe(document.body, { childList: true });
+    check();
   }
 
   // Find the site and the tools of this page with the stored pages of each site.
@@ -147,18 +169,18 @@
     MAK.showNewsBanner({ siteId: here.siteId, result: r, compact: !r.isNew });
   }
 
-  // A window over the first page of MiAulario, each one once (the background says which one and marks it seen):
-  // keeping the session is off for now, or the news of a new version in one line, with a button to all of them.
+  // A window over the first page of MiAulario, once (the background says it and marks it seen): the news of a new
+  // version in one line, with a button to all of them.
   async function pageNotice() {
     if (!MAK.askWindow) return;
     const r = await send({ type: 'pageNotice' });
     if (!r || !r.kind) return;
     MAK.setLang(r.lang);
-    if (r.kind === 'keepOff') return MAK.askWindow(MAK.t('keepOff.title'), MAK.t('keepOff.text'), MAK.t('keepOff.ok'), null);
     if (await MAK.askWindow(MAK.t('release.title', { version: r.version }), r.text, MAK.t('release.see'), MAK.t('release.close'))) send({ type: 'openNews' });
   }
 
   if (await reloginIfNeeded()) return;
+  watchTimeout();
   pageNotice();
   reportToolVisit();
   flushPendingMarkViewed();

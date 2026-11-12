@@ -6,6 +6,12 @@
 
   // A key never changes its meaning or its type: files of «Exportar mi configuración» of other versions keep their
   // keys (MAK.configMerge takes a key only with the type of its default). A new meaning: a new key.
+  // How the extension keeps the session of MiAulario (the setting "keepMethod"): 'button' (content.js presses the
+  // button of the warning "your session ends in 10 minutes": it needs an open page of MiAulario), 'ping' (the
+  // background sends a request every few minutes, without a page), 'both' or 'none'.
+  MAK.KEEP_METHODS = ['button', 'ping', 'both', 'none'];
+  MAK.keepsBy = (method, how) => method === how || method === 'both';
+
   MAK.defaultSettings = function () {
     return {
       syncEnabled: true,
@@ -34,6 +40,7 @@
       confetti: true, // confetti after a submission of a task or an exam (lib/celebrate.js)
       rankBar: true, // the rank of the degree (lib/record.js) in the bar of MiAulario
       examCalendar: false, // the calendar of the exams in Mi sitio and in the sites (MAK.examCalendar)
+      keepMethod: 'button', // how the session of MiAulario is kept (MAK.KEEP_METHODS)
       libraryCampus: 'arrosadia', // the library of "Horarios de la biblioteca" in Mi sitio (lib/library.js): arrosadia, salud or tudela
       mysiteLayout: MAK.cleanLayout(null) // the parts of the block "Aulario Plus" of Mi sitio (content-banner.js): MAK.cleanLayout
     };
@@ -167,6 +174,7 @@
       confetti: 'confetti' in s ? !!s.confetti : d.confetti,
       rankBar: 'rankBar' in s ? !!s.rankBar : d.rankBar,
       examCalendar: 'examCalendar' in s ? !!s.examCalendar : d.examCalendar,
+      keepMethod: MAK.KEEP_METHODS.includes(s.keepMethod) ? s.keepMethod : d.keepMethod,
       libraryCampus: ['arrosadia', 'salud', 'tudela'].includes(s.libraryCampus) ? s.libraryCampus : d.libraryCampus,
       mysiteLayout: MAK.cleanLayout(s.mysiteLayout)
     };

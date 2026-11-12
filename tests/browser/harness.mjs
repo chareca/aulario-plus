@@ -404,5 +404,37 @@ async function runTests(browser, base) {
     assert.equal(got, 1);
   });
 
+  await test('the popup: the method that keeps the session in Ajustes; Inicio says how', async (open) => {
+    const tab = await open('popup.html');
+    const got = await run(tab, `
+      const line = () => document.querySelector('#home-session small').textContent;
+      await until(() => document.querySelector('#home-session') && document.querySelector('.power.on'), 'a session in Inicio');
+      const power = document.querySelector('.power');
+      const first = [line(), power.getAttribute('aria-disabled'), power.getAttribute('aria-pressed')];
+      document.getElementById('tabbtn-settings').click();
+      await until(() => document.getElementById('ka-method'), 'the settings');
+      const options = [...document.getElementById('ka-method').options].map((o) => o.value + (o.selected ? '*' : ''));
+      const choose = async (m) => {
+        const sel = document.getElementById('ka-method');
+        sel.value = m;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        await until(async () => ((await ext.storage.local.get('settings')).settings || {}).keepMethod === m, m);
+        document.getElementById('tabbtn-home').click();
+        await until(() => document.querySelector('#home-session small'), 'Inicio');
+        await new Promise((r) => setTimeout(r, 150));
+        const text = line();
+        document.getElementById('tabbtn-settings').click();
+        await until(() => document.getElementById('ka-method') && document.getElementById('ka-method').value === m, 'the settings again');
+        return text;
+      };
+      return { first, options, none: await choose('none'), ping: await choose('ping'), left: !!document.getElementById('ka-left') };
+    `);
+    assert.deepEqual(got.first, ['Pulsa por ti «Mantenme activo» en MiAulario', null, 'true']);
+    assert.deepEqual(got.options, ['button*', 'ping', 'both', 'none']);
+    assert.equal(got.none, 'No se mantiene la sesión');
+    assert.match(got.ping, /^Próximo ping en \d+:\d\d$/);
+    assert.equal(got.left, true);
+  });
+
   return results;
 }

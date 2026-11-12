@@ -8,9 +8,6 @@
   MAK.MINUTE = 60 * 1000;
   MAK.HOUR = 60 * MAK.MINUTE;
   MAK.DAY = 24 * MAK.HOUR;
-  // Keeping the session (the keep-alive ping, the persistent session cookies, the login when MiAulario opens and
-  // the repair of the cookies): off for now, until it is checked again. Off, the extension only reads the session.
-  MAK.KEEP_SESSION = false;
   // The states of "paused": 'user' ("Pausar": the session is not kept, the data of the courses still come), true (a
   // logout: no data until the next login), 'reset' (all the data deleted: nothing until "Empezar de nuevo").
   MAK.dataPaused = (paused) => paused === true || paused === 'reset';

@@ -163,11 +163,12 @@ function mockExtension({ id = 'ext-id', local = {} } = {}) {
 }
 
 // Load background.js and the shared scripts in an isolated context with a mock extension API.
-// "web": more browser functions for the background (crypto, WebSocket, ...). "keepSession": the switch
-// MAK.KEEP_SESSION of lib/core.js (else its value in the file).
-function loadBackground({ fetch, local, now, web, keepSession } = {}) {
+// "web": more browser functions for the background (crypto, WebSocket, ...). "keepMethod": the setting of the
+// same name (how the session is kept; else its default, the button of the warning).
+function loadBackground({ fetch, local, now, web, keepMethod } = {}) {
   const vm = require('node:vm');
   const fs = require('node:fs');
+  if (keepMethod) local = Object.assign({}, local, { settings: Object.assign({}, local && local.settings, { keepMethod }) });
   const ext = mockExtension({ local });
   const sandbox = {
     chrome: ext,
@@ -191,7 +192,6 @@ function loadBackground({ fetch, local, now, web, keepSession } = {}) {
   const src = fs.readFileSync(path.join(COMMON, 'background.js'), 'utf8');
   const libs = [...(/importScripts\(([^)]*)\)/.exec(src) || ['', ''])[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   for (const lib of libs) vm.runInContext(fs.readFileSync(path.join(COMMON, lib), 'utf8'), sandbox, { filename: lib });
-  if (keepSession !== undefined) sandbox.MAK.KEEP_SESSION = keepSession;
   vm.runInContext(src, sandbox, { filename: 'background.js' });
   const send = (msg, sender = { id: ext.runtime.id, url: ext.runtime.getURL('popup.html') }) =>
     new Promise((resolve) => {

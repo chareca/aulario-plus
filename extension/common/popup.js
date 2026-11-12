@@ -261,12 +261,13 @@ const clockText = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0'
 // The state of the session for the menu: a class (on, off, bad, wait), a title and a line below it.
 function sessionState(now) {
   const last = S.last || null;
-  // Keeping the session is off for now (MAK.KEEP_SESSION): the line says it, not the next ping.
-  const keep = MAK.KEEP_SESSION;
-  if (S.paused) return { cls: 'off', title: t('status.paused'), line: t(keep ? 'home.pausedHelp' : 'home.pausedOff') };
-  if (!last) return { cls: 'wait', title: t('status.noPing'), line: keep ? '' : t('home.keepOff') };
-  if (!last.loggedIn) return { cls: 'bad', title: t(last.error ? 'status.networkError' : 'status.notLoggedIn'), line: t(keep ? 'home.loginHelp' : 'home.keepOff') };
-  if (!keep) return { cls: 'on', title: t('status.connected'), line: t('home.keepOff') };
+  if (S.paused) return { cls: 'off', title: t('status.paused'), line: t('home.pausedHelp') };
+  if (!last) return { cls: 'wait', title: t('status.noPing'), line: '' };
+  // The line: how the session is kept (the setting "keepMethod"); with the ping, the time to the next one.
+  const method = settings().keepMethod;
+  if (!last.loggedIn) return { cls: 'bad', title: t(last.error ? 'status.networkError' : 'status.notLoggedIn'), line: method === 'none' ? '' : t('home.loginHelp') };
+  if (method === 'none') return { cls: 'on', title: t('status.connected'), line: t('home.keepNone') };
+  if (method === 'button') return { cls: 'on', title: t('home.active'), line: t('home.keepButton') };
   const next = status && status.nextPing ? Math.max(0, Math.round((status.nextPing - now) / 1000)) : null;
   return { cls: 'on', title: t('home.active'), line: next === null ? '' : t('home.nextPing', { t: clockText(next) }) };
 }
@@ -315,11 +316,9 @@ function renderHome(el) {
   const said = (name, v) => `${name}: ${t(v ? 'home.on' : 'home.off')}`;
   const set = (patch) => () => send({ type: 'setSettings', patch });
   const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
-  // Keeping the session off for now (MAK.KEEP_SESSION): the button is grey, does nothing, and its tooltip says why.
-  const keep = MAK.KEEP_SESSION;
   const top = h('div', { class: 'home-top' },
-    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': keep ? String(!S.paused) : undefined, 'aria-disabled': keep ? undefined : 'true', 'aria-label': t('set.keepAlive'),
-      title: t(!keep ? 'home.powerOff' : S.paused ? 'set.resume' : 'set.pause') }, on: keep ? { click: togglePause } : null }, MAK.icon('power')),
+    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'),
+      title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
     session);
   const switches = h('div', { class: 'switches' },
     homeSwitch('bell', t('home.swGrades'), s.notifyGrades, said(t('home.swGrades'), s.notifyGrades), set({ notifyGrades: !s.notifyGrades })),
@@ -1369,14 +1368,18 @@ function renderSettings(el) {
       'div',
       { class: 'section' },
       h('h2', { text: t('set.keepAlive') }),
-      MAK.KEEP_SESSION ? null : h('p', { class: 'notice', text: t('set.keepOff') }),
+      // How the session is kept (MAK.KEEP_METHODS), with what each method needs.
+      h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('set.keepMethod') }),
+        h('select', { attrs: { id: 'ka-method' }, on: { change: (e) => send({ type: 'setSettings', patch: { keepMethod: e.target.value } }) } },
+          MAK.KEEP_METHODS.map((m) => h('option', { attrs: { value: m, selected: m === s.keepMethod }, text: t(`set.keep.${m}`) })))),
+      h('p', { class: 'small', text: t(`set.keepHelp.${s.keepMethod}`) }),
       h(
         'dl',
         { class: 'kv' },
         h('dt', { text: t('set.session') }), h('dd', { attrs: { id: 'ka-session' }, text: '–' }),
         h('dt', { text: t('set.lastPing') }), h('dd', { attrs: { id: 'ka-last' }, text: '–' }),
-        // The time before Sakai ends the session: only while the pings keep it.
-        MAK.KEEP_SESSION ? [h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' })] : null,
+        // The time before Sakai ends the session: only while the pings keep it (else the pings do not move it).
+        MAK.keepsBy(s.keepMethod, 'ping') ? [h('dt', { text: t('set.timeLeft') }), h('dd', { attrs: { id: 'ka-left' }, text: '–' })] : null,
         h('dt', { text: t('set.nextPing') }), h('dd', { attrs: { id: 'ka-next' }, text: '–' })
       ),
       h(
@@ -1385,7 +1388,7 @@ function renderSettings(el) {
         h('button', { class: 'btn', attrs: { id: 'ka-ping' }, text: t('set.pingNow'), on: { click: pingNow } }),
         h('button', { class: 'btn', attrs: { id: 'ka-toggle' }, text: t(S.paused ? 'set.resume' : 'set.pause'), on: { click: togglePause } })
       ),
-      MAK.KEEP_SESSION ? checkbox(t('set.autoLogin'), null, S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v })) : null
+      checkbox(t('set.autoLogin'), t('set.autoLoginHelp'), S.autoLogin !== false, (v) => send({ type: 'setAutoLogin', value: v }))
     ),
     h(
       'div',

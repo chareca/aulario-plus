@@ -44,7 +44,7 @@ test('the order of the parts of Mi sitio: only its setting, checked', async () =
 
 test('"Pausar" stays until "Reanudar": a ping only reads the session (no keep-alive), and a new login does not continue it', async () => {
   const log = [];
-  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' }, keepSession: true });
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: 'user' }, keepMethod: 'ping' });
   assert.equal((await bg.send({ type: 'pingNow' })).loggedIn, true, 'the state of the session for the popup');
   assert.equal(bg.ext.storage.local.data.paused, 'user');
   assert.ok(log.length && log.every((x) => x.url.includes('auto=true')), 'no keep-alive request');
@@ -168,7 +168,7 @@ test('the ping alarm sets the next random alarm and records the ping', async () 
       return { userId: 'user-1', maxInactiveInterval: 3600 };
     }
   });
-  const bg = loadBackground({ fetch, keepSession: true });
+  const bg = loadBackground({ fetch, keepMethod: 'ping' });
   const before = Date.now();
   await bg.fireAlarm('miaulario-ping');
   const alarm = bg.ext._alarms.get('miaulario-ping');
@@ -179,25 +179,31 @@ test('the ping alarm sets the next random alarm and records the ping', async () 
   assert.equal(bg.ext.storage.local.data.last.status, 200);
 });
 
-test('keeping the session off (MAK.KEEP_SESSION): the ping only reads the session; the notice of MiAulario once', async () => {
-  const log = [];
-  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log) });
-  assert.equal(bg.MAK.KEEP_SESSION, false, 'off in lib/core.js');
-  await bg.fireAlarm('miaulario-ping');
-  const reads = log.filter((x) => x.url.includes('/direct/session/current.json'));
-  assert.ok(reads.length && reads.every((x) => x.url.includes('auto=true')), 'no request without auto=true: Sakai records no activity');
-  assert.equal(bg.ext.storage.local.data.last.loggedIn, true, 'the state of the session for the popup');
-  const shown = await Promise.all([1, 2].map(() => bg.send({ type: 'pageNotice' }, CONTENT())));
-  assert.deepEqual(shown.map((r) => r.kind || null).sort(), ['keepOff', null], 'two tabs at once: one window');
-  assert.equal((await bg.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'only once');
-  // Seen in an earlier version: not again after an update, a logout or the login of another user.
-  const seen = loadBackground({ fetch: fakeFetch(F.routes()), local: { keepOffSeen: true } });
-  for (const f of seen.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
-  await seen.send({ type: 'logout' }, CONTENT({ url: 'https://miaulario.unavarra.es/portal' }));
-  await seen.ext.storage.local.set({ meta: { userId: 'someone-else' } });
-  await seen.send({ type: 'syncNow' });
-  assert.equal((await seen.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'seen before: not again');
-  assert.equal((await loadBackground({ keepSession: true }).send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'with the session kept: no notice');
+test('the method that keeps the session: with the button (the default) or none, the ping only reads the session; the request of the button only with its method', async () => {
+  const keepAlives = (log) => log.filter((x) => x.url.includes('/direct/session/current.json') && !x.url.includes('auto=true')).length;
+  const at = (keepMethod, local) => {
+    const log = [];
+    return { log, bg: loadBackground({ fetch: fakeFetch(F.routes(), log), keepMethod, local }) };
+  };
+  const usual = at();
+  assert.equal(usual.bg.MAK.defaultSettings().keepMethod, 'button');
+  await usual.bg.fireAlarm('miaulario-ping');
+  assert.equal(keepAlives(usual.log), 0, 'no request without auto=true: the button of MiAulario keeps the session');
+  assert.equal(usual.bg.ext.storage.local.data.last.loggedIn, true, 'the state of the session for the popup');
+  // content.js saw the warning without its button: the request from the background.
+  assert.deepEqual(await usual.bg.send({ type: 'keepAlive' }, CONTENT()), { ok: true });
+  assert.equal(keepAlives(usual.log), 1);
+  for (const [keepMethod, local, pings, asked] of [['both', {}, 1, true], ['ping', {}, 1, false], ['none', {}, 0, false], ['button', { paused: 'user' }, 0, false]]) {
+    const { bg, log } = at(keepMethod, local);
+    await bg.send({ type: 'pingNow' });
+    assert.equal(keepAlives(log), pings, `${keepMethod}: the ping`);
+    assert.equal((await bg.send({ type: 'keepAlive' }, CONTENT())).ok, asked, `${keepMethod} ${JSON.stringify(local)}: the request of the button`);
+  }
+  // The setting changes: the new method at once, not at the next alarm.
+  await usual.bg.send({ type: 'setSettings', patch: { keepMethod: 'ping' } });
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(keepAlives(usual.log), 2);
+  assert.equal((await usual.bg.send({ type: 'setSettings', patch: { keepMethod: 'x' } })).keepMethod, 'button', 'a wrong value: the default');
 });
 
 test('the news of a new version: one window over MiAulario after the update (not after an install), with its line, once; the bar of the popup goes with it', async () => {
@@ -207,7 +213,7 @@ test('the news of a new version: one window over MiAulario after the update (not
     bg.ext.runtime.getManifest = () => ({ version: '1.6.7' });
     return bg;
   };
-  const bg = updated({ keepOffSeen: true });
+  const bg = updated({});
   for (const f of bg.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.6' });
   await tick();
   assert.equal(bg.ext.storage.local.data.whatsNew, '1.6.7');
@@ -219,16 +225,11 @@ test('the news of a new version: one window over MiAulario after the update (not
   assert.equal((await bg.send({ type: 'pageNotice' }, CONTENT())).kind, undefined, 'only once');
   assert.deepEqual(await bg.send({ type: 'openNews' }, CONTENT()), { ok: true });
   assert.equal(bg.ext._tabs.at(-1).url, 'chrome-extension://ext-id/tools.html?news', '"Ver todas las novedades"');
-  // The notice of the session not seen yet: that one first, the news at the next page.
-  const both = updated({});
-  for (const f of both.ext._listeners.installed) await f({ reason: 'update', previousVersion: '1.6.5' });
-  await tick();
-  assert.deepEqual([(await both.send({ type: 'pageNotice' }, CONTENT())).kind, (await both.send({ type: 'pageNotice' }, CONTENT())).kind], ['keepOff', 'release']);
   // An install: the welcome page, no window of news.
   const fresh = updated({});
   for (const f of fresh.ext._listeners.installed) await f({ reason: 'install' });
   await tick();
-  assert.deepEqual([(await fresh.send({ type: 'pageNotice' }, CONTENT())).kind, (await fresh.send({ type: 'pageNotice' }, CONTENT())).kind], ['keepOff', undefined]);
+  assert.deepEqual([(await fresh.send({ type: 'pageNotice' }, CONTENT())).kind, (await fresh.send({ type: 'pageNotice' }, CONTENT())).kind], [undefined, undefined]);
 });
 
 test('the popup reads the session when it opens and with ↻, not only at the next alarm', async () => {
@@ -249,7 +250,7 @@ test('the popup reads the session when it opens and with ↻, not only at the ne
 
 test('a paused extension resumes when the user logs in again, and only then pings', async () => {
   const log = [];
-  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: true }, keepSession: true });
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log), local: { paused: true }, keepMethod: 'ping' });
   assert.ok(await bg.send({ type: 'pingNow' }));
   assert.equal(bg.ext.storage.local.data.paused, false);
   assert.ok(log[0].url.includes('auto=true'), 'first a read without activity');

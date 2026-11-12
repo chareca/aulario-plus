@@ -1,14 +1,16 @@
 // Aulario Plus: background script (service worker in Chromium, event page in Firefox).
 //
 // 1. At a random interval of 3 to 10 minutes (in steps of 1 second), the script reads the session. If it has a
-//    user, the script sends GET /direct/session/current.json without "?auto=true": Sakai records this request
-//    as activity and sets the inactivity timer (60 minutes) to zero.
+//    user and the setting "keepMethod" has the ping ('ping', 'both'), the script sends GET
+//    /direct/session/current.json without "?auto=true": Sakai records this request as activity and sets the
+//    inactivity timer (60 minutes) to zero. With 'button' (the default), content.js presses the button of the
+//    warning of MiAulario 10 minutes before the end, in an open page of MiAulario.
 // 2. Then the script makes the session cookies of MiAulario (SAKAISESSIONID, SERVERID) persistent: they stay
 //    after you close the browser. A session without a user makes them session cookies again.
 // 3. If you log out, the script pauses, and the cookies become session cookies. The script starts again when
 //    you log in.
-// Points 1 and 2 (and the login of content.js) work only with MAK.KEEP_SESSION (lib/core.js). Without it, the
-// script only reads the session, and the persistent copies of an older version become session cookies again.
+// With "keepMethod" 'none' (or after "Pausar"), the script only reads the session, and the persistent copies become
+// session cookies again.
 
 // Shared scripts. Chromium loads them here. Firefox loads them from the manifest.
 // Keep this list the same as "background.scripts" in manifest.firefox.json.
@@ -320,11 +322,16 @@ async function getState() {
   return { paused: !!d.paused, autoLogin: d.autoLogin !== false };
 }
 
-// The state of the session, with "auto=true" (Sakai does not count it as activity). With a user, and not after
-// "Pausar": the keep-alive request (without "auto=true": Sakai counts it as activity and sets the inactivity timer to
-// zero), and the session cookies of MiAulario become persistent. Without a user (the session ended, or a login has
-// not ended yet): no keep-alive (it would keep a session without a user), and the persistent copies become session
-// cookies again, so an old session does not stay for the next login.
+// The method that keeps the session now (MAK.KEEP_METHODS): 'none' after "Pausar".
+async function keepMethod(paused) {
+  return paused === 'user' ? 'none' : MAK.withDefaults((await store.get('settings')).settings).keepMethod;
+}
+
+// The state of the session, with "auto=true" (Sakai does not count it as activity). With a user and a method that
+// keeps the session: with the ping, the keep-alive request (without "auto=true": Sakai counts it as activity and sets
+// the inactivity timer to zero), and the session cookies of MiAulario become persistent. Without a user (the session
+// ended, or a login has not ended yet) or without a method: no keep-alive (it would keep a session without a user),
+// and the persistent copies become session cookies again, so an old session does not stay for the next login.
 async function ping() {
   const { paused } = await ext.storage.local.get('paused');
   if (paused === 'reset') return null; // all the data deleted: only "Empezar de nuevo" continues
@@ -344,10 +351,11 @@ async function ping() {
     if (!user) return null;
     if ((await store.update('paused', (p) => (p === true ? false : undefined))) === 'reset') return null;
   }
-  if (user && MAK.KEEP_SESSION && paused !== 'user') {
-    await fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' }).catch(() => {});
+  const method = await keepMethod(paused);
+  if (user && method !== 'none') {
+    if (MAK.keepsBy(method, 'ping')) await keepAlive();
     await persistSession();
-  } else if (user === '') {
+  } else if (user !== null) {
     await unpersistExisting([SESSION_HOST]);
   }
   await store.transaction(async (tx) => {
@@ -356,10 +364,13 @@ async function ping() {
   return last;
 }
 
+// The keep-alive request: Sakai counts it as activity.
+const keepAlive = () => fetch(SESSION_URL, { cache: 'no-store', credentials: 'include' }).catch(() => {});
+
 // ---- Persistent cookies ------------------------------------------------------
 //
 // The server sets the session cookies without an expiration date, so the browser removes them when it closes. With
-// MAK.KEEP_SESSION, a ping that sees the user writes the cookies of MiAulario again with an expiration date: the
+// a method that keeps the session, a ping that sees the user writes the cookies of MiAulario again with an expiration date: the
 // session continues after a restart of the browser (if Sakai still has it). The extension never writes a cookie
 // during a login (then the session has no user yet), and it never keeps the SSO session (idpsession): that is the
 // session of all the services of the UPNA.
@@ -407,7 +418,8 @@ function persistSession() {
 
 // The persistent copies become session cookies again (the same cookie without its expiration date), so the session
 // ends with the browser, as without the extension: when the session has no user, at a pause or a logout, without
-// MAK.KEEP_SESSION, and for the copies that an older version made (also of idpsession). All the cookie stores.
+// a method that keeps the session, and for the copies that an older version made (also of idpsession). All the cookie
+// stores.
 async function unpersistExisting(hosts = Object.keys(COOKIE_HOSTS)) {
   const stores = (await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => [])).map((s) => s.id);
   for (const host of hosts) {
@@ -422,6 +434,26 @@ async function unpersistExisting(hosts = Object.keys(COOKIE_HOSTS)) {
       });
     }
   }
+}
+
+// All the cookies of MiAulario go (every path, all the cookie stores), before the automatic login of content.js: the
+// cookies of a session that ended (an old id, the route to another server) break the new login. Not the cookies of
+// the SSO: with its session, the login needs no password.
+async function dropSiteCookies() {
+  const stores = (await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => [])).map((s) => s.id);
+  return queueCookie(async () => {
+    for (const id of stores.length ? stores : [undefined]) {
+      const list = await Promise.resolve(ext.cookies.getAll(id ? { domain: SESSION_HOST, storeId: id } : { domain: SESSION_HOST })).catch(() => []);
+      for (const c of list || []) {
+        if (cookieHost(c) !== SESSION_HOST) continue;
+        const d = { url: `https://${SESSION_HOST}${c.path || '/'}`, name: c.name };
+        if (c.storeId) d.storeId = c.storeId;
+        if (c.partitionKey) d.partitionKey = c.partitionKey;
+        if (c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain;
+        try { await ext.cookies.remove(d); } catch {}
+      }
+    }
+  });
 }
 
 // ---- Read state of announcements ----------------------------------------------
@@ -708,7 +740,8 @@ const handlers = {
     }
   },
   // The automatic login of content.js: one at a time for all the tabs, and none in the LOGIN_GAP_MS after a login
-  // (also one of the user: content.js tells it, with "user"). Two logins at the same time break each other.
+  // (also one of the user: content.js tells it, with "user"). Two logins at the same time break each other. Before
+  // an automatic login, the cookies of MiAulario go (dropSiteCookies): content.js opens the login page after the answer.
   loginStart: {
     content: true,
     run: (msg) => {
@@ -717,10 +750,22 @@ const handlers = {
         const { loginAt } = await area.get('loginAt');
         if (!msg.user && loginAt && Date.now() - loginAt < LOGIN_GAP_MS) return null;
         await area.set({ loginAt: Date.now() });
+        if (!msg.user) await dropSiteCookies();
         return { ok: true };
       });
       loginQueue = job.catch(() => {});
       return job;
+    }
+  },
+  // content.js saw the warning of MiAulario ("your session ends in 10 minutes") and found no button to press: the
+  // request of the button from here. Only with the method of the button, and with a user.
+  keepAlive: {
+    content: true,
+    run: async () => {
+      const d = await store.get(['paused', 'last']);
+      if (MAK.dataPaused(d.paused) || !MAK.keepsBy(await keepMethod(d.paused), 'button') || !(d.last && d.last.loggedIn)) return { ok: false };
+      await keepAlive();
+      return { ok: true };
     }
   },
   logout: {
@@ -771,6 +816,7 @@ const handlers = {
         return MAK.withDefaults(Object.assign({}, base, patch, { badge: part('badge'), targets: part('targets'), nicknames: part('nicknames'), links: part('links') }));
       });
       if (patch.syncEnabled === true) sync.run({ force: true }).catch(() => {});
+      if ('keepMethod' in patch) ping().catch(() => {}); // the cookies and the keep-alive of the new method, now
       return next;
     }
   },
@@ -803,10 +849,9 @@ const handlers = {
       return { ok: !!mode };
     }
   },
-  // A window over the first page of MiAulario (content.js): at most one, and each one only once, marked as seen when it
-  // is given (also with several tabs at once). First "keeping the session is off" (once since the install, while
-  // MAK.KEEP_SESSION is off), then the news of a new version in one line (once for each version: whatsNew, set by the
-  // update; the bar of the popup goes with it). { lang, kind: 'keepOff' | 'release' (version, text) } or { lang }.
+  // A window over the first page of MiAulario (content.js), only once, marked as seen when it is given (also with
+  // several tabs at once): the news of a new version in one line (once for each version: whatsNew, set by the update;
+  // the bar of the popup goes with it). { lang, kind: 'release', version, text } or { lang }.
   pageNotice: {
     content: true,
     run: async () => {
@@ -815,11 +860,8 @@ const handlers = {
       const news = MAK.changesOf(version);
       let notice = null;
       await store.transaction(async (tx) => {
-        const st = await tx.get(['keepOffSeen', 'whatsNew']);
-        if (!st.keepOffSeen && !MAK.KEEP_SESSION) {
-          await tx.set({ keepOffSeen: true });
-          notice = { kind: 'keepOff' };
-        } else if (st.whatsNew === version && news && news.short) {
+        const st = await tx.get('whatsNew');
+        if (st.whatsNew === version && news && news.short) {
           await tx.remove('whatsNew');
           notice = { kind: 'release', version, text: news.short[lang] || news.short.es };
         }
@@ -1366,9 +1408,9 @@ async function boot() {
   const existing = await ext.alarms.get(PING_ALARM);
   // If there is no alarm (the browser started) or the alarm is the periodic alarm of v1.0, set a random alarm.
   if (!existing || existing.periodInMinutes) await scheduleNext();
-  // The persistent copies of idpsession of older versions (and without MAK.KEEP_SESSION, all of them) become session
-  // cookies again. With it, the ping below makes the cookies of MiAulario persistent if the session has a user.
-  await unpersistExisting(MAK.KEEP_SESSION ? ['sso.unavarra.es'] : undefined);
+  // The persistent copies of idpsession of older versions become session cookies again. The ping below makes the
+  // cookies of MiAulario persistent if the session has a user and a method keeps it (else session cookies again).
+  await unpersistExisting(['sso.unavarra.es']);
   await updateBadge(); // Chrome removes the badge when the browser starts.
   await ping();
   await sync.run().catch(() => {});
