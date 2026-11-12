@@ -554,7 +554,7 @@ async function runTests(browser, base) {
       await until(() => tiles().length, 'the grid by the tab');
       return { names, wide, columns, values, none, inside, back };
     `);
-    assert.deepEqual(got.names, ['Tema', 'Sesión', 'Avisos', 'Datos', 'Mi sitio', 'Notas oficiales', 'Buscador', 'Correo', 'Idioma', 'Copia', 'Ayuda', 'Borrar todo']);
+    assert.deepEqual(got.names, ['Tema', 'Sesión', 'Avisos', 'Datos', 'Ubicación', 'Notas oficiales', 'Buscador', 'Correo', 'Idioma', 'Copia', 'Ayuda', 'Borrar todo']);
     assert.deepEqual([got.wide, got.columns, got.none], [['cat-help', 'cat-danger'], 2, 0]);
     assert.ok(got.values >= 10, `${got.values} tiles with a value`);
     assert.deepEqual(got.inside, [1, 0, 'Idioma', 'settings-back']);

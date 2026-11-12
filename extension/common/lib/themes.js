@@ -1336,7 +1336,6 @@
     {
       id: 'galaxia',
       name: { es: 'Vía Láctea', en: 'Milky Way' },
-      brand: 'Vía Aulactea', // the name in the titles
       about: { es: 'Vidrio sobre la Vía Láctea de verdad y una foto del espacio en cada asignatura (fotos: ESO y NASA).', en: 'Glass over the real Milky Way, and a photo of space in each subject (photos: ESO and NASA).' },
       // The photos of the parts of a subject (one for each subject, MAK.assignSitePhotos) and of the bar of the novelties:
       // ESO, CC BY 4.0 (eso1625a ESO/H. Drass et al., eso1208a ESO/T. Preibisch, eso0202a, eso1238a ESO/B. Bailleul,
@@ -1497,7 +1496,6 @@
     {
       id: 'catppuccin',
       name: { es: 'Catppuccin', en: 'Catppuccin' },
-      brand: 'Aulappuccin', // the name in the titles
       about: { es: 'Los colores pastel de Catppuccin: Latte en light mode y Mocha en dark mode.', en: 'The pastel colors of Catppuccin: Latte in light mode and Mocha in dark mode.' },
       fonts: [{ family: 'AP Manrope', file: 'manrope.woff2', weight: '400 800' }],
       light: {

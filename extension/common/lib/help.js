@@ -111,8 +111,8 @@
         'En la calculadora, dos actividades con el mismo nombre ya no comparten la nota: la segunda se llama, por ejemplo, «Prueba escrita (2)».',
         'Si MiAulario falla o tu sesión ha terminado, la guía docente de una asignatura ya no desaparece durante una semana: se lee otra vez al volver.',
         'En los grados con el mismo calendario de exámenes en los dos semestres, como Medicina, Mi sitio lo enseña todo el curso.',
-        'Tema nuevo, Vía Láctea («Vía Aulactea»): vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.',
-        'Tema nuevo, Catppuccin («Aulappuccin»): los colores pastel de Catppuccin, Latte en light mode y Mocha en dark mode, con botones de varios colores y títulos en degradado.',
+        'Tema nuevo, Vía Láctea: vidrio sobre la Vía Láctea de verdad, una foto del espacio para cada asignatura (siempre la misma), otra para las novedades y la Tierra en la cuenta atrás del próximo examen (fotos de ESO y NASA). En light mode, el mismo cielo al anochecer.',
+        'Tema nuevo, Catppuccin: los colores pastel de Catppuccin, Latte en light mode y Mocha en dark mode, con botones de varios colores y títulos en degradado.',
         'Ajustes → «Tu configuración»: «Exportar mi configuración» descarga un archivo JSON con todos tus ajustes, los recuadros de Mi sitio abiertos o cerrados y la foto de cada asignatura; «Importar mi configuración» los recupera de ese archivo, después de decirte cuántos cambian y preguntarte. Un archivo roto o cambiado no cambia nada: solo cuentan los valores correctos.',
         'Después de cada actualización, la primera página de MiAulario te enseña una sola vez las novedades en una línea.'
       ],
@@ -128,8 +128,8 @@
         'In the calculator, two activities with the same name do not share their grade any more: the second one is, for example, "Prueba escrita (2)".',
         'If MiAulario fails or your session ended, the course guide of a subject does not go away for a week: it is read again when you come back.',
         'In the degrees with the same exam calendar for the two semesters, as Medicine, Mi sitio shows it all the year.',
-        'A new theme, Milky Way ("Vía Aulactea"): glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.',
-        'A new theme, Catppuccin ("Aulappuccin"): the pastel colors of Catppuccin, Latte in light mode and Mocha in dark mode, with buttons of several colors and titles in a gradient.',
+        'A new theme, Milky Way: glass over the real Milky Way, a photo of space for each subject (always the same one), another one for the novelties, and the Earth in the countdown of the next exam (photos of ESO and NASA). In light mode, the same sky at dusk.',
+        'A new theme, Catppuccin: the pastel colors of Catppuccin, Latte in light mode and Mocha in dark mode, with buttons of several colors and titles in a gradient.',
         'Settings → "Your settings": "Export my settings" downloads a JSON file with all your settings, the open or closed boxes of Mi sitio and the photo of each subject; "Import my settings" gets them back from that file, after it tells you how many change and asks you. A broken or changed file changes nothing: only the right values count.',
         'After each update, the first page of MiAulario shows you the news in one line, one time.'
       ]
