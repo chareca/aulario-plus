@@ -163,3 +163,17 @@ test('at an update with the session kept: the persistent copy of the SSO session
   await wait(30);
   assert.equal(named('idpsession')[0].expirationDate, undefined);
 });
+
+test('the repair of "your account does not exist": right after a login of the user too, the cookies of MiAulario go; once in 3 minutes', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  const { server, jar } = withJar(bg);
+  const fill = () => { server('SAKAISESSIONID', 'dead'); server('SERVERID', 'h31'); server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false }); };
+  fill();
+  await bg.send({ type: 'loginStart', user: true }, CONTENT); // the login of the user, then the error page
+  assert.deepEqual(await bg.send({ type: 'loginStart', repair: true }, CONTENT), { ok: true });
+  assert.deepEqual(jar.map((c) => c.name), ['idpsession']);
+  fill();
+  assert.equal(await bg.send({ type: 'loginStart', repair: true }, CONTENT), null, 'the repair ended on the same page: no second one');
+  assert.equal(await bg.send({ type: 'loginStart' }, CONTENT), null, 'and no automatic login either');
+  assert.equal(jar.length, 3);
+});

@@ -742,14 +742,17 @@ const handlers = {
   // The automatic login of content.js: one at a time for all the tabs, and none in the LOGIN_GAP_MS after a login
   // (also one of the user: content.js tells it, with "user"). Two logins at the same time break each other. Before
   // an automatic login, the cookies of MiAulario go (dropSiteCookies): content.js opens the login page after the answer.
+  // "repair": the page "your account does not exist" just after a login: also right after one, but only one repair in
+  // the LOGIN_GAP_MS (a repair that ends on the same page does not repeat).
   loginStart: {
     content: true,
     run: (msg) => {
       const job = loginQueue.then(async () => {
         const area = ext.storage.session || ext.storage.local;
-        const { loginAt } = await area.get('loginAt');
-        if (!msg.user && loginAt && Date.now() - loginAt < LOGIN_GAP_MS) return null;
-        await area.set({ loginAt: Date.now() });
+        const { loginAt, repairAt } = await area.get(['loginAt', 'repairAt']);
+        const gap = (at) => at && Date.now() - at < LOGIN_GAP_MS;
+        if (msg.repair ? gap(repairAt) : !msg.user && gap(loginAt)) return null;
+        await area.set(msg.repair ? { loginAt: Date.now(), repairAt: Date.now() } : { loginAt: Date.now() });
         if (!msg.user) await dropSiteCookies();
         return { ok: true };
       });

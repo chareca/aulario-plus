@@ -6,6 +6,8 @@
 //   login form of sso.unavarra.es opens. The password manager of the browser can fill it.
 //   One login at a time for all the tabs, and none in the 3 minutes after a login (background.js):
 //   a login that gave no session is not repeated, and the page stays as MiAulario shows it.
+// - The page "your account does not exist" (avisosso.html?user=desconocido): the cookies of MiAulario go and the
+//   SAML login opens again (once in 3 minutes).
 // - When MiAulario warns that the session ends in 10 minutes, the script presses the button of the
 //   warning (the setting "keepMethod": 'button' or 'both').
 // - If you click "Log out", the script tells the background script to pause.
@@ -37,6 +39,14 @@
 
   // Do not change the login pages or the logout pages.
   if (/\/(xlogin|relogin|logout)|\/sakai-login-tool\//i.test(location.pathname)) return;
+
+  // The page "your account does not exist" (avisosso.html?user=desconocido), after a login that went wrong: the
+  // background removes the cookies of MiAulario (the ones of the session before break the login), then the login
+  // again, which works. Once in the LOGIN_GAP_MS of background.js: a login that ends here again stays here (no loop).
+  if (location.pathname === '/avisosso.html' && new URLSearchParams(location.search).get('user') === 'desconocido') {
+    if (await send({ type: 'loginStart', repair: true })) location.assign(SAML_LOGIN);
+    return;
+  }
 
   // Return true if the script sends the user to the login page.
   async function reloginIfNeeded() {

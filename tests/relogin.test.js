@@ -12,7 +12,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'extensio
 const group = manifest.content_scripts.find((g) => g.js.includes('content.js'));
 const SAML = '/sakai-login-tool/container/saml/login';
 
-async function run({ loggedIn = false, paused = false, autoLogin = true, granted = true, storage = {}, pathname = '/portal', notice = null, local = {}, warning = null } = {}) {
+async function run({ loggedIn = false, paused = false, autoLogin = true, granted = true, storage = {}, pathname = '/portal', search = '', notice = null, local = {}, warning = null } = {}) {
   const assigned = [];
   const messages = [];
   const session = new Map(Object.entries(storage).map(([k, v]) => [k, String(v)]));
@@ -22,7 +22,7 @@ async function run({ loggedIn = false, paused = false, autoLogin = true, granted
   const page = { warning };
   const sandbox = {
     console, URL, URLSearchParams, setTimeout, clearTimeout, Date, Promise,
-    location: { pathname, search: '', href: `https://miaulario.unavarra.es${pathname}`, origin: 'https://miaulario.unavarra.es', assign: (u) => { assigned.push(u); messages.push('navigate'); } },
+    location: { pathname, search, href: `https://miaulario.unavarra.es${pathname}`, origin: 'https://miaulario.unavarra.es', assign: (u) => { assigned.push(u); messages.push('navigate'); } },
     sessionStorage: { getItem: (k) => (session.has(k) ? session.get(k) : null), setItem: (k, v) => session.set(k, String(v)) },
     localStorage: { getItem: () => null, setItem: noop },
     document: { addEventListener: noop, visibilityState: 'hidden', title: '', body: {}, getElementById: (id) => (id === 'timeout_alert_body' ? page.warning : null), querySelector: () => null, querySelectorAll: () => [], documentElement: { classList: { contains: () => false } } },
@@ -136,6 +136,16 @@ test('the warning stays for the user: the ping alone, no method, after "Pausar" 
   const box = warningBox();
   await both.warn(box);
   assert.equal(box.clicks, 1, 'the ping and the button');
+});
+
+test('the page "your account does not exist" (avisosso.html?user=desconocido): the background clears the cookies, then the login again; not twice', async () => {
+  const r = await run({ pathname: '/avisosso.html', search: '?user=desconocido' });
+  assert.deepEqual(r.assigned, [SAML]);
+  assert.deepEqual(r.messages, ['loginStart', 'navigate'], 'nothing else on that page');
+  const again = await run({ pathname: '/avisosso.html', search: '?user=desconocido', granted: false });
+  assert.deepEqual(again.assigned, [], 'a repair of the last minutes: the page stays (no loop)');
+  const other = await run({ pathname: '/avisosso.html', search: '?user=otro', loggedIn: true });
+  assert.ok(!other.messages.includes('loginStart'), 'another notice of that page: nothing');
 });
 
 test('the login pages are not changed', async () => {
