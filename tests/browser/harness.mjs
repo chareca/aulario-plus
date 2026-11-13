@@ -569,6 +569,8 @@ async function runTests(browser, base) {
       document.getElementById('tabbtn-home').click(); // the popup remembers the tab of the test before
       await until(() => document.querySelector('#home-session') && document.querySelector('.power.on'), 'a session in Inicio');
       const power = document.querySelector('.power');
+      const tools = [...document.querySelectorAll('.tools-row .tool')].map((b) => b.textContent);
+      const toolRows = new Set([...document.querySelectorAll('.tools-row .tool')].map((b) => Math.round(b.getBoundingClientRect().top))).size;
       const first = [line(), power.getAttribute('aria-disabled'), power.getAttribute('aria-pressed')];
       const session = async () => {
         document.getElementById('tabbtn-settings').click();
@@ -590,10 +592,11 @@ async function runTests(browser, base) {
         await until(() => document.getElementById('ka-method').value === m, 'the settings again');
         return text;
       };
-      return { first, options, none: await choose('none'), ping: await choose('ping'), left: !!document.getElementById('ka-left') };
+      return { first, options, tools, toolRows, none: await choose('none'), ping: await choose('ping'), left: !!document.getElementById('ka-left') };
     `);
     assert.deepEqual(got.first, ['Pulsa por ti «Mantenme activo» en MiAulario', null, 'true']);
     assert.deepEqual(got.options, ['button*', 'ping', 'both', 'none']);
+    assert.deepEqual([got.tools, got.toolRows], [['Abrir MiAulario', 'Editar MiAulario', 'Historial', 'Novedades', 'Ayuda', 'Reportar un problema'], 2], 'the tools of Inicio: two rows of three');
     assert.equal(got.none, 'No se mantiene la sesión');
     assert.match(got.ping, /^Próximo ping en \d+:\d\d$/);
     assert.equal(got.left, true);

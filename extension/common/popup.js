@@ -333,6 +333,8 @@ function renderHome(el) {
   const link = (icon, text, url) => h('button', { class: 'tool', attrs: { type: 'button' }, on: { click: () => { ext.tabs.create({ url }); closePopup(); } } }, MAK.icon(icon), h('span', { text }));
   const tools = h('div', { class: 'tools-row' },
     link('school', t('welcome.open'), `${MAK.BASE}/portal`),
+    // "Editar MiAulario": the selector of sections (content-picker.js), as "Eliminar secciones" of the settings.
+    h('button', { class: 'tool', attrs: { type: 'button', id: 'home-edit' }, on: { click: pickSections } }, MAK.icon('pencil'), h('span', { text: t('home.edit') })),
     link('history', t('home.history'), ext.runtime.getURL('tools.html?history')),
     link('news', t('help.news'), ext.runtime.getURL('tools.html?news')),
     link('help', t('home.help'), ext.runtime.getURL('tools.html?welcome')),
@@ -1389,13 +1391,18 @@ function openRemovedSections() {
 }
 
 // "Eliminar secciones": the selector starts in a tab of MiAulario (the background), and the popup closes.
+async function pickSections() {
+  await send({ type: 'pickSections' });
+  closePopup();
+}
+
 function sectionsSection(s) {
   const n = removedSections(s).length;
   return h('div', { class: 'section' },
     h('h2', { text: t('sections.title') }),
     h('p', { class: 'small', text: t('sections.help') }),
     h('div', { class: 'row' },
-      h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-pick' }, text: t('sections.pick'), on: { click: async () => { await send({ type: 'pickSections' }); closePopup(); } } }),
+      h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-pick' }, text: t('sections.pick'), on: { click: pickSections } }),
       h('button', { class: 'btn', attrs: { type: 'button', id: 'sections-restore', 'aria-haspopup': 'dialog' }, text: t('sections.restore', { n }), on: { click: openRemovedSections } })));
 }
 
