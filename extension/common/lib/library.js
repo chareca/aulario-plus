@@ -55,12 +55,15 @@
     return c > 0 && c < 0x110000 ? String.fromCodePoint(c) : '';
   });
   // An HTML fragment as lines of text: a line for each block (p, div, li, a row, br), at most 300 characters each.
+  // The text only: after the tags, no "<" or ">" of the page stays (a tag cut in two, as "<scr<b>ipt>", gives no tag
+  // again); the ones of its entities ("&lt;") come after it, as text.
   const lines = (html) =>
     decode(String(html)
       .replace(/<!--[\s\S]*?-->|<(script|style)\b[\s\S]*?<\/\1\s*>/gi, ' ')
       .replace(/<br\b[^>]*>|<\/?(?:p|div|li|ul|ol|h\d|tr|table|tbody|caption)\b[^>]*>/gi, '\n')
       .replace(/<\/t[dh]\s*>/gi, ' ')
-      .replace(/<[^>]*>/g, ''))
+      .replace(/<[^>]*>/g, '')
+      .replace(/[<>]/g, ''))
       .split('\n')
       .map((l) => l.replace(/\s+/g, ' ').trim().slice(0, 300))
       .filter(Boolean);

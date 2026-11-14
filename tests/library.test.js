@@ -409,3 +409,11 @@ test('noticeSummary: the days of a notice with other hours, in groups (the windo
   const salud = await load('salud', at(2026, 10, 24));
   assert.deepEqual(MAK.noticeSummary(salud, salud.notices[0]), []);
 });
+
+test('the text of the HTML: no tag stays, also an unclosed one; the entities stay text', () => {
+  const page = (body) => `<p><strong>Horario:</strong></p><ul>${body}</ul>`;
+  assert.deepEqual(MAK.parseLibraryPage(page('<li>Lunes a viernes: 8:00 a 21:00 <script src=x</li><li>Sábados: cerrado</li>')).lines,
+    ['Lunes a viernes: 8:00 a 21:00 script src=x', 'Sábados: cerrado'], 'no "<" of the page');
+  assert.deepEqual(MAK.parseLibraryPage(page('<li>Lunes a viernes: 8:00 a 21:00</li><li>&lt;b&gt; a &amp; b</li>')).lines,
+    ['Lunes a viernes: 8:00 a 21:00', '<b> a & b'], 'an entity is text, as the page shows it');
+});
