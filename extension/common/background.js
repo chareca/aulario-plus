@@ -743,16 +743,28 @@ const handlers = {
   // (also one of the user: content.js tells it, with "user"). Two logins at the same time break each other. Before
   // an automatic login, the cookies of MiAulario go (dropSiteCookies): content.js opens the login page after the answer.
   // "repair": the page "your account does not exist" just after a login: also right after one, but only one repair in
-  // the LOGIN_GAP_MS (a repair that ends on the same page does not repeat).
+  // the LOGIN_GAP_MS (a repair that ends on the same page does not repeat). The cookies go, content.js opens the
+  // portal, and the automatic login of the portal (repairLogin: once, in the LOGIN_GAP_MS of the repair) goes with the
+  // new cookies that the portal gave: they stay.
   loginStart: {
     content: true,
     run: (msg) => {
       const job = loginQueue.then(async () => {
         const area = ext.storage.session || ext.storage.local;
-        const { loginAt, repairAt } = await area.get(['loginAt', 'repairAt']);
+        const { loginAt, repairAt, repairLogin } = await area.get(['loginAt', 'repairAt', 'repairLogin']);
         const gap = (at) => at && Date.now() - at < LOGIN_GAP_MS;
-        if (msg.repair ? gap(repairAt) : !msg.user && gap(loginAt)) return null;
-        await area.set(msg.repair ? { loginAt: Date.now(), repairAt: Date.now() } : { loginAt: Date.now() });
+        if (msg.repair) {
+          if (gap(repairAt)) return null;
+          await area.set({ loginAt: Date.now(), repairAt: Date.now(), repairLogin: true });
+          await dropSiteCookies();
+          return { ok: true };
+        }
+        if (!msg.user && repairLogin && gap(repairAt)) {
+          await area.set({ loginAt: Date.now(), repairLogin: false });
+          return { ok: true };
+        }
+        if (!msg.user && gap(loginAt)) return null;
+        await area.set({ loginAt: Date.now(), repairLogin: false });
         if (!msg.user) await dropSiteCookies();
         return { ok: true };
       });

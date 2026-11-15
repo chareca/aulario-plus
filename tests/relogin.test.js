@@ -138,9 +138,9 @@ test('the warning stays for the user: the ping alone, no method, after "Pausar" 
   assert.equal(box.clicks, 1, 'the ping and the button');
 });
 
-test('the page "your account does not exist" (avisosso.html?user=desconocido): the background clears the cookies, then the login again; not twice', async () => {
+test('the page "your account does not exist" (avisosso.html?user=desconocido): the background clears the cookies, then the portal; not twice', async () => {
   const r = await run({ pathname: '/avisosso.html', search: '?user=desconocido' });
-  assert.deepEqual(r.assigned, [SAML]);
+  assert.deepEqual(r.assigned, ['/portal'], 'the portal first: it gives new cookies, and its automatic login logs in');
   assert.deepEqual(r.messages, ['loginStart', 'navigate'], 'nothing else on that page');
   const again = await run({ pathname: '/avisosso.html', search: '?user=desconocido', granted: false });
   assert.deepEqual(again.assigned, [], 'a repair of the last minutes: the page stays (no loop)');
