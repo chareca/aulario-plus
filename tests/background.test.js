@@ -352,3 +352,22 @@ test('the selector of sections: a page of MiAulario adds a section to the list; 
   bg.ext.tabs.sendMessage = async () => { throw new Error('no receiver'); };
   assert.deepEqual(await bg.send({ type: 'pickSections' }), { ok: true, opened: true });
 });
+
+test('an import of the configuration applies its method that keeps the session at once', async () => {
+  const log = [];
+  const bg = loadBackground({ fetch: fakeFetch(F.routes(), log) });
+  await bg.send({ type: 'pingNow' });
+  const before = log.length;
+  assert.deepEqual(await bg.send({ type: 'importSettings', file: { settings: { keepMethod: 'ping' } } }), { ok: true });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.ok(log.slice(before).some((x) => x.url.includes('/direct/session/current.json') && !x.url.includes('auto=true')), 'the ping of the new method');
+});
+
+test('the selector: a part of the block of Mi sitio goes in its layout in one step; never all the parts, never an unknown one', async () => {
+  const bg = loadBackground();
+  assert.deepEqual(await bg.send({ type: 'hideSection', part: 'hours' }, CONTENT()), { ok: true });
+  assert.deepEqual(await bg.send({ type: 'hideSection', part: 'exams' }, CONTENT()), { ok: true });
+  assert.deepEqual(bg.ext.storage.local.data.settings.mysiteLayout.hidden, ['exams', 'hours']);
+  assert.deepEqual(await bg.send({ type: 'hideSection', part: 'guides' }, CONTENT()), { ok: false }, 'the last part stays');
+  assert.deepEqual(await bg.send({ type: 'hideSection', part: '__proto__' }, CONTENT()), { ok: false });
+});

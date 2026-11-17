@@ -466,7 +466,7 @@ async function runTests(browser, base) {
       [...bar().querySelectorAll('button')].find((b) => b.textContent === 'Eliminar').click();
       await answer(true);
       await until(() => gone(document.getElementById('mak-library-host')) && !titles().includes('Horarios'), 'the hours gone');
-      // The only block of MiAulario left: not in the list (alone on its page). Then the whole block of Aulario Plus.
+      // The only block of MiAulario left on the screen: not in the list (it is the page). Then the whole block of Aulario Plus.
       const left = titles();
       document.getElementById('mak-block').querySelector('.mak-head').click();
       await answer(true);
@@ -477,7 +477,7 @@ async function runTests(browser, base) {
     `);
     assert.deepEqual(got.first, ['Mostrar información de Mi Sitio', 'Calendario', 'Exámenes finales', 'Guías docentes', 'Horarios', 'Bloque de Aulario Plus']);
     assert.deepEqual([got.asked, got.kept, got.clicks, got.off], ['¿Eliminar «Calendario»?', true, 0, true]);
-    assert.deepEqual(got.left, ['Mostrar información de Mi Sitio', 'Exámenes finales', 'Guías docentes', 'Bloque de Aulario Plus']);
+    assert.deepEqual(got.left, ['Exámenes finales', 'Guías docentes', 'Bloque de Aulario Plus']);
     assert.deepEqual([got.keys, got.hidden], [['tool:Mrphs-sakai-summary-calendar|calendario', 'mak:block'], ['hours']]);
     assert.ok(got.copy.includes('summary-calendar'), 'the copy of the list in the page');
     // The next page: removed from its first moment (the copy of the page), and the settings keep it.
@@ -489,6 +489,16 @@ async function runTests(browser, base) {
       return [gone(document.querySelector('.Mrphs-sakai-summary-calendar')), gone(document.querySelector('.Mrphs-sakai-iframe-myworkspace')), gone(document.getElementById('mak-block'))];
     `);
     assert.deepEqual(again, [true, false, false]);
+    // Its two blocks removed (each one in another page): the page never goes empty, both stay.
+    await tab.evaluate(`localStorage.setItem('mak-harness-seed', JSON.stringify({ settings: ${JSON.stringify({ hiddenSections: [{ key: 'tool:Mrphs-sakai-summary-calendar|calendario', title: 'Calendario' }, { key: 'tool:Mrphs-sakai-iframe-myworkspace|mostrar información de mi sitio', title: 'Mostrar información de Mi Sitio' }] })} }))`);
+    await page();
+    const both = await run(tab, `
+      await until(() => document.getElementById('mak-block'), 'the block');
+      await new Promise((r) => setTimeout(r, 200));
+      const gone = (el) => getComputedStyle(el).display === 'none';
+      return [gone(document.querySelector('.Mrphs-sakai-summary-calendar')), gone(document.querySelector('.Mrphs-sakai-iframe-myworkspace'))];
+    `);
+    assert.deepEqual(both, [false, false]);
   });
 
   await test('the popup: "Recuperar secciones eliminadas" lists them; ✕ brings one back, "Restaurar original" all of them', async (open) => {

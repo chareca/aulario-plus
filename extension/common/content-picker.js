@@ -17,8 +17,8 @@
   // The sections of the page that can go, a part before the block around it: { el, title, key or part }.
   function candidates() {
     const out = [];
-    const tools = MAK.toolBlocks();
-    if (tools.length > 1) for (const el of tools) if (shown(el)) out.push({ el, key: MAK.toolKey(el), title: MAK.toolTitle(el) });
+    const tools = MAK.toolBlocks().filter(shown); // the last block on the screen stays
+    if (tools.length > 1) for (const el of tools) out.push({ el, key: MAK.toolKey(el), title: MAK.toolTitle(el) });
     const block = document.getElementById('mak-block');
     if (shown(block)) {
       const parts = Object.entries(MAK.MYSITE_HOSTS).map(([part, x]) => ({ el: document.getElementById(x.host), part, title: t(x.title) })).filter((x) => shown(x.el) && block.contains(x.el));
@@ -92,11 +92,7 @@
       if (!end) return;
       if (yes) {
         let ok;
-        if (c.part) {
-          const d = (await MAK.safeCall(() => ext.storage.local.get('settings'), null)) || {};
-          const layout = MAK.withDefaults(d.settings).mysiteLayout;
-          ok = await send({ type: 'setMySiteLayout', layout: Object.assign({}, layout, { hidden: [...layout.hidden, c.part] }) });
-        } else ok = await send({ type: 'hideSection', key: c.key, title: c.title });
+        ok = await send(c.part ? { type: 'hideSection', part: c.part } : { type: 'hideSection', key: c.key, title: c.title });
         note.textContent = t(ok && ok.ok ? 'pick.done' : 'pick.error', { name: c.title });
         await new Promise((r) => setTimeout(r, 250)); // the page takes the new setting (content-early.js, content-banner.js)
         if (!end) return;
@@ -105,17 +101,25 @@
       fill();
     }
 
-    const onMove = (e) => { if (!asking && !host.contains(e.target)) mark(under(e.target)); };
+    // Another window of Aulario Plus over the page (askWindow: a notice, a question) works as usual.
+    const ours = (target) => host.contains(target) || (target instanceof Element && !!target.closest('[data-mak-overlay]'));
+    const onMove = (e) => { if (!asking && !ours(e.target)) mark(under(e.target)); };
+    // A press on a section selects: the page gets none of it (no link opens, also with the middle button; no menu).
+    const swallow = (e) => {
+      if (asking || ours(e.target) || !under(e.target)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
     const onClick = (e) => {
-      if (asking || host.contains(e.target)) return;
-      // The click selects: the page does not get it (no link opens, no menu).
+      if (asking || ours(e.target)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       const c = under(e.target);
       if (c) remove(c);
     };
+    const PRESS = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'auxclick', 'contextmenu', 'dblclick'];
     const onKey = (e) => {
-      if (e.key !== 'Escape' || asking) return;
+      if (e.key !== 'Escape' || asking || document.querySelector('[data-mak-overlay]')) return;
       e.stopImmediatePropagation();
       end();
     };
@@ -130,7 +134,8 @@
     end = () => {
       end = null;
       document.removeEventListener('mousemove', onMove, true);
-      document.removeEventListener('click', onClick, true);
+      removeEventListener('click', onClick, true);
+      for (const type of PRESS) removeEventListener(type, swallow, true);
       document.removeEventListener('keydown', onKey, true);
       removeEventListener('scroll', onScroll, true);
       removeEventListener('resize', onScroll);
@@ -138,7 +143,9 @@
       host.remove();
     };
     document.addEventListener('mousemove', onMove, true);
-    document.addEventListener('click', onClick, true);
+    // On the window, in the capture: before the listeners of the page.
+    addEventListener('click', onClick, true);
+    for (const type of PRESS) addEventListener(type, swallow, true);
     document.addEventListener('keydown', onKey, true);
     addEventListener('scroll', onScroll, true);
     addEventListener('resize', onScroll);
@@ -153,6 +160,7 @@
     start();
     reply(true);
   });
-  // A tab that "Eliminar secciones" opened: the selector starts when its page loads.
-  send({ type: 'pickPending' }).then((r) => { if (r && r.ok) start(); });
+  // A tab that "Eliminar secciones" opened: content.js starts the selector when the page has a session (after its
+  // automatic login, not on the way to it).
+  MAK.startPicker = start;
 })();

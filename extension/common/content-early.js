@@ -107,12 +107,11 @@
   let sections = [];
   try { sections = MAK.cleanSections(JSON.parse(localStorage.getItem(SECTIONS_KEY) || '[]')); } catch {}
   let waiting = false;
+  let el = null; // the style of the extension (not an element of the page with the same id)
   function hideSections() {
     waiting = false;
-    let el = document.getElementById('mak-hide-sections');
-    if (!el) {
+    if (!el || !el.isConnected) {
       el = document.createElement('style');
-      el.id = 'mak-hide-sections';
       (document.head || document.documentElement).append(el);
     }
     const css = MAK.hideSections(sections);

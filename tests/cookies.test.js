@@ -181,3 +181,30 @@ test('the repair of "your account does not exist": right after a login of the us
   assert.equal(await bg.send({ type: 'loginStart', repair: true }, CONTENT), null, 'the repair ended on the same page: no second one');
   assert.equal(jar.length, 3);
 });
+
+test('the cookies of MiAulario go only in the cookie store of the tab that logs in (a container, a private window: the others stay)', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  const jar = [
+    { name: 'SAKAISESSIONID', value: 'live', domain: 'miaulario.unavarra.es', path: '/', storeId: '0' },
+    { name: 'SAKAISESSIONID', value: 'dead', domain: 'miaulario.unavarra.es', path: '/', storeId: 'firefox-container-1' }
+  ];
+  bg.ext.cookies.getAllCookieStores = async () => [{ id: '0', tabIds: [1] }, { id: 'firefox-container-1', tabIds: [7] }];
+  bg.ext.cookies.getAll = async (q) => jar.filter((c) => !q.storeId || c.storeId === q.storeId).map((c) => Object.assign({}, c));
+  bg.ext.cookies.remove = async (d) => { const i = jar.findIndex((c) => c.name === d.name && c.storeId === d.storeId); if (i >= 0) jar.splice(i, 1); };
+  assert.deepEqual(await bg.send({ type: 'loginStart' }, Object.assign({}, CONTENT, { tab: { id: 7 } })), { ok: true });
+  assert.deepEqual(jar.map((c) => c.value), ['live'], 'Chrome: the store that lists the tab');
+  jar.push({ name: 'SAKAISESSIONID', value: 'dead2', domain: 'miaulario.unavarra.es', path: '/', storeId: 'firefox-container-1' });
+  bg.ext.storage.local.data.loginAt = 0;
+  if (bg.ext.storage.session) await bg.ext.storage.session.set({ loginAt: 0 });
+  assert.deepEqual(await bg.send({ type: 'loginStart' }, Object.assign({}, CONTENT, { tab: { id: 9, cookieStoreId: 'firefox-container-1' } })), { ok: true });
+  assert.deepEqual(jar.map((c) => c.value), ['live'], 'Firefox: the store of the tab');
+});
+
+test('the login of the repair is only for the tab that repaired: another tab without a session waits', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()) });
+  withJar(bg);
+  const tab = (id) => Object.assign({}, CONTENT, { tab: { id } });
+  assert.deepEqual(await bg.send({ type: 'loginStart', repair: true }, tab(1)), { ok: true });
+  assert.equal(await bg.send({ type: 'loginStart' }, tab(2)), null, 'not the pass of tab 1');
+  assert.deepEqual(await bg.send({ type: 'loginStart' }, tab(1)), { ok: true });
+});

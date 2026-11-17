@@ -141,9 +141,15 @@ test('the warning stays for the user: the ping alone, no method, after "Pausar" 
 test('the page "your account does not exist" (avisosso.html?user=desconocido): the background clears the cookies, then the portal; not twice', async () => {
   const r = await run({ pathname: '/avisosso.html', search: '?user=desconocido' });
   assert.deepEqual(r.assigned, ['/portal'], 'the portal first: it gives new cookies, and its automatic login logs in');
-  assert.deepEqual(r.messages, ['loginStart', 'navigate'], 'nothing else on that page');
+  assert.deepEqual(r.messages, ['getStatus', 'loginStart', 'navigate'], 'nothing else on that page');
   const again = await run({ pathname: '/avisosso.html', search: '?user=desconocido', granted: false });
   assert.deepEqual(again.assigned, [], 'a repair of the last minutes: the page stays (no loop)');
+  // An old tab of this page that opens again with a session: the portal, and the cookies stay.
+  const live = await run({ pathname: '/avisosso.html', search: '?user=desconocido', loggedIn: true });
+  assert.deepEqual([live.assigned, live.messages.includes('loginStart')], [['/portal'], false]);
+  // The automatic login off in the settings: no repair.
+  const off = await run({ pathname: '/avisosso.html', search: '?user=desconocido', autoLogin: false });
+  assert.deepEqual([off.assigned, off.messages.includes('loginStart')], [[], false]);
   const other = await run({ pathname: '/avisosso.html', search: '?user=otro', loggedIn: true });
   assert.ok(!other.messages.includes('loginStart'), 'another notice of that page: nothing');
 });

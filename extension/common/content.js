@@ -45,8 +45,13 @@
   // as the user does by hand: its first answer gives new cookies (a new session and its server), and its automatic
   // login (reloginIfNeeded) logs in with them. The SAML login at once, without them, ends on this page again. Once in
   // the LOGIN_GAP_MS of background.js: a repair that ends here again stays here (no loop).
+  // Only without a session (an old tab of this page that opens again with a session: the portal, no repair) and with
+  // the automatic login of the settings.
   if (location.pathname === '/avisosso.html' && new URLSearchParams(location.search).get('user') === 'desconocido') {
-    if (await send({ type: 'loginStart', repair: true })) location.assign('/portal');
+    const s = await pageFetch('/direct/session/current.json?auto=true', { cache: 'no-store', credentials: 'include' }).then((r) => r.json()).catch(() => null);
+    if (s && s.userId) return location.assign('/portal');
+    const status = await send({ type: 'getStatus' });
+    if (status && status.autoLogin && (await send({ type: 'loginStart', repair: true }))) location.assign('/portal');
     return;
   }
 
@@ -73,20 +78,24 @@
   // The warning of MiAulario 10 minutes before the end of the session (#timeout_alert_body, which the portal adds to
   // the body): with the method of the button, the script presses its button "Mantenme activo" (keep_session_alive()
   // of the portal: a request that Sakai counts as activity; the warning goes). A warning without that button: the
-  // background sends the request. Each warning once.
+  // background sends the request. Each warning once: a new box, or the same box shown again after a minute.
   function watchTimeout() {
     let seen = null;
+    let at = 0;
     const check = async () => {
       const box = document.getElementById('timeout_alert_body');
-      if (!box || box === seen) return;
+      if (!box || (box.getClientRects && !box.getClientRects().length)) return; // none, or hidden
+      if (box === seen && Date.now() - at < MAK.MINUTE) return;
       seen = box;
+      at = Date.now();
       const d = (await MAK.safeCall(() => ext.storage.local.get(['settings', 'paused']), null)) || {};
       if (d.paused || !MAK.keepsBy(MAK.withDefaults(d.settings).keepMethod, 'button')) return;
       const button = box.querySelector('[onclick*="keep_session_alive"]');
       if (button && box.isConnected) button.click();
       else send({ type: 'keepAlive' });
     };
-    new MutationObserver(check).observe(document.body, { childList: true });
+    // The portal can put it in any place of the page, or show it again (a class, a style).
+    new MutationObserver(check).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
     check();
   }
 
@@ -206,6 +215,8 @@
   }
 
   if (await reloginIfNeeded()) return;
+  // A tab that "Eliminar secciones" opened (content-picker.js): the selector, now that the page is not leaving.
+  if (MAK.startPicker) send({ type: 'pickPending' }).then((r) => { if (r && r.ok) MAK.startPicker(); });
   watchTimeout();
   pageNotice();
   reportToolVisit();

@@ -394,9 +394,13 @@ function cookieDetails(c, host, value, expirationDate) {
 }
 
 // All the copies of a cookie for a host: the host-only cookie and the domain cookie, all paths.
+// Firefox with first-party isolation: getAll throws without firstPartyDomain (null: the cookies of all of them).
+// Chrome does not know the key.
+const ALL_PARTIES = globalThis.browser ? { firstPartyDomain: null } : {};
+
 async function cookieCopies(host, name, storeId) {
   try {
-    const list = await ext.cookies.getAll(storeId ? { domain: host, name, storeId } : { domain: host, name });
+    const list = await ext.cookies.getAll(Object.assign(storeId ? { domain: host, name, storeId } : { domain: host, name }, ALL_PARTIES));
     return (list || []).filter((c) => cookieHost(c) === host);
   } catch {
     return [];
@@ -436,22 +440,31 @@ async function unpersistExisting(hosts = Object.keys(COOKIE_HOSTS)) {
   }
 }
 
-// All the cookies of MiAulario go (every path, all the cookie stores), before the automatic login of content.js: the
-// cookies of a session that ended (an old id, the route to another server) break the new login. Not the cookies of
-// the SSO: with its session, the login needs no password.
-async function dropSiteCookies() {
-  const stores = (await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => [])).map((s) => s.id);
+// The cookie store of the tab of a page: Firefox says it (containers, private windows); Chrome lists the tabs of each
+// store. undefined: the default store.
+async function storeOfTab(tab) {
+  if (!tab) return undefined;
+  if (tab.cookieStoreId) return tab.cookieStoreId;
+  const stores = await Promise.resolve(ext.cookies.getAllCookieStores()).catch(() => []);
+  const own = (stores || []).find((s) => (s.tabIds || []).includes(tab.id));
+  return own ? own.id : undefined;
+}
+
+// All the cookies of MiAulario go (every path) in the cookie store of the tab that logs in, before the automatic login
+// of content.js: the cookies of a session that ended (an old id, the route to another server) break the new login.
+// Not the ones of the other stores (a container, a private window: their sessions stay). Not the cookies of the SSO:
+// with its session, the login needs no password.
+async function dropSiteCookies(tab) {
+  const id = await storeOfTab(tab);
   return queueCookie(async () => {
-    for (const id of stores.length ? stores : [undefined]) {
-      const list = await Promise.resolve(ext.cookies.getAll(id ? { domain: SESSION_HOST, storeId: id } : { domain: SESSION_HOST })).catch(() => []);
-      for (const c of list || []) {
-        if (cookieHost(c) !== SESSION_HOST) continue;
-        const d = { url: `https://${SESSION_HOST}${c.path || '/'}`, name: c.name };
-        if (c.storeId) d.storeId = c.storeId;
-        if (c.partitionKey) d.partitionKey = c.partitionKey;
-        if (c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain;
-        try { await ext.cookies.remove(d); } catch {}
-      }
+    const list = await Promise.resolve(ext.cookies.getAll(Object.assign(id ? { domain: SESSION_HOST, storeId: id } : { domain: SESSION_HOST }, ALL_PARTIES))).catch(() => []);
+    for (const c of list || []) {
+      if (cookieHost(c) !== SESSION_HOST) continue;
+      const d = { url: `https://${SESSION_HOST}${c.path || '/'}`, name: c.name };
+      if (c.storeId) d.storeId = c.storeId;
+      if (c.partitionKey) d.partitionKey = c.partitionKey;
+      if (c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain;
+      try { await ext.cookies.remove(d); } catch {}
     }
   });
 }
@@ -744,28 +757,29 @@ const handlers = {
   // an automatic login, the cookies of MiAulario go (dropSiteCookies): content.js opens the login page after the answer.
   // "repair": the page "your account does not exist" just after a login: also right after one, but only one repair in
   // the LOGIN_GAP_MS (a repair that ends on the same page does not repeat). The cookies go, content.js opens the
-  // portal, and the automatic login of the portal (repairLogin: once, in the LOGIN_GAP_MS of the repair) goes with the
-  // new cookies that the portal gave: they stay.
+  // portal, and the automatic login of the portal in that tab (repairLogin: its id; once, in the LOGIN_GAP_MS of the
+  // repair) goes with the new cookies that the portal gave: they stay.
   loginStart: {
     content: true,
-    run: (msg) => {
+    run: (msg, sender) => {
       const job = loginQueue.then(async () => {
         const area = ext.storage.session || ext.storage.local;
         const { loginAt, repairAt, repairLogin } = await area.get(['loginAt', 'repairAt', 'repairLogin']);
         const gap = (at) => at && Date.now() - at < LOGIN_GAP_MS;
+        const tabId = sender && sender.tab ? sender.tab.id : null;
         if (msg.repair) {
           if (gap(repairAt)) return null;
-          await area.set({ loginAt: Date.now(), repairAt: Date.now(), repairLogin: true });
-          await dropSiteCookies();
+          await area.set({ loginAt: Date.now(), repairAt: Date.now(), repairLogin: tabId }); // the pass: only this tab
+          await dropSiteCookies(sender && sender.tab);
           return { ok: true };
         }
-        if (!msg.user && repairLogin && gap(repairAt)) {
-          await area.set({ loginAt: Date.now(), repairLogin: false });
+        if (!msg.user && repairLogin !== null && repairLogin !== undefined && repairLogin === tabId && gap(repairAt)) {
+          await area.set({ loginAt: Date.now(), repairLogin: null });
           return { ok: true };
         }
         if (!msg.user && gap(loginAt)) return null;
-        await area.set({ loginAt: Date.now(), repairLogin: false });
-        if (!msg.user) await dropSiteCookies();
+        await area.set({ loginAt: Date.now(), repairLogin: null });
+        if (!msg.user) await dropSiteCookies(sender && sender.tab);
         return { ok: true };
       });
       loginQueue = job.catch(() => {});
@@ -849,6 +863,15 @@ const handlers = {
   hideSection: {
     content: true,
     run: async (msg) => {
+      // A part of the block of Mi sitio: in mysiteLayout.hidden, in one step (never all the parts: MAK.cleanLayout).
+      if (msg && typeof msg.part === 'string') {
+        if (!Object.hasOwn(MAK.MYSITE_HOSTS, msg.part)) return { ok: false };
+        const next = await store.update('settings', (cur) => {
+          const base = MAK.withDefaults(cur);
+          return MAK.withDefaults(Object.assign({}, base, { mysiteLayout: Object.assign({}, base.mysiteLayout, { hidden: [...base.mysiteLayout.hidden, msg.part] }) }));
+        });
+        return { ok: next.mysiteLayout.hidden.includes(msg.part) };
+      }
       const next = await store.update('settings', (cur) => {
         const base = MAK.withDefaults(cur);
         return MAK.withDefaults(Object.assign({}, base, { hiddenSections: [...base.hiddenSections, { key: msg && msg.key, title: msg && msg.title }] }));
@@ -932,6 +955,7 @@ const handlers = {
           const next = MAK.configMerge(await tx.get(['settings', 'pageUi', 'sitePhotos']), msg.file);
           await tx.set({ settings: next.settings, pageUi: next.pageUi, sitePhotos: next.sitePhotos, pageUiImport: Date.now() });
         });
+        ping().catch(() => {}); // the method of the file keeps the session (or not) now, as the setting does
         return { ok: true };
       } catch {
         return { ok: false };

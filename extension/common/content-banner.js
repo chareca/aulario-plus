@@ -495,6 +495,7 @@
     return new Promise((resolve) => {
       const h = MAK.h;
       const host = document.createElement('div');
+      host.setAttribute('data-mak-overlay', ''); // a window of Aulario Plus: the selector of sections lets it work
       const shadow = host.attachShadow({ mode: 'closed' });
       const style = MAK.themedStyle(`${MAK.WIN_CSS()}
         .win { width: min(440px, calc(100vw - 32px)); }

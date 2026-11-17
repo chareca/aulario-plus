@@ -48,20 +48,20 @@
       },
       es: [
         'Aulario Plus vuelve a mantener tu sesión de MiAulario. Cuando MiAulario avisa de que tu sesión se cerrará en 10 minutos, Aulario Plus pulsa «Mantenme activo» por ti (con una pestaña de MiAulario abierta).',
-        'En Ajustes → «Mantener la sesión» eliges el método: pulsar el aviso de MiAulario, un ping cada pocos minutos (no necesita ninguna pestaña abierta), los dos o ninguno.',
+        'En Ajustes → Sesión eliges el método: pulsar el aviso de MiAulario, un ping cada pocos minutos (no necesita ninguna pestaña abierta), los dos o ninguno.',
         'Si tu sesión ya terminó cuando abres MiAulario, Aulario Plus borra las cookies de MiAulario y después abre la página de inicio de sesión, para que el inicio no falle. Se puede apagar en Ajustes.',
         'El botón de encendido de Inicio vuelve a pausar y reanudar el mantenimiento de la sesión.',
         'En Mi sitio hay un botón «Recursos» que abre directamente tus archivos, y en Recursos de Mi sitio un botón grande «Subir archivos», sin pasar por el menú Acciones.',
-        'Elimina las secciones de MiAulario que no uses: en Ajustes → «Eliminar secciones» se activa un selector, haces clic en la sección que sobra y deja de aparecer en todas tus asignaturas. Sirve para los bloques de MiAulario y para los de Aulario Plus, y «Recuperar secciones eliminadas» las devuelve.',
+        'Elimina las secciones de MiAulario que no uses: con «Editar MiAulario» en Inicio, o en Ajustes → Ubicación → «Eliminar secciones», se activa un selector, haces clic en la sección que sobra y deja de aparecer en todas tus asignaturas. Sirve para los bloques de MiAulario y para los de Aulario Plus, y «Recuperar secciones eliminadas» las devuelve.',
         'Ajustes está ordenado en categorías: cada una es una tarjeta con su valor actual, y al pulsarla ves solo sus ajustes. «Ajustes» te devuelve a las tarjetas.'
       ],
       en: [
         'Aulario Plus keeps your session of MiAulario again. When MiAulario warns that your session ends in 10 minutes, Aulario Plus presses "Keep me active" for you (with an open tab of MiAulario).',
-        'In Settings → "Keep-alive" you choose the method: press the warning of MiAulario, a ping every few minutes (it needs no open tab), both or none.',
+        'In Settings → Session you choose the method: press the warning of MiAulario, a ping every few minutes (it needs no open tab), both or none.',
         'If your session has ended when you open MiAulario, Aulario Plus deletes the cookies of MiAulario and then opens the login page, so that the login does not fail. You can turn it off in Settings.',
         'The power button of Home pauses and resumes the keep-alive again.',
         'Mi sitio has a button «Recursos» that opens your files directly, and Recursos of Mi sitio has a big button «Subir archivos», without the menu Acciones.',
-        'Remove the sections of MiAulario that you do not use: Settings → "Remove sections" starts a selector, you click the section and it does not show in any of your sites. For the blocks of MiAulario and the ones of Aulario Plus; "Restore removed sections" brings them back.',
+        'Remove the sections of MiAulario that you do not use: "Edit MiAulario" in Home, or Settings → Location → "Remove sections", starts a selector, you click the section and it does not show in any of your sites. For the blocks of MiAulario and the ones of Aulario Plus; "Restore removed sections" brings them back.',
         'Settings is sorted in categories: each one is a card with its value now, and a click shows only its settings. "Settings" takes you back to the cards.'
       ]
     },

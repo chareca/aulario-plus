@@ -102,7 +102,10 @@ function renderCurrent() {
   };
   panel.addEventListener('mouseover', go, { once: true });
   setTimeout(go, 300);
+  // The focus stays on the same control after the drawing (the tiles and the buttons have an id).
+  const focused = document.activeElement && panel.contains(document.activeElement) ? document.activeElement.id : '';
   panels[current].render(panel);
+  if (focused && $(focused) && document.activeElement !== $(focused)) $(focused).focus();
   if (open.size) for (const [k, d] of keyed()) if (open.has(k)) d.open = true;
   updateTabCounts();
   if (ui.query) renderSearch();
@@ -317,7 +320,7 @@ function renderHome(el) {
   const set = (patch) => () => send({ type: 'setSettings', patch });
   const session = h('div', { class: 'session', attrs: { id: 'home-session' } }, h('strong', { text: st.title }), h('small', { text: st.line }));
   const top = h('div', { class: 'home-top' },
-    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused), 'aria-label': t('set.keepAlive'),
+    h('button', { class: `power ${st.cls}`, attrs: { type: 'button', 'aria-pressed': String(!S.paused && s.keepMethod !== 'none'), 'aria-label': t('set.keepAlive'),
       title: t(S.paused ? 'set.resume' : 'set.pause') }, on: { click: togglePause } }, MAK.icon('power')),
     session);
   const switches = h('div', { class: 'switches' },
@@ -1192,10 +1195,12 @@ function recordSection() {
 function dialog(title, body, buttons) {
   let stop = null;
   let shut = false;
+  const opener = document.activeElement && document.activeElement.id; // the focus goes back to it (also drawn again)
   const close = () => {
     if (shut) return false;
     shut = true;
     stop();
+    if (opener) setTimeout(() => { if ($(opener)) $(opener).focus(); }, 0);
     if (!MAK.calmMotion()) box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
     MAK.popOut(win, () => box.remove());
     return true;
@@ -1432,9 +1437,9 @@ function renderSettings(el) {
         h('h2', { text: t('set.keepAlive') }),
         // How the session is kept (MAK.KEEP_METHODS), with what each method needs.
         h('label', { class: 'field-row' }, h('span', { class: 'small', text: t('set.keepMethod') }),
-          h('select', { attrs: { id: 'ka-method' }, on: { change: (e) => send({ type: 'setSettings', patch: { keepMethod: e.target.value } }) } },
+          h('select', { attrs: { id: 'ka-method' }, on: { change: (e) => { $('ka-method-help').textContent = t(`set.keepHelp.${e.target.value}`); send({ type: 'setSettings', patch: { keepMethod: e.target.value } }); } } },
             MAK.KEEP_METHODS.map((m) => h('option', { attrs: { value: m, selected: m === s.keepMethod }, text: t(`set.keep.${m}`) })))),
-        h('p', { class: 'small', text: t(`set.keepHelp.${s.keepMethod}`) }),
+        h('p', { class: 'small', attrs: { id: 'ka-method-help', 'aria-live': 'polite' }, text: t(`set.keepHelp.${s.keepMethod}`) }),
         h(
           'dl',
           { class: 'kv' },
@@ -1582,7 +1587,7 @@ function renderSettings(el) {
   back.classList.add('back');
   fill(el,
     h('div', { class: 'cat-head' },
-      h('button', { class: 'btn', attrs: { type: 'button', id: 'settings-back' }, on: { click: () => { const id = settingsView; openSettings(null); if ($(`cat-${id}`)) $(`cat-${id}`).focus(); } } }, back, t('tab.settings')),
+      h('button', { class: 'btn', attrs: { type: 'button', id: 'settings-back', 'aria-label': t('cat.back') }, on: { click: () => { const id = settingsView; openSettings(null); if ($(`cat-${id}`)) $(`cat-${id}`).focus(); } } }, back, t('tab.settings')),
       h('strong', { text: t(`cat.${open.id}`) })),
     open.parts());
   updateKeepAlive(Date.now());
@@ -1622,9 +1627,10 @@ async function refreshStatus() {
 }
 
 async function pingNow() {
-  $('ka-ping').disabled = true;
+  const b = $('ka-ping'); // the user can leave the category while it waits
+  b.disabled = true;
   await send({ type: 'pingNow' });
-  $('ka-ping').disabled = false;
+  b.disabled = false;
   refreshStatus();
 }
 

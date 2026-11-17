@@ -202,20 +202,23 @@
   };
   // The blocks of MiAulario on the page (a tool with its bar of the title), and the key and the title of one.
   MAK.toolBlocks = () => [...document.querySelectorAll('.Mrphs-container')].filter((el) => el.querySelector(':scope > .Mrphs-toolTitleNav'));
-  MAK.toolTitle = (el) => MAK.cleanText((el.querySelector(':scope > .Mrphs-toolTitleNav .Mrphs-toolTitleNav__title') || el).textContent, 200, false);
+  MAK.toolTitle = (el) => MAK.cleanText((el.querySelector(':scope > .Mrphs-toolTitleNav .Mrphs-toolTitleNav__title') || el.querySelector(':scope > .Mrphs-toolTitleNav') || el).textContent, 200, false);
   MAK.toolKey = function (el) {
     const tool = [...el.classList].filter((c) => c.startsWith('Mrphs-') && c !== 'Mrphs-container').sort().join(' ');
     return MAK.cleanText(`tool:${tool}|${MAK.toolTitle(el).toLowerCase()}`, 300, false);
   };
   // The removed sections go from the page. The boxes of Aulario Plus by a rule (the text of the result); the blocks
-  // of MiAulario by an attribute (the rule hides it): a block that is alone on its page stays (it is the page: a
-  // removed "Recursos" would leave its own page empty), once the page is whole (before that, no flash of the others).
+  // of MiAulario by an attribute (the rule hides it): the blocks of a page never go all of them (a block alone on its
+  // page is the page: a removed "Recursos" would leave its own page empty; two blocks removed in other pages would
+  // leave this one empty), once the page is whole (before that, no flash of the others).
   MAK.SECTION_OFF = 'data-mak-off';
   MAK.hideSections = function (sections) {
     const keys = new Set(sections.map((x) => x.key));
     const blocks = keys.size ? MAK.toolBlocks() : document.querySelectorAll(`[${MAK.SECTION_OFF}]`);
     const whole = document.readyState !== 'loading';
-    for (const el of blocks) el.toggleAttribute(MAK.SECTION_OFF, keys.size > 0 && keys.has(MAK.toolKey(el)) && !(whole && blocks.length < 2));
+    const off = new Set([...blocks].filter((el) => keys.has(MAK.toolKey(el))));
+    const all = whole && off.size === blocks.length;
+    for (const el of blocks) el.toggleAttribute(MAK.SECTION_OFF, off.has(el) && !all);
     const boxes = Object.entries(MAK.MAK_SECTIONS).filter(([name]) => keys.has(`mak:${name}`)).map(([, css]) => css);
     return [`[${MAK.SECTION_OFF}]`, ...boxes].join(', ') + ' { display: none !important; }';
   };
