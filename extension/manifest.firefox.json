@@ -95,6 +95,7 @@
         "lib/library.js",
         "content-library.js",
         "content-names.js",
+        "content-files.js",
         "content-search.js",
         "content-mail.js",
         "content-forward.js",

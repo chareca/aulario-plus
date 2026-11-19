@@ -132,3 +132,39 @@ test('Mi sitio → Recursos: the root of the files of the user, and the files an
     'only the first level, each one once, the names decoded, with the id of the root; not the root, a course site or other servers');
   assert.deepEqual(MAK.driveTopIds(undefined, root), []);
 });
+
+test('the files of the first level (the button of the files): no deeper, folders first, by name as people read', () => {
+  const B = 'https://miaulario.unavarra.es/access/content/group/S/';
+  const items = [
+    { url: `${B}Tema%2010.pdf`, title: 'Tema 10.pdf', type: 'application/pdf' },
+    { url: `${B}Tema%202.pdf`, title: 'Tema 2.pdf', type: 'application/pdf' },
+    { url: `${B}Apuntes/`, title: 'Apuntes', type: 'collection' },
+    { url: `${B}Apuntes/dentro.pdf`, title: 'dentro.pdf', type: 'application/pdf' },
+    { url: `${B}Web`, title: 'Web', type: 'text/url', webLinkUrl: 'javascript:alert(1)' },
+    { url: 'https://evil.example/access/content/group/S/x.pdf', title: 'x' },
+    { url: B, title: 'S', type: 'collection' },
+    null
+  ];
+  assert.deepEqual(MAK.topFiles(items).map((x) => [x.title, x.folder, x.link]), [['Apuntes', true, null], ['Tema 2.pdf', false, null], ['Tema 10.pdf', false, null], ['Web', false, null]]);
+  // The stored copy (MAK.trimResource) and Mi sitio (the address has the name of the user).
+  assert.deepEqual(MAK.topFiles([{ url: `${B}Apuntes/`, title: 'Apuntes', folder: true }, { url: 'https://miaulario.unavarra.es/access/content/user/chareca.1/notas.txt', title: 'notas.txt', link: null }]).map((x) => x.title), ['Apuntes', 'notas.txt']);
+});
+
+test('the id of a folder for Recursos, and the "#" of the button: only a folder of the same site', () => {
+  const url = 'https://miaulario.unavarra.es/access/content/group/S/Pr%C3%A1cticas/';
+  assert.equal(MAK.resourceId(url, '/group/S/'), '/group/S/Prácticas/');
+  assert.equal(MAK.resourceId(url, '/group/OTHER/'), null);
+  assert.equal(MAK.resourceId('https://miaulario.unavarra.es/access/content/user/chareca.1/A/', '/user/0a1b-2c/'), '/user/0a1b-2c/A/', 'Mi sitio: the id of the user, not the name');
+  assert.equal(MAK.resourceId('https://miaulario.unavarra.es/access/content/group/S/a/%2E%2E/b/', '/group/S/'), '/group/S/b/', 'the address resolves "..": still in the site');
+  assert.equal(MAK.resourceId('https://miaulario.unavarra.es/access/content/group/S/%2E%2E/T/b/', '/group/S/'), null, 'out of the site');
+  const hash = (id) => `#mak-folder=${encodeURIComponent(id)}`;
+  assert.deepEqual(MAK.filesHash(hash('/group/S/Prácticas/'), '/group/S/'), { action: 'folder', id: '/group/S/Prácticas/' });
+  assert.deepEqual(MAK.filesHash(`#mak-zip=${encodeURIComponent('/user/u/A/')}`, '/user/u/'), { action: 'zip', id: '/user/u/A/' });
+  for (const bad of [hash('/group/OTHER/A/'), hash('/group/S/'), hash('/group/S/file.pdf'), hash('/group/S/a/../b/'), '#mak-folder=%E0%A4%A', '#mak-other=x', '']) {
+    assert.equal(MAK.filesHash(bad, '/group/S/'), null, bad);
+  }
+  assert.equal(MAK.zipFolder('https://miaulario.unavarra.es/access/content/group/S/Apuntes/', 'S'), 'https://miaulario.unavarra.es/access/content/group/S/Apuntes/');
+  for (const bad of ['https://miaulario.unavarra.es/access/content/group/S/', 'https://miaulario.unavarra.es/access/content/group/T/A/', 'https://miaulario.unavarra.es/access/content/group/S/x.pdf', 'https://evil.example/access/content/group/S/A/', 7]) {
+    assert.equal(MAK.zipFolder(bad, 'S'), null, String(bad));
+  }
+});

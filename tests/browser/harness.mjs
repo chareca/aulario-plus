@@ -583,7 +583,42 @@ async function runTests(browser, base) {
     assert.equal(got.back, 'cat-lang');
   });
 
-  await test('the popup: the method that keeps the session in Ajustes; Inicio says how', async (open) => {
+  await test('the button of the files: after ✎ and ✉; the mouse shows the first level; Shift + click downloads a file or zips a folder', async (open) => {
+    const tab = await open('tools.html');
+    await prepare(tab, {}, {});
+    await tab.evaluate('window.__old = true');
+    await tab.navigate(url('site.html?open'));
+    if (!(await browser.waitFor(tab, "!window.__old && document.readyState === 'complete' && !!window.MAK && !!window.chrome"))) throw new Error('site.html did not load');
+    const got = await run(tab, `
+      const li = () => document.querySelector('li.site-list-item[data-site="2026_0_100002_1_G"]');
+      await until(() => li() && li().querySelector('.mak-files-button') && li().querySelector('.mak-teacher-button'), 'the buttons');
+      await sleep(400);
+      const order = [...li().querySelector('.mak-files-button').parentElement.children].map((c) => c.className);
+      const link = li().querySelector('.mak-files-button').shadowRoot.querySelector('a');
+      const list = () => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('.pop:not([hidden])')).find(Boolean);
+      link.dispatchEvent(new MouseEvent('mouseenter'));
+      await until(() => list() && list().querySelectorAll('li a').length, 'the list');
+      const rows = [...list().querySelectorAll('li a')].map((a) => a.textContent);
+      const folder = list().querySelector('li a.folder');
+      const before = window.__tabs.length;
+      folder.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }));
+      await until(() => window.__tabs.length > before, 'the ZIP of the folder');
+      const zip = decodeURIComponent(window.__tabs.at(-1).url);
+      const plain = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+      folder.addEventListener('click', (e) => e.preventDefault(), { once: true }); // the test stays on the page
+      folder.dispatchEvent(plain);
+      return { order, href: link.getAttribute('href'), rows, zip, ctrlZip: window.__tabs.length - before, folderHref: decodeURIComponent(folder.getAttribute('href')), expanded: link.getAttribute('aria-expanded') };
+    `);
+    assert.deepEqual(got.order, ['sidebar-site-title', 'mak-name-pencil', 'mak-teacher-button', 'mak-files-button']);
+    assert.match(got.href, /\/portal\/site\/2026_0_100002_1_G\/page\//, 'a click: Recursos');
+    assert.deepEqual(got.rows, ['Apuntes', 'Enlaces', 'Prácticas', 'Vacía'], 'the folders of the first level');
+    assert.match(got.zip, /tools\.html\?zip=2026_0_100002_1_G&folder=https:\/\/miaulario\.unavarra\.es\/access\/content\/group\/2026_0_100002_1_G\/Apuntes\/$/);
+    assert.equal(got.ctrlZip, 1, 'Ctrl + click: no ZIP (the browser opens it in a new tab)');
+    assert.match(got.folderHref, /#mak-folder=\/group\/2026_0_100002_1_G\/Apuntes\/$/);
+    assert.equal(got.expanded, 'true');
+  });
+
+    await test('the popup: the method that keeps the session in Ajustes; Inicio says how', async (open) => {
     const tab = await open('popup.html');
     const got = await run(tab, `
       const line = () => document.querySelector('#home-session small').textContent;

@@ -371,3 +371,14 @@ test('the selector: a part of the block of Mi sitio goes in its layout in one st
   assert.deepEqual(await bg.send({ type: 'hideSection', part: 'guides' }, CONTENT()), { ok: false }, 'the last part stays');
   assert.deepEqual(await bg.send({ type: 'hideSection', part: '__proto__' }, CONTENT()), { ok: false });
 });
+
+test('the ZIP of one folder (Shift + click in the list of the files): only a folder of a known site', async () => {
+  const bg = loadBackground({ fetch: fakeFetch(F.routes()), local: { sites: [{ id: 'S', title: 'S' }] } });
+  const folder = 'https://miaulario.unavarra.es/access/content/group/S/Apuntes/';
+  assert.deepEqual(await bg.send({ type: 'openZip', siteId: 'S', folder }, CONTENT()), { ok: true });
+  assert.equal(bg.ext._tabs.at(-1).url, `chrome-extension://ext-id/tools.html?zip=S&folder=${encodeURIComponent(folder)}`);
+  for (const bad of ['https://miaulario.unavarra.es/access/content/group/T/A/', 'https://evil.example/x/', 7]) {
+    assert.deepEqual(await bg.send({ type: 'openZip', siteId: 'S', folder: bad }, CONTENT()), { ok: false });
+  }
+  assert.deepEqual(await bg.send({ type: 'openZip', siteId: 'S' }, CONTENT()), { ok: true }, 'the whole site, as before');
+});

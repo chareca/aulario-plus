@@ -34,21 +34,26 @@ async function fetchFile(url, signal) {
   return { ok: r.ok, status: r.status, url: r.url || url, type, data };
 }
 
-async function runZip(siteId, site) {
+// folder: the address of one folder (the button of the files: Shift + click), else null (all the site).
+async function runZip(siteId, site, folder) {
   const status = $('zip-status');
   const warning = $('zip-warning');
   const start = $('zip-start');
   const cancel = $('zip-cancel');
   const bar = $('zip-progress');
   $('zip').hidden = false;
-  $('title').textContent = t('zip.title', { site: site.title });
-  document.title = t('zip.title', { site: site.title });
+  // The name of the folder in the title and in the name of the file.
+  let named = site.title;
+  try { if (folder) named = `${site.title} · ${decodeURIComponent(new URL(folder).pathname.split('/').filter(Boolean).pop())}`; } catch {}
+  $('title').textContent = t('zip.title', { site: named });
+  document.title = t('zip.title', { site: named });
   status.textContent = t('zip.reading');
 
   let items;
   try {
     const api = MAK.createApi({ fetch: (u, i) => fetch(u, i) });
     items = (await api.resources(siteId)).map((r) => MAK.trimResource(r, siteId)).filter(Boolean);
+    if (folder) items = items.filter((x) => x.url.startsWith(folder));
   } catch {
     status.textContent = t('zip.loginNeeded');
     return;
@@ -77,7 +82,7 @@ async function runZip(siteId, site) {
     warning.hidden = false;
   }
 
-  const name = MAK.safeFileName(t('zip.fileName', { site: site.title, date: MAK.ymd(Date.now()) }));
+  const name = MAK.safeFileName(t('zip.fileName', { site: named, date: MAK.ymd(Date.now()) }));
   start.textContent = t('zip.start');
   cancel.textContent = t('zip.cancel');
   start.hidden = false;
@@ -590,7 +595,7 @@ async function init() {
       $('zip-status').textContent = t('zip.noSite');
       return;
     }
-    await runZip(siteId, site);
+    await runZip(siteId, site, MAK.zipFolder(params.get('folder'), siteId));
   } else if (params.has('ics')) {
     await runIcs(store);
   } else if (params.has('check')) {

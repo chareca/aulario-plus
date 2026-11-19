@@ -129,6 +129,7 @@
     const form = document.getElementById('showForm');
     const id = form && form.querySelector('#collectionId');
     const root = id && form.querySelector('#sakai_action') && form.querySelector('#rt_action') ? MAK.driveRoot(id.value) : null;
+    if (form && id && form.querySelector('#sakai_action') && filesHash(form, id)) return; // the page goes to the folder
     if (!course && !root) return;
     const { settings } = await MAK.safeCall(() => ext.storage.local.get('settings'), {});
     MAK.setLang(settings && settings.lang);
@@ -140,6 +141,36 @@
         { text: MAK.t('drive.trash'), title: MAK.t('drive.trashHelp'), onClick: (ui) => driveAction(form, root, 'delete', ui) }
       ]);
     }
+  }
+
+  // A link of the button of the files (content-files.js): Recursos, then a folder of its first level ("#mak-folder=")
+  // or the ZIP of a folder of Mi sitio ("#mak-zip="), only of the site of the list. The folder: its own link of the list
+  // (the one that MiAulario draws), else the same action of the form. The "#" goes first: no second time on the way back.
+  function filesHash(form, id) {
+    const top = /^\/(group|user)\/[^/]+\//.exec(id.value);
+    const want = top && MAK.filesHash(location.hash, top[0]);
+    if (!want) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    if (want.action === 'zip') {
+      if (top[1] !== 'user' || !form.querySelector('#rt_action')) return false;
+      for (const box of form.querySelectorAll('input[name="selectedMembers"]')) box.checked = false;
+      form.append(MAK.h('input', { attrs: { type: 'hidden', name: 'selectedMembers', value: want.id } }));
+      form.querySelector('#sakai_action').value = 'doMultiItemDispatch';
+      form.querySelector('#rt_action').value = 'zipDownload';
+      form.submit();
+      return true;
+    }
+    const own = [...form.querySelectorAll('a[onclick*="doNavigate"]')].find((a) => (a.getAttribute('onclick') || '').includes(`'${want.id}'`));
+    if (own) {
+      own.click();
+      return true;
+    }
+    id.value = want.id;
+    const nav = form.querySelector('#navRoot');
+    if (nav) nav.value = '';
+    form.querySelector('#sakai_action').value = 'doNavigate';
+    form.submit();
+    return true;
   }
 
   // "Mi sitio" → Recursos: "Subir archivos", the action "Subir archivo(s)" of the folder on the screen, which MiAulario

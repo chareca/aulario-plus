@@ -252,6 +252,63 @@
     return [...ids];
   };
 
+  // ---- The files of the first level of a site (the button of the files, content-files.js) ----
+  // A resource of /direct/content (a course: /group/<site>/, Mi sitio: /user/<name>/) or a stored one (MAK.trimResource):
+  // { url, title, folder, link (a "text/url": its address), copyright }, or null.
+  MAK.fileItem = function (r) {
+    const url = r && MAK.safeSiteUrl(r.url);
+    if (!url || !/^\/access\/content\/(group|user)\/[^/]+\/./.test(new URL(url).pathname)) return null;
+    const folder = r.folder === true || r.type === 'collection';
+    const link = r.link !== undefined ? r.link : r.type === 'text/url' ? MAK.safeHttpUrl(r.webLinkUrl) : null;
+    return { url, title: String(r.title || '').slice(0, 200), folder, link: link || null, copyright: !!(r.copyright || r.copyrightAlert) };
+  };
+  // The items of the first level (no deeper), the folders first, then by name (as people read: "Tema 2" before "Tema 10").
+  MAK.topFiles = function (items) {
+    const out = [];
+    for (const r of Array.isArray(items) ? items : []) {
+      const x = MAK.fileItem(r);
+      if (!x) continue;
+      let path;
+      try { path = decodeURIComponent(new URL(x.url).pathname); } catch { continue; }
+      const rest = path.replace(/^\/access\/content\/(group|user)\/[^/]+\//, '');
+      if (/^[^/]+\/?$/.test(rest) && (rest.endsWith('/') === x.folder)) out.push(Object.assign(x, { name: rest.replace(/\/$/, '') }));
+    }
+    return out.sort((a, b) => Number(b.folder) - Number(a.folder) || (a.title || a.name).localeCompare(b.title || b.name, 'es', { numeric: true, sensitivity: 'base' }));
+  };
+  // The id of the resource of an address (/access/content/group/<site>/<path>) in the site of root ("/group/<site>/" or
+  // "/user/<id>/": the address of Mi sitio has the name of the user, the id has its id). null: not in that place.
+  MAK.resourceId = function (url, root) {
+    try {
+      const path = decodeURIComponent(new URL(url).pathname);
+      const m = /^\/access\/content\/(group|user)\/([^/]+)\/(.*)$/.exec(path);
+      if (!m || !/^\/(group|user)\/[^/]+\/$/.test(root) || !root.startsWith(`/${m[1]}/`)) return null;
+      if (m[1] === 'group' && root !== `/group/${m[2]}/`) return null;
+      if (m[3].split('/').some((s) => s === '..' || s === '.')) return null;
+      return root + m[3];
+    } catch {
+      return null;
+    }
+  };
+  // A folder of a course for its ZIP (its address, with "/" at the end, in the site), else null.
+  MAK.zipFolder = function (url, siteId) {
+    const safe = typeof url === 'string' && url.length < 2000 ? MAK.safeSiteUrl(url) : null;
+    if (!safe || typeof siteId !== 'string') return null;
+    const path = new URL(safe).pathname;
+    const ok = [`/access/content/group/${encodeURIComponent(siteId)}/`, `/access/content/group/${siteId}/`].some((p) => path.startsWith(p) && path.length > p.length);
+    return ok && path.endsWith('/') && !/\/\.\.?\//.test(path) ? safe : null;
+  };
+  // The folder or the ZIP that a link of the button asks for, after "#" in the address of Recursos:
+  // { action: 'folder' | 'zip', id } if the id is a folder of the site of the list (root), else null.
+  MAK.FILES_HASH = /^#mak-(folder|zip)=(.+)$/;
+  MAK.filesHash = function (hash, root) {
+    const m = MAK.FILES_HASH.exec(hash || '');
+    if (!m || !root) return null;
+    let id;
+    try { id = decodeURIComponent(m[2]); } catch { return null; }
+    if (!id.startsWith(root) || id === root || !id.endsWith('/') || id.length > 1000 || /[\u0000-\u001f]/.test(id) || id.split('/').some((s) => s === '..' || s === '.')) return null;
+    return { action: m[1], id };
+  };
+
   // Find the site id or the tool placement in a portal path.
   MAK.parsePortalPath = function (pathname) {
     let m = /^\/portal\/site\/([^/?#]+)(?:\/(?:page|page-reset|tool|tool-reset)\/([^/?#]+))?/.exec(pathname || '');

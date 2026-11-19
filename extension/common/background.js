@@ -1056,11 +1056,14 @@ const handlers = {
     }
   },
   // Open the tools page that makes the ZIP of the files of a site.
+  // The ZIP of a site, or of one folder of it (folder: its address, of the button of the files).
   openZip: {
     content: true,
     run: async (msg) => {
       if (!(await knownSite(msg.siteId))) return { ok: false };
-      await ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(msg.siteId)}`) });
+      const folder = msg.folder === undefined ? null : MAK.zipFolder(msg.folder, msg.siteId);
+      if (msg.folder !== undefined && !folder) return { ok: false };
+      await ext.tabs.create({ url: ext.runtime.getURL(`tools.html?zip=${encodeURIComponent(msg.siteId)}${folder ? `&folder=${encodeURIComponent(folder)}` : ''}`) });
       return { ok: true };
     }
   },

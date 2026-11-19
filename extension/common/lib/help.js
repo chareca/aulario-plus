@@ -53,6 +53,7 @@
         'El botón de encendido de Inicio vuelve a pausar y reanudar el mantenimiento de la sesión.',
         'En Mi sitio hay un botón «Recursos» que abre directamente tus archivos, y en Recursos de Mi sitio un botón grande «Subir archivos», sin pasar por el menú Acciones.',
         'Elimina las secciones de MiAulario que no uses: con «Editar MiAulario» en Inicio, o en Ajustes → Ubicación → «Eliminar secciones», se activa un selector, haces clic en la sección que sobra y deja de aparecer en todas tus asignaturas. Sirve para los bloques de MiAulario y para los de Aulario Plus, y «Recuperar secciones eliminadas» las devuelve.',
+        'Junto al nombre de cada asignatura (y de Mi sitio) hay un botón de archivos: abre Recursos, y al pasar el ratón muestra sus carpetas y archivos para abrirlos directamente. Ctrl+clic (⌘+clic en Mac) los abre en una pestaña nueva y Mayús+clic los descarga (una carpeta, en ZIP).',
         'Ajustes está ordenado en categorías: cada una es una tarjeta con su valor actual, y al pulsarla ves solo sus ajustes. «Ajustes» te devuelve a las tarjetas.'
       ],
       en: [
@@ -62,6 +63,7 @@
         'The power button of Home pauses and resumes the keep-alive again.',
         'Mi sitio has a button «Recursos» that opens your files directly, and Recursos of Mi sitio has a big button «Subir archivos», without the menu Acciones.',
         'Remove the sections of MiAulario that you do not use: "Edit MiAulario" in Home, or Settings → Location → "Remove sections", starts a selector, you click the section and it does not show in any of your sites. For the blocks of MiAulario and the ones of Aulario Plus; "Restore removed sections" brings them back.',
+        'Next to the name of each site (and of Mi sitio) there is a button of the files: it opens Resources, and the mouse on it shows its folders and files to open them directly. Ctrl+click (⌘+click on a Mac) opens them in a new tab and Shift+click downloads them (a folder, as a ZIP).',
         'Settings is sorted in categories: each one is a card with its value now, and a click shows only its settings. "Settings" takes you back to the cards.'
       ]
     },
