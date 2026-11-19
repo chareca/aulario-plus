@@ -101,7 +101,7 @@ test('the news of a new version: the window that the background gives', async ()
 // The box of the warning of MiAulario: its button "Mantenme activo" (or none), and the clicks on it.
 const warningBox = (withButton = true) => {
   const box = { clicks: 0, isConnected: true };
-  box.querySelector = (sel) => (withButton && sel === '[onclick*="keep_session_alive"]' ? { click: () => box.clicks++ } : null);
+  box.querySelector = (sel) => (withButton && sel === 'input[type="button"][onclick*="keep_session_alive"], button[onclick*="keep_session_alive"]' ? { click: () => box.clicks++ } : null);
   return box;
 };
 

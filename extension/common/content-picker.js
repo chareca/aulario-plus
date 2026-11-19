@@ -106,12 +106,13 @@
     const onMove = (e) => { if (!asking && !ours(e.target)) mark(under(e.target)); };
     // A press on a section selects: the page gets none of it (no link opens, also with the middle button; no menu).
     const swallow = (e) => {
-      if (asking || ours(e.target) || !under(e.target)) return;
+      if (!e.isTrusted || asking || ours(e.target) || !under(e.target)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
     };
+    // Only the clicks of the user: a script of the page cannot choose a section.
     const onClick = (e) => {
-      if (asking || ours(e.target)) return;
+      if (!e.isTrusted || asking || ours(e.target)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       const c = under(e.target);

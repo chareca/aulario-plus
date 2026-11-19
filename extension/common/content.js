@@ -31,7 +31,9 @@
 
   // Manual logout: the background script pauses and removes the persistent cookies.
   // A click on a login link: record the time of the login.
+  // Only the clicks of the user: a script of a page of MiAulario (an HTML file of Recursos) cannot log out or stop the logins.
   document.addEventListener('click', (e) => {
+    if (!e.isTrusted) return;
     const a = e.target instanceof Element && e.target.closest('a[href]');
     if (a && a.origin === MAK.BASE && LOGOUT_RE.test(a.pathname)) send({ type: 'logout' });
     else if (a && LOGIN_RE.test(a.href)) send({ type: 'loginStart', user: true }); // no automatic login during it
@@ -90,7 +92,8 @@
       at = Date.now();
       const d = (await MAK.safeCall(() => ext.storage.local.get(['settings', 'paused']), null)) || {};
       if (d.paused || !MAK.keepsBy(MAK.withDefaults(d.settings).keepMethod, 'button')) return;
-      const button = box.querySelector('[onclick*="keep_session_alive"]');
+      // Only a button (not a link of a page that imitates the warning: no navigation from here).
+      const button = box.querySelector('input[type="button"][onclick*="keep_session_alive"], button[onclick*="keep_session_alive"]');
       if (button && box.isConnected) button.click();
       else send({ type: 'keepAlive' });
     };

@@ -97,7 +97,11 @@ export async function launch({ chrome, headless = true, profile, extension, args
       return value(await call('Runtime.callFunctionOn', { objectId: result.objectId, functionDeclaration: declaration, arguments: args.map((v) => ({ value: v })), returnByValue: true, awaitPromise: true }, sessionId));
     };
     const navigate = (to) => call('Page.navigate', { url: to }, sessionId);
-    return { targetId, sessionId, evaluate, callFunction, navigate };
+    // A click of the user (isTrusted) at a point of the page.
+    const mouseClick = async (x, y) => {
+      for (const type of ['mousePressed', 'mouseReleased']) await call('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, sessionId);
+    };
+    return { targetId, sessionId, evaluate, callFunction, navigate, mouseClick };
   }
   // Wait until the expression is true in the tab.
   async function waitFor(tab, expression, ms = 15000) {

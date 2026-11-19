@@ -35,7 +35,9 @@ const browser = {
       evaluate: (expression) => page.evaluate(expression),
       // A function of the page with arguments: the values go to the page as data, never inside the code.
       callFunction: (declaration, ...args) => page.evaluate(new Function('a', `return (${declaration})(...a)`), args),
-      navigate: (to) => page.goto(to, { waitUntil: 'commit' })
+      navigate: (to) => page.goto(to, { waitUntil: 'commit' }),
+      // A click of the user (isTrusted) at a point of the page.
+      mouseClick: (x, y) => page.mouse.click(x, y)
     };
   },
   async waitFor(tab, expression, ms = 15000) {

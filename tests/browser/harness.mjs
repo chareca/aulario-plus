@@ -428,37 +428,45 @@ async function runTests(browser, base) {
     };
     await prepare(tab, {}, {});
     await page();
-    const got = await run(tab, `
+    // The helpers of the page stay in window.__p between the steps; a click of the user goes through the browser.
+    const HELP = `
       const bar = () => document.getElementById('mak-picker-host') && document.getElementById('mak-picker-host').shadowRoot;
       const titles = () => [...bar().querySelectorAll('select option')].map((o) => o.textContent);
       const gone = (el) => getComputedStyle(el).display === 'none';
+      const question = () => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('[role=alertdialog]')).find(Boolean);
       const answer = async (yes) => {
-        const win = await until(() => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('[role=alertdialog]')).find(Boolean), 'the question');
+        const win = await until(question, 'the question');
         const asked = win.getAttribute('aria-label');
         win.querySelector(yes ? '.btn.primary' : '.btn:not(.primary)').click();
         await until(() => !document.documentElement.contains(win.getRootNode().host), 'the question gone');
         return asked;
       };
+      const center = (el) => { el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + Math.min(r.height / 2, 40))]; };
+    `;
+    const clickAt = async (expr) => { const [x, y] = await run(tab, `${HELP} return center(${expr});`); await tab.mouseClick(x, y); };
+    const start = await run(tab, `${HELP}
       await until(() => { const b = document.getElementById('mak-block-body'); return b && b.dataset.count === '3'; }, 'the three parts');
       // The window of the new hours of the library (the notice of today) opens first: closed, the questions can open.
-      const opened = () => [...document.documentElement.children].map((x) => x.shadowRoot && x.shadowRoot.querySelector('[role=alertdialog]')).find(Boolean);
-      for (let i = 0; i < 40 && !opened(); i++) await sleep(50);
-      while (opened()) { opened().querySelector('.btn.primary').click(); await sleep(400); }
+      for (let i = 0; i < 40 && !question(); i++) await sleep(50);
+      while (question()) { question().querySelector('.btn.primary').click(); await sleep(400); }
       const calendar = document.querySelector('.Mrphs-sakai-summary-calendar');
-      let clicks = 0;
-      calendar.addEventListener('click', () => clicks++);
-      calendar.click();
-      const before = clicks;
+      window.__p = { clicks: 0 };
+      calendar.addEventListener('click', () => window.__p.clicks++);
       await ext.runtime.sendMessage({ type: 'pickSections' });
       await until(() => bar() && titles().length, 'the selector');
-      const first = titles();
-      // "Cancelar" keeps it; then "Eliminar".
+      // A click of a script of the page chooses nothing.
       calendar.querySelector('.Mrphs-toolBody').click();
-      const asked = await answer(false);
-      const kept = !gone(calendar);
-      calendar.querySelector('.Mrphs-toolBody').click();
+      await sleep(300);
+      window.__p.clicks = 0; // that click reaches the page, as a script of the page can do: only the clicks of the user count
+      return { first: titles(), scripted: !!question() };
+    `);
+    // "Cancelar" keeps it; then "Eliminar". The page gets none of these clicks.
+    await clickAt("document.querySelector('.Mrphs-sakai-summary-calendar .Mrphs-toolBody')");
+    const asked = await run(tab, `${HELP} const asked = await answer(false); window.__p.kept = !gone(document.querySelector('.Mrphs-sakai-summary-calendar')); return asked;`);
+    await clickAt("document.querySelector('.Mrphs-sakai-summary-calendar .Mrphs-toolBody')");
+    const left = await run(tab, `${HELP}
       await answer(true);
-      await until(() => gone(calendar) && !titles().includes('Calendario'), 'the calendar gone');
+      await until(() => gone(document.querySelector('.Mrphs-sakai-summary-calendar')) && !titles().includes('Calendario'), 'the calendar gone');
       // The list of the bar, for the keyboard: a part of the block of Mi sitio.
       const list = bar().querySelector('select');
       list.selectedIndex = titles().indexOf('Horarios');
@@ -467,14 +475,18 @@ async function runTests(browser, base) {
       await answer(true);
       await until(() => gone(document.getElementById('mak-library-host')) && !titles().includes('Horarios'), 'the hours gone');
       // The only block of MiAulario left on the screen: not in the list (it is the page). Then the whole block of Aulario Plus.
-      const left = titles();
-      document.getElementById('mak-block').querySelector('.mak-head').click();
+      return titles();
+    `);
+    await clickAt("document.getElementById('mak-block').querySelector('.mak-head')");
+    const got = await run(tab, `${HELP}
       await answer(true);
       await until(() => gone(document.getElementById('mak-block')), 'the block gone');
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       const s = (await ext.storage.local.get('settings')).settings;
-      return { first, asked, kept, clicks: clicks - before, left, off: !document.getElementById('mak-picker-host'), keys: s.hiddenSections.map((x) => x.key), hidden: s.mysiteLayout.hidden, copy: localStorage.getItem('mak.sections') };
+      return { clicks: window.__p.clicks, kept: window.__p.kept, off: !document.getElementById('mak-picker-host'), keys: s.hiddenSections.map((x) => x.key), hidden: s.mysiteLayout.hidden, copy: localStorage.getItem('mak.sections') };
     `);
+    Object.assign(got, { first: start.first, asked, left });
+    assert.equal(start.scripted, false, 'a click of a script of the page opens no question');
     assert.deepEqual(got.first, ['Mostrar información de Mi Sitio', 'Calendario', 'Exámenes finales', 'Guías docentes', 'Horarios', 'Bloque de Aulario Plus']);
     assert.deepEqual([got.asked, got.kept, got.clicks, got.off], ['¿Eliminar «Calendario»?', true, 0, true]);
     assert.deepEqual(got.left, ['Exámenes finales', 'Guías docentes', 'Bloque de Aulario Plus']);

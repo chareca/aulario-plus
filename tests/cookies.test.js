@@ -208,3 +208,16 @@ test('the login of the repair is only for the tab that repaired: another tab wit
   assert.equal(await bg.send({ type: 'loginStart' }, tab(2)), null, 'not the pass of tab 1');
   assert.deepEqual(await bg.send({ type: 'loginStart' }, tab(1)), { ok: true });
 });
+
+test('another page of the UPNA puts a session cookie of MiAulario on the whole domain (".unavarra.es"): the drop before a login removes it; the extension never makes it persistent', async () => {
+  const { bg, server, jar, named } = kept();
+  server('SAKAISESSIONID', 'S1');
+  server('SAKAISESSIONID', 'tossed', { domain: '.unavarra.es', hostOnly: false, path: '/portal' });
+  server('SERVERID', 'h99', { domain: '.unavarra.es', hostOnly: false });
+  server('lang', 'es', { domain: '.unavarra.es', hostOnly: false });
+  server('idpsession', 'sso-1', { domain: '.sso.unavarra.es', hostOnly: false });
+  await bg.send({ type: 'pingNow' });
+  assert.deepEqual(named('SAKAISESSIONID').filter((c) => c.expirationDate).map((c) => c.value), ['S1'], 'only the cookie of MiAulario is persistent');
+  assert.deepEqual(await bg.send({ type: 'loginStart' }, CONTENT), { ok: true });
+  assert.deepEqual(jar.map((c) => `${c.name}=${c.value}`).sort(), ['idpsession=sso-1', 'lang=es'], 'the other cookies of the domain and the SSO stay');
+});

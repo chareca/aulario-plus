@@ -452,15 +452,20 @@ async function storeOfTab(tab) {
 
 // All the cookies of MiAulario go (every path) in the cookie store of the tab that logs in, before the automatic login
 // of content.js: the cookies of a session that ended (an old id, the route to another server) break the new login.
-// Not the ones of the other stores (a container, a private window: their sessions stay). Not the cookies of the SSO:
-// with its session, the login needs no password.
+// Also a session cookie of MiAulario that another page of the UPNA put on the whole domain (".unavarra.es": the
+// browser sends it to MiAulario too, and it can break or fix the session of the login). Not the ones of the other
+// stores (a container, a private window: their sessions stay). Not the cookies of the SSO: with its session, the
+// login needs no password.
+const PARENT_HOST = 'unavarra.es';
 async function dropSiteCookies(tab) {
   const id = await storeOfTab(tab);
+  const query = (q) => Promise.resolve(ext.cookies.getAll(Object.assign(q, id ? { storeId: id } : {}, ALL_PARTIES))).catch(() => []);
   return queueCookie(async () => {
-    const list = await Promise.resolve(ext.cookies.getAll(Object.assign(id ? { domain: SESSION_HOST, storeId: id } : { domain: SESSION_HOST }, ALL_PARTIES))).catch(() => []);
-    for (const c of list || []) {
-      if (cookieHost(c) !== SESSION_HOST) continue;
-      const d = { url: `https://${SESSION_HOST}${c.path || '/'}`, name: c.name };
+    const own = ((await query({ domain: SESSION_HOST })) || []).filter((c) => cookieHost(c) === SESSION_HOST);
+    const tossed = (await Promise.all(COOKIE_HOSTS[SESSION_HOST].map((name) => query({ domain: PARENT_HOST, name })))).flat()
+      .filter((c) => c && !c.hostOnly && cookieHost(c) === PARENT_HOST);
+    for (const c of [...own, ...tossed]) {
+      const d = { url: `https://${cookieHost(c)}${c.path || '/'}`, name: c.name };
       if (c.storeId) d.storeId = c.storeId;
       if (c.partitionKey) d.partitionKey = c.partitionKey;
       if (c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain;
