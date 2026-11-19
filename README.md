@@ -18,7 +18,7 @@
 
 ## Qué hace
 
-- **Sesión siempre activa:** MiAulario no te echa.
+- **Sesión siempre activa:** MiAulario no te echa. Aulario Plus pulsa por ti «Mantenme activo» cuando MiAulario avisa de que va a cerrar tu sesión, o la mantiene con un ping cada pocos minutos (lo eliges en Ajustes); si aun así se cierra, vuelve a iniciarla.
 - **Todo en un clic:** un menú de inicio con tu sesión y lo pendiente; entregas con sus correcciones, anuncios, mensajes, calendario y notas de todas tus asignaturas, con avisos antes de una entrega pendiente (24 h y 1 h, a tu gusto).
 - **Ctrl+K / ⌘K:** encuentra cualquier asignatura, contenido, archivo o entrega con unas letras.
 - **Mi sitio:** fechas de tus finales, expediente, apuntes y reenvío del correo interno, en una columna o a todo el ancho; ordena sus secciones a tu gusto (arrastrándolas, en columnas o una debajo de otra) y quita las que no uses.
@@ -27,7 +27,8 @@
 - **Notas oficiales (SIGMA):** si lo activas, tu media y tu rango junto a tu foto: ocho rangos con su gema según tus créditos aprobados, y lo que te falta para el siguiente.
 - **Historial:** todas tus tareas y exámenes, también de años pasados, con tu entrega, la nota y el comentario del profesor, y la nota oficial de cada asignatura de cada curso.
 - **Guías docentes:** cómo se evalúa cada asignatura, y una calculadora que toma tus notas del Libro de evaluación, las guarda y te dice qué necesitas para aprobar.
-- **Archivos:** descarga una asignatura en ZIP o envía sus archivos por el correo interno; en los Recursos de Mi sitio, descarga o borra todos tus archivos de una vez.
+- **Archivos:** un botón junto a cada asignatura abre sus Recursos, y al pasar el ratón muestra sus carpetas y archivos para abrirlos (Ctrl+clic o ⌘+clic, en una pestaña nueva) o descargarlos (Mayús+clic; una carpeta, en ZIP). Descarga una asignatura en ZIP o envía sus archivos por el correo interno; en Mi sitio, sube archivos con un botón y descarga o borra todos de una vez.
+- **Edita MiAulario:** elimina con un clic los bloques que no uses (de MiAulario y de Aulario Plus) en todas tus asignaturas, y recupéralos desde Ajustes.
 - **Temas:** igual que MiAulario (por defecto) o uno de seis estilos (Malvavisco, Aurora, AulaXP, Folio, Vía Láctea y Catppuccin), en light o dark mode. Las fotos del tema Vía Láctea son de ESO ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): ESO/S. Brunier, ESO/H. Drass et al., ESO/T. Preibisch, ESO/B. Bailleul, ESO/Igor Chekalin, ESO/F. Comeron y ESO) y la Tierra, de NASA. Los colores del tema Catppuccin son de [Catppuccin](https://catppuccin.com) (licencia MIT, [github.com/catppuccin](https://github.com/catppuccin/catppuccin)).
 - **Tu configuración:** guárdala en un archivo JSON desde Ajustes y recupérala cuando quieras.
 - **Confeti:** cuando entregas una tarea o un examen, sin sonido (se puede apagar).
@@ -42,6 +43,6 @@ Tus datos se quedan en tu navegador: sin analíticas ni servidores propios. [Pol
 
 Aulario Plus es gratis y de código abierto. Si te ahorra tiempo, puedes invitarme a un café.
 
-<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff&amp;v=1.6.8" alt="Invítame a un café" height="50"></a></p>
+<p align="center"><a href="https://buymeacoffee.com/chareca"><img src="https://img.buymeacoffee.com/button-api/?text=Inv%C3%ADtame%20a%20un%20caf%C3%A9&emoji=&slug=chareca&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff&amp;v=1.7.0" alt="Invítame a un café" height="50"></a></p>
 
 [Licencia MIT](LICENSE)
