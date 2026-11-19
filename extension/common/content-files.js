@@ -43,7 +43,7 @@
     li a:hover, li a:focus-visible { background: var(--ap-surface2); text-decoration: underline; }
     li a:focus-visible, a.all:focus-visible { outline: 2px solid var(--ap-fg); outline-offset: 1px; }
     li svg { flex: none; width: 17px; height: 17px; }
-    li a.folder svg { color: var(--ap-accent); }
+    li a.folder svg { color: var(--ap-link); }
     .status, .help { font-size: 0.86em; color: var(--ap-muted); margin: 6px 2px 0; }
     .status:empty { display: none; }
     a.all { display: inline-block; margin: 8px 2px 0; color: var(--ap-link); font-weight: 700; }
